@@ -31,6 +31,12 @@ Key docs:
 
 If uncertain — **search the web or read source code**. NEVER guess.
 
+### Python Virtual Environment
+
+ALWAYS use uv for Python. uv creates .venv automatically inside backend/ on `uv sync`.
+NEVER use `pip install` globally. NEVER use `python` directly — use `uv run python`, `uv run pytest`, `uv run alembic`.
+All Python commands must run through `uv run` to ensure the correct virtual environment.
+
 ### If You Don't Know — ASK
 
 Do not proceed with assumptions. Present options with tradeoffs. NEVER invent API methods or behaviors.
