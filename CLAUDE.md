@@ -5,6 +5,10 @@ Open-source Telegram Mini App + Bot for VPN subscription management (Remnawave).
 @docs/ARCHITECTURE.md — monorepo structure, patterns, data flow.
 @docs/DEV_ENVIRONMENT.md — local dev setup, ngrok, Telegram test env.
 
+## Language
+
+ALL communication with the user MUST be in Russian. Code, comments, docstrings, commit messages, variable names — in English. But all explanations, plans, questions, reports — only Russian.
+
 ## Stack
 
 - **Backend**: Python 3.12+, aiogram 3.x, FastAPI, Dishka (DI), SQLAlchemy 2.x async, Alembic, PostgreSQL, Redis

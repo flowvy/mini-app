@@ -32,7 +32,21 @@ Dependency injection: Dishka injects services via `@inject` decorator or auto_in
 
 FSM storage: Redis-backed. Use `state: FSMContext` parameter.
 
-Webhook mode: aiogram dispatcher is mounted on FastAPI via `aiohttp` compatibility layer or custom integration in `__main__.py`.
+## aiogram + FastAPI Webhook Integration
+
+No built-in adapter for FastAPI. Manual POST route with `feed_webhook_update`:
+```python
+@app.post("/webhook")
+async def webhook(request: Request) -> Response:
+    result = await dp.feed_webhook_update(bot=bot, update=await request.json())
+    if result:
+        return Response(content=result.model_dump_json(), media_type="application/json")
+    return Response(status_code=200)
+```
+
+Lifespan: `bot.set_webhook()` + `dp.emit_startup()` on start, `dp.emit_shutdown()` + `bot.session.close()` on shutdown.
+
+`bot/factory.py` creates Bot + Dispatcher only. No polling, no webhook setup there.
 
 ## FastAPI Patterns
 
