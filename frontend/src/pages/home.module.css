@@ -1,0 +1,10 @@
+/* ── Home Page ── */
+
+.page {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	padding: 16px;
+	padding-bottom: 80px;
+	animation: var(--fv-anim-fade-in) 0.15s ease-out;
+}

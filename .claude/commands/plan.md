@@ -7,6 +7,7 @@ Restate the task in one sentence. If anything is unclear — ASK the user now. D
 - Read the official documentation for every library/API involved in this task.
 - Use `web_search` or `web_fetch` to verify API methods, parameters, and behaviors you are not 100% certain about.
 - Read existing code in the codebase that is related to this task. Use `grep` to find all relevant files.
+- If reference files from other projects are provided, read them fully and list every UI label, hint, and text string you find. Confirm the list with the user before implementing.
 
 ## Step 3: Map Files
 List every file that will be created or modified. For each:

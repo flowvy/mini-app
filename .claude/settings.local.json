@@ -80,7 +80,9 @@
       "WebFetch(domain:core.telegram.org)",
       "WebFetch(domain:www.npmjs.com)",
       "Bash(ls e:/mini-app/frontend/node_modules/.pnpm/@telegram-apps+sdk@*/node_modules/@telegram-apps/sdk/dist/)",
-      "Bash(pnpm biome:*)"
+      "Bash(pnpm biome:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(npx playwright:*)"
     ]
   }
 }

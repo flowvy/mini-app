@@ -1,0 +1,97 @@
+/* ── Detail Section ── */
+
+.body {
+	background: var(--v2-bg-primary);
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-md);
+	overflow: hidden;
+}
+
+/* ── Section divider label ── */
+
+.divider {
+	padding: 4px 14px 5px;
+	font-size: 10px;
+	font-weight: 600;
+	color: var(--v2-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	border-top: 1px solid var(--v2-border-tertiary);
+	background: color-mix(in srgb, var(--v2-bg-tertiary) 50%, transparent);
+}
+
+.body .divider:first-child {
+	border-top: none;
+}
+
+/* ── Row: label left, value right ── */
+
+.row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 9px 14px;
+	min-height: 36px;
+}
+
+.body .row + .row {
+	border-top: 1px solid var(--v2-border-tertiary);
+}
+
+.rowLabelWrap {
+	display: flex;
+	flex-direction: column;
+}
+
+.rowLabel {
+	font-size: 12px;
+	color: var(--v2-text-secondary);
+}
+
+.rowHint {
+	font-size: 10px;
+	color: var(--v2-text-secondary);
+	opacity: 0.6;
+	margin-top: 1px;
+}
+
+.rowValue {
+	font-size: 12px;
+	color: var(--v2-text-primary);
+	text-align: right;
+	max-width: 55%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.rowMuted {
+	color: var(--v2-text-tertiary);
+}
+
+.rowMono {
+	font-family: var(--font-mono);
+}
+
+.rowAccent {
+	color: var(--v2-text-positive);
+}
+
+/* ── Link row icon button ── */
+
+.linkBtn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: var(--radius-sm);
+	color: var(--v2-text-tertiary);
+	flex-shrink: 0;
+	transition: background var(--duration-fast), color var(--duration-fast);
+}
+
+.linkBtn:hover {
+	background: var(--v2-bg-secondary);
+	color: var(--v2-text-primary);
+}

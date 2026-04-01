@@ -35,11 +35,11 @@ html.popup-window[data-win10] body {
 	background: var(--v2-floor-0);
 }
 
-/* Desktop app — text is not selectable */
+/* Text is not selectable, horizontal overflow blocked */
 body {
 	user-select: none;
 	-webkit-user-select: none;
-	overflow: hidden;
+	overflow-x: hidden;
 }
 
 #root {

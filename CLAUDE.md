@@ -69,6 +69,10 @@ Handlers/Routes → Services → Repositories. No business logic in handlers. No
 
 Read the entire file before modifying. Read all importers/callers before changing an interface. Check cross-references after changes.
 
+### Reference Files
+
+When given reference files from another project (e.g. flowvy_desktop), READ EVERY LINE before implementing. Do not paraphrase, rename, or "improve" labels, hints, descriptions, or UX patterns from the reference. Replicate the content exactly, adapt only the layout for the target platform. After implementing, re-read the reference file and diff your output against it — every label, every hint, every prop must match unless explicitly told otherwise.
+
 ### Test After Every Change
 
 ```bash
