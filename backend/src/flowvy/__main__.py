@@ -13,7 +13,7 @@ def main() -> None:
     uvicorn.run(
         "flowvy.api.factory:create_app",
         host="0.0.0.0",
-        port=8000,
+        port=8001,
         reload=settings.debug,
         factory=True,
     )

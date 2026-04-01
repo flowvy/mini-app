@@ -10,7 +10,7 @@
                         │          │
                  ┌──────▼───┐ ┌───▼──────────┐
                  │ Vite dev │ │ FastAPI+Bot  │
-                 │ :5173    │ │ :8000        │
+                 │ :5173    │ │ :8001        │
                  │ (HMR)   │ │ (uvicorn)    │
                  └──────────┘ └──────┬───────┘
                                      │
@@ -46,7 +46,7 @@ cd backend
 uv sync                          # install Python deps
 cp .env.example .env             # fill in BOT_TOKEN, DB credentials
 uv run alembic upgrade head      # apply migrations
-uv run python -m flowvy          # start backend on :8000
+uv run python -m flowvy          # start backend on :8001
 
 # 4. Frontend setup (new terminal)
 cd frontend
@@ -148,7 +148,7 @@ DEBUG=true
 
 ### Frontend (.env)
 ```
-VITE_API_URL=http://localhost:8000/api
+VITE_API_URL=http://localhost:8001/api
 VITE_BOT_USERNAME=<your test bot username>
 ```
 
