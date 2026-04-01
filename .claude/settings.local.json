@@ -69,7 +69,8 @@
       "Read(//e/mini-app/frontend/**)",
       "Bash(npx @biomejs/biome check .)",
       "Bash(npx @biomejs/biome check --fix .)",
-      "Bash(npx @biomejs/biome check src/)"
+      "Bash(npx @biomejs/biome check src/)",
+      "Bash(pnpm test:*)"
     ]
   }
 }
