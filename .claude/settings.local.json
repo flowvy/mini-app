@@ -70,7 +70,10 @@
       "Bash(npx @biomejs/biome check .)",
       "Bash(npx @biomejs/biome check --fix .)",
       "Bash(npx @biomejs/biome check src/)",
-      "Bash(pnpm test:*)"
+      "Bash(pnpm test:*)",
+      "WebFetch(domain:docs.sqlalchemy.org)",
+      "WebFetch(domain:alembic.sqlalchemy.org)",
+      "Bash(docker exec:*)"
     ]
   }
 }

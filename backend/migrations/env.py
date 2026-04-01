@@ -9,7 +9,7 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from flowvy.models.base import Base
+from flowvy.models import Base
 
 config = context.config
 
