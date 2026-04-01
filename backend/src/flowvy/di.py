@@ -14,6 +14,8 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from flowvy.config import Settings
+from flowvy.repositories.user import UserRepository
+from flowvy.services.user import UserService
 
 
 class ConfigProvider(Provider):
@@ -51,6 +53,24 @@ class DatabaseProvider(Provider):
         """Yield a session, auto-close when request scope exits."""
         async with factory() as session:
             yield session
+
+
+class RepositoryProvider(Provider):
+    """Provides data-access repositories."""
+
+    @provide(scope=Scope.REQUEST)
+    def get_user_repo(self, session: AsyncSession) -> UserRepository:
+        """Create user repository bound to current session."""
+        return UserRepository(session)
+
+
+class ServiceProvider(Provider):
+    """Provides business-logic services."""
+
+    @provide(scope=Scope.REQUEST)
+    def get_user_service(self, repo: UserRepository) -> UserService:
+        """Create user service with injected repository."""
+        return UserService(repo)
 
 
 class RedisProvider(Provider):

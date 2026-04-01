@@ -8,17 +8,25 @@ from contextlib import asynccontextmanager
 from dishka import make_async_container
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 
 from flowvy.api.routes.health import router as health_router
+from flowvy.api.routes.users import router as users_router
 from flowvy.bot.factory import create_bot, create_dispatcher
 from flowvy.config import Settings
-from flowvy.di import ConfigProvider, DatabaseProvider, RedisProvider
+from flowvy.di import (
+    ConfigProvider,
+    DatabaseProvider,
+    RedisProvider,
+    RepositoryProvider,
+    ServiceProvider,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Manage bot lifecycle: set webhook on start, cleanup on stop."""
-    settings = Settings()
+    settings = app.state.settings
 
     if settings.bot_token:
         bot = create_bot(settings)
@@ -39,15 +47,28 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     """Build and configure the FastAPI application."""
+    settings = Settings()
     app = FastAPI(title="Flowvy", version="0.1.0", lifespan=lifespan)
+    app.state.settings = settings
+
+    if settings.debug:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
     container = make_async_container(
         ConfigProvider(),
         DatabaseProvider(),
+        RepositoryProvider(),
+        ServiceProvider(),
         RedisProvider(),
     )
 
     app.include_router(health_router)
+    app.include_router(users_router)
 
     @app.post("/webhook")
     async def webhook(request: Request) -> Response:

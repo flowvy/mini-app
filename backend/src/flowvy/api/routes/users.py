@@ -1,0 +1,36 @@
+"""User API routes."""
+
+from __future__ import annotations
+
+from typing import Annotated
+
+from aiogram.utils.web_app import WebAppInitData
+from dishka.integrations.fastapi import DishkaRoute, FromDishka
+from fastapi import APIRouter, Depends
+
+from flowvy.api.deps import get_current_init_data
+from flowvy.schemas.user import UserResponse
+from flowvy.services.user import UserService
+
+router = APIRouter(prefix="/api", tags=["users"], route_class=DishkaRoute)
+
+CurrentInitData = Annotated[WebAppInitData, Depends(get_current_init_data)]
+
+
+@router.get("/me", response_model=UserResponse)
+async def get_me(
+    init_data: CurrentInitData,
+    user_service: FromDishka[UserService] = None,  # type: ignore[assignment]
+) -> UserResponse:
+    """Return the current authenticated user."""
+    tg_user = init_data.user
+    full_name = tg_user.first_name
+    if tg_user.last_name:
+        full_name = f"{tg_user.first_name} {tg_user.last_name}"
+
+    user = await user_service.get_or_create(
+        telegram_id=tg_user.id,
+        username=tg_user.username,
+        full_name=full_name,
+    )
+    return UserResponse.model_validate(user)

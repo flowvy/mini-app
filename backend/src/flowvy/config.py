@@ -18,4 +18,5 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     webhook_url: str = ""
     webapp_url: str = ""
+    init_data_ttl: int = 86400
     debug: bool = True

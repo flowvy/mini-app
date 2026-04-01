@@ -73,7 +73,14 @@
       "Bash(pnpm test:*)",
       "WebFetch(domain:docs.sqlalchemy.org)",
       "WebFetch(domain:alembic.sqlalchemy.org)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(curl -s \"https://core.telegram.org/bots/webapps\")",
+      "Bash(curl -s \"https://docs.telegram-mini-apps.com/packages/telegram-apps-sdk-react\")",
+      "Bash(python -c \"import aiogram; print\\(aiogram.__version__\\)\")",
+      "WebFetch(domain:core.telegram.org)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(ls e:/mini-app/frontend/node_modules/.pnpm/@telegram-apps+sdk@*/node_modules/@telegram-apps/sdk/dist/)",
+      "Bash(pnpm biome:*)"
     ]
   }
 }
