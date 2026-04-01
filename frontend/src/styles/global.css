@@ -4,46 +4,46 @@
 *,
 *::before,
 *::after {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
 }
 
 /* ── Base styles ── */
 html,
 body {
-  height: 100%;
-  background: var(--v2-floor-0);
-  color: var(--v2-text-primary);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  line-height: 1.4;
-  font-feature-settings: 'liga' 1, 'calt' 1;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	height: 100%;
+	background: var(--v2-floor-0);
+	color: var(--v2-text-primary);
+	font-family: var(--font-sans);
+	font-size: 13px;
+	line-height: 1.4;
+	font-feature-settings: "liga" 1, "calt" 1;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 /* Popup window: transparent background so CSS border-radius on .popup shows through. */
 html.popup-window,
 html.popup-window body {
-  background: transparent;
+	background: transparent;
 }
 
 /* Win10: WebView2 has no per-pixel alpha — use opaque background */
 html.popup-window[data-win10],
 html.popup-window[data-win10] body {
-  background: var(--v2-floor-0);
+	background: var(--v2-floor-0);
 }
 
 /* Desktop app — text is not selectable */
 body {
-  user-select: none;
-  -webkit-user-select: none;
-  overflow: hidden;
+	user-select: none;
+	-webkit-user-select: none;
+	overflow: hidden;
 }
 
 #root {
-  height: 100%;
+	height: 100%;
 }
 
 /* ── Monospace font ── */
@@ -51,94 +51,101 @@ code,
 pre,
 kbd,
 samp {
-  font-family: var(--font-mono);
+	font-family: var(--font-mono);
 }
 
 /* ── Interactive elements ── */
 button {
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  border: none;
-  background: none;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+	border: none;
+	background: none;
 }
 
 input,
 textarea,
 select {
-  font: inherit;
-  color: inherit;
+	font: inherit;
+	color: inherit;
 }
 
 a {
-  color: inherit;
-  text-decoration: none;
+	color: inherit;
+	text-decoration: none;
 }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+	width: 4px;
+	height: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+	background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--v2-border-tertiary);
-  border-radius: 2px;
+	background: var(--v2-border-tertiary);
+	border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--v2-border-secondary);
+	background: var(--v2-border-secondary);
 }
 
 /* ── Default transitions ── */
 a,
 button {
-  transition: all 0.15s ease;
+	transition: all 0.15s ease;
 }
 
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
 }
 
 /* ── Focus-visible (keyboard navigation) ── */
 button:focus-visible,
 [role="button"]:focus-visible {
-  outline: 1.5px solid var(--v2-bg-positive-primary);
-  outline-offset: 2px;
+	outline: 1.5px solid var(--v2-bg-positive-primary);
+	outline-offset: 2px;
 }
 
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  border-color: var(--v2-border-positive-primary);
+	border-color: var(--v2-border-positive-primary);
 }
 
 /* ── Shared input ── */
 
 .fv-input {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);
-  border-radius: var(--radius-sm);
-  background: var(--v2-bg-primary);
-  color: var(--v2-text-primary);
-  font-size: 12px;
-  font-family: var(--font-mono);
-  outline: none;
-  transition: border-color 0.15s;
+	width: 100%;
+	padding: 8px 10px;
+	border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);
+	border-radius: var(--radius-sm);
+	background: var(--v2-bg-primary);
+	color: var(--v2-text-primary);
+	font-size: 12px;
+	font-family: var(--font-mono);
+	outline: none;
+	transition: border-color 0.15s;
 }
 
-.fv-input:focus { border-color: var(--v2-bg-positive-secondary); }
-.fv-input::placeholder { color: var(--v2-text-tertiary); }
-.fv-input:disabled { opacity: 0.5; cursor: not-allowed; }
+.fv-input:focus {
+	border-color: var(--v2-bg-positive-secondary);
+}
+.fv-input::placeholder {
+	color: var(--v2-text-tertiary);
+}
+.fv-input:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}

@@ -46,7 +46,30 @@
       "Bash(python3 -c \"import sys,json; items=json.load\\(sys.stdin\\).get\\('items',[]\\); [print\\(i['path']\\) for i in items[:20]]\")",
       "Bash(gh search:*)",
       "Bash(curl -sL \"https://raw.githubusercontent.com/reagento/dishka/develop/examples/async_simple.py\")",
-      "Bash(curl -sL \"https://raw.githubusercontent.com/reagento/dishka/develop/src/dishka/provider/make_factory.py\")"
+      "Bash(curl -sL \"https://raw.githubusercontent.com/reagento/dishka/develop/src/dishka/provider/make_factory.py\")",
+      "Bash(docker compose:*)",
+      "Bash(where pnpm:*)",
+      "Bash(cmd.exe /c \"powershell -ExecutionPolicy ByPass -c \\\\\"irm https://astral.sh/uv/install.ps1 | iex\\\\\"\")",
+      "Bash(npm install:*)",
+      "Read(//c/Users/x_kit_/.local/bin/**)",
+      "Read(//c/Users/x_kit_/.cargo/bin/**)",
+      "Bash(pip install:*)",
+      "Bash(uv --version)",
+      "Bash(pnpm --version)",
+      "Bash(uv sync:*)",
+      "Bash(pnpm install:*)",
+      "Bash(uv run:*)",
+      "Bash(curl -s http://127.0.0.1:8001/api/health)",
+      "Bash(kill %1)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(npx --yes @biomejs/biome --version)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(curl -s http://localhost:5173)",
+      "Read(//e/mini-app/frontend/**)",
+      "Bash(npx @biomejs/biome check .)",
+      "Bash(npx @biomejs/biome check --fix .)",
+      "Bash(npx @biomejs/biome check src/)"
     ]
   }
 }
