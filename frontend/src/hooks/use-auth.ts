@@ -1,5 +1,6 @@
 /**
  * Authentication hook — fetches the current user from backend.
+ * Set VITE_MOCK_AUTH=true to use a mock admin user for local UI testing.
  */
 import { useCallback, useEffect, useState } from "react";
 import { apiGet } from "../lib/api.ts";
@@ -19,12 +20,27 @@ interface AuthState {
 	isAuthenticated: boolean;
 }
 
+const MOCK_USER: UserResponse = {
+	id: 1,
+	username: "dev_admin",
+	full_name: "Dev Admin",
+	role: "ADMIN",
+	is_active: true,
+};
+
+const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
+
 export function useAuth(): AuthState & { retry: () => void } {
 	const [user, setUser] = useState<UserResponse | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	const fetchUser = useCallback(async () => {
+		if (isMockAuth) {
+			setUser(MOCK_USER);
+			setIsLoading(false);
+			return;
+		}
 		setIsLoading(true);
 		setError(null);
 		try {

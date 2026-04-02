@@ -82,7 +82,13 @@
       "Bash(ls e:/mini-app/frontend/node_modules/.pnpm/@telegram-apps+sdk@*/node_modules/@telegram-apps/sdk/dist/)",
       "Bash(pnpm biome:*)",
       "Bash(pnpm lint:*)",
-      "Bash(npx playwright:*)"
+      "Bash(npx playwright:*)",
+      "WebFetch(domain:tanstack.dev)",
+      "Bash(pnpm add:*)",
+      "Bash(npx biome:*)",
+      "Bash(xargs grep:*)",
+      "Bash(node -e ':*)",
+      "Bash(pnpm remove:*)"
     ]
   }
 }

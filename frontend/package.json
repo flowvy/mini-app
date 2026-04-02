@@ -11,7 +11,9 @@
 		"lint": "biome check ."
 	},
 	"dependencies": {
+		"@tanstack/react-router": "^1.168.10",
 		"@telegram-apps/sdk-react": "^3.0.0",
+		"lucide-react": "^1.7.0",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0"
 	},

@@ -1,0 +1,21 @@
+.page {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	gap: 16px;
+	padding: 32px 16px;
+	animation: fvFadeIn var(--duration-base) ease-out;
+}
+
+.icon {
+	color: var(--v2-text-tertiary);
+}
+
+.title {
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--v2-text-primary);
+	margin: 0;
+}
