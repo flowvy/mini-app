@@ -52,6 +52,71 @@ Theme: detect via `themeParams` or `prefers-color-scheme`. Set `data-theme` attr
 
 Safe areas: respect `safeAreaInset` and `contentSafeAreaInset` for fullscreen mode.
 
+## TanStack Query v5
+
+IMPORTANT: We use v5, NOT v4. Key differences from v4:
+- `gcTime` (not `cacheTime`)
+- `isPending` (not `isLoading` for initial load)
+- No `onError`/`onSuccess` callbacks in useQuery — use useEffect
+- Single object parameter: `useQuery({ queryKey, queryFn, staleTime })`
+
+### Query Keys — centralized in `lib/query.ts`
+
+```typescript
+export const queryKeys = {
+  subscription: ['subscription'] as const,
+  devices: ['devices'] as const,
+  nodes: ['nodes'] as const,
+  adminStats: ['admin', 'stats'] as const,
+  adminUsers: (page: number) => ['admin', 'users', page] as const,
+};
+```
+
+### Hook pattern
+
+```typescript
+export function useSubscription() {
+  return useQuery({
+    queryKey: queryKeys.subscription,
+    queryFn: () => apiGet<SubscriptionData>('/api/me/subscription'),
+    staleTime: 0,         // always refetch on mount
+    gcTime: 5 * 60_000,   // keep in memory 5 min after unmount
+  });
+}
+```
+
+### Invalidation after mutations
+
+```typescript
+const queryClient = useQueryClient();
+const deleteDevice = useMutation({
+  mutationFn: (hwid: string) => apiDelete(`/api/me/devices/${hwid}`),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.devices });
+    queryClient.invalidateQueries({ queryKey: queryKeys.subscription });
+  },
+});
+```
+
+### Deduplication
+
+TanStack Query automatically deduplicates: multiple components with same queryKey = one request. No manual dedup needed.
+
+### QueryClient setup in `lib/query.ts`
+
+```typescript
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 0,
+      gcTime: 5 * 60_000,
+      retry: 2,
+      refetchOnWindowFocus: false, // Mini App, not browser tab
+    },
+  },
+});
+```
+
 ## TipTap (Broadcast Editor)
 
 Custom extensions needed:
