@@ -5,6 +5,7 @@ from __future__ import annotations
 import httpx
 
 from flowvy.schemas.remnawave import (
+    RemnawaveDevice,
     RemnawaveSubInfo,
     RemnawaveSubInfoUser,
     RemnawaveUserData,
@@ -44,6 +45,18 @@ class RemnawaveClient:
         body = resp.json()
         return body.get("response", body)
 
+    async def _post(self, path: str, body: dict | None = None) -> dict:
+        """Send POST request, unwrap ``response`` envelope."""
+        resp = await self._http.post(
+            f"{self._base}{path}",
+            headers=self._headers(),
+            json=body or {},
+        )
+        if resp.status_code >= 400:
+            raise RemnawaveError(resp.status_code, resp.text)
+        data = resp.json()
+        return data.get("response", data)
+
     async def ping(self) -> bool:
         """Check Remnawave is reachable (``GET /api/auth/status``)."""
         resp = await self._http.get(
@@ -62,6 +75,26 @@ class RemnawaveClient:
             return None
         raw = data[0]
         return _parse_user_data(raw)
+
+    async def get_devices(self, user_uuid: str) -> list[RemnawaveDevice]:
+        """Fetch all HWID devices for a Remnawave user."""
+        data = await self._get(f"/api/hwid/devices/{user_uuid}")
+        raw_devices = data.get("devices", [])
+        return [_parse_device(d) for d in raw_devices]
+
+    async def delete_device(self, user_uuid: str, hwid: str) -> None:
+        """Delete a single HWID device."""
+        await self._post(
+            "/api/hwid/devices/delete",
+            {"userUuid": user_uuid, "hwid": hwid},
+        )
+
+    async def delete_all_devices(self, user_uuid: str) -> None:
+        """Delete all HWID devices for a user."""
+        await self._post(
+            "/api/hwid/devices/delete-all",
+            {"userUuid": user_uuid},
+        )
 
     async def get_subscription_info(
         self,
@@ -88,6 +121,20 @@ class RemnawaveClient:
             ),
             subscription_url=data.get("subscriptionUrl", ""),
         )
+
+
+def _parse_device(raw: dict) -> RemnawaveDevice:
+    """Map camelCase JSON to RemnawaveDevice model."""
+    return RemnawaveDevice(
+        hwid=raw["hwid"],
+        user_uuid=raw["userUuid"],
+        platform=raw.get("platform"),
+        os_version=raw.get("osVersion"),
+        device_model=raw.get("deviceModel"),
+        user_agent=raw.get("userAgent"),
+        created_at=raw["createdAt"],
+        updated_at=raw["updatedAt"],
+    )
 
 
 def _parse_user_data(raw: dict) -> RemnawaveUserData:

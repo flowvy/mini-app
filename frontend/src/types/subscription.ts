@@ -14,7 +14,7 @@ export interface SubscriptionData {
 	resetStrategy: ResetStrategy | null;
 	refillDate: number | null;
 	lifetimeUsedBytes: number | null;
-	updatedAt: string;
+	updatedAt: number;
 	connectionLink: string;
 	email: string | null;
 	telegramId: string | null;

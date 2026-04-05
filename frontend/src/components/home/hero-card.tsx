@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from "react";
 import {
 	formatExpiry,
 	formatMonthDay,
-	formatRelativeTime,
+	formatRelativeTimeUnix,
 	formatResetStrategy,
 	formatTraffic,
 	getDaysLeft,
@@ -126,7 +126,7 @@ export function HeroCard({ subscription }: HeroCardProps) {
 					<span className={styles.statLabel}>All Time</span>
 				</div>
 				<div className={styles.stat}>
-					<span className={styles.statValue}>{formatRelativeTime(subscription.updatedAt)}</span>
+					<span className={styles.statValue}>{formatRelativeTimeUnix(subscription.updatedAt)}</span>
 					<span className={styles.statLabel}>Last Updated</span>
 				</div>
 			</div>

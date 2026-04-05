@@ -1,12 +1,127 @@
-import { Smartphone } from "lucide-react";
-import type { FC } from "react";
-import styles from "./stub-page.module.css";
+import { Loader2 } from "lucide-react";
+import { type FC, useState } from "react";
+import { DeviceRow } from "../components/devices/device-row.tsx";
+import { useDeleteAllDevices, useDeleteDevice, useDevices } from "../hooks/use-devices.ts";
+import styles from "./devices.module.css";
 
 export const Devices: FC = () => {
+	const { devices: data, isPending, error } = useDevices();
+	const deleteDevice = useDeleteDevice();
+	const deleteAll = useDeleteAllDevices();
+	const [confirmHwid, setConfirmHwid] = useState<string | null>(null);
+	const [confirmAll, setConfirmAll] = useState(false);
+
+	if (isPending) {
+		return (
+			<div className={styles.empty}>
+				<Loader2 size={24} className={styles.emptyIcon} />
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className={styles.empty}>
+				<span className={styles.emptyTitle}>Failed to load devices</span>
+			</div>
+		);
+	}
+
+	const devices = data?.devices ?? [];
+	const limit = data?.limit ?? null;
+
+	const handleDelete = (hwid: string) => {
+		deleteDevice.mutate(hwid, {
+			onSettled: () => setConfirmHwid(null),
+		});
+	};
+
+	const handleDeleteAll = () => {
+		deleteAll.mutate(undefined, {
+			onSettled: () => setConfirmAll(false),
+		});
+	};
+
 	return (
 		<div className={styles.page}>
-			<Smartphone size={48} className={styles.icon} />
-			<h1 className={styles.title}>Devices</h1>
+			<div className={styles.header}>
+				<span className={styles.headerTitle}>Devices</span>
+				{limit !== null && (
+					<div className={styles.counter}>
+						<span className={styles.counterUsed}>{devices.length}</span>
+						<span className={styles.counterSep}>/</span>
+						<span className={styles.counterTotal}>{limit}</span>
+					</div>
+				)}
+			</div>
+
+			<p className={styles.pageHint}>
+				Devices that have connected to your VPN subscription. Remove unused devices to free up
+				slots.
+			</p>
+
+			{devices.length > 0 ? (
+				<div className={styles.sectionBody}>
+					{devices.map((device, i) => (
+						<div key={device.hwid}>
+							<DeviceRow
+								device={device}
+								isConfirming={confirmHwid === device.hwid}
+								onConfirm={() => setConfirmHwid(device.hwid)}
+								onDelete={() => handleDelete(device.hwid)}
+								isDeleting={deleteDevice.isPending && confirmHwid === device.hwid}
+							/>
+							{i < devices.length - 1 && <div className={styles.divider} />}
+						</div>
+					))}
+				</div>
+			) : (
+				<div className={styles.empty}>
+					<svg
+						width="44"
+						height="44"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="1"
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						className={styles.emptyIcon}
+						role="img"
+						aria-label="No devices"
+					>
+						<rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+						<line x1="12" y1="18" x2="12.01" y2="18" />
+					</svg>
+					<span className={styles.emptyTitle}>No devices</span>
+					<span className={styles.emptyDesc}>Connect a device to your VPN to see it here</span>
+				</div>
+			)}
+
+			{devices.length > 1 && !confirmAll && (
+				<button type="button" className={styles.dangerBtn} onClick={() => setConfirmAll(true)}>
+					Remove all devices
+				</button>
+			)}
+
+			{confirmAll && (
+				<div className={styles.confirmBar}>
+					<span className={styles.confirmBarText}>Remove all {devices.length} devices?</span>
+					<div className={styles.confirmBarActions}>
+						<button type="button" className={styles.ghostBtn} onClick={() => setConfirmAll(false)}>
+							Cancel
+						</button>
+						<button
+							type="button"
+							className={styles.fillDangerBtn}
+							onClick={handleDeleteAll}
+							disabled={deleteAll.isPending}
+						>
+							{deleteAll.isPending ? "..." : "Remove"}
+						</button>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };

@@ -39,6 +39,7 @@ class Subscription(Base):
     status: Mapped[SubscriptionStatus] = mapped_column(
         default=SubscriptionStatus.ACTIVE,
     )
+    device_limit: Mapped[int | None] = mapped_column(default=None)
     expires_at: Mapped[datetime.datetime | None]
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]

@@ -63,16 +63,20 @@ flowvy/
 │       ├── services/
 │       │   ├── user.py
 │       │   ├── remnawave.py      # RemnawaveClient
+│       │   ├── subscription.py   # SubscriptionService (BFF + DB upsert)
+│       │   ├── devices.py        # DevicesService (BFF, DB read + Remnawave)
 │       │   └── cache.py          # Redis cache helpers
 │       ├── repositories/
 │       │   ├── base.py           # generic CRUD
 │       │   ├── user.py
-│       │   ├── subscription.py
+│       │   ├── subscription.py   # upsert_from_remnawave
 │       │   └── invite.py
 │       ├── models/               # SQLAlchemy ORM
 │       │   ├── base.py, user.py, subscription.py, invite.py
 │       └── schemas/              # Pydantic v2
 │           ├── user.py
+│           ├── devices.py        # DeviceResponse, DevicesResponse
+│           ├── subscription.py   # SubscriptionResponse
 │           └── remnawave.py      # response models from Remnawave
 ├── frontend/
 │   ├── package.json
@@ -100,12 +104,14 @@ flowvy/
 │       ├── components/
 │       │   ├── ui/               # StatusBadge, icons
 │       │   ├── home/             # HeroCard, DetailSections
+│       │   ├── devices/          # DeviceRow, PlatformIcon
 │       │   └── layout/           # AppShell, Header, TabBar
 │       ├── pages/
 │       │   ├── home.tsx, pulse.tsx, devices.tsx, support.tsx
 │       │   └── admin/
 │       └── types/
-│           └── subscription.ts
+│           ├── subscription.ts
+│           └── devices.ts
 ```
 
 ## Remnawave Integration
@@ -131,6 +137,16 @@ Telegram user → Remnawave user:
 
 **Constraint**: one telegram_id = one Remnawave user. Enforced by provider when creating users.
 
+### Local DB Sync (Subscription Upsert)
+
+When `SubscriptionService.get_for_user()` fetches data from Remnawave, it upserts into our `subscriptions` table:
+- `remnawave_uuid`, `status`, `device_limit`, `expires_at`
+- Keyed by `user_id` (telegram_id) + `remnawave_uuid`
+
+This enables `DevicesService` to read `remnawave_uuid` and `device_limit` from local DB without an extra Remnawave call. If the user visits Devices before Home (subscription not yet cached), DevicesService falls back to `get_user_by_telegram_id`, saves, then proceeds.
+
+**Scope change**: `SubscriptionService` and `DevicesService` are REQUEST-scoped (need DB session). `RemnawaveClient` stays APP-scoped.
+
 ### Caching Strategy
 
 **Per-user data (subscription, devices)** — NO cache. Every request goes directly to Remnawave. 50-100ms latency is acceptable for a dashboard. User always sees current state.
@@ -154,8 +170,8 @@ Our FastAPI does NOT proxy Remnawave 1:1. It aggregates data per screen.
 
 | Mini App Screen | Our Endpoint | Remnawave Calls |
 |----------------|-------------|-----------------|
-| Home | `GET /api/me/subscription` | `by-telegram-id` → `sub/{shortUuid}/info` |
-| Devices | `GET /api/me/devices` | `hwid/devices/{userUuid}` |
+| Home | `GET /api/me/subscription` | `by-telegram-id` → `sub/{shortUuid}/info` + DB upsert |
+| Devices | `GET /api/me/devices` | DB read → `hwid/devices/{userUuid}` (fallback: `by-telegram-id` + DB upsert) |
 | Pulse | `GET /api/nodes` | `nodes` (cached 30s) |
 | Admin Dashboard | `GET /api/admin/stats` | `system/stats` + `stats/bandwidth` (cached 60s) |
 | Admin Users | `GET /api/admin/users` | `users?size=N&start=N` |

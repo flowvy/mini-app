@@ -37,14 +37,19 @@ FAKE_USER = RemnawaveUserData(
 def _make_service(
     remnawave_return: RemnawaveUserData | None = FAKE_USER,
 ) -> SubscriptionService:
-    """Create SubscriptionService with mocked RemnawaveClient."""
+    """Create SubscriptionService with mocked RemnawaveClient and repo."""
     client = AsyncMock()
     client.get_user_by_telegram_id = AsyncMock(return_value=remnawave_return)
     settings = Settings(
         support_url="https://support.example.com",
         renew_url="https://renew.example.com",
     )
-    return SubscriptionService(client, settings)
+    sub_repo = AsyncMock()
+    sub_repo.upsert_from_remnawave = AsyncMock()
+    user_repo = AsyncMock()
+    user_repo.get_by_telegram_id = AsyncMock(return_value=None)
+    user_repo.create = AsyncMock()
+    return SubscriptionService(client, settings, sub_repo, user_repo)
 
 
 @pytest.mark.asyncio

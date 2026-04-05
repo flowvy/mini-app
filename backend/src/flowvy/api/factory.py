@@ -11,12 +11,14 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from flowvy.api.routes.debug import router as debug_router
+from flowvy.api.routes.devices import router as devices_router
 from flowvy.api.routes.health import router as health_router
 from flowvy.api.routes.subscription import router as subscription_router
 from flowvy.api.routes.users import router as users_router
 from flowvy.bot.factory import create_bot, create_dispatcher
 from flowvy.config import Settings
 from flowvy.di import (
+    BffServiceProvider,
     ConfigProvider,
     DatabaseProvider,
     HttpClientProvider,
@@ -79,11 +81,13 @@ def create_app() -> FastAPI:
         RedisProvider(),
         HttpClientProvider(),
         RemnawaveProvider(),
+        BffServiceProvider(),
     )
 
     app.include_router(health_router)
     app.include_router(users_router)
     app.include_router(subscription_router)
+    app.include_router(devices_router)
     app.include_router(debug_router)
 
     @app.post("/webhook")

@@ -78,9 +78,9 @@ export function formatMonthDay(unix: number): string {
 	return `${mo} ${d.getDate()}`;
 }
 
-/** Format ISO timestamp to relative time. */
-export function formatRelativeTime(iso: string): string {
-	const diff = Date.now() - new Date(iso).getTime();
+/** Format Unix timestamp (seconds) to relative time. */
+export function formatRelativeTimeUnix(unix: number): string {
+	const diff = Date.now() - unix * 1000;
 	const secs = Math.floor(diff / 1000);
 	if (secs < 60) return "just now";
 	const mins = Math.floor(secs / 60);

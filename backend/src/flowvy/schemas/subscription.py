@@ -26,7 +26,7 @@ class SubscriptionResponse(BaseModel):
     reset_strategy: str | None
     refill_date: int | None
     lifetime_used_bytes: int | None
-    updated_at: str
+    updated_at: int
     connection_link: str
     email: str | None
     telegram_id: str | None

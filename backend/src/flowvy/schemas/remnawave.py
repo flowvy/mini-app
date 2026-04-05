@@ -67,3 +67,18 @@ class RemnawaveSubInfo(BaseModel):
     is_found: bool
     user: RemnawaveSubInfoUser
     subscription_url: str = ""
+
+
+class RemnawaveDevice(BaseModel):
+    """Single device from ``GET /api/hwid/devices/{userUuid}``."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    hwid: str
+    user_uuid: str
+    platform: str | None = None
+    os_version: str | None = None
+    device_model: str | None = None
+    user_agent: str | None = None
+    created_at: datetime
+    updated_at: datetime

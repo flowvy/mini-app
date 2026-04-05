@@ -22,3 +22,13 @@ class UserRepository(BaseRepository[User]):
         stmt = select(User).where(User.role == UserRole.ADMIN)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def ensure_exists(self, telegram_id: int, username: str) -> None:
+        """Create user if not already present in the database."""
+        existing = await self.get_by_telegram_id(telegram_id)
+        if existing is None:
+            await self.create(
+                id=telegram_id,
+                username=username,
+                full_name=username,
+            )

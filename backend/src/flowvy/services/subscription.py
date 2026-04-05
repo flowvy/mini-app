@@ -6,6 +6,8 @@ import calendar
 from datetime import datetime, timedelta
 
 from flowvy.config import Settings
+from flowvy.repositories.subscription import SubscriptionRepository
+from flowvy.repositories.user import UserRepository
 from flowvy.schemas.remnawave import RemnawaveUserData
 from flowvy.schemas.subscription import SubscriptionResponse
 from flowvy.services.remnawave import RemnawaveClient
@@ -14,21 +16,37 @@ from flowvy.services.remnawave import RemnawaveClient
 class SubscriptionService:
     """Aggregates Remnawave data into a single frontend-ready response."""
 
-    def __init__(self, remnawave: RemnawaveClient, settings: Settings) -> None:
+    def __init__(
+        self,
+        remnawave: RemnawaveClient,
+        settings: Settings,
+        sub_repo: SubscriptionRepository,
+        user_repo: UserRepository,
+    ) -> None:
         self._remnawave = remnawave
         self._settings = settings
+        self._sub_repo = sub_repo
+        self._user_repo = user_repo
 
     async def get_for_user(
         self,
         telegram_id: int,
     ) -> SubscriptionResponse | None:
-        """Fetch subscription data for a Telegram user.
+        """Fetch subscription data and upsert into local DB.
 
         Returns None if the user has no Remnawave account.
         """
         user = await self._remnawave.get_user_by_telegram_id(telegram_id)
         if user is None:
             return None
+        await self._user_repo.ensure_exists(telegram_id, user.username)
+        await self._sub_repo.upsert_from_remnawave(
+            user_id=telegram_id,
+            remnawave_uuid=user.uuid,
+            status=user.status,
+            device_limit=user.hwid_device_limit,
+            expires_at=user.expire_at,
+        )
         return self._to_response(user)
 
     def _to_response(self, user: RemnawaveUserData) -> SubscriptionResponse:
@@ -52,7 +70,7 @@ class SubscriptionService:
             reset_strategy=_map_strategy(user.traffic_limit_strategy),
             refill_date=refill_ts,
             lifetime_used_bytes=user.user_traffic.lifetime_used_traffic_bytes,
-            updated_at=user.updated_at.isoformat(),
+            updated_at=int(user.updated_at.timestamp()),
             connection_link=user.subscription_url,
             email=user.email,
             telegram_id=str(user.telegram_id) if user.telegram_id else None,
