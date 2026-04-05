@@ -27,11 +27,17 @@ frontend/dist/
 .env.*
 !.env.example
 
+# TypeScript
+*.tsbuildinfo
+
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# Claude Code
+.claude/settings.local.json
 
 # OS
 .DS_Store
