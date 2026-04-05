@@ -1,3 +1,4 @@
+import { Infinity as InfinityIcon } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import {
 	formatExpiry,
@@ -9,6 +10,8 @@ import {
 	getExpiryColor,
 	getTrafficColor,
 	getTrafficPercent,
+	isUnlimitedExpiry,
+	isUnlimitedTraffic,
 } from "../../lib/format.ts";
 import type { SubscriptionData } from "../../types/subscription.ts";
 import { CheckIcon, CopyIcon } from "../ui/icons.tsx";
@@ -21,11 +24,12 @@ interface HeroCardProps {
 
 export function HeroCard({ subscription }: HeroCardProps) {
 	const { usedBytes, totalBytes, deviceLimit, connectionLink } = subscription;
-	const pct = getTrafficPercent(usedBytes, totalBytes);
+	const unlimitedTraffic = isUnlimitedTraffic(totalBytes);
+	const unlimitedExpiry = isUnlimitedExpiry(subscription.expiresAt);
+	const pct = unlimitedTraffic ? 0 : getTrafficPercent(usedBytes, totalBytes);
 	const fillColor = getTrafficColor(pct);
 	const daysLeft = getDaysLeft(subscription.expiresAt);
-	const expiryColor = getExpiryColor(daysLeft);
-	const remaining = totalBytes - usedBytes;
+	const expiryColor = unlimitedExpiry ? "var(--v2-text-primary)" : getExpiryColor(daysLeft);
 
 	const [copied, setCopied] = useState(false);
 	const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -49,14 +53,18 @@ export function HeroCard({ subscription }: HeroCardProps) {
 				<div className={styles.topRight}>
 					<div className={styles.kpi}>
 						<div className={styles.kpiValue} style={{ color: expiryColor }}>
-							{formatExpiry(daysLeft)}
+							{unlimitedExpiry ? <InfinityIcon size={18} /> : formatExpiry(daysLeft)}
 						</div>
 						<div className={styles.kpiLabel}>Expires</div>
 					</div>
 					<div className={styles.kpiDivider} />
 					<div className={styles.kpi}>
 						<div className={styles.kpiValue}>
-							{deviceLimit != null && deviceLimit > 0 ? String(deviceLimit) : "\u2014"}
+							{deviceLimit == null || deviceLimit === 0 ? (
+								<InfinityIcon size={18} />
+							) : (
+								String(deviceLimit)
+							)}
 						</div>
 						<div className={styles.kpiLabel}>Devices</div>
 					</div>
@@ -66,28 +74,32 @@ export function HeroCard({ subscription }: HeroCardProps) {
 			{/* Row 2: traffic headline */}
 			<div className={styles.trafficRow}>
 				<span className={styles.trafficUsed}>{formatTraffic(usedBytes)}</span>
-				<span className={styles.trafficTotal}>/ {formatTraffic(totalBytes)}</span>
+				<span className={styles.trafficTotal}>
+					/ {unlimitedTraffic ? "Unlimited" : formatTraffic(totalBytes)}
+				</span>
 			</div>
 
 			{/* Row 3: progress bar */}
-			<div>
-				<div className={styles.barTrack}>
-					<div
-						className={styles.barFill}
-						style={{ width: `${pct}%`, background: fillColor, opacity: 0.7 }}
-					/>
+			{!unlimitedTraffic && (
+				<div>
+					<div className={styles.barTrack}>
+						<div
+							className={styles.barFill}
+							style={{ width: `${pct}%`, background: fillColor, opacity: 0.7 }}
+						/>
+					</div>
+					<div className={styles.barLabels}>
+						<span className={styles.barLabel}>
+							<span className={styles.barDot} style={{ background: fillColor }} />
+							Used {Math.round(pct)}%
+						</span>
+						<span className={styles.barLabel}>
+							<span className={styles.barDot} style={{ background: "var(--v2-bg-tertiary)" }} />
+							{formatTraffic(totalBytes - usedBytes)}
+						</span>
+					</div>
 				</div>
-				<div className={styles.barLabels}>
-					<span className={styles.barLabel}>
-						<span className={styles.barDot} style={{ background: fillColor }} />
-						Used {Math.round(pct)}%
-					</span>
-					<span className={styles.barLabel}>
-						<span className={styles.barDot} style={{ background: "var(--v2-bg-tertiary)" }} />
-						{formatTraffic(remaining)}
-					</span>
-				</div>
-			</div>
+			)}
 
 			{/* Row 4: stats strip */}
 			<div className={styles.stats}>

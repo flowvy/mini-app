@@ -1,49 +1,42 @@
 /**
- * Subscription data hook — returns mock data for now.
- * Replace internals with API call when Remnawave is integrated.
+ * Subscription data hook backed by TanStack Query.
+ * Fetches from GET /api/me/subscription (Remnawave via BFF).
+ *
+ * Debug mode: when VITE_MOCK_AUTH=true and VITE_DEBUG_TELEGRAM_ID is set,
+ * fetches real data from GET /api/debug/subscription/{telegramId} instead.
  */
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { apiGet } from "../lib/api.ts";
+import { queryKeys } from "../lib/query.ts";
 import type { SubscriptionData } from "../types/subscription.ts";
 
-interface SubscriptionState {
+interface UseSubscriptionResult {
 	subscription: SubscriptionData | null;
-	isLoading: boolean;
+	isPending: boolean;
+	error: Error | null;
 }
 
-const MOCK_SUBSCRIPTION: SubscriptionData = {
-	id: "sub-1",
-	name: "Flowvy VPN",
-	status: "ACTIVE",
-	usedBytes: 4.2 * 1024 ** 3,
-	totalBytes: 50 * 1024 ** 3,
-	expiresAt: Math.floor(Date.now() / 1000) + 23 * 86400,
-	createdAt: Math.floor(Date.now() / 1000) - 90 * 86400,
-	deviceLimit: 3,
-	resetStrategy: "MONTH",
-	refillDate: Math.floor(Date.now() / 1000) + 8 * 86400,
-	lifetimeUsedBytes: 128.7 * 1024 ** 3,
-	updatedAt: new Date(Date.now() - 12 * 60_000).toISOString(),
-	connectionLink: "vless://mock-connection-link-abc123@example.com:443",
-	email: "user@example.com",
-	telegramId: "123456789",
-	autoUpdate: true,
-	updateInterval: 24,
-	supportUrl: "https://support.flowvy.app",
-	renewUrl: "https://flowvy.app/renew",
-};
+const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
+const debugTelegramId = import.meta.env.VITE_DEBUG_TELEGRAM_ID;
 
-export function useSubscription(): SubscriptionState {
-	const [state, setState] = useState<SubscriptionState>({
-		subscription: null,
-		isLoading: true,
+function fetchSubscription(): Promise<SubscriptionData> {
+	if (isMockAuth && debugTelegramId) {
+		return apiGet<SubscriptionData>(`/debug/subscription/${debugTelegramId}`);
+	}
+	return apiGet<SubscriptionData>("/me/subscription");
+}
+
+export function useSubscription(): UseSubscriptionResult {
+	const { data, isPending, error } = useQuery({
+		queryKey: queryKeys.subscription,
+		queryFn: fetchSubscription,
+		staleTime: 0,
+		gcTime: 5 * 60 * 1000,
 	});
 
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			setState({ subscription: MOCK_SUBSCRIPTION, isLoading: false });
-		}, 300);
-		return () => clearTimeout(timer);
-	}, []);
-
-	return state;
+	return {
+		subscription: data ?? null,
+		isPending,
+		error: error ?? null,
+	};
 }

@@ -1,4 +1,4 @@
-import { formatShortDate } from "../../lib/format.ts";
+import { formatShortDate, isUnlimitedExpiry } from "../../lib/format.ts";
 import type { SubscriptionData } from "../../types/subscription.ts";
 import { ExternalLinkIcon } from "../ui/icons.tsx";
 import styles from "./detail-section.module.css";
@@ -9,11 +9,9 @@ interface DetailSectionProps {
 
 export function DetailSection({ subscription }: DetailSectionProps) {
 	const devicesValue =
-		subscription.deviceLimit != null
-			? subscription.deviceLimit === 0
-				? "Unlimited"
-				: `${subscription.deviceLimit} devices`
-			: null;
+		subscription.deviceLimit == null || subscription.deviceLimit === 0
+			? "Unlimited"
+			: `${subscription.deviceLimit} devices`;
 
 	return (
 		<div className={styles.body}>
@@ -28,7 +26,11 @@ export function DetailSection({ subscription }: DetailSectionProps) {
 			<Row
 				label="Expires"
 				hint="When this subscription expires"
-				value={formatShortDate(subscription.expiresAt)}
+				value={
+					isUnlimitedExpiry(subscription.expiresAt)
+						? "Unlimited"
+						: formatShortDate(subscription.expiresAt)
+				}
 				mono
 			/>
 			<Row

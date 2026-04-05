@@ -48,7 +48,9 @@ export function TabBar() {
 						const Icon = tab.icon;
 						return (
 							<div className={`${styles.tabInner} ${isActive ? styles.active : ""}`}>
-								<Icon size={22} />
+								<span className={styles.icon}>
+									<Icon size={20} />
+								</span>
 								<span className={styles.label}>{tab.label}</span>
 							</div>
 						);

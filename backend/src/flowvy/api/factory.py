@@ -10,17 +10,22 @@ from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
+from flowvy.api.routes.debug import router as debug_router
 from flowvy.api.routes.health import router as health_router
+from flowvy.api.routes.subscription import router as subscription_router
 from flowvy.api.routes.users import router as users_router
 from flowvy.bot.factory import create_bot, create_dispatcher
 from flowvy.config import Settings
 from flowvy.di import (
     ConfigProvider,
     DatabaseProvider,
+    HttpClientProvider,
     RedisProvider,
+    RemnawaveProvider,
     RepositoryProvider,
     ServiceProvider,
 )
+from flowvy.services.remnawave import RemnawaveClient
 
 
 @asynccontextmanager
@@ -37,12 +42,19 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             await bot.set_webhook(settings.webhook_url)
         await dp.emit_startup(bot=bot)
 
+    container = app.state.dishka_container
+    if settings.remnawave_url:
+        remnawave = await container.get(RemnawaveClient)
+        if not await remnawave.ping():
+            msg = f"Remnawave unreachable at {settings.remnawave_url}"
+            raise RuntimeError(msg)
+
     yield
 
     if hasattr(app.state, "dp"):
         await app.state.dp.emit_shutdown(bot=app.state.bot)
         await app.state.bot.session.close()
-    await app.state.dishka_container.close()
+    await container.close()
 
 
 def create_app() -> FastAPI:
@@ -65,10 +77,14 @@ def create_app() -> FastAPI:
         RepositoryProvider(),
         ServiceProvider(),
         RedisProvider(),
+        HttpClientProvider(),
+        RemnawaveProvider(),
     )
 
     app.include_router(health_router)
     app.include_router(users_router)
+    app.include_router(subscription_router)
+    app.include_router(debug_router)
 
     @app.post("/webhook")
     async def webhook(request: Request) -> Response:

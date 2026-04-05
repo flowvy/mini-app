@@ -18,5 +18,9 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     webhook_url: str = ""
     webapp_url: str = ""
+    remnawave_url: str = ""
+    remnawave_api_token: str = ""
+    support_url: str | None = None
+    renew_url: str | None = None
     init_data_ttl: int = 86400
     debug: bool = True

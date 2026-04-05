@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterable
 
+import httpx
 from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import (
@@ -15,6 +16,8 @@ from sqlalchemy.ext.asyncio import (
 
 from flowvy.config import Settings
 from flowvy.repositories.user import UserRepository
+from flowvy.services.remnawave import RemnawaveClient
+from flowvy.services.subscription import SubscriptionService
 from flowvy.services.user import UserService
 
 
@@ -82,3 +85,40 @@ class RedisProvider(Provider):
         client: Redis = Redis.from_url(settings.redis_url)
         yield client
         await client.aclose()
+
+
+class HttpClientProvider(Provider):
+    """Provides a shared httpx.AsyncClient."""
+
+    @provide(scope=Scope.APP)
+    async def get_http(self) -> AsyncIterable[httpx.AsyncClient]:
+        """Create httpx client with 10s timeout, close on shutdown."""
+        client = httpx.AsyncClient(timeout=httpx.Timeout(10.0))
+        yield client
+        await client.aclose()
+
+
+class RemnawaveProvider(Provider):
+    """Provides RemnawaveClient and SubscriptionService."""
+
+    @provide(scope=Scope.APP)
+    def get_remnawave(
+        self,
+        settings: Settings,
+        http: httpx.AsyncClient,
+    ) -> RemnawaveClient:
+        """Create Remnawave API client."""
+        return RemnawaveClient(
+            base_url=settings.remnawave_url,
+            token=settings.remnawave_api_token,
+            http=http,
+        )
+
+    @provide(scope=Scope.APP)
+    def get_subscription_service(
+        self,
+        remnawave: RemnawaveClient,
+        settings: Settings,
+    ) -> SubscriptionService:
+        """Create subscription aggregation service."""
+        return SubscriptionService(remnawave, settings)

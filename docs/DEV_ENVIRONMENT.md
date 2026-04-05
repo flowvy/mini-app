@@ -137,12 +137,14 @@ Then Claude can:
 
 ### Backend (.env)
 ```
-BOT_TOKEN=<from BotFather in test env>
+BOT_TOKEN=<from BotFather>
 WEBHOOK_URL=<ngrok backend URL>/webhook
-DATABASE_URL=postgresql+asyncpg://flowvy:flowvy_dev@localhost:5432/flowvy
+DATABASE_URL=postgresql+asyncpg://flowvy:flowvy@localhost:5432/flowvy
 REDIS_URL=redis://localhost:6379/0
-REMNAWAVE_URL=<your Remnawave panel URL>
-REMNAWAVE_API_TOKEN=<Remnawave API token>
+REMNAWAVE_URL=<your Remnawave panel URL, e.g. https://panel.example.com>
+REMNAWAVE_API_TOKEN=<generate in Remnawave: Settings → API Tokens>
+SUPPORT_URL=
+RENEW_URL=
 DEBUG=true
 ```
 
@@ -150,7 +152,21 @@ DEBUG=true
 ```
 VITE_API_URL=http://localhost:8001/api
 VITE_BOT_USERNAME=<your test bot username>
+VITE_MOCK_AUTH=true
+VITE_DEBUG_TELEGRAM_ID=<your Telegram ID from Remnawave panel>
 ```
+
+## Debug Mode (without Telegram)
+
+When `VITE_MOCK_AUTH=true`, the app bypasses Telegram authentication with a mock admin user. To see **real Remnawave data** without running inside Telegram:
+
+1. Set `VITE_DEBUG_TELEGRAM_ID` in `frontend/.env` to a Telegram ID that exists in your Remnawave panel
+2. Ensure `DEBUG=true` in `backend/.env`
+3. The frontend will call `GET /api/debug/subscription/{telegramId}` instead of the auth-protected endpoint
+
+This debug endpoint is disabled when `DEBUG=false` and returns 404. Never expose it in production.
+
+If `VITE_DEBUG_TELEGRAM_ID` is not set, the hook falls back to the regular `GET /api/me/subscription` (requires Telegram initData).
 
 ## Hot Reload
 

@@ -1,6 +1,6 @@
 export type SubscriptionStatus = "ACTIVE" | "LIMITED" | "DISABLED" | "EXPIRED";
 
-export type ResetStrategy = "MONTH" | "WEEK" | "DAY" | "NO_RESET";
+export type ResetStrategy = "MONTH" | "MONTH_ROLLING" | "WEEK" | "DAY" | "NO_RESET";
 
 export interface SubscriptionData {
 	id: string;

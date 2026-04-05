@@ -5,12 +5,28 @@ import { useSubscription } from "../hooks/use-subscription.ts";
 import styles from "./home.module.css";
 
 export const Home: FC = () => {
-	const { subscription, isLoading } = useSubscription();
+	const { subscription, isPending, error } = useSubscription();
 
-	if (isLoading || !subscription) {
+	if (isPending) {
 		return (
 			<div className={styles.page}>
 				<p style={{ color: "var(--v2-text-secondary)" }}>Loading...</p>
+			</div>
+		);
+	}
+
+	if (error) {
+		return (
+			<div className={styles.page}>
+				<p style={{ color: "var(--v2-status-error)" }}>Failed to load subscription</p>
+			</div>
+		);
+	}
+
+	if (!subscription) {
+		return (
+			<div className={styles.page}>
+				<p style={{ color: "var(--v2-text-secondary)" }}>No active subscription</p>
 			</div>
 		);
 	}

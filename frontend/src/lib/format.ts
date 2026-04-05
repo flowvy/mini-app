@@ -7,6 +7,7 @@ const TB = GB * 1024;
 
 /** Format bytes to human-readable traffic string. */
 export function formatTraffic(bytes: number): string {
+	if (bytes <= 0) return "0";
 	if (bytes >= TB) return `${(bytes / TB).toFixed(1)} TB`;
 	const gb = bytes / GB;
 	if (gb >= 100) return `${Math.round(gb)} GB`;
@@ -15,6 +16,18 @@ export function formatTraffic(bytes: number): string {
 	const mb = bytes / MB;
 	if (mb >= 1) return `${mb.toFixed(1)} MB`;
 	return `${(bytes / KB).toFixed(0)} KB`;
+}
+
+/** Whether traffic limit is unlimited (0 = unlimited in Remnawave). */
+export function isUnlimitedTraffic(totalBytes: number): boolean {
+	return totalBytes === 0;
+}
+
+/** Whether expiry date is effectively unlimited (>10 years from now). */
+export function isUnlimitedExpiry(expireUnix: number): boolean {
+	const tenYears = 10 * 365 * 86400;
+	const nowUnix = Math.floor(Date.now() / 1000);
+	return expireUnix - nowUnix > tenYears;
 }
 
 /** Days until expiration (negative = expired). */
@@ -80,6 +93,7 @@ export function formatRelativeTime(iso: string): string {
 
 const RESET_LABELS: Record<ResetStrategy, string> = {
 	MONTH: "Monthly",
+	MONTH_ROLLING: "Monthly",
 	WEEK: "Weekly",
 	DAY: "Daily",
 	NO_RESET: "Never",
