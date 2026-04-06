@@ -19,7 +19,9 @@ from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.user import UserRepository
 from flowvy.services.devices import DevicesService
+from flowvy.services.kuma import UptimeKumaClient
 from flowvy.services.provider_settings import ProviderSettingsService
+from flowvy.services.pulse import PulseService
 from flowvy.services.remnawave import RemnawaveClient
 from flowvy.services.subscription import SubscriptionService
 from flowvy.services.user import UserService
@@ -141,7 +143,12 @@ class RemnawaveProvider(Provider):
 
 
 class BffServiceProvider(Provider):
-    """Provides BFF services that need DB access (REQUEST scope)."""
+    """Provides BFF services (REQUEST scope) and their APP-scope clients."""
+
+    @provide(scope=Scope.APP)
+    def get_kuma(self, http: httpx.AsyncClient) -> UptimeKumaClient:
+        """Create Uptime Kuma API client."""
+        return UptimeKumaClient(http)
 
     @provide(scope=Scope.REQUEST)
     def get_subscription_service(
@@ -163,9 +170,15 @@ class BffServiceProvider(Provider):
         """Create devices service with DB read + Remnawave fallback."""
         return DevicesService(remnawave, sub_repo, user_repo)
 
-
-class ProviderSettingsProvider(Provider):
-    """Provides ProviderSettingsService (REQUEST scope)."""
+    @provide(scope=Scope.REQUEST)
+    def get_pulse_service(
+        self,
+        kuma: UptimeKumaClient,
+        ps_repo: ProviderSettingsRepository,
+        redis: Redis,
+    ) -> PulseService:
+        """Create pulse service with Kuma + Redis cache."""
+        return PulseService(kuma, ps_repo, redis)
 
     @provide(scope=Scope.REQUEST)
     def get_provider_settings_service(

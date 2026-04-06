@@ -1,0 +1,51 @@
+- generic [ref=e5]:
+  - banner [ref=e6]:
+    - generic [ref=e7]: Flowvy
+    - generic [ref=e8]:
+      - button "User mode" [ref=e9] [cursor=pointer]:
+        - img [ref=e10]
+      - button "Admin mode" [ref=e13] [cursor=pointer]:
+        - img [ref=e14]
+  - main [ref=e18]:
+    - generic [ref=e222]:
+      - generic [ref=e223]:
+        - button [ref=e224] [cursor=pointer]:
+          - img [ref=e225]
+        - heading "Uptime Kuma" [level=1] [ref=e227]
+      - generic [ref=e228]:
+        - generic [ref=e229]:
+          - generic [ref=e230]:
+            - generic [ref=e231]: URL
+            - generic [ref=e232]: Status page address
+          - textbox "https://status.example.com" [ref=e233]: https://pulse.flowvy.io
+        - generic [ref=e234]:
+          - generic [ref=e235]:
+            - generic [ref=e236]: Slug
+            - generic [ref=e237]: Status page identifier
+          - textbox "service" [ref=e238]
+        - generic [ref=e239]:
+          - generic [ref=e240]:
+            - generic [ref=e241]: Connection
+            - generic [ref=e242]: Not tested
+          - button "Test" [ref=e243] [cursor=pointer]
+  - navigation [ref=e112]:
+    - link "Dashboard" [ref=e147] [cursor=pointer]:
+      - /url: /admin/dashboard
+      - generic [ref=e148]:
+        - img [ref=e150]
+        - generic [ref=e155]: Dashboard
+    - link "Users" [ref=e156] [cursor=pointer]:
+      - /url: /admin/users
+      - generic [ref=e157]:
+        - img [ref=e159]
+        - generic [ref=e164]: Users
+    - link "Broadcast" [ref=e165] [cursor=pointer]:
+      - /url: /admin/broadcast
+      - generic [ref=e166]:
+        - img [ref=e168]
+        - generic [ref=e171]: Broadcast
+    - link "Settings" [ref=e172] [cursor=pointer]:
+      - /url: /admin/settings
+      - generic [ref=e173]:
+        - img [ref=e175]
+        - generic [ref=e178]: Settings

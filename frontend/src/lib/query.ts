@@ -16,6 +16,7 @@ export const queryKeys = {
 	subscription: ["subscription"] as const,
 	devices: ["devices"] as const,
 	nodes: ["nodes"] as const,
+	pulse: ["pulse"] as const,
 	adminStats: ["admin", "stats"] as const,
 	adminUsers: (page: number) => ["admin", "users", page] as const,
 	adminSettings: ["admin", "settings"] as const,

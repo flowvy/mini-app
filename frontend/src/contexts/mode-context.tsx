@@ -24,8 +24,12 @@ interface ModeProviderProps {
 	children: ReactNode;
 }
 
+function getInitialMode(): AppMode {
+	return window.location.pathname.startsWith("/admin/") ? "admin" : "user";
+}
+
 export function ModeProvider({ children }: ModeProviderProps) {
-	const [mode, setModeState] = useState<AppMode>("user");
+	const [mode, setModeState] = useState<AppMode>(getInitialMode);
 
 	const setMode = useCallback((next: AppMode) => {
 		setModeState(next);

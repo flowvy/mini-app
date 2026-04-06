@@ -12,9 +12,11 @@ from flowvy.schemas.provider_settings import (
     ProviderSettingsPatch,
     ProviderSettingsResponse,
 )
+from flowvy.schemas.pulse import PulseResponse
 from flowvy.schemas.subscription import SubscriptionResponse
 from flowvy.services.devices import DevicesService
 from flowvy.services.provider_settings import ProviderSettingsService
+from flowvy.services.pulse import PulseService
 from flowvy.services.remnawave import RemnawaveError
 from flowvy.services.subscription import SubscriptionService
 
@@ -160,3 +162,27 @@ async def debug_test_kuma(
     """Test Kuma connection without Telegram auth. DEBUG mode only."""
     _check_debug(request)
     return await service.test_kuma()
+
+
+@router.get("/pulse", response_model=PulseResponse)
+async def debug_pulse(
+    request: Request,
+    service: FromDishka[PulseService] = None,  # type: ignore[assignment]
+) -> PulseResponse:
+    """Fetch pulse data without Telegram auth. DEBUG mode only."""
+    _check_debug(request)
+    from flowvy.services.kuma import KumaError
+
+    try:
+        result = await service.get_pulse()
+    except KumaError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Status page unavailable: {exc.detail}",
+        ) from exc
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pulse is not enabled",
+        )
+    return result

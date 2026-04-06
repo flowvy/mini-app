@@ -1,0 +1,33 @@
+.banner {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 14px 16px;
+	border-radius: var(--radius-md);
+	font-size: 14px;
+	font-weight: 600;
+	border: 1px solid transparent;
+}
+
+.label {
+	line-height: 1;
+}
+
+/* Variants */
+.positive {
+	background: var(--v2-bg-positive-quaternary);
+	border-color: var(--v2-border-positive-secondary);
+	color: var(--v2-text-positive);
+}
+
+.negative {
+	background: var(--v2-bg-negative-secondary);
+	border-color: var(--v2-border-negative-secondary);
+	color: var(--v2-text-negative);
+}
+
+.info {
+	background: var(--v2-bg-info-secondary);
+	border-color: var(--v2-border-info-secondary);
+	color: var(--v2-text-info);
+}

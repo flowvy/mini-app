@@ -9,7 +9,14 @@
 /* ── Headers ── */
 
 .header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
 	margin-bottom: 16px;
+}
+
+.headerIcon {
+	color: var(--v2-icon-secondary);
 }
 
 .subHeader {

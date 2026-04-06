@@ -7,6 +7,16 @@
 	border-bottom: 1px solid var(--v2-border-tertiary);
 }
 
+.titleGroup {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.titleIcon {
+	color: var(--v2-icon-secondary);
+}
+
 .title {
 	font-size: 18px;
 	font-weight: 700;

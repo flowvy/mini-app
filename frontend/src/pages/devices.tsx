@@ -44,16 +44,13 @@ export const Devices: FC = () => {
 
 	return (
 		<div className={styles.page}>
-			<div className={styles.header}>
-				<span className={styles.headerTitle}>Devices</span>
-				{limit !== null && (
-					<div className={styles.counter}>
-						<span className={styles.counterUsed}>{devices.length}</span>
-						<span className={styles.counterSep}>/</span>
-						<span className={styles.counterTotal}>{limit}</span>
-					</div>
-				)}
-			</div>
+			{limit !== null && (
+				<div className={styles.counter}>
+					<span className={styles.counterUsed}>{devices.length}</span>
+					<span className={styles.counterSep}>/</span>
+					<span className={styles.counterTotal}>{limit}</span>
+				</div>
+			)}
 
 			<p className={styles.pageHint}>
 				Devices that have connected to your VPN subscription. Remove unused devices to free up

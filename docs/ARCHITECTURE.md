@@ -59,13 +59,16 @@ flowvy/
 │       │       ├── subscription.py  # GET /api/me/subscription
 │       │       ├── devices.py    # GET/DELETE /api/me/devices
 │       │       ├── nodes.py      # GET /api/nodes
+│       │       ├── pulse.py      # GET /api/pulse (Uptime Kuma status)
 │       │       └── admin/        # /api/admin/*
 │       │           └── settings.py  # GET/PATCH /api/admin/settings, kuma test
 │       ├── services/
 │       │   ├── user.py
 │       │   ├── remnawave.py      # RemnawaveClient (+get_metadata)
+│       │   ├── kuma.py           # UptimeKumaClient (public status page API)
 │       │   ├── subscription.py   # SubscriptionService (BFF + DB upsert)
 │       │   ├── devices.py        # DevicesService (BFF, DB read + Remnawave)
+│       │   ├── pulse.py          # PulseService (Kuma aggregation + Redis cache)
 │       │   ├── provider_settings.py  # ProviderSettingsService (CRUD + kuma test)
 │       │   └── cache.py          # Redis cache helpers
 │       ├── repositories/
@@ -81,6 +84,7 @@ flowvy/
 │           ├── user.py           # UserResponse + FeaturesResponse
 │           ├── devices.py        # DeviceResponse, DevicesResponse
 │           ├── subscription.py   # SubscriptionResponse
+│           ├── pulse.py          # PulseResponse, PulseGroup, PulseMonitor
 │           ├── provider_settings.py  # ProviderSettingsResponse/Patch
 │           └── remnawave.py      # response models from Remnawave
 ├── frontend/
@@ -104,6 +108,7 @@ flowvy/
 │       │   ├── use-subscription.ts  # TanStack Query → /api/me/subscription
 │       │   ├── use-devices.ts       # TanStack Query → /api/me/devices
 │       │   ├── use-nodes.ts         # TanStack Query → /api/nodes
+│       │   ├── use-pulse.ts         # TanStack Query → /api/pulse
 │       │   └── use-admin-settings.ts # TanStack Query → /api/admin/settings
 │       ├── contexts/
 │       │   └── mode-context.tsx  # user/admin mode switch
@@ -111,6 +116,7 @@ flowvy/
 │       │   ├── ui/               # StatusBadge, icons, Toggle, InputField, ActionBtn, ConfirmDialog
 │       │   ├── home/             # HeroCard, DetailSections
 │       │   ├── devices/          # DeviceRow, PlatformIcon
+│       │   ├── pulse/            # StatusBanner, HeartbeatBar, MonitorRow, MonitorGroup
 │       │   ├── admin/            # KumaConfig, QuickLinks
 │       │   └── layout/           # AppShell, Header, TabBar
 │       ├── pages/
@@ -119,6 +125,7 @@ flowvy/
 │       └── types/
 │           ├── subscription.ts
 │           ├── devices.ts
+│           ├── pulse.ts
 │           └── admin-settings.ts
 ```
 
@@ -161,6 +168,7 @@ This enables `DevicesService` to read `remnawave_uuid` and `device_limit` from l
 
 **Global data (nodes, system stats)** — Redis cache:
 - Nodes: 30 second TTL
+- Pulse (Kuma status): 60 second TTL (key `pulse:data`)
 - System stats / bandwidth: 60 second TTL
 - Webhook events from Remnawave (`node.connection_lost`) invalidate cache immediately
 
@@ -180,7 +188,7 @@ Our FastAPI does NOT proxy Remnawave 1:1. It aggregates data per screen.
 |----------------|-------------|-----------------|
 | Home | `GET /api/me/subscription` | `by-telegram-id` → `sub/{shortUuid}/info` + DB upsert |
 | Devices | `GET /api/me/devices` | DB read → `hwid/devices/{userUuid}` (fallback: `by-telegram-id` + DB upsert) |
-| Pulse | `GET /api/nodes` | `nodes` (cached 30s) |
+| Pulse | `GET /api/pulse` | Kuma: `status-page/{slug}` + `heartbeat/{slug}` (cached 60s) |
 | Admin Dashboard | `GET /api/admin/stats` | `system/stats` + `stats/bandwidth` (cached 60s) |
 | Admin Users | `GET /api/admin/users` | `users?size=N&start=N` |
 | Admin Settings | `GET/PATCH /api/admin/settings` | `system/metadata` (version) |
@@ -222,6 +230,7 @@ export const queryKeys = {
   subscription: ['subscription'] as const,
   devices: ['devices'] as const,
   nodes: ['nodes'] as const,
+  pulse: ['pulse'] as const,
   adminStats: ['admin', 'stats'] as const,
   adminUsers: (page: number) => ['admin', 'users', page] as const,
   adminSettings: ['admin', 'settings'] as const,
@@ -235,6 +244,7 @@ export const queryKeys = {
 | Subscription | 0 | 5 min | Always refetch on mount |
 | Devices | 0 | 5 min | Always refetch on mount |
 | Nodes | 30s | 5 min | Shared, changes slowly |
+| Pulse | 60s | 5 min | Kuma status, matches backend cache TTL |
 | Admin stats | 60s | 5 min | Aggregates, not critical |
 | Admin users | 0 | 5 min | Admin manages, needs fresh |
 
@@ -277,8 +287,8 @@ Lifespan: `bot.set_webhook()` + `dp.emit_startup()` on start, `dp.emit_shutdown(
 
 ## Dependency Injection (Dishka)
 
-- `APP` scope: Settings, AsyncEngine, Redis, httpx.AsyncClient, RemnawaveClient
-- `REQUEST` scope: AsyncSession, repositories, services
+- `APP` scope: Settings, AsyncEngine, Redis, httpx.AsyncClient, RemnawaveClient, UptimeKumaClient
+- `REQUEST` scope: AsyncSession, repositories, services (incl. PulseService)
 
 ## Mini App Modes
 
@@ -286,3 +296,30 @@ Lifespan: `bot.set_webhook()` + `dp.emit_startup()` on start, `dp.emit_shutdown(
 - **Admin mode**: Dashboard, Users, Broadcast, Settings (4 tabs)
 - Toggle in header, visible only for `role=ADMIN`
 - Mode switch navigates to first tab of new mode
+- `ModeProvider` initializes from `window.location.pathname` (if `/admin/*` → admin mode)
+
+## Navigation Patterns
+
+### Page Header
+
+The global `Header` component uses `PAGE_META` — a map of `pathname → { title, icon }` — to display the current page name with an icon. Pages **not** in `PAGE_META` see the fallback title "Flowvy".
+
+**Simple pages** (no sub-navigation): registered in `PAGE_META`. The global Header shows their title + icon. The page component renders only content, no header of its own.
+
+Examples: Pulse, Devices, Support, Users, Broadcast.
+
+**Drill-down pages** (with sub-screens): **not** registered in `PAGE_META`. They render their own header inside the page component and manage title/back button via `useState<View>`. The global Header shows "Flowvy" for these pages.
+
+Examples: Settings (main → Kuma Config / Quick Links).
+
+```
+Simple page:              Drill-down page (main):     Drill-down page (sub):
+┌──────────────────┐      ┌──────────────────┐        ┌──────────────────┐
+│ [icon] Pulse  [T]│      │ Flowvy        [T]│        │ Flowvy        [T]│
+├──────────────────┤      ├──────────────────┤        ├──────────────────┤
+│                  │      │ [⚙] Settings     │        │ [←] Uptime Kuma  │
+│ ...page content  │      │                  │        │                  │
+│                  │      │ ...settings rows │        │ ...config form   │
+└──────────────────┘      └──────────────────┘        └──────────────────┘
+[T] = admin/user toggle
+```

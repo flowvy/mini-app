@@ -105,7 +105,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 
 				<div className={styles.row}>
 					<div className={styles.rowLeft}>
-						<span className={styles.rowLabel}>Connection</span>
+						<span className={styles.rowLabel}>Status</span>
 						<span className={styles.statusText} style={{ color: connColor }}>
 							{connText}
 						</span>

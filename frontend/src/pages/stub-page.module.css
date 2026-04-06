@@ -1,12 +1,18 @@
 .page {
 	display: flex;
 	flex-direction: column;
+	flex: 1;
+	padding: 16px;
+	animation: fvFadeIn var(--duration-base) ease-out;
+}
+
+.stubBody {
+	display: flex;
+	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 	flex: 1;
 	gap: 16px;
-	padding: 32px 16px;
-	animation: fvFadeIn var(--duration-base) ease-out;
 }
 
 .icon {

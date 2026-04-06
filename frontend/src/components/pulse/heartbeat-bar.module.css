@@ -1,0 +1,40 @@
+.bar {
+	display: flex;
+	gap: 2px;
+	height: 20px;
+	border-radius: 3px;
+	overflow: hidden;
+}
+
+.beat {
+	flex: 1;
+}
+
+.beat:first-child {
+	border-radius: 3px 0 0 3px;
+}
+
+.beat:last-child {
+	border-radius: 0 3px 3px 0;
+}
+
+/* Status colors */
+.empty {
+	background: var(--v2-bg-tertiary);
+}
+
+.up {
+	background: var(--v2-bg-positive-primary);
+}
+
+.down {
+	background: var(--v2-bg-negative-primary);
+}
+
+.pending {
+	background: var(--v2-icon-warning);
+}
+
+.maintenance {
+	background: var(--v2-bg-info-primary);
+}

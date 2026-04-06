@@ -1,0 +1,33 @@
+- generic [ref=e5]:
+  - banner [ref=e6]:
+    - generic [ref=e7]: Flowvy
+    - generic [ref=e8]:
+      - button "User mode" [ref=e9] [cursor=pointer]:
+        - img [ref=e10]
+      - button "Admin mode" [active] [ref=e13] [cursor=pointer]:
+        - img [ref=e14]
+  - main [ref=e18]:
+    - generic [ref=e140]:
+      - img [ref=e141]
+      - generic [ref=e146]: Coming soon
+  - navigation [ref=e112]:
+    - link "Dashboard" [ref=e147] [cursor=pointer]:
+      - /url: /admin/dashboard
+      - generic [ref=e148]:
+        - img [ref=e150]
+        - generic [ref=e155]: Dashboard
+    - link "Users" [ref=e156] [cursor=pointer]:
+      - /url: /admin/users
+      - generic [ref=e157]:
+        - img [ref=e159]
+        - generic [ref=e164]: Users
+    - link "Broadcast" [ref=e165] [cursor=pointer]:
+      - /url: /admin/broadcast
+      - generic [ref=e166]:
+        - img [ref=e168]
+        - generic [ref=e171]: Broadcast
+    - link "Settings" [ref=e172] [cursor=pointer]:
+      - /url: /admin/settings
+      - generic [ref=e173]:
+        - img [ref=e175]
+        - generic [ref=e178]: Settings

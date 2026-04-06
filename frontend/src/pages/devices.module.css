@@ -7,20 +7,6 @@
 	animation: var(--fv-anim-fade-in) 0.15s ease-out;
 }
 
-/* Header */
-.header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 4px;
-}
-
-.headerTitle {
-	font-size: 16px;
-	font-weight: 700;
-	color: var(--v2-text-primary);
-}
-
 .counter {
 	display: flex;
 	align-items: baseline;

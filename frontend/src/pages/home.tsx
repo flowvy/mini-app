@@ -18,7 +18,7 @@ export const Home: FC = () => {
 	if (error) {
 		return (
 			<div className={styles.page}>
-				<p style={{ color: "var(--v2-status-error)" }}>Failed to load subscription</p>
+				<p style={{ color: "var(--v2-text-negative)" }}>Failed to load subscription</p>
 			</div>
 		);
 	}

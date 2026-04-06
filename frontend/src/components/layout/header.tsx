@@ -1,17 +1,34 @@
 /**
- * App header — shows title and admin/user mode toggle.
+ * App header — shows page title (or "Flowvy" on home) and admin/user mode toggle.
  */
-import { useNavigate } from "@tanstack/react-router";
-import { User, UserStar } from "lucide-react";
+import { useLocation, useNavigate } from "@tanstack/react-router";
+import type { LucideIcon } from "lucide-react";
+import { Activity, HelpCircle, Megaphone, Smartphone, User, UserStar, Users } from "lucide-react";
 import { type AppMode, useMode } from "../../contexts/mode-context.tsx";
 import { useCurrentUser } from "../auth-guard.tsx";
 import styles from "./header.module.css";
+
+interface PageMeta {
+	title: string;
+	icon: LucideIcon;
+}
+
+const PAGE_META: Record<string, PageMeta> = {
+	"/pulse": { title: "Pulse", icon: Activity },
+	"/devices": { title: "Devices", icon: Smartphone },
+	"/support": { title: "Support", icon: HelpCircle },
+	"/admin/users": { title: "Users", icon: Users },
+	"/admin/broadcast": { title: "Broadcast", icon: Megaphone },
+};
 
 export function Header() {
 	const user = useCurrentUser();
 	const { mode, setMode } = useMode();
 	const navigate = useNavigate();
+	const location = useLocation();
 	const isAdmin = user.role === "ADMIN";
+
+	const meta = PAGE_META[location.pathname];
 
 	const handleToggle = (next: AppMode) => {
 		if (next === mode) return;
@@ -22,7 +39,14 @@ export function Header() {
 
 	return (
 		<header className={styles.header}>
-			<span className={styles.title}>Flowvy</span>
+			{meta ? (
+				<div className={styles.titleGroup}>
+					<meta.icon size={16} className={styles.titleIcon} />
+					<span className={styles.title}>{meta.title}</span>
+				</div>
+			) : (
+				<span className={styles.title}>Flowvy</span>
+			)}
 			{isAdmin && (
 				<div className={styles.toggle}>
 					<button

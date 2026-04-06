@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Settings } from "lucide-react";
 /**
  * Admin Settings page — three views: main, kuma config, quick links.
  */
@@ -20,6 +20,7 @@ export const AdminSettings: FC = () => {
 		return (
 			<div className={styles.page}>
 				<div className={styles.header}>
+					<Settings size={16} className={styles.headerIcon} />
 					<h1 className={styles.headerTitle}>Settings</h1>
 				</div>
 				<p style={{ color: "var(--v2-text-secondary)", fontSize: 12 }}>Loading...</p>
@@ -31,6 +32,7 @@ export const AdminSettings: FC = () => {
 		return (
 			<div className={styles.page}>
 				<div className={styles.header}>
+					<Settings size={16} className={styles.headerIcon} />
 					<h1 className={styles.headerTitle}>Settings</h1>
 				</div>
 				<p style={{ color: "var(--v2-text-negative)", fontSize: 12 }}>Failed to load settings</p>
@@ -54,6 +56,7 @@ export const AdminSettings: FC = () => {
 	return (
 		<div className={styles.page}>
 			<div className={styles.header}>
+				<Settings size={16} className={styles.headerIcon} />
 				<h1 className={styles.headerTitle}>Settings</h1>
 			</div>
 

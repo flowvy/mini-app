@@ -24,6 +24,18 @@
 			}
 		}
 	},
+	"overrides": [
+		{
+			"include": ["src/components/pulse/heartbeat-bar.tsx"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noArrayIndexKey": "off"
+					}
+				}
+			}
+		}
+	],
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double",

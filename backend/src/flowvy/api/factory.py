@@ -14,6 +14,7 @@ from flowvy.api.routes.admin.settings import router as admin_settings_router
 from flowvy.api.routes.debug import router as debug_router
 from flowvy.api.routes.devices import router as devices_router
 from flowvy.api.routes.health import router as health_router
+from flowvy.api.routes.pulse import router as pulse_router
 from flowvy.api.routes.subscription import router as subscription_router
 from flowvy.api.routes.users import router as users_router
 from flowvy.bot.factory import create_bot, create_dispatcher
@@ -23,7 +24,6 @@ from flowvy.di import (
     ConfigProvider,
     DatabaseProvider,
     HttpClientProvider,
-    ProviderSettingsProvider,
     RedisProvider,
     RemnawaveProvider,
     RepositoryProvider,
@@ -84,13 +84,13 @@ def create_app() -> FastAPI:
         HttpClientProvider(),
         RemnawaveProvider(),
         BffServiceProvider(),
-        ProviderSettingsProvider(),
     )
 
     app.include_router(health_router)
     app.include_router(users_router)
     app.include_router(subscription_router)
     app.include_router(devices_router)
+    app.include_router(pulse_router)
     app.include_router(admin_settings_router)
     app.include_router(debug_router)
 
