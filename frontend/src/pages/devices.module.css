@@ -2,8 +2,6 @@
 	display: flex;
 	flex-direction: column;
 	padding: 16px;
-	max-width: 430px;
-	margin: 0 auto;
 	animation: var(--fv-anim-fade-in) 0.15s ease-out;
 }
 

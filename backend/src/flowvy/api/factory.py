@@ -11,7 +11,9 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from flowvy.api.routes.admin.settings import router as admin_settings_router
+from flowvy.api.routes.admin.users import router as admin_users_router
 from flowvy.api.routes.debug import router as debug_router
+from flowvy.api.routes.debug_admin import router as debug_admin_router
 from flowvy.api.routes.devices import router as devices_router
 from flowvy.api.routes.health import router as health_router
 from flowvy.api.routes.pulse import router as pulse_router
@@ -92,7 +94,9 @@ def create_app() -> FastAPI:
     app.include_router(devices_router)
     app.include_router(pulse_router)
     app.include_router(admin_settings_router)
+    app.include_router(admin_users_router)
     app.include_router(debug_router)
+    app.include_router(debug_admin_router)
 
     @app.post("/webhook")
     async def webhook(request: Request) -> Response:

@@ -27,7 +27,7 @@ router = APIRouter(
 )
 
 
-def _check_debug(request: Request) -> None:
+def check_debug(request: Request) -> None:
     """Raise 404 if debug mode is disabled."""
     if not request.app.state.settings.debug:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -41,7 +41,7 @@ async def debug_subscription(
     ps_repo: FromDishka[ProviderSettingsRepository] = None,  # type: ignore[assignment]
 ) -> SubscriptionResponse:
     """Fetch subscription without Telegram auth. DEBUG mode only."""
-    _check_debug(request)
+    check_debug(request)
     try:
         result = await service.get_for_user(telegram_id)
     except RemnawaveError as exc:
@@ -64,7 +64,7 @@ async def debug_subscription(
 @router.get("/empty-devices", response_model=DevicesResponse)
 async def debug_devices_empty(request: Request) -> DevicesResponse:
     """Return empty devices list for visual testing. DEBUG only."""
-    _check_debug(request)
+    check_debug(request)
     return DevicesResponse(devices=[], total=0, limit=5)
 
 
@@ -75,7 +75,7 @@ async def debug_devices(
     service: FromDishka[DevicesService] = None,  # type: ignore[assignment]
 ) -> DevicesResponse:
     """Fetch devices without Telegram auth. DEBUG mode only."""
-    _check_debug(request)
+    check_debug(request)
     try:
         result = await service.get_for_user(telegram_id)
     except RemnawaveError as exc:
@@ -103,7 +103,7 @@ async def debug_delete_device(
     service: FromDishka[DevicesService] = None,  # type: ignore[assignment]
 ) -> None:
     """Delete a single device without Telegram auth. DEBUG mode only."""
-    _check_debug(request)
+    check_debug(request)
     try:
         await service.delete_device(telegram_id, hwid)
     except RemnawaveError as exc:
@@ -123,7 +123,7 @@ async def debug_delete_all_devices(
     service: FromDishka[DevicesService] = None,  # type: ignore[assignment]
 ) -> None:
     """Delete all devices without Telegram auth. DEBUG mode only."""
-    _check_debug(request)
+    check_debug(request)
     try:
         await service.delete_all(telegram_id)
     except RemnawaveError as exc:
@@ -139,7 +139,7 @@ async def debug_admin_settings(
     service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
 ) -> ProviderSettingsResponse:
     """Read admin settings without Telegram auth. DEBUG mode only."""
-    _check_debug(request)
+    check_debug(request)
     return await service.get()
 
 
@@ -150,7 +150,7 @@ async def debug_patch_admin_settings(
     service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
 ) -> ProviderSettingsResponse:
     """Update admin settings without Telegram auth. DEBUG mode only."""
-    _check_debug(request)
+    check_debug(request)
     return await service.update(patch)
 
 
@@ -160,7 +160,7 @@ async def debug_test_kuma(
     service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
 ) -> KumaTestResponse:
     """Test Kuma connection without Telegram auth. DEBUG mode only."""
-    _check_debug(request)
+    check_debug(request)
     return await service.test_kuma()
 
 
@@ -170,7 +170,7 @@ async def debug_pulse(
     service: FromDishka[PulseService] = None,  # type: ignore[assignment]
 ) -> PulseResponse:
     """Fetch pulse data without Telegram auth. DEBUG mode only."""
-    _check_debug(request)
+    check_debug(request)
     from flowvy.services.kuma import KumaError
 
     try:

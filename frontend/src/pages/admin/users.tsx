@@ -1,14 +1,150 @@
-import { Users } from "lucide-react";
-import type { FC } from "react";
-import styles from "../stub-page.module.css";
+import { Loader2, UserX, X } from "lucide-react";
+import { type FC, type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { UserRow } from "../../components/admin/user-row.tsx";
+import { useAdminUsers, useSearchUser } from "../../hooks/use-admin-users.ts";
+import type { AdminUser } from "../../types/admin-users.ts";
+import styles from "./users.module.css";
+
+const PAGE_SIZE = 25;
 
 export const AdminUsers: FC = () => {
+	const [start, setStart] = useState(0);
+	const [allUsers, setAllUsers] = useState<AdminUser[]>([]);
+	const [searchInput, setSearchInput] = useState("");
+	const [searchQuery, setSearchQuery] = useState("");
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	const list = useAdminUsers(PAGE_SIZE, start);
+	const search = useSearchUser(searchQuery);
+
+	const isSearchMode = searchQuery.length > 0;
+
+	// Accumulate users across pages
+	useEffect(() => {
+		const users = list.data?.users;
+		if (users && !isSearchMode) {
+			setAllUsers((prev) => {
+				if (start === 0) return users;
+				const existing = new Set(prev.map((u) => u.uuid));
+				const fresh = users.filter((u) => !existing.has(u.uuid));
+				return [...prev, ...fresh];
+			});
+		}
+	}, [list.data, start, isSearchMode]);
+
+	const handleSearch = useCallback(
+		(e: KeyboardEvent<HTMLInputElement>) => {
+			if (e.key === "Enter") {
+				const q = searchInput.trim();
+				if (q) setSearchQuery(q);
+			}
+		},
+		[searchInput],
+	);
+
+	const handleClear = useCallback(() => {
+		setSearchInput("");
+		setSearchQuery("");
+		inputRef.current?.focus();
+	}, []);
+
+	const handleLoadMore = useCallback(() => {
+		setStart((prev) => prev + PAGE_SIZE);
+	}, []);
+
+	const total = list.data?.total ?? 0;
+	const displayUsers = isSearchMode ? (search.data?.users ?? []) : allUsers;
+	const hasMore = !isSearchMode && total > 0 && start + PAGE_SIZE < total;
+
+	if (!isSearchMode && list.isPending && allUsers.length === 0) {
+		return (
+			<div className={styles.page}>
+				<div className={styles.empty}>
+					<Loader2 size={24} className={styles.emptyIcon} />
+				</div>
+			</div>
+		);
+	}
+
+	if (!isSearchMode && list.error && allUsers.length === 0) {
+		return (
+			<div className={styles.page}>
+				<div className={styles.empty}>
+					<span className={styles.emptyTitle}>Failed to load users</span>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className={styles.page}>
-			<div className={styles.stubBody}>
-				<Users size={48} className={styles.icon} />
-				<span className={styles.title}>Coming soon</span>
+			<div className={styles.header}>
+				<h1 className={styles.headerTitle}>Users</h1>
+				{total > 0 && <span className={styles.headerCount}>{total}</span>}
 			</div>
+
+			<div className={styles.searchWrap}>
+				<input
+					ref={inputRef}
+					type="text"
+					value={searchInput}
+					onChange={(e) => setSearchInput(e.target.value)}
+					onKeyDown={handleSearch}
+					placeholder="Search by name, ID or email"
+					className={styles.searchInput}
+				/>
+				{isSearchMode && (
+					<button
+						type="button"
+						className={styles.clearBtn}
+						onClick={handleClear}
+						aria-label="Clear search"
+					>
+						<X size={12} />
+					</button>
+				)}
+			</div>
+
+			{isSearchMode && search.isPending && (
+				<div className={styles.empty}>
+					<Loader2 size={24} className={styles.emptyIcon} />
+				</div>
+			)}
+
+			{isSearchMode && search.error && (
+				<div className={styles.empty}>
+					<span className={styles.emptyTitle}>Search failed</span>
+				</div>
+			)}
+
+			{isSearchMode && !search.isPending && displayUsers.length === 0 && (
+				<div className={styles.empty}>
+					<UserX size={36} className={styles.emptyIcon} />
+					<span className={styles.emptyTitle}>User not found</span>
+					<span className={styles.emptyDesc}>Try a different username, Telegram ID, or email</span>
+				</div>
+			)}
+
+			{displayUsers.length > 0 && (
+				<div className={styles.list}>
+					{displayUsers.map((user) => (
+						<div key={user.uuid} className={styles.card}>
+							<UserRow user={user} />
+						</div>
+					))}
+				</div>
+			)}
+
+			{hasMore && (
+				<button
+					type="button"
+					className={styles.loadMore}
+					onClick={handleLoadMore}
+					disabled={list.isPending}
+				>
+					{list.isPending ? "Loading..." : "Load more"}
+				</button>
+			)}
 		</div>
 	);
 };

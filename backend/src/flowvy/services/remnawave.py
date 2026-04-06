@@ -100,6 +100,30 @@ class RemnawaveClient:
         """Fetch system metadata (version, build, git info)."""
         return await self._get("/api/system/metadata")
 
+    async def get_users(self, size: int = 25, start: int = 0) -> dict:
+        """Fetch paginated user list (``GET /api/users``)."""
+        return await self._get(f"/api/users?size={size}&start={start}")
+
+    async def search_user_by_username(
+        self,
+        username: str,
+    ) -> RemnawaveUserData | None:
+        """Search user by exact username match. Returns single object."""
+        data = await self._get(f"/api/users/by-username/{username}")
+        if not isinstance(data, dict) or not data:
+            return None
+        return _parse_user_data(data)
+
+    async def search_user_by_email(
+        self,
+        email: str,
+    ) -> RemnawaveUserData | None:
+        """Search user by exact email match. Returns single object."""
+        data = await self._get(f"/api/users/by-email/{email}")
+        if not isinstance(data, dict) or not data:
+            return None
+        return _parse_user_data(data)
+
     async def get_subscription_info(
         self,
         short_uuid: str,
@@ -157,6 +181,7 @@ def _parse_user_data(raw: dict) -> RemnawaveUserData:
         telegram_id=raw.get("telegramId"),
         email=raw.get("email"),
         hwid_device_limit=raw.get("hwidDeviceLimit"),
+        tag=raw.get("tag"),
         last_traffic_reset_at=raw.get("lastTrafficResetAt"),
         subscription_url=raw["subscriptionUrl"],
         user_traffic=RemnawaveUserTraffic(

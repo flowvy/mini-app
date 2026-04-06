@@ -18,6 +18,7 @@ from flowvy.config import Settings
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.user import UserRepository
+from flowvy.services.admin_users import AdminUsersService
 from flowvy.services.devices import DevicesService
 from flowvy.services.kuma import UptimeKumaClient
 from flowvy.services.provider_settings import ProviderSettingsService
@@ -188,3 +189,11 @@ class BffServiceProvider(Provider):
     ) -> ProviderSettingsService:
         """Create provider settings service."""
         return ProviderSettingsService(repo, remnawave)
+
+    @provide(scope=Scope.REQUEST)
+    def get_admin_users_service(
+        self,
+        remnawave: RemnawaveClient,
+    ) -> AdminUsersService:
+        """Create admin users service."""
+        return AdminUsersService(remnawave)

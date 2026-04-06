@@ -39,6 +39,13 @@ frontend/dist/
 # Claude Code
 .claude/settings.local.json
 
+# Playwright MCP
+.playwright-mcp/
+*.png
+
+# Prototypes
+users-cards-prototype.jsx
+
 # OS
 .DS_Store
 Thumbs.db

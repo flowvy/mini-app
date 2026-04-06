@@ -91,6 +91,46 @@ export function formatRelativeTimeUnix(unix: number): string {
 	return `${days}d ago`;
 }
 
+/** Format traffic pair: "3.5 MB / 1 TB" or "5 GB / ∞". */
+export function formatTrafficPair(used: number, limit: number): string {
+	if (limit === 0) return `${formatTraffic(used)} / \u221E`;
+	return `${formatTraffic(used)} / ${formatTraffic(limit)}`;
+}
+
+/** Format ISO date string to relative last-seen label. */
+export function formatLastSeen(onlineAt: string | null): string {
+	if (!onlineAt) return "never";
+	const diff = Date.now() - new Date(onlineAt).getTime();
+	const mins = Math.floor(diff / 60000);
+	if (mins < 1) return "now";
+	if (mins < 60) return `${mins}m ago`;
+	const hours = Math.floor(mins / 60);
+	if (hours < 24) return `${hours}h ago`;
+	const days = Math.floor(hours / 24);
+	if (days < 30) return `${days}d ago`;
+	return `${Math.floor(days / 30)}mo ago`;
+}
+
+/** Format ISO expiry for admin users list. */
+export function formatAdminExpiry(expireAt: string): string {
+	const diff = new Date(expireAt).getTime() - Date.now();
+	const days = Math.floor(diff / 86400000);
+	if (days > 3650) return "\u221E";
+	if (days < 0) return `expired ${Math.abs(days)}d ago`;
+	if (days === 0) return "expires today";
+	if (days <= 30) return `${days}d left`;
+	return `${Math.floor(days / 30)}mo left`;
+}
+
+/** CSS var for admin expiry color (≤3d = warning, <0 = negative). */
+export function getAdminExpiryColor(expireAt: string): string | null {
+	const diff = new Date(expireAt).getTime() - Date.now();
+	const days = Math.floor(diff / 86400000);
+	if (days < 0) return "var(--v2-text-negative)";
+	if (days <= 3) return "var(--v2-text-warning)";
+	return null;
+}
+
 const RESET_LABELS: Record<ResetStrategy, string> = {
 	MONTH: "Monthly",
 	MONTH_ROLLING: "Monthly",

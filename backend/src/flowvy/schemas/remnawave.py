@@ -35,6 +35,7 @@ class RemnawaveUserData(BaseModel):
     telegram_id: int | None = None
     email: str | None = None
     hwid_device_limit: int | None = None
+    tag: str | None = None
     last_traffic_reset_at: datetime | None = None
     subscription_url: str
     user_traffic: RemnawaveUserTraffic

@@ -61,12 +61,15 @@ flowvy/
 │       │       ├── nodes.py      # GET /api/nodes
 │       │       ├── pulse.py      # GET /api/pulse (Uptime Kuma status)
 │       │       └── admin/        # /api/admin/*
-│       │           └── settings.py  # GET/PATCH /api/admin/settings, kuma test
+│       │           ├── deps.py      # get_current_admin, CurrentAdmin
+│       │           ├── settings.py  # GET/PATCH /api/admin/settings, kuma test
+│       │           └── users.py     # GET /api/admin/users, search
 │       ├── services/
 │       │   ├── user.py
 │       │   ├── remnawave.py      # RemnawaveClient (+get_metadata)
 │       │   ├── kuma.py           # UptimeKumaClient (public status page API)
 │       │   ├── subscription.py   # SubscriptionService (BFF + DB upsert)
+│       │   ├── admin_users.py     # AdminUsersService (Remnawave proxy + search)
 │       │   ├── devices.py        # DevicesService (BFF, DB read + Remnawave)
 │       │   ├── pulse.py          # PulseService (Kuma aggregation + Redis cache)
 │       │   ├── provider_settings.py  # ProviderSettingsService (CRUD + kuma test)
@@ -86,6 +89,7 @@ flowvy/
 │           ├── subscription.py   # SubscriptionResponse
 │           ├── pulse.py          # PulseResponse, PulseGroup, PulseMonitor
 │           ├── provider_settings.py  # ProviderSettingsResponse/Patch
+│           ├── admin_users.py    # AdminUserResponse, AdminUsersResponse
 │           └── remnawave.py      # response models from Remnawave
 ├── frontend/
 │   ├── package.json
@@ -109,7 +113,8 @@ flowvy/
 │       │   ├── use-devices.ts       # TanStack Query → /api/me/devices
 │       │   ├── use-nodes.ts         # TanStack Query → /api/nodes
 │       │   ├── use-pulse.ts         # TanStack Query → /api/pulse
-│       │   └── use-admin-settings.ts # TanStack Query → /api/admin/settings
+│       │   ├── use-admin-settings.ts # TanStack Query → /api/admin/settings
+│       │   └── use-admin-users.ts   # TanStack Query → /api/admin/users
 │       ├── contexts/
 │       │   └── mode-context.tsx  # user/admin mode switch
 │       ├── components/
@@ -117,7 +122,7 @@ flowvy/
 │       │   ├── home/             # HeroCard, DetailSections
 │       │   ├── devices/          # DeviceRow, PlatformIcon
 │       │   ├── pulse/            # StatusBanner, HeartbeatBar, MonitorRow, MonitorGroup
-│       │   ├── admin/            # KumaConfig, QuickLinks
+│       │   ├── admin/            # KumaConfig, QuickLinks, UserRow
 │       │   └── layout/           # AppShell, Header, TabBar
 │       ├── pages/
 │       │   ├── home.tsx, pulse.tsx, devices.tsx, support.tsx
@@ -126,7 +131,8 @@ flowvy/
 │           ├── subscription.ts
 │           ├── devices.ts
 │           ├── pulse.ts
-│           └── admin-settings.ts
+│           ├── admin-settings.ts
+│           └── admin-users.ts
 ```
 
 ## Remnawave Integration
@@ -191,6 +197,7 @@ Our FastAPI does NOT proxy Remnawave 1:1. It aggregates data per screen.
 | Pulse | `GET /api/pulse` | Kuma: `status-page/{slug}` + `heartbeat/{slug}` (cached 60s) |
 | Admin Dashboard | `GET /api/admin/stats` | `system/stats` + `stats/bandwidth` (cached 60s) |
 | Admin Users | `GET /api/admin/users` | `users?size=N&start=N` |
+| Admin Users Search | `GET /api/admin/users/search?q=` | `by-username`, `by-telegram-id`, or `by-email` |
 | Admin Settings | `GET/PATCH /api/admin/settings` | `system/metadata` (version) |
 
 One screen = one HTTP request to our backend. Backend does the aggregation.
@@ -232,7 +239,8 @@ export const queryKeys = {
   nodes: ['nodes'] as const,
   pulse: ['pulse'] as const,
   adminStats: ['admin', 'stats'] as const,
-  adminUsers: (page: number) => ['admin', 'users', page] as const,
+  adminUsers: (start: number) => ['admin', 'users', start] as const,
+  adminUsersSearch: (q: string) => ['admin', 'users', 'search', q] as const,
   adminSettings: ['admin', 'settings'] as const,
 };
 ```

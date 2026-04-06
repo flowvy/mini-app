@@ -1,0 +1,75 @@
+/* ── User Row ── */
+
+.row {
+	cursor: pointer;
+}
+
+.rowContent {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+/* Line 1: username + badge + traffic bar + chevron */
+.line1 {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.username {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--v2-text-primary);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	min-width: 0;
+}
+
+.rightGroup {
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* Traffic micro bar */
+.trafficBar {
+	width: 32px;
+	height: 3px;
+	border-radius: 2px;
+	background: var(--v2-bg-tertiary);
+	flex-shrink: 0;
+	overflow: hidden;
+}
+
+.trafficBarFill {
+	height: 100%;
+	border-radius: 2px;
+	transition: width 0.3s;
+}
+
+.chevron {
+	flex-shrink: 0;
+	color: var(--v2-text-tertiary);
+}
+
+/* Line 2: meta + expiry */
+.line2 {
+	display: flex;
+	align-items: center;
+	font-size: 11px;
+	color: var(--v2-text-secondary);
+}
+
+.meta {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.expiry {
+	margin-left: auto;
+	flex-shrink: 0;
+}
