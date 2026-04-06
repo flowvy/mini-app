@@ -5,6 +5,12 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict
 
 
+class FeaturesResponse(BaseModel):
+    """Feature flags derived from provider settings."""
+
+    pulse: bool = False
+
+
 class UserResponse(BaseModel):
     """Public representation of a user."""
 
@@ -15,3 +21,4 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
     is_active: bool
+    features: FeaturesResponse = FeaturesResponse()

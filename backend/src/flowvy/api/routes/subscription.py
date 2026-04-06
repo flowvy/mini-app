@@ -9,6 +9,7 @@ from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from flowvy.api.deps import get_current_init_data
+from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.schemas.subscription import SubscriptionResponse
 from flowvy.services.remnawave import RemnawaveError
 from flowvy.services.subscription import SubscriptionService
@@ -22,6 +23,7 @@ CurrentInitData = Annotated[WebAppInitData, Depends(get_current_init_data)]
 async def get_my_subscription(
     init_data: CurrentInitData,
     service: FromDishka[SubscriptionService] = None,  # type: ignore[assignment]
+    ps_repo: FromDishka[ProviderSettingsRepository] = None,  # type: ignore[assignment]
 ) -> SubscriptionResponse:
     """Return aggregated subscription data for the current user."""
     try:
@@ -38,4 +40,7 @@ async def get_my_subscription(
             detail="No active subscription found",
         )
 
+    ps = await ps_repo.get()
+    result.support_url = ps.support_url
+    result.renew_url = ps.renew_url
     return result

@@ -5,7 +5,6 @@ from __future__ import annotations
 import calendar
 from datetime import datetime, timedelta
 
-from flowvy.config import Settings
 from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.user import UserRepository
 from flowvy.schemas.remnawave import RemnawaveUserData
@@ -19,12 +18,10 @@ class SubscriptionService:
     def __init__(
         self,
         remnawave: RemnawaveClient,
-        settings: Settings,
         sub_repo: SubscriptionRepository,
         user_repo: UserRepository,
     ) -> None:
         self._remnawave = remnawave
-        self._settings = settings
         self._sub_repo = sub_repo
         self._user_repo = user_repo
 
@@ -76,8 +73,8 @@ class SubscriptionService:
             telegram_id=str(user.telegram_id) if user.telegram_id else None,
             auto_update=True,
             update_interval=24,
-            support_url=self._settings.support_url,
-            renew_url=self._settings.renew_url,
+            support_url=None,
+            renew_url=None,
         )
 
 

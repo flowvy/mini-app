@@ -10,6 +10,7 @@ from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
+from flowvy.api.routes.admin.settings import router as admin_settings_router
 from flowvy.api.routes.debug import router as debug_router
 from flowvy.api.routes.devices import router as devices_router
 from flowvy.api.routes.health import router as health_router
@@ -22,6 +23,7 @@ from flowvy.di import (
     ConfigProvider,
     DatabaseProvider,
     HttpClientProvider,
+    ProviderSettingsProvider,
     RedisProvider,
     RemnawaveProvider,
     RepositoryProvider,
@@ -82,12 +84,14 @@ def create_app() -> FastAPI:
         HttpClientProvider(),
         RemnawaveProvider(),
         BffServiceProvider(),
+        ProviderSettingsProvider(),
     )
 
     app.include_router(health_router)
     app.include_router(users_router)
     app.include_router(subscription_router)
     app.include_router(devices_router)
+    app.include_router(admin_settings_router)
     app.include_router(debug_router)
 
     @app.post("/webhook")

@@ -1,0 +1,80 @@
+/* ── Base ── */
+
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--radius-sm);
+	font-weight: 600;
+	white-space: nowrap;
+	line-height: 1;
+	cursor: pointer;
+	transition: all var(--duration-base) ease;
+	border: 1px solid transparent;
+	background: transparent;
+	font-family: inherit;
+	color: inherit;
+}
+
+.btn:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.btn.loading {
+	opacity: 0.7;
+	cursor: wait;
+}
+
+/* ── Sizes ── */
+
+.sm {
+	padding: 5.5px 10px;
+	font-size: 11px;
+	gap: 5px;
+}
+
+.md {
+	padding: 7px 14px;
+	font-size: 12px;
+	gap: 6px;
+}
+
+/* ── ghost ── */
+
+.ghost {
+	color: var(--v2-text-secondary);
+	font-weight: 500;
+}
+
+.ghost:hover:not(:disabled) {
+	background: var(--v2-bg-positive-quaternary);
+	color: var(--v2-text-positive);
+}
+
+/* ── action ── */
+
+.action {
+	border-color: var(--v2-border-secondary);
+	color: var(--v2-text-secondary);
+}
+
+.action:hover:not(:disabled) {
+	border-color: var(--v2-bg-positive-secondary);
+	color: var(--v2-text-positive);
+}
+
+/* ── confirm ── */
+
+.confirm {
+	background: var(--v2-bg-primary-inverted);
+	color: var(--v2-text-primary-inverted);
+}
+
+.confirm:hover:not(:disabled) {
+	opacity: 0.85;
+}
+
+.confirm:disabled {
+	opacity: 0.4;
+}

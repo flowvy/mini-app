@@ -1,0 +1,26 @@
+.input {
+	width: 100%;
+	padding: 8px 10px;
+	border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);
+	border-radius: var(--radius-sm);
+	background: var(--v2-bg-primary);
+	color: var(--v2-text-primary);
+	font-size: 12px;
+	font-family: var(--font-mono);
+	outline: none;
+	transition: border-color 0.15s;
+	box-sizing: border-box;
+}
+
+.input::placeholder {
+	color: var(--v2-text-tertiary);
+}
+
+.focused {
+	border-color: var(--v2-bg-positive-secondary);
+}
+
+.input:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}

@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from flowvy.config import Settings
 from flowvy.schemas.remnawave import RemnawaveUserData, RemnawaveUserTraffic
 from flowvy.services.subscription import SubscriptionService
 
@@ -40,16 +39,12 @@ def _make_service(
     """Create SubscriptionService with mocked RemnawaveClient and repo."""
     client = AsyncMock()
     client.get_user_by_telegram_id = AsyncMock(return_value=remnawave_return)
-    settings = Settings(
-        support_url="https://support.example.com",
-        renew_url="https://renew.example.com",
-    )
     sub_repo = AsyncMock()
     sub_repo.upsert_from_remnawave = AsyncMock()
     user_repo = AsyncMock()
     user_repo.get_by_telegram_id = AsyncMock(return_value=None)
     user_repo.create = AsyncMock()
-    return SubscriptionService(client, settings, sub_repo, user_repo)
+    return SubscriptionService(client, sub_repo, user_repo)
 
 
 @pytest.mark.asyncio
@@ -70,8 +65,8 @@ async def test_get_for_user_maps_fields() -> None:
     assert result.connection_link == "https://panel.example.com/sub/abc123"
     assert result.email == "test@example.com"
     assert result.telegram_id == "123456789"
-    assert result.support_url == "https://support.example.com"
-    assert result.renew_url == "https://renew.example.com"
+    assert result.support_url is None
+    assert result.renew_url is None
 
 
 @pytest.mark.asyncio

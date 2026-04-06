@@ -20,7 +20,5 @@ class Settings(BaseSettings):
     webapp_url: str = ""
     remnawave_url: str = ""
     remnawave_api_token: str = ""
-    support_url: str | None = None
-    renew_url: str | None = None
     init_data_ttl: int = 86400
     debug: bool = True

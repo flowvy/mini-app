@@ -77,9 +77,11 @@ def _make_client(responses: list[MagicMock]) -> RemnawaveClient:
 @pytest.mark.asyncio
 async def test_get_user_by_telegram_id_found() -> None:
     """Should parse user data from Remnawave response."""
-    client = _make_client([
-        _make_response({"response": [FAKE_USER]}),
-    ])
+    client = _make_client(
+        [
+            _make_response({"response": [FAKE_USER]}),
+        ]
+    )
     user = await client.get_user_by_telegram_id(123456789)
     assert user is not None
     assert user.short_uuid == "abc123"
@@ -91,9 +93,11 @@ async def test_get_user_by_telegram_id_found() -> None:
 @pytest.mark.asyncio
 async def test_get_user_by_telegram_id_not_found() -> None:
     """Should return None when user array is empty."""
-    client = _make_client([
-        _make_response({"response": []}),
-    ])
+    client = _make_client(
+        [
+            _make_response({"response": []}),
+        ]
+    )
     user = await client.get_user_by_telegram_id(999999)
     assert user is None
 
@@ -101,9 +105,11 @@ async def test_get_user_by_telegram_id_not_found() -> None:
 @pytest.mark.asyncio
 async def test_get_subscription_info() -> None:
     """Should parse subscription info response."""
-    client = _make_client([
-        _make_response({"response": FAKE_SUB_INFO}),
-    ])
+    client = _make_client(
+        [
+            _make_response({"response": FAKE_SUB_INFO}),
+        ]
+    )
     info = await client.get_subscription_info("abc123")
     assert info.is_found is True
     assert info.user.days_left == 25
@@ -113,9 +119,11 @@ async def test_get_subscription_info() -> None:
 @pytest.mark.asyncio
 async def test_remnawave_error_on_4xx() -> None:
     """Should raise RemnawaveError on non-2xx response."""
-    client = _make_client([
-        _make_response({"message": "Unauthorized"}, status_code=401),
-    ])
+    client = _make_client(
+        [
+            _make_response({"message": "Unauthorized"}, status_code=401),
+        ]
+    )
     with pytest.raises(RemnawaveError) as exc_info:
         await client.get_user_by_telegram_id(123)
     assert exc_info.value.status == 401

@@ -5,12 +5,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiGet } from "../lib/api.ts";
 
+export interface FeaturesData {
+	pulse: boolean;
+}
+
 export interface UserResponse {
 	id: number;
 	username: string | null;
 	full_name: string;
 	role: string;
 	is_active: boolean;
+	features: FeaturesData;
 }
 
 interface AuthState {
@@ -26,6 +31,7 @@ const MOCK_USER: UserResponse = {
 	full_name: "Dev Admin",
 	role: "ADMIN",
 	is_active: true,
+	features: { pulse: true },
 };
 
 const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
@@ -37,7 +43,12 @@ export function useAuth(): AuthState & { retry: () => void } {
 
 	const fetchUser = useCallback(async () => {
 		if (isMockAuth) {
-			setUser(MOCK_USER);
+			try {
+				const settings = await apiGet<{ kumaEnabled: boolean }>("/debug/admin/settings");
+				setUser({ ...MOCK_USER, features: { pulse: settings.kumaEnabled } });
+			} catch {
+				setUser(MOCK_USER);
+			}
 			setIsLoading(false);
 			return;
 		}

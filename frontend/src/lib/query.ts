@@ -18,4 +18,5 @@ export const queryKeys = {
 	nodes: ["nodes"] as const,
 	adminStats: ["admin", "stats"] as const,
 	adminUsers: (page: number) => ["admin", "users", page] as const,
+	adminSettings: ["admin", "settings"] as const,
 };

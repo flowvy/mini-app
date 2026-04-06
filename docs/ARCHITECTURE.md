@@ -60,23 +60,28 @@ flowvy/
 │       │       ├── devices.py    # GET/DELETE /api/me/devices
 │       │       ├── nodes.py      # GET /api/nodes
 │       │       └── admin/        # /api/admin/*
+│       │           └── settings.py  # GET/PATCH /api/admin/settings, kuma test
 │       ├── services/
 │       │   ├── user.py
-│       │   ├── remnawave.py      # RemnawaveClient
+│       │   ├── remnawave.py      # RemnawaveClient (+get_metadata)
 │       │   ├── subscription.py   # SubscriptionService (BFF + DB upsert)
 │       │   ├── devices.py        # DevicesService (BFF, DB read + Remnawave)
+│       │   ├── provider_settings.py  # ProviderSettingsService (CRUD + kuma test)
 │       │   └── cache.py          # Redis cache helpers
 │       ├── repositories/
 │       │   ├── base.py           # generic CRUD
 │       │   ├── user.py
 │       │   ├── subscription.py   # upsert_from_remnawave
+│       │   ├── provider_settings.py  # singleton get/update
 │       │   └── invite.py
 │       ├── models/               # SQLAlchemy ORM
 │       │   ├── base.py, user.py, subscription.py, invite.py
+│       │   └── provider_settings.py  # singleton runtime config
 │       └── schemas/              # Pydantic v2
-│           ├── user.py
+│           ├── user.py           # UserResponse + FeaturesResponse
 │           ├── devices.py        # DeviceResponse, DevicesResponse
 │           ├── subscription.py   # SubscriptionResponse
+│           ├── provider_settings.py  # ProviderSettingsResponse/Patch
 │           └── remnawave.py      # response models from Remnawave
 ├── frontend/
 │   ├── package.json
@@ -98,20 +103,23 @@ flowvy/
 │       │   ├── use-auth.ts
 │       │   ├── use-subscription.ts  # TanStack Query → /api/me/subscription
 │       │   ├── use-devices.ts       # TanStack Query → /api/me/devices
-│       │   └── use-nodes.ts         # TanStack Query → /api/nodes
+│       │   ├── use-nodes.ts         # TanStack Query → /api/nodes
+│       │   └── use-admin-settings.ts # TanStack Query → /api/admin/settings
 │       ├── contexts/
 │       │   └── mode-context.tsx  # user/admin mode switch
 │       ├── components/
-│       │   ├── ui/               # StatusBadge, icons
+│       │   ├── ui/               # StatusBadge, icons, Toggle, InputField, ActionBtn, ConfirmDialog
 │       │   ├── home/             # HeroCard, DetailSections
 │       │   ├── devices/          # DeviceRow, PlatformIcon
+│       │   ├── admin/            # KumaConfig, QuickLinks
 │       │   └── layout/           # AppShell, Header, TabBar
 │       ├── pages/
 │       │   ├── home.tsx, pulse.tsx, devices.tsx, support.tsx
 │       │   └── admin/
 │       └── types/
 │           ├── subscription.ts
-│           └── devices.ts
+│           ├── devices.ts
+│           └── admin-settings.ts
 ```
 
 ## Remnawave Integration
@@ -175,8 +183,30 @@ Our FastAPI does NOT proxy Remnawave 1:1. It aggregates data per screen.
 | Pulse | `GET /api/nodes` | `nodes` (cached 30s) |
 | Admin Dashboard | `GET /api/admin/stats` | `system/stats` + `stats/bandwidth` (cached 60s) |
 | Admin Users | `GET /api/admin/users` | `users?size=N&start=N` |
+| Admin Settings | `GET/PATCH /api/admin/settings` | `system/metadata` (version) |
 
 One screen = one HTTP request to our backend. Backend does the aggregation.
+
+## Provider Settings
+
+Singleton table `provider_settings` (id=1) stores runtime-configurable settings:
+- `kuma_enabled`, `kuma_url`, `kuma_slug` — Uptime Kuma integration
+- `support_url`, `renew_url` — user-facing links (injected into subscription response at route level)
+
+### Admin Routes
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/admin/settings` | Read settings + Remnawave version |
+| PATCH | `/api/admin/settings` | Partial update (toggles auto-save, sub-screen save) |
+| GET | `/api/admin/settings/kuma/test` | Test Kuma connection |
+
+Admin auth: `get_current_admin` dependency validates Telegram initData + checks `user.role == ADMIN`.
+
+### Feature Flags
+
+`GET /api/me` returns `features: { pulse: bool }` read from `provider_settings.kuma_enabled`.
+Frontend TabBar conditionally renders the Pulse tab based on `user.features.pulse`.
 
 ## TanStack Query (Frontend)
 
@@ -194,6 +224,7 @@ export const queryKeys = {
   nodes: ['nodes'] as const,
   adminStats: ['admin', 'stats'] as const,
   adminUsers: (page: number) => ['admin', 'users', page] as const,
+  adminSettings: ['admin', 'settings'] as const,
 };
 ```
 

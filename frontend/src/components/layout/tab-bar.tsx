@@ -14,6 +14,7 @@ import {
 	Users,
 } from "lucide-react";
 import { useMode } from "../../contexts/mode-context.tsx";
+import { useCurrentUser } from "../auth-guard.tsx";
 import styles from "./tab-bar.module.css";
 
 interface TabDefinition {
@@ -38,7 +39,10 @@ const ADMIN_TABS: TabDefinition[] = [
 
 export function TabBar() {
 	const { mode } = useMode();
-	const tabs = mode === "admin" ? ADMIN_TABS : USER_TABS;
+	const user = useCurrentUser();
+	const showPulse = user.features?.pulse ?? false;
+	const userTabs = showPulse ? USER_TABS : USER_TABS.filter((t) => t.to !== "/pulse");
+	const tabs = mode === "admin" ? ADMIN_TABS : userTabs;
 
 	return (
 		<nav className={styles.tabBar}>

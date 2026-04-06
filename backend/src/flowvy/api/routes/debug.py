@@ -5,9 +5,16 @@ from __future__ import annotations
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, HTTPException, Request, status
 
+from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.schemas.devices import DevicesResponse
+from flowvy.schemas.provider_settings import (
+    KumaTestResponse,
+    ProviderSettingsPatch,
+    ProviderSettingsResponse,
+)
 from flowvy.schemas.subscription import SubscriptionResponse
 from flowvy.services.devices import DevicesService
+from flowvy.services.provider_settings import ProviderSettingsService
 from flowvy.services.remnawave import RemnawaveError
 from flowvy.services.subscription import SubscriptionService
 
@@ -29,6 +36,7 @@ async def debug_subscription(
     telegram_id: int,
     request: Request,
     service: FromDishka[SubscriptionService] = None,  # type: ignore[assignment]
+    ps_repo: FromDishka[ProviderSettingsRepository] = None,  # type: ignore[assignment]
 ) -> SubscriptionResponse:
     """Fetch subscription without Telegram auth. DEBUG mode only."""
     _check_debug(request)
@@ -45,6 +53,9 @@ async def debug_subscription(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No subscription found for this telegram_id",
         )
+    ps = await ps_repo.get()
+    result.support_url = ps.support_url
+    result.renew_url = ps.renew_url
     return result
 
 
@@ -118,3 +129,34 @@ async def debug_delete_all_devices(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Remnawave unavailable: {exc.detail}",
         ) from exc
+
+
+@router.get("/admin/settings", response_model=ProviderSettingsResponse)
+async def debug_admin_settings(
+    request: Request,
+    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
+) -> ProviderSettingsResponse:
+    """Read admin settings without Telegram auth. DEBUG mode only."""
+    _check_debug(request)
+    return await service.get()
+
+
+@router.patch("/admin/settings", response_model=ProviderSettingsResponse)
+async def debug_patch_admin_settings(
+    patch: ProviderSettingsPatch,
+    request: Request,
+    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
+) -> ProviderSettingsResponse:
+    """Update admin settings without Telegram auth. DEBUG mode only."""
+    _check_debug(request)
+    return await service.update(patch)
+
+
+@router.get("/admin/settings/kuma/test", response_model=KumaTestResponse)
+async def debug_test_kuma(
+    request: Request,
+    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
+) -> KumaTestResponse:
+    """Test Kuma connection without Telegram auth. DEBUG mode only."""
+    _check_debug(request)
+    return await service.test_kuma()

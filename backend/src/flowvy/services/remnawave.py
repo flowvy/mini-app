@@ -96,6 +96,10 @@ class RemnawaveClient:
             {"userUuid": user_uuid},
         )
 
+    async def get_metadata(self) -> dict:
+        """Fetch system metadata (version, build, git info)."""
+        return await self._get("/api/system/metadata")
+
     async def get_subscription_info(
         self,
         short_uuid: str,

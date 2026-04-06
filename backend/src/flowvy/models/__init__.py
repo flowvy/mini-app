@@ -2,12 +2,14 @@
 
 from flowvy.models.base import Base
 from flowvy.models.invite import Invite
+from flowvy.models.provider_settings import ProviderSettings
 from flowvy.models.subscription import Subscription, SubscriptionStatus
 from flowvy.models.user import User, UserRole
 
 __all__ = [
     "Base",
     "Invite",
+    "ProviderSettings",
     "Subscription",
     "SubscriptionStatus",
     "User",

@@ -81,7 +81,17 @@ cd frontend && pnpm test
 cd frontend && pnpm build  # type-check
 ```
 
-For UI changes: use Playwright MCP to open `http://localhost:5173`, take screenshots, verify visually. Do not skip this.
+For UI changes: use Playwright MCP tools to verify visually. Do not skip this.
+
+**Playwright MCP workflow:**
+1. `browser_navigate` to `http://localhost:5173` + target page path
+2. `browser_take_screenshot` (fullPage: true) — visually verify layout, colors, text
+3. `browser_snapshot` — get element refs for interaction
+4. `browser_click` / `browser_type` — test interactive elements (buttons, inputs, toggles)
+5. `browser_take_screenshot` — verify state after interaction
+6. Repeat for each screen/state that changed
+
+**What to check:** correct labels, spacing, colors match `var(--v2-*)` tokens, no overlapping elements, responsive width, dark theme rendering, interactive states (hover, focus, disabled).
 
 ### Type Safety
 

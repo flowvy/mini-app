@@ -15,9 +15,11 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from flowvy.config import Settings
+from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.user import UserRepository
 from flowvy.services.devices import DevicesService
+from flowvy.services.provider_settings import ProviderSettingsService
 from flowvy.services.remnawave import RemnawaveClient
 from flowvy.services.subscription import SubscriptionService
 from flowvy.services.user import UserService
@@ -55,9 +57,14 @@ class DatabaseProvider(Provider):
         self,
         factory: async_sessionmaker[AsyncSession],
     ) -> AsyncIterable[AsyncSession]:
-        """Yield a session, auto-close when request scope exits."""
+        """Yield a session, commit on success, rollback on error."""
         async with factory() as session:
-            yield session
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
 
 
 class RepositoryProvider(Provider):
@@ -75,6 +82,14 @@ class RepositoryProvider(Provider):
     ) -> SubscriptionRepository:
         """Create subscription repository bound to current session."""
         return SubscriptionRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_provider_settings_repo(
+        self,
+        session: AsyncSession,
+    ) -> ProviderSettingsRepository:
+        """Create provider settings repository bound to current session."""
+        return ProviderSettingsRepository(session)
 
 
 class ServiceProvider(Provider):
@@ -132,12 +147,11 @@ class BffServiceProvider(Provider):
     def get_subscription_service(
         self,
         remnawave: RemnawaveClient,
-        settings: Settings,
         sub_repo: SubscriptionRepository,
         user_repo: UserRepository,
     ) -> SubscriptionService:
         """Create subscription service with DB upsert."""
-        return SubscriptionService(remnawave, settings, sub_repo, user_repo)
+        return SubscriptionService(remnawave, sub_repo, user_repo)
 
     @provide(scope=Scope.REQUEST)
     def get_devices_service(
@@ -148,3 +162,16 @@ class BffServiceProvider(Provider):
     ) -> DevicesService:
         """Create devices service with DB read + Remnawave fallback."""
         return DevicesService(remnawave, sub_repo, user_repo)
+
+
+class ProviderSettingsProvider(Provider):
+    """Provides ProviderSettingsService (REQUEST scope)."""
+
+    @provide(scope=Scope.REQUEST)
+    def get_provider_settings_service(
+        self,
+        repo: ProviderSettingsRepository,
+        remnawave: RemnawaveClient,
+    ) -> ProviderSettingsService:
+        """Create provider settings service."""
+        return ProviderSettingsService(repo, remnawave)

@@ -119,19 +119,41 @@ After starting ngrok, update:
 
 ## Playwright Visual Testing
 
-Claude Code uses Playwright MCP to visually verify frontend changes.
+Claude Code uses Playwright MCP server (`@playwright/mcp`) in **vision mode** to visually verify frontend changes. The server is configured in `.mcp.json`:
 
-Setup (one-time in Claude Code):
-```
-claude mcp add playwright npx @playwright/mcp@latest
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest", "--caps", "vision", "--viewport-size", "430x932"]
+    }
+  }
+}
 ```
 
-Then Claude can:
-- Navigate to `http://localhost:5173`
-- Take screenshots of any page
-- Click elements, fill forms
-- Verify layout across viewports (mobile, tablet, desktop)
-- Compare screenshots for visual regression
+Vision mode gives Claude real screenshots + coordinate-based clicks (not just accessibility tree). Viewport 430x932 matches a typical mobile device for Mini App testing.
+
+**Two modes of interaction:**
+- `browser_snapshot` — returns accessibility tree with element refs (e5, e12...). Use refs with `browser_click`, `browser_type` to interact. Fast, deterministic.
+- `browser_take_screenshot` — returns actual rendered image. Use for visual verification of layout, colors, fonts. Cannot interact based on screenshot alone.
+
+**Typical workflow:**
+```
+1. browser_navigate → open page
+2. browser_take_screenshot (fullPage: true) → verify layout visually
+3. browser_snapshot → get refs for interactive elements
+4. browser_click ref / browser_type ref → interact
+5. browser_take_screenshot → verify state changed correctly
+```
+
+**What Claude checks visually:**
+- Labels and text match design/prototype exactly
+- Colors use correct `var(--v2-*)` tokens (positive=green, negative=red, secondary=gray)
+- Content fills viewport width (no max-width constraints on mobile)
+- Dark theme renders correctly (backgrounds, borders, text contrast)
+- Interactive states work (toggle on/off, button loading, save confirmation)
+- Conditional UI (elements appear/disappear based on state)
 
 ## Environment Variables
 
@@ -143,8 +165,6 @@ DATABASE_URL=postgresql+asyncpg://flowvy:flowvy@localhost:5432/flowvy
 REDIS_URL=redis://localhost:6379/0
 REMNAWAVE_URL=<your Remnawave panel URL, e.g. https://panel.example.com>
 REMNAWAVE_API_TOKEN=<generate in Remnawave: Settings → API Tokens>
-SUPPORT_URL=
-RENEW_URL=
 DEBUG=true
 ```
 
