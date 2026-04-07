@@ -1,10 +1,12 @@
 import { Loader2 } from "lucide-react";
 import { type FC, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { DeviceRow } from "../components/devices/device-row.tsx";
 import { useDeleteAllDevices, useDeleteDevice, useDevices } from "../hooks/use-devices.ts";
 import styles from "./devices.module.css";
 
 export const Devices: FC = () => {
+	const { t } = useTranslation();
 	const { devices: data, isPending, error } = useDevices();
 	const deleteDevice = useDeleteDevice();
 	const deleteAll = useDeleteAllDevices();
@@ -22,7 +24,7 @@ export const Devices: FC = () => {
 	if (error) {
 		return (
 			<div className={styles.empty}>
-				<span className={styles.emptyTitle}>Failed to load devices</span>
+				<span className={styles.emptyTitle}>{t('devices.error')}</span>
 			</div>
 		);
 	}
@@ -53,8 +55,7 @@ export const Devices: FC = () => {
 			)}
 
 			<p className={styles.pageHint}>
-				Devices that have connected to your VPN subscription. Remove unused devices to free up
-				slots.
+				{t('devices.hint')}
 			</p>
 
 			{devices.length > 0 ? (
@@ -85,28 +86,28 @@ export const Devices: FC = () => {
 						strokeLinejoin="round"
 						className={styles.emptyIcon}
 						role="img"
-						aria-label="No devices"
+						aria-label={t('devices.empty.ariaLabel')}
 					>
 						<rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
 						<line x1="12" y1="18" x2="12.01" y2="18" />
 					</svg>
-					<span className={styles.emptyTitle}>No devices</span>
-					<span className={styles.emptyDesc}>Connect a device to your VPN to see it here</span>
+					<span className={styles.emptyTitle}>{t('devices.empty.title')}</span>
+					<span className={styles.emptyDesc}>{t('devices.empty.desc')}</span>
 				</div>
 			)}
 
 			{devices.length > 1 && !confirmAll && (
 				<button type="button" className={styles.dangerBtn} onClick={() => setConfirmAll(true)}>
-					Remove all devices
+					{t('devices.removeAll')}
 				</button>
 			)}
 
 			{confirmAll && (
 				<div className={styles.confirmBar}>
-					<span className={styles.confirmBarText}>Remove all {devices.length} devices?</span>
+					<span className={styles.confirmBarText}>{t('devices.confirmAll', { n: devices.length })}</span>
 					<div className={styles.confirmBarActions}>
 						<button type="button" className={styles.ghostBtn} onClick={() => setConfirmAll(false)}>
-							Cancel
+							{t('devices.cancel')}
 						</button>
 						<button
 							type="button"
@@ -114,7 +115,7 @@ export const Devices: FC = () => {
 							onClick={handleDeleteAll}
 							disabled={deleteAll.isPending}
 						>
-							{deleteAll.isPending ? "..." : "Remove"}
+							{deleteAll.isPending ? t('devices.removeLoading') : t('devices.remove')}
 						</button>
 					</div>
 				</div>

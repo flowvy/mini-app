@@ -1,4 +1,5 @@
 import type { ResetStrategy } from "../types/subscription.ts";
+import i18n from "../i18n";
 
 const KB = 1024;
 const MB = KB * 1024;
@@ -8,14 +9,14 @@ const TB = GB * 1024;
 /** Format bytes to human-readable traffic string. */
 export function formatTraffic(bytes: number): string {
 	if (bytes <= 0) return "0";
-	if (bytes >= TB) return `${(bytes / TB).toFixed(1)} TB`;
+	if (bytes >= TB) return `${(bytes / TB).toFixed(1)} ${i18n.t('format.traffic.tb')}`;
 	const gb = bytes / GB;
-	if (gb >= 100) return `${Math.round(gb)} GB`;
-	if (gb >= 10) return `${gb.toFixed(1)} GB`;
-	if (gb >= 1) return `${gb.toFixed(2)} GB`;
+	if (gb >= 100) return `${Math.round(gb)} ${i18n.t('format.traffic.gb')}`;
+	if (gb >= 10) return `${gb.toFixed(1)} ${i18n.t('format.traffic.gb')}`;
+	if (gb >= 1) return `${gb.toFixed(2)} ${i18n.t('format.traffic.gb')}`;
 	const mb = bytes / MB;
-	if (mb >= 1) return `${mb.toFixed(1)} MB`;
-	return `${(bytes / KB).toFixed(0)} KB`;
+	if (mb >= 1) return `${mb.toFixed(1)} ${i18n.t('format.traffic.mb')}`;
+	return `${(bytes / KB).toFixed(0)} ${i18n.t('format.traffic.kb')}`;
 }
 
 /** Whether traffic limit is unlimited (0 = unlimited in Remnawave). */
@@ -58,23 +59,23 @@ export function getExpiryColor(daysLeft: number): string {
 
 /** Human-readable expiry label. */
 export function formatExpiry(daysLeft: number): string {
-	if (daysLeft < 0) return "Expired";
-	if (daysLeft === 0) return "Today";
-	if (daysLeft === 1) return "1 day";
-	return `${daysLeft}d`;
+	if (daysLeft < 0) return i18n.t('format.expiry.expired');
+	if (daysLeft === 0) return i18n.t('format.expiry.today');
+	if (daysLeft === 1) return i18n.t('format.expiry.oneDay');
+	return i18n.t('format.expiry.days', { n: daysLeft });
 }
 
 /** Format Unix timestamp to short date with year. */
 export function formatShortDate(unix: number): string {
 	const d = new Date(unix * 1000);
-	const mo = d.toLocaleString("en", { month: "short" });
+	const mo = d.toLocaleString(i18n.t('format.date.locale'), { month: "short" });
 	return `${mo} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
 /** Format Unix timestamp to compact month + day (no year). */
 export function formatMonthDay(unix: number): string {
 	const d = new Date(unix * 1000);
-	const mo = d.toLocaleString("en", { month: "short" });
+	const mo = d.toLocaleString(i18n.t('format.date.locale'), { month: "short" });
 	return `${mo} ${d.getDate()}`;
 }
 
@@ -82,13 +83,13 @@ export function formatMonthDay(unix: number): string {
 export function formatRelativeTimeUnix(unix: number): string {
 	const diff = Date.now() - unix * 1000;
 	const secs = Math.floor(diff / 1000);
-	if (secs < 60) return "just now";
+	if (secs < 60) return i18n.t('format.relative.justNow');
 	const mins = Math.floor(secs / 60);
-	if (mins < 60) return `${mins}m ago`;
+	if (mins < 60) return i18n.t('format.relative.minutesAgo', { n: mins });
 	const hours = Math.floor(mins / 60);
-	if (hours < 24) return `${hours}h ago`;
+	if (hours < 24) return i18n.t('format.relative.hoursAgo', { n: hours });
 	const days = Math.floor(hours / 24);
-	return `${days}d ago`;
+	return i18n.t('format.relative.daysAgo', { n: days });
 }
 
 /** Format traffic pair: "3.5 MB / 1 TB" or "5 GB / ∞". */
@@ -99,16 +100,16 @@ export function formatTrafficPair(used: number, limit: number): string {
 
 /** Format ISO date string to relative last-seen label. */
 export function formatLastSeen(onlineAt: string | null): string {
-	if (!onlineAt) return "Never";
+	if (!onlineAt) return i18n.t('format.lastSeen.never');
 	const diff = Date.now() - new Date(onlineAt).getTime();
 	const mins = Math.floor(diff / 60000);
-	if (mins < 1) return "now";
-	if (mins < 60) return `${mins}m ago`;
+	if (mins < 1) return i18n.t('format.lastSeen.now');
+	if (mins < 60) return i18n.t('format.lastSeen.minutesAgo', { n: mins });
 	const hours = Math.floor(mins / 60);
-	if (hours < 24) return `${hours}h ago`;
+	if (hours < 24) return i18n.t('format.lastSeen.hoursAgo', { n: hours });
 	const days = Math.floor(hours / 24);
-	if (days < 30) return `${days}d ago`;
-	return `${Math.floor(days / 30)}mo ago`;
+	if (days < 30) return i18n.t('format.lastSeen.daysAgo', { n: days });
+	return i18n.t('format.lastSeen.monthsAgo', { n: Math.floor(days / 30) });
 }
 
 /** Format ISO expiry for admin users list. */
@@ -116,10 +117,10 @@ export function formatAdminExpiry(expireAt: string): string {
 	const diff = new Date(expireAt).getTime() - Date.now();
 	const days = Math.floor(diff / 86400000);
 	if (days > 3650) return "\u221E";
-	if (days < 0) return `expired ${Math.abs(days)}d ago`;
-	if (days === 0) return "expires today";
-	if (days <= 30) return `${days}d left`;
-	return `${Math.floor(days / 30)}mo left`;
+	if (days < 0) return i18n.t('format.adminExpiry.expired', { n: Math.abs(days) });
+	if (days === 0) return i18n.t('format.adminExpiry.today');
+	if (days <= 30) return i18n.t('format.adminExpiry.daysLeft', { n: days });
+	return i18n.t('format.adminExpiry.monthsLeft', { n: Math.floor(days / 30) });
 }
 
 /** CSS var for admin expiry color (≤3d = warning, <0 = negative). */
@@ -135,7 +136,7 @@ export function getAdminExpiryColor(expireAt: string): string | null {
 export function formatDateISO(iso: string | null): string {
 	if (!iso) return "\u2014";
 	const d = new Date(iso);
-	const mo = d.toLocaleString("en", { month: "short" });
+	const mo = d.toLocaleString(i18n.t('format.date.locale'), { month: "short" });
 	return `${mo} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
@@ -163,21 +164,21 @@ export function getExpiryColorISO(daysLeft: number): string | undefined {
 
 /** Compact expiry label for admin hero (days-based). */
 export function formatExpiryCompact(daysLeft: number): string {
-	if (daysLeft < 0) return `${Math.abs(daysLeft)}d ago`;
-	if (daysLeft === 0) return "today";
-	if (daysLeft <= 30) return `${daysLeft}d`;
-	return `${Math.floor(daysLeft / 30)}mo`;
+	if (daysLeft < 0) return i18n.t('format.expiryCompact.ago', { n: Math.abs(daysLeft) });
+	if (daysLeft === 0) return i18n.t('format.expiryCompact.today');
+	if (daysLeft <= 30) return i18n.t('format.expiryCompact.days', { n: daysLeft });
+	return i18n.t('format.expiryCompact.months', { n: Math.floor(daysLeft / 30) });
 }
 
 const RESET_LABELS: Record<ResetStrategy, string> = {
-	MONTH: "Monthly",
-	MONTH_ROLLING: "Monthly",
-	WEEK: "Weekly",
-	DAY: "Daily",
-	NO_RESET: "Never",
+	MONTH: "format.resetStrategy.monthly",
+	MONTH_ROLLING: "format.resetStrategy.monthly",
+	WEEK: "format.resetStrategy.weekly",
+	DAY: "format.resetStrategy.daily",
+	NO_RESET: "format.resetStrategy.never",
 };
 
 /** Human-readable reset strategy label. */
 export function formatResetStrategy(strategy: ResetStrategy): string {
-	return RESET_LABELS[strategy];
+	return i18n.t(RESET_LABELS[strategy]);
 }

@@ -3,6 +3,7 @@
  */
 import { AlertTriangle, CheckCircle, Wrench } from "lucide-react";
 import type { FC } from "react";
+import { useTranslation } from "react-i18next";
 import type { PulseData } from "../../types/pulse.ts";
 import styles from "./status-banner.module.css";
 
@@ -13,34 +14,35 @@ interface StatusBannerProps {
 const CONFIG = {
 	operational: {
 		icon: CheckCircle,
-		label: "All systems operational",
+		label: "pulse.banner.operational",
 		className: "positive",
 	},
 	partial: {
 		icon: AlertTriangle,
-		label: "Partial system outage",
+		label: "pulse.banner.partial",
 		className: "negative",
 	},
 	maintenance: {
 		icon: Wrench,
-		label: "Scheduled maintenance",
+		label: "pulse.banner.maintenance",
 		className: "info",
 	},
 	down: {
 		icon: AlertTriangle,
-		label: "Major outage",
+		label: "pulse.banner.down",
 		className: "negative",
 	},
 } as const;
 
 export const StatusBanner: FC<StatusBannerProps> = ({ status }) => {
+	const { t } = useTranslation();
 	const config = CONFIG[status];
 	const Icon = config.icon;
 
 	return (
 		<div className={`${styles.banner} ${styles[config.className]}`}>
 			<Icon size={18} />
-			<span className={styles.label}>{config.label}</span>
+			<span className={styles.label}>{t(config.label)}</span>
 		</div>
 	);
 };

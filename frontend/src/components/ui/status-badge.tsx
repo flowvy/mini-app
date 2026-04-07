@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { SubscriptionStatus } from "../../types/subscription.ts";
 import styles from "./status-badge.module.css";
 
@@ -9,10 +10,10 @@ const STATUS_CLASS: Record<SubscriptionStatus, string> = {
 };
 
 const STATUS_LABEL: Record<SubscriptionStatus, string> = {
-	ACTIVE: "Active",
-	LIMITED: "Limited",
-	DISABLED: "Disabled",
-	EXPIRED: "Expired",
+	ACTIVE: "common.status.active",
+	LIMITED: "common.status.limited",
+	DISABLED: "common.status.disabled",
+	EXPIRED: "common.status.expired",
 };
 
 interface StatusBadgeProps {
@@ -20,5 +21,6 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-	return <span className={`${styles.badge} ${STATUS_CLASS[status]}`}>{STATUS_LABEL[status]}</span>;
+	const { t } = useTranslation();
+	return <span className={`${styles.badge} ${STATUS_CLASS[status]}`}>{t(STATUS_LABEL[status])}</span>;
 }

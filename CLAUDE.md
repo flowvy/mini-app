@@ -102,6 +102,15 @@ TypeScript: strict mode. No `any`. No `as` assertions without comment. No `@ts-i
 
 No sync I/O. No `requests` — use `httpx.AsyncClient`. No `time.sleep` — use `asyncio.sleep`.
 
+### i18n
+
+All user-facing strings MUST use react-i18next: `t('domain.key')` in components, `i18n.t('key')` in non-React files.
+NEVER hardcode English strings in JSX, placeholders, aria-labels, error messages, button labels.
+Keys follow dot notation grouped by domain: `common.*`, `home.*`, `devices.*`, `pulse.*`, `settings.*`, `admin.*`, `format.*`.
+Interpolation uses double braces: `t('key', { var: value })` → `{{var}}` in en.json.
+Locale files: `frontend/src/i18n/locales/en.json`.
+When adding new UI strings, add the key to en.json FIRST, then use `t()` in the component.
+
 ## Code Style
 
 **Python**: `ruff check --fix . && ruff format .` — stdlib → third-party → local imports. `snake_case` functions, `PascalCase` classes. Google-style docstrings on all public functions.

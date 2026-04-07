@@ -4,6 +4,7 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 import { Activity, HelpCircle, Megaphone, Smartphone, User, UserStar, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { type AppMode, useMode } from "../../contexts/mode-context.tsx";
 import { useCurrentUser } from "../auth-guard.tsx";
 import styles from "./header.module.css";
@@ -14,14 +15,15 @@ interface PageMeta {
 }
 
 const PAGE_META: Record<string, PageMeta> = {
-	"/pulse": { title: "Pulse", icon: Activity },
-	"/devices": { title: "Devices", icon: Smartphone },
-	"/support": { title: "Support", icon: HelpCircle },
-	"/admin/users": { title: "Users", icon: Users },
-	"/admin/broadcast": { title: "Broadcast", icon: Megaphone },
+	"/pulse": { title: "common.header.pulse", icon: Activity },
+	"/devices": { title: "common.header.devices", icon: Smartphone },
+	"/support": { title: "common.header.support", icon: HelpCircle },
+	"/admin/users": { title: "common.header.users", icon: Users },
+	"/admin/broadcast": { title: "common.header.broadcast", icon: Megaphone },
 };
 
 export function Header() {
+	const { t } = useTranslation();
 	const user = useCurrentUser();
 	const { mode, setMode } = useMode();
 	const navigate = useNavigate();
@@ -42,10 +44,10 @@ export function Header() {
 			{meta ? (
 				<div className={styles.titleGroup}>
 					<meta.icon size={16} className={styles.titleIcon} />
-					<span className={styles.title}>{meta.title}</span>
+					<span className={styles.title}>{t(meta.title)}</span>
 				</div>
 			) : (
-				<span className={styles.title}>Flowvy</span>
+				<span className={styles.title}>{t('common.appName')}</span>
 			)}
 			{isAdmin && (
 				<div className={styles.toggle}>
@@ -53,7 +55,7 @@ export function Header() {
 						type="button"
 						className={`${styles.toggleBtn} ${mode === "user" ? styles.activeBtn : ""}`}
 						onClick={() => handleToggle("user")}
-						aria-label="User mode"
+						aria-label={t('common.header.userModeLabel')}
 					>
 						<User size={16} />
 					</button>
@@ -61,7 +63,7 @@ export function Header() {
 						type="button"
 						className={`${styles.toggleBtn} ${mode === "admin" ? styles.activeBtn : ""}`}
 						onClick={() => handleToggle("admin")}
-						aria-label="Admin mode"
+						aria-label={t('common.header.adminModeLabel')}
 					>
 						<UserStar size={16} />
 					</button>

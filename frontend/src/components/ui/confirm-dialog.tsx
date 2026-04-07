@@ -4,6 +4,7 @@
  */
 import { X } from "lucide-react";
 import { type FC, type ReactNode, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { ActionBtn } from "./action-btn.tsx";
 import styles from "./confirm-dialog.module.css";
 
@@ -28,6 +29,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 	onConfirm,
 	onCancel,
 }) => {
+	const { t } = useTranslation();
 	const overlayRef = useRef<HTMLDivElement>(null);
 
 	if (!open) return null;
@@ -46,7 +48,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 			<dialog open className={styles.modal} aria-label={title}>
 				<div className={styles.header}>
 					<span className={styles.title}>{title}</span>
-					<button type="button" className={styles.closeBtn} onClick={onCancel} aria-label="Close">
+					<button type="button" className={styles.closeBtn} onClick={onCancel} aria-label={t('common.confirmDialog.closeLabel')}>
 						<X size={16} />
 					</button>
 				</div>

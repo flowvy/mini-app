@@ -3,6 +3,7 @@
  * Each action maps to a ConfirmDialog with label, description, and danger flag.
  */
 import type { AdminUser } from "../../types/admin-users.ts";
+import i18n from "../../i18n";
 
 export type UserAction = "enable" | "disable" | "reset" | "revoke" | "delete";
 
@@ -20,36 +21,36 @@ export function getActions(user: AdminUser): ActionDef[] {
 	return [
 		{
 			key: isActive ? "disable" : "enable",
-			label: isActive ? "Disable" : "Enable",
-			title: isActive ? "Disable user?" : "Enable user?",
+			label: isActive ? i18n.t('admin.actions.disable') : i18n.t('admin.actions.enable'),
+			title: isActive ? i18n.t('admin.actions.disableTitle') : i18n.t('admin.actions.enableTitle'),
 			desc: isActive
-				? `${user.username} will lose VPN access.`
-				: `${user.username} will regain VPN access.`,
-			confirmLabel: isActive ? "Disable" : "Enable",
+				? i18n.t('admin.actions.disableDesc', { username: user.username })
+				: i18n.t('admin.actions.enableDesc', { username: user.username }),
+			confirmLabel: isActive ? i18n.t('admin.actions.disable') : i18n.t('admin.actions.enable'),
 			danger: isActive,
 		},
 		{
 			key: "reset",
-			label: "Reset traffic",
-			title: "Reset traffic?",
-			desc: `Traffic counter for ${user.username} will be set to zero.`,
-			confirmLabel: "Reset",
+			label: i18n.t('admin.actions.resetTraffic'),
+			title: i18n.t('admin.actions.resetTrafficTitle'),
+			desc: i18n.t('admin.actions.resetTrafficDesc', { username: user.username }),
+			confirmLabel: i18n.t('admin.actions.resetConfirm'),
 			danger: false,
 		},
 		{
 			key: "revoke",
-			label: "Revoke",
-			title: "Revoke subscription?",
-			desc: `Subscription link for ${user.username} will stop working.`,
-			confirmLabel: "Revoke",
+			label: i18n.t('admin.actions.revoke'),
+			title: i18n.t('admin.actions.revokeTitle'),
+			desc: i18n.t('admin.actions.revokeDesc', { username: user.username }),
+			confirmLabel: i18n.t('admin.actions.revokeConfirm'),
 			danger: true,
 		},
 		{
 			key: "delete",
-			label: "Delete",
-			title: "Delete user?",
-			desc: `${user.username} will be permanently deleted. This cannot be undone.`,
-			confirmLabel: "Delete",
+			label: i18n.t('admin.actions.delete'),
+			title: i18n.t('admin.actions.deleteTitle'),
+			desc: i18n.t('admin.actions.deleteDesc', { username: user.username }),
+			confirmLabel: i18n.t('admin.actions.deleteConfirm'),
 			danger: true,
 		},
 	];

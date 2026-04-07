@@ -1,5 +1,6 @@
 import { Loader2, UserX, X } from "lucide-react";
 import { type FC, type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { UserRow } from "../../components/admin/user-row.tsx";
 import { useAdminUsers, useSearchUser } from "../../hooks/use-admin-users.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
@@ -43,6 +44,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 	const [searchInput, setSearchInput] = useState("");
 	const [searchQuery, setSearchQuery] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
+	const { t } = useTranslation();
 
 	const list = useAdminUsers(PAGE_SIZE, start);
 	const search = useSearchUser(searchQuery);
@@ -100,7 +102,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 		return (
 			<div className={styles.page}>
 				<div className={styles.empty}>
-					<span className={styles.emptyTitle}>Failed to load users</span>
+					<span className={styles.emptyTitle}>{t('admin.users.error')}</span>
 				</div>
 			</div>
 		);
@@ -109,7 +111,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 	return (
 		<div className={styles.page}>
 			<div className={styles.header}>
-				<h1 className={styles.headerTitle}>Users</h1>
+				<h1 className={styles.headerTitle}>{t('admin.users.title')}</h1>
 				{total > 0 && <span className={styles.headerCount}>{total}</span>}
 			</div>
 
@@ -120,7 +122,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 					value={searchInput}
 					onChange={(e) => setSearchInput(e.target.value)}
 					onKeyDown={handleSearch}
-					placeholder="Search by name, ID or email"
+					placeholder={t('admin.users.searchPlaceholder')}
 					className={styles.searchInput}
 				/>
 				{isSearchMode && (
@@ -128,7 +130,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 						type="button"
 						className={styles.clearBtn}
 						onClick={handleClear}
-						aria-label="Clear search"
+						aria-label={t('admin.users.clearSearchLabel')}
 					>
 						<X size={12} />
 					</button>
@@ -143,15 +145,15 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 
 			{isSearchMode && search.error && (
 				<div className={styles.empty}>
-					<span className={styles.emptyTitle}>Search failed</span>
+					<span className={styles.emptyTitle}>{t('admin.users.searchFailed')}</span>
 				</div>
 			)}
 
 			{isSearchMode && !search.isPending && displayUsers.length === 0 && (
 				<div className={styles.empty}>
 					<UserX size={36} className={styles.emptyIcon} />
-					<span className={styles.emptyTitle}>User not found</span>
-					<span className={styles.emptyDesc}>Try a different username, Telegram ID, or email</span>
+					<span className={styles.emptyTitle}>{t('admin.users.notFound')}</span>
+					<span className={styles.emptyDesc}>{t('admin.users.notFoundDesc')}</span>
 				</div>
 			)}
 
@@ -172,7 +174,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 					onClick={handleLoadMore}
 					disabled={list.isPending}
 				>
-					{list.isPending ? "Loading..." : "Load more"}
+					{list.isPending ? t('admin.users.loadingMore') : t('admin.users.loadMore')}
 				</button>
 			)}
 		</div>

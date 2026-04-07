@@ -1,5 +1,6 @@
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { FC } from "react";
+import { useTranslation } from "react-i18next";
 import { MonitorGroup } from "../components/pulse/monitor-group.tsx";
 import { StatusBanner } from "../components/pulse/status-banner.tsx";
 import { usePulse } from "../hooks/use-pulse.ts";
@@ -7,6 +8,7 @@ import styles from "./pulse.module.css";
 
 export const Pulse: FC = () => {
 	const { pulse, isPending, error, refetch } = usePulse();
+	const { t } = useTranslation();
 
 	if (isPending) {
 		return (
@@ -23,12 +25,12 @@ export const Pulse: FC = () => {
 			<div className={styles.page}>
 				<div className={styles.errorState}>
 					<AlertTriangle size={32} />
-					<span className={styles.errorTitle}>Unable to load status</span>
+					<span className={styles.errorTitle}>{t('pulse.error.title')}</span>
 					<span className={styles.errorDesc}>
-						Status page is temporarily unavailable. Please try again.
+						{t('pulse.error.desc')}
 					</span>
 					<button type="button" className={styles.retryBtn} onClick={refetch}>
-						Retry
+						{t('pulse.error.retry')}
 					</button>
 				</div>
 			</div>
@@ -37,7 +39,7 @@ export const Pulse: FC = () => {
 
 	return (
 		<div className={styles.page}>
-			<p className={styles.hint}>Service availability and planned maintenance updates.</p>
+			<p className={styles.hint}>{t('pulse.hint')}</p>
 
 			<StatusBanner status={pulse.overallStatus} />
 
@@ -49,7 +51,7 @@ export const Pulse: FC = () => {
 
 			{pulse.incidents.length === 0 && (
 				<div className={styles.incidentsEmpty}>
-					<span className={styles.incidentsEmptyText}>No active incidents</span>
+					<span className={styles.incidentsEmptyText}>{t('pulse.noIncidents')}</span>
 				</div>
 			)}
 		</div>

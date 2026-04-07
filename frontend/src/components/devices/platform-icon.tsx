@@ -1,4 +1,5 @@
 import type { FC } from "react";
+import { useTranslation } from "react-i18next";
 
 interface PlatformIconProps {
 	platform: string | null;
@@ -6,13 +7,14 @@ interface PlatformIconProps {
 }
 
 export const PlatformIcon: FC<PlatformIconProps> = ({ platform, size = 18 }) => {
+	const { t } = useTranslation();
 	const p = platform?.toLowerCase();
 	const label =
 		p === "android" || p === "ios"
-			? "Mobile device"
+			? t('devices.platform.mobile')
 			: p === "macos" || p === "windows" || p === "linux"
-				? "Desktop device"
-				: "Unknown device";
+				? t('devices.platform.desktop')
+				: t('devices.platform.unknown');
 	const props = {
 		width: size,
 		height: size,

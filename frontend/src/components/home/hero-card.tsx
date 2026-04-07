@@ -1,5 +1,6 @@
 import { Infinity as InfinityIcon } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
 	formatExpiry,
 	formatMonthDay,
@@ -23,6 +24,7 @@ interface HeroCardProps {
 }
 
 export function HeroCard({ subscription }: HeroCardProps) {
+	const { t } = useTranslation();
 	const { usedBytes, totalBytes, deviceLimit, connectionLink } = subscription;
 	const unlimitedTraffic = isUnlimitedTraffic(totalBytes);
 	const unlimitedExpiry = isUnlimitedExpiry(subscription.expiresAt);
@@ -55,7 +57,7 @@ export function HeroCard({ subscription }: HeroCardProps) {
 						<div className={styles.kpiValue} style={{ color: expiryColor }}>
 							{unlimitedExpiry ? <InfinityIcon size={18} /> : formatExpiry(daysLeft)}
 						</div>
-						<div className={styles.kpiLabel}>Expires</div>
+						<div className={styles.kpiLabel}>{t('home.heroCard.expiresLabel')}</div>
 					</div>
 					<div className={styles.kpiDivider} />
 					<div className={styles.kpi}>
@@ -66,7 +68,7 @@ export function HeroCard({ subscription }: HeroCardProps) {
 								String(deviceLimit)
 							)}
 						</div>
-						<div className={styles.kpiLabel}>Devices</div>
+						<div className={styles.kpiLabel}>{t('home.heroCard.devicesLabel')}</div>
 					</div>
 				</div>
 			</div>
@@ -75,7 +77,7 @@ export function HeroCard({ subscription }: HeroCardProps) {
 			<div className={styles.trafficRow}>
 				<span className={styles.trafficUsed}>{formatTraffic(usedBytes)}</span>
 				<span className={styles.trafficTotal}>
-					/ {unlimitedTraffic ? "Unlimited" : formatTraffic(totalBytes)}
+					/ {unlimitedTraffic ? t('home.heroCard.trafficUnlimited') : formatTraffic(totalBytes)}
 				</span>
 			</div>
 
@@ -91,7 +93,7 @@ export function HeroCard({ subscription }: HeroCardProps) {
 					<div className={styles.barLabels}>
 						<span className={styles.barLabel}>
 							<span className={styles.barDot} style={{ background: fillColor }} />
-							Used {Math.round(pct)}%
+							{t('home.heroCard.usedPercent', { pct: Math.round(pct) })}
 						</span>
 						<span className={styles.barLabel}>
 							<span className={styles.barDot} style={{ background: "var(--v2-bg-tertiary)" }} />
@@ -109,13 +111,13 @@ export function HeroCard({ subscription }: HeroCardProps) {
 							? formatResetStrategy(subscription.resetStrategy)
 							: "\u2014"}
 					</span>
-					<span className={styles.statLabel}>Traffic Reset</span>
+					<span className={styles.statLabel}>{t('home.heroCard.trafficResetLabel')}</span>
 				</div>
 				<div className={styles.stat}>
 					<span className={styles.statValue}>
 						{subscription.refillDate ? formatMonthDay(subscription.refillDate) : "\u2014"}
 					</span>
-					<span className={styles.statLabel}>Next Reset</span>
+					<span className={styles.statLabel}>{t('home.heroCard.nextResetLabel')}</span>
 				</div>
 				<div className={styles.stat}>
 					<span className={styles.statValue}>
@@ -123,11 +125,11 @@ export function HeroCard({ subscription }: HeroCardProps) {
 							? formatTraffic(subscription.lifetimeUsedBytes)
 							: "\u2014"}
 					</span>
-					<span className={styles.statLabel}>All Time</span>
+					<span className={styles.statLabel}>{t('home.heroCard.allTimeLabel')}</span>
 				</div>
 				<div className={styles.stat}>
 					<span className={styles.statValue}>{formatRelativeTimeUnix(subscription.updatedAt)}</span>
-					<span className={styles.statLabel}>Last Updated</span>
+					<span className={styles.statLabel}>{t('home.heroCard.lastUpdatedLabel')}</span>
 				</div>
 			</div>
 
@@ -137,7 +139,7 @@ export function HeroCard({ subscription }: HeroCardProps) {
 					<span className={styles.actionIcon}>
 						{copied ? <CheckIcon size={13} /> : <CopyIcon size={13} />}
 					</span>
-					{copied ? "Copied" : "Copy subscription link"}
+					{copied ? t('home.heroCard.copied') : t('home.heroCard.copyLink')}
 				</button>
 			</div>
 		</div>

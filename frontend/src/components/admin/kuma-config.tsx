@@ -3,6 +3,7 @@ import { ArrowLeft, Check } from "lucide-react";
  * Kuma configuration sub-screen — URL, slug, connection test, save.
  */
 import { type FC, useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useTestKuma, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import styles from "../../pages/admin/settings.module.css";
 import type { AdminSettings } from "../../types/admin-settings.ts";
@@ -16,6 +17,7 @@ interface KumaConfigProps {
 }
 
 export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
+	const { t } = useTranslation();
 	const [url, setUrl] = useState(settings.kumaUrl ?? "");
 	const [slug, setSlug] = useState(settings.kumaSlug ?? "");
 	const [saved, setSaved] = useState(false);
@@ -58,10 +60,10 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 			? "var(--v2-text-negative)"
 			: "var(--v2-text-secondary)";
 	const connText = connStatus?.ok
-		? "Connected"
+		? t('settings.kuma.connected')
 		: connStatus?.error
 			? connStatus.error
-			: "Not tested";
+			: t('settings.kuma.notTested');
 
 	return (
 		<div className={styles.page}>
@@ -69,14 +71,14 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 				<button type="button" className={styles.backBtn} onClick={handleBack}>
 					<ArrowLeft size={16} />
 				</button>
-				<h1 className={styles.headerTitle}>Uptime Kuma</h1>
+				<h1 className={styles.headerTitle}>{t('settings.kuma.title')}</h1>
 			</div>
 
 			<div className={styles.sectionBody}>
 				<div className={styles.inputRow}>
 					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>URL</span>
-						<span className={styles.rowDesc}>Status page address</span>
+						<span className={styles.rowLabel}>{t('settings.kuma.urlLabel')}</span>
+						<span className={styles.rowDesc}>{t('settings.kuma.urlDesc')}</span>
 					</div>
 					<InputField
 						value={url}
@@ -84,14 +86,14 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 							setUrl(v);
 							setSaved(false);
 						}}
-						placeholder="https://status.example.com"
+						placeholder={t('settings.kuma.urlPlaceholder')}
 					/>
 				</div>
 
 				<div className={styles.inputRow}>
 					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>Slug</span>
-						<span className={styles.rowDesc}>Status page identifier</span>
+						<span className={styles.rowLabel}>{t('settings.kuma.slugLabel')}</span>
+						<span className={styles.rowDesc}>{t('settings.kuma.slugDesc')}</span>
 					</div>
 					<InputField
 						value={slug}
@@ -99,13 +101,13 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 							setSlug(v);
 							setSaved(false);
 						}}
-						placeholder="service"
+						placeholder={t('settings.kuma.slugPlaceholder')}
 					/>
 				</div>
 
 				<div className={styles.row}>
 					<div className={styles.rowLeft}>
-						<span className={styles.rowLabel}>Status</span>
+						<span className={styles.rowLabel}>{t('settings.kuma.statusLabel')}</span>
 						<span className={styles.statusText} style={{ color: connColor }}>
 							{connText}
 						</span>
@@ -116,7 +118,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 						variant="action"
 						size="sm"
 					>
-						Test
+						{t('settings.kuma.test')}
 					</ActionBtn>
 				</div>
 
@@ -124,12 +126,12 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 					<div className={styles.saveBar}>
 						{saved && (
 							<span className={styles.savedText}>
-								<Check size={12} /> Saved
+								<Check size={12} /> {t('settings.kuma.saved')}
 							</span>
 						)}
 						{dirty && !saved && (
 							<ActionBtn onClick={handleSave} loading={updateMutation.isPending} size="md">
-								Save changes
+								{t('settings.kuma.saveChanges')}
 							</ActionBtn>
 						)}
 					</div>
@@ -138,13 +140,13 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 
 			<ConfirmDialog
 				open={showDiscard}
-				title="Discard changes?"
-				confirmLabel="Discard"
-				cancelLabel="Keep editing"
+				title={t('settings.kuma.discardTitle')}
+				confirmLabel={t('settings.kuma.discardConfirm')}
+				cancelLabel={t('settings.kuma.discardCancel')}
 				onConfirm={onBack}
 				onCancel={() => setShowDiscard(false)}
 			>
-				<p>You have unsaved changes that will be lost.</p>
+				<p>{t('settings.kuma.discardBody')}</p>
 			</ConfirmDialog>
 		</div>
 	);

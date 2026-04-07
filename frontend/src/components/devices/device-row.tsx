@@ -1,5 +1,6 @@
 import { Loader2 } from "lucide-react";
 import type { FC } from "react";
+import { useTranslation } from "react-i18next";
 import { formatShortDate } from "../../lib/format.ts";
 import type { DeviceData } from "../../types/devices.ts";
 import styles from "./device-row.module.css";
@@ -14,16 +15,16 @@ interface DeviceRowProps {
 }
 
 const FALLBACK_NAMES: Record<string, string> = {
-	android: "Android Device",
-	ios: "iOS Device",
-	macos: "Mac",
-	windows: "Windows PC",
-	linux: "Linux",
+	android: "devices.fallback.android",
+	ios: "devices.fallback.ios",
+	macos: "devices.fallback.macos",
+	windows: "devices.fallback.windows",
+	linux: "devices.fallback.linux",
 };
 
-function getDeviceName(device: DeviceData): string {
+function getDeviceName(device: DeviceData, t: (key: string) => string): string {
 	if (device.deviceModel) return device.deviceModel;
-	return FALLBACK_NAMES[device.platform?.toLowerCase() ?? ""] ?? "Unknown device";
+	return t(FALLBACK_NAMES[device.platform?.toLowerCase() ?? ""] ?? "devices.fallback.unknown");
 }
 
 export const DeviceRow: FC<DeviceRowProps> = ({
@@ -33,15 +34,16 @@ export const DeviceRow: FC<DeviceRowProps> = ({
 	onDelete,
 	isDeleting,
 }) => {
+	const { t } = useTranslation();
 	return (
 		<div className={styles.row}>
 			<div className={styles.iconWrap}>
 				<PlatformIcon platform={device.platform} />
 			</div>
 			<div className={styles.info}>
-				<span className={styles.name}>{getDeviceName(device)}</span>
+				<span className={styles.name}>{getDeviceName(device, t)}</span>
 				<span className={styles.meta}>{device.osVersion || device.platform}</span>
-				<span className={styles.date}>Added {formatShortDate(device.createdAt)}</span>
+				<span className={styles.date}>{t('devices.row.added', { date: formatShortDate(device.createdAt) })}</span>
 			</div>
 			{isConfirming ? (
 				<button
@@ -50,7 +52,7 @@ export const DeviceRow: FC<DeviceRowProps> = ({
 					onClick={onDelete}
 					disabled={isDeleting}
 				>
-					{isDeleting ? <Loader2 size={12} className={styles.spinner} /> : "Remove"}
+					{isDeleting ? <Loader2 size={12} className={styles.spinner} /> : t('devices.row.removeConfirm')}
 				</button>
 			) : (
 				<button type="button" className={styles.iconBtn} onClick={onConfirm}>
@@ -64,7 +66,7 @@ export const DeviceRow: FC<DeviceRowProps> = ({
 						strokeLinecap="round"
 						strokeLinejoin="round"
 						role="img"
-						aria-label="Delete device"
+						aria-label={t('devices.row.deleteLabel')}
 					>
 						<polyline points="3 6 5 6 21 6" />
 						<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />

@@ -13,6 +13,7 @@ import {
 	Smartphone,
 	Users,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useMode } from "../../contexts/mode-context.tsx";
 import { useCurrentUser } from "../auth-guard.tsx";
 import styles from "./tab-bar.module.css";
@@ -24,20 +25,21 @@ interface TabDefinition {
 }
 
 const USER_TABS: TabDefinition[] = [
-	{ to: "/", label: "Home", icon: Home },
-	{ to: "/pulse", label: "Pulse", icon: Activity },
-	{ to: "/devices", label: "Devices", icon: Smartphone },
-	{ to: "/support", label: "Support", icon: HelpCircle },
+	{ to: "/", label: "common.tab.home", icon: Home },
+	{ to: "/pulse", label: "common.tab.pulse", icon: Activity },
+	{ to: "/devices", label: "common.tab.devices", icon: Smartphone },
+	{ to: "/support", label: "common.tab.support", icon: HelpCircle },
 ];
 
 const ADMIN_TABS: TabDefinition[] = [
-	{ to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-	{ to: "/admin/users", label: "Users", icon: Users },
-	{ to: "/admin/broadcast", label: "Broadcast", icon: Megaphone },
-	{ to: "/admin/settings", label: "Settings", icon: Settings },
+	{ to: "/admin/dashboard", label: "common.tab.dashboard", icon: LayoutDashboard },
+	{ to: "/admin/users", label: "common.tab.users", icon: Users },
+	{ to: "/admin/broadcast", label: "common.tab.broadcast", icon: Megaphone },
+	{ to: "/admin/settings", label: "common.tab.settings", icon: Settings },
 ];
 
 export function TabBar() {
+	const { t } = useTranslation();
 	const { mode } = useMode();
 	const user = useCurrentUser();
 	const showPulse = user.features?.pulse ?? false;
@@ -55,7 +57,7 @@ export function TabBar() {
 								<span className={styles.icon}>
 									<Icon size={20} />
 								</span>
-								<span className={styles.label}>{tab.label}</span>
+								<span className={styles.label}>{t(tab.label)}</span>
 							</div>
 						);
 					}}

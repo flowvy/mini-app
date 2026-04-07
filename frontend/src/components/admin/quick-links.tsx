@@ -3,6 +3,7 @@ import { ArrowLeft, Check } from "lucide-react";
  * Quick Links sub-screen — support URL, renew URL, save.
  */
 import { type FC, useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import styles from "../../pages/admin/settings.module.css";
 import type { AdminSettings } from "../../types/admin-settings.ts";
@@ -16,6 +17,7 @@ interface QuickLinksProps {
 }
 
 export const QuickLinks: FC<QuickLinksProps> = ({ settings, onBack }) => {
+	const { t } = useTranslation();
 	const [supportUrl, setSupportUrl] = useState(settings.supportUrl ?? "");
 	const [renewUrl, setRenewUrl] = useState(settings.renewUrl ?? "");
 	const [saved, setSaved] = useState(false);
@@ -56,14 +58,14 @@ export const QuickLinks: FC<QuickLinksProps> = ({ settings, onBack }) => {
 				<button type="button" className={styles.backBtn} onClick={handleBack}>
 					<ArrowLeft size={16} />
 				</button>
-				<h1 className={styles.headerTitle}>Quick Links</h1>
+				<h1 className={styles.headerTitle}>{t('settings.links.title')}</h1>
 			</div>
 
 			<div className={styles.sectionBody}>
 				<div className={styles.inputRow}>
 					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>Support</span>
-						<span className={styles.rowDesc}>Link shown to users on Support page</span>
+						<span className={styles.rowLabel}>{t('settings.links.supportLabel')}</span>
+						<span className={styles.rowDesc}>{t('settings.links.supportDesc')}</span>
 					</div>
 					<InputField
 						value={supportUrl}
@@ -71,14 +73,14 @@ export const QuickLinks: FC<QuickLinksProps> = ({ settings, onBack }) => {
 							setSupportUrl(v);
 							setSaved(false);
 						}}
-						placeholder="https://t.me/support"
+						placeholder={t('settings.links.supportPlaceholder')}
 					/>
 				</div>
 
 				<div className={styles.inputRow}>
 					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>Renew</span>
-						<span className={styles.rowDesc}>Subscription renewal link</span>
+						<span className={styles.rowLabel}>{t('settings.links.renewLabel')}</span>
+						<span className={styles.rowDesc}>{t('settings.links.renewDesc')}</span>
 					</div>
 					<InputField
 						value={renewUrl}
@@ -86,7 +88,7 @@ export const QuickLinks: FC<QuickLinksProps> = ({ settings, onBack }) => {
 							setRenewUrl(v);
 							setSaved(false);
 						}}
-						placeholder="https://example.com/renew"
+						placeholder={t('settings.links.renewPlaceholder')}
 					/>
 				</div>
 
@@ -94,12 +96,12 @@ export const QuickLinks: FC<QuickLinksProps> = ({ settings, onBack }) => {
 					<div className={styles.saveBar}>
 						{saved && (
 							<span className={styles.savedText}>
-								<Check size={12} /> Saved
+								<Check size={12} /> {t('settings.links.saved')}
 							</span>
 						)}
 						{dirty && !saved && (
 							<ActionBtn onClick={handleSave} loading={updateMutation.isPending} size="md">
-								Save
+								{t('settings.links.save')}
 							</ActionBtn>
 						)}
 					</div>
@@ -108,13 +110,13 @@ export const QuickLinks: FC<QuickLinksProps> = ({ settings, onBack }) => {
 
 			<ConfirmDialog
 				open={showDiscard}
-				title="Discard changes?"
-				confirmLabel="Discard"
-				cancelLabel="Keep editing"
+				title={t('settings.links.discardTitle')}
+				confirmLabel={t('settings.links.discardConfirm')}
+				cancelLabel={t('settings.links.discardCancel')}
 				onConfirm={onBack}
 				onCancel={() => setShowDiscard(false)}
 			>
-				<p>You have unsaved changes that will be lost.</p>
+				<p>{t('settings.links.discardBody')}</p>
 			</ConfirmDialog>
 		</div>
 	);

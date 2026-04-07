@@ -15,9 +15,12 @@
 		"@tanstack/react-router": "^1.168.10",
 		"@telegram-apps/sdk-react": "^3.0.0",
 		"geist": "^1.7.0",
+		"i18next": "^26.0.3",
+		"i18next-resources-to-backend": "^1.2.1",
 		"lucide-react": "^1.7.0",
 		"react": "^19.0.0",
-		"react-dom": "^19.0.0"
+		"react-dom": "^19.0.0",
+		"react-i18next": "^17.0.2"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.0",

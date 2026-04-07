@@ -3,6 +3,7 @@ import { ChevronRight, Settings } from "lucide-react";
  * Admin Settings page — three views: main, kuma config, quick links.
  */
 import { type FC, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { KumaConfig } from "../../components/admin/kuma-config.tsx";
 import { QuickLinks } from "../../components/admin/quick-links.tsx";
 import { Toggle } from "../../components/ui/toggle.tsx";
@@ -12,6 +13,7 @@ import styles from "./settings.module.css";
 type View = "settings" | "kuma" | "links";
 
 export const AdminSettings: FC = () => {
+	const { t } = useTranslation();
 	const [view, setView] = useState<View>("settings");
 	const { settings, isPending, error } = useAdminSettings();
 	const updateMutation = useUpdateSettings();
@@ -21,9 +23,9 @@ export const AdminSettings: FC = () => {
 			<div className={styles.page}>
 				<div className={styles.header}>
 					<Settings size={16} className={styles.headerIcon} />
-					<h1 className={styles.headerTitle}>Settings</h1>
+					<h1 className={styles.headerTitle}>{t('settings.title')}</h1>
 				</div>
-				<p style={{ color: "var(--v2-text-secondary)", fontSize: 12 }}>Loading...</p>
+				<p style={{ color: "var(--v2-text-secondary)", fontSize: 12 }}>{t('settings.loading')}</p>
 			</div>
 		);
 	}
@@ -33,9 +35,9 @@ export const AdminSettings: FC = () => {
 			<div className={styles.page}>
 				<div className={styles.header}>
 					<Settings size={16} className={styles.headerIcon} />
-					<h1 className={styles.headerTitle}>Settings</h1>
+					<h1 className={styles.headerTitle}>{t('settings.title')}</h1>
 				</div>
-				<p style={{ color: "var(--v2-text-negative)", fontSize: 12 }}>Failed to load settings</p>
+				<p style={{ color: "var(--v2-text-negative)", fontSize: 12 }}>{t('settings.error')}</p>
 			</div>
 		);
 	}
@@ -57,17 +59,17 @@ export const AdminSettings: FC = () => {
 		<div className={styles.page}>
 			<div className={styles.header}>
 				<Settings size={16} className={styles.headerIcon} />
-				<h1 className={styles.headerTitle}>Settings</h1>
+				<h1 className={styles.headerTitle}>{t('settings.title')}</h1>
 			</div>
 
 			{/* Integrations */}
 			<div className={styles.sectionBody}>
-				<div className={styles.sectionDivider}>Integrations</div>
+				<div className={styles.sectionDivider}>{t('settings.integrations')}</div>
 
 				<div className={styles.row}>
 					<div className={styles.rowLeft}>
-						<span className={styles.rowLabel}>Uptime Kuma</span>
-						<span className={styles.rowDesc}>Status page monitoring</span>
+						<span className={styles.rowLabel}>{t('settings.uptimeKuma')}</span>
+						<span className={styles.rowDesc}>{t('settings.uptimeKumaDesc')}</span>
 					</div>
 					<Toggle
 						checked={settings.kumaEnabled}
@@ -79,11 +81,11 @@ export const AdminSettings: FC = () => {
 				{settings.kumaEnabled && (
 					<button type="button" className={styles.toolRow} onClick={() => setView("kuma")}>
 						<div className={styles.toolRowLeft}>
-							<span className={styles.toolRowLabel}>Configure</span>
-							<span className={styles.toolRowDesc}>URL, slug, connection test</span>
+							<span className={styles.toolRowLabel}>{t('settings.configure')}</span>
+							<span className={styles.toolRowDesc}>{t('settings.configureDesc')}</span>
 						</div>
 						<span className={styles.toolRowRight}>
-							{kumaConfigured && <span className={styles.rowValuePositive}>Configured</span>}
+							{kumaConfigured && <span className={styles.rowValuePositive}>{t('settings.configured')}</span>}
 							<span className={styles.toolRowChevron}>
 								<ChevronRight size={14} />
 							</span>
@@ -94,12 +96,12 @@ export const AdminSettings: FC = () => {
 
 			{/* Quick Links */}
 			<div className={`${styles.sectionBody} ${styles.sectionBodyGap}`}>
-				<div className={styles.sectionDivider}>Quick Links</div>
+				<div className={styles.sectionDivider}>{t('settings.quickLinksSection')}</div>
 
 				<button type="button" className={styles.toolRow} onClick={() => setView("links")}>
 					<div className={styles.toolRowLeft}>
-						<span className={styles.toolRowLabel}>Support & Renew</span>
-						<span className={styles.toolRowDesc}>Links shown to users</span>
+						<span className={styles.toolRowLabel}>{t('settings.supportAndRenew')}</span>
+						<span className={styles.toolRowDesc}>{t('settings.supportAndRenewDesc')}</span>
 					</div>
 					<span className={styles.toolRowChevron}>
 						<ChevronRight size={14} />
@@ -109,12 +111,12 @@ export const AdminSettings: FC = () => {
 
 			{/* System */}
 			<div className={`${styles.sectionBody} ${styles.sectionBodyGap}`}>
-				<div className={styles.sectionDivider}>System</div>
+				<div className={styles.sectionDivider}>{t('settings.system')}</div>
 
 				<div className={styles.row}>
 					<div className={styles.rowLeft}>
-						<span className={styles.rowLabel}>Remnawave</span>
-						<span className={styles.rowDesc}>VPN panel</span>
+						<span className={styles.rowLabel}>{t('settings.remnawave')}</span>
+						<span className={styles.rowDesc}>{t('settings.remnawaveDesc')}</span>
 					</div>
 					<span className={styles.rowValuePositive}>
 						{settings.remnawaveVersion ? `v${settings.remnawaveVersion}` : "\u2014"}
@@ -123,8 +125,8 @@ export const AdminSettings: FC = () => {
 
 				<div className={styles.row}>
 					<div className={styles.rowLeft}>
-						<span className={styles.rowLabel}>Flowvy</span>
-						<span className={styles.rowDesc}>Application version</span>
+						<span className={styles.rowLabel}>{t('settings.flowvy')}</span>
+						<span className={styles.rowDesc}>{t('settings.flowvyDesc')}</span>
 					</div>
 					<span className={styles.rowValue}>v{settings.flowvyVersion}</span>
 				</div>

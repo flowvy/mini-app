@@ -3,6 +3,7 @@
  * Provides current user via context to avoid redundant fetches.
  */
 import { type ReactElement, type ReactNode, createContext, useContext } from "react";
+import { useTranslation } from "react-i18next";
 import { type UserResponse, useAuth } from "../hooks/use-auth.ts";
 
 const UserContext = createContext<UserResponse | null>(null);
@@ -21,11 +22,12 @@ interface AuthGuardProps {
 
 export function AuthGuard({ children }: AuthGuardProps): ReactElement {
 	const { user, isLoading, error, retry } = useAuth();
+	const { t } = useTranslation();
 
 	if (isLoading) {
 		return (
 			<div className="fv-auth-screen">
-				<p style={{ color: "var(--v2-text-secondary)" }}>Loading...</p>
+				<p style={{ color: "var(--v2-text-secondary)" }}>{t('common.loading')}</p>
 			</div>
 		);
 	}
@@ -33,9 +35,9 @@ export function AuthGuard({ children }: AuthGuardProps): ReactElement {
 	if (error || !user) {
 		return (
 			<div className="fv-auth-screen">
-				<p style={{ color: "var(--v2-text-danger, #e53935)" }}>{error || "Not authenticated"}</p>
+				<p style={{ color: "var(--v2-text-danger, #e53935)" }}>{error || t('common.notAuthenticated')}</p>
 				<button type="button" onClick={retry} className="fv-retry-btn">
-					Retry
+					{t('common.retry')}
 				</button>
 			</div>
 		);

@@ -3,6 +3,7 @@
  * Follows Desktop DetailRows.tsx pattern.
  */
 import type { FC } from "react";
+import { useTranslation } from "react-i18next";
 import {
 	formatDateISO,
 	formatLastSeen,
@@ -48,43 +49,44 @@ function SectionDivider({ children, first }: { children: string; first?: boolean
 }
 
 export const AdminUserDetail: FC<AdminUserDetailProps> = ({ user }) => {
+	const { t } = useTranslation();
 	const ut = user.userTraffic;
 	const internalSquads = user.activeInternalSquads?.map((sq) => sq.name.trim()).join(", ");
 
 	return (
 		<div className={styles.sectionBody}>
-			<SectionDivider first>Account Info</SectionDivider>
-			<Row label="Created" value={formatDateISO(user.createdAt)} mono />
+			<SectionDivider first>{t('admin.userDetail.accountInfo')}</SectionDivider>
+			<Row label={t('admin.userDetail.created')} value={formatDateISO(user.createdAt)} mono />
 			<Row
-				label="Expires"
-				value={isUnlimitedExpiryISO(user.expireAt) ? "Unlimited" : formatDateISO(user.expireAt)}
+				label={t('admin.userDetail.expires')}
+				value={isUnlimitedExpiryISO(user.expireAt) ? t('admin.userDetail.expiresUnlimited') : formatDateISO(user.expireAt)}
 				mono
 			/>
-			<Row label="Email" value={user.email} mono muted={!user.email} />
-			<Row label="Telegram ID" value={user.telegramId ? String(user.telegramId) : null} mono />
+			<Row label={t('admin.userDetail.email')} value={user.email} mono muted={!user.email} />
+			<Row label={t('admin.userDetail.telegramId')} value={user.telegramId ? String(user.telegramId) : null} mono />
 			<Row
-				label="Devices"
+				label={t('admin.userDetail.devices')}
 				value={
-					isUnlimitedDevices(user.hwidDeviceLimit) ? "Unlimited" : `${user.hwidDeviceLimit} devices`
+					isUnlimitedDevices(user.hwidDeviceLimit) ? t('admin.userDetail.devicesUnlimited') : t('admin.userDetail.devicesCount', { n: user.hwidDeviceLimit })
 				}
 				mono
 			/>
-			<Row label="Tag" value={user.tag} muted={!user.tag} />
-			<Row label="Description" value={user.description} muted={!user.description} />
+			<Row label={t('admin.userDetail.tag')} value={user.tag} muted={!user.tag} />
+			<Row label={t('admin.userDetail.description')} value={user.description} muted={!user.description} />
 
-			<SectionDivider>Squads</SectionDivider>
-			<Row label="Internal" value={internalSquads || null} muted={!internalSquads} />
-			<Row label="External" value={user.externalSquadName} muted={!user.externalSquadName} />
+			<SectionDivider>{t('admin.userDetail.squads')}</SectionDivider>
+			<Row label={t('admin.userDetail.internal')} value={internalSquads || null} muted={!internalSquads} />
+			<Row label={t('admin.userDetail.external')} value={user.externalSquadName} muted={!user.externalSquadName} />
 
-			<SectionDivider>Connection</SectionDivider>
+			<SectionDivider>{t('admin.userDetail.connection')}</SectionDivider>
 			<Row
-				label="First connected"
+				label={t('admin.userDetail.firstConnected')}
 				value={formatDateISO(ut.firstConnectedAt)}
 				mono
 				muted={!ut.firstConnectedAt}
 			/>
 			<Row
-				label="Last seen"
+				label={t('admin.userDetail.lastSeen')}
 				value={ut.onlineAt ? formatLastSeen(ut.onlineAt) : null}
 				mono
 				muted={!ut.onlineAt}

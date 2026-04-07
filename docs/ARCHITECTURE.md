@@ -292,6 +292,63 @@ queryClient.invalidateQueries({ queryKey: queryKeys.subscription }); // device c
 - No `onError`/`onSuccess` in useQuery — use `useEffect`
 - Single object parameter: `useQuery({ queryKey, queryFn })`
 
+## Internationalization (i18n)
+
+### Setup
+
+- **Library**: `i18next` + `react-i18next` + `i18next-resources-to-backend`
+- **Init**: `frontend/src/i18n/index.ts` — configures i18next with lazy-loaded locale via dynamic `import()`
+- **Locale files**: `frontend/src/i18n/locales/en.json` — nested JSON, all keys
+- **Suspense**: `main.tsx` wraps `<App />` in `<Suspense>` so locale loads before render
+- **Chunk splitting**: Vite `manualChunks` splits i18next into a separate vendor chunk; locale JSON is a separate async chunk
+
+### Key Structure
+
+Dot-separated, grouped by domain:
+
+| Domain | Scope |
+|--------|-------|
+| `common.*` | Shared UI: auth guard, header, tab bar, confirm dialog, status badges |
+| `home.*` | Home page: hero card, detail section, subscription states |
+| `devices.*` | Devices page, device row, platform icons |
+| `pulse.*` | Pulse/status page, status banner, monitor rows |
+| `settings.*` | Admin settings, Kuma config, quick links sub-screens |
+| `admin.*` | Admin pages: users list, user detail/hero, user actions |
+| `format.*` | Format helpers: traffic units, time expressions, strategy labels |
+
+### Usage Patterns
+
+**React components** — `useTranslation` hook:
+```typescript
+import { useTranslation } from 'react-i18next';
+
+function MyComponent() {
+  const { t } = useTranslation();
+  return <span>{t('domain.key')}</span>;
+}
+```
+
+**Non-React files** (lib/format.ts, action definitions) — direct `i18n.t()`:
+```typescript
+import i18n from '../i18n';
+
+function formatSomething(): string {
+  return i18n.t('format.someKey', { n: 42 });
+}
+```
+
+**Interpolation** — double braces in JSON, object param in code:
+```typescript
+// en.json: "greeting": "Hello, {{name}}!"
+t('greeting', { name: 'World' })
+```
+
+**Static config objects** (PAGE_META, tab definitions, status labels) — store i18n keys as strings, resolve with `t()` at render time:
+```typescript
+const TABS = [{ label: 'common.tab.home', icon: Home }];
+// In JSX: {t(tab.label)}
+```
+
 ## Authentication Flow (Mini App)
 
 1. Mini App opens → Telegram injects `initData`
