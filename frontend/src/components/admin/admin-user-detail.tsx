@@ -55,38 +55,60 @@ export const AdminUserDetail: FC<AdminUserDetailProps> = ({ user }) => {
 
 	return (
 		<div className={styles.sectionBody}>
-			<SectionDivider first>{t('admin.userDetail.accountInfo')}</SectionDivider>
-			<Row label={t('admin.userDetail.created')} value={formatDateISO(user.createdAt)} mono />
+			<SectionDivider first>{t("admin.userDetail.accountInfo")}</SectionDivider>
+			<Row label={t("admin.userDetail.created")} value={formatDateISO(user.createdAt)} mono />
 			<Row
-				label={t('admin.userDetail.expires')}
-				value={isUnlimitedExpiryISO(user.expireAt) ? t('admin.userDetail.expiresUnlimited') : formatDateISO(user.expireAt)}
-				mono
-			/>
-			<Row label={t('admin.userDetail.email')} value={user.email} mono muted={!user.email} />
-			<Row label={t('admin.userDetail.telegramId')} value={user.telegramId ? String(user.telegramId) : null} mono />
-			<Row
-				label={t('admin.userDetail.devices')}
+				label={t("admin.userDetail.expires")}
 				value={
-					isUnlimitedDevices(user.hwidDeviceLimit) ? t('admin.userDetail.devicesUnlimited') : t('admin.userDetail.devicesCount', { n: user.hwidDeviceLimit })
+					isUnlimitedExpiryISO(user.expireAt)
+						? t("admin.userDetail.expiresUnlimited")
+						: formatDateISO(user.expireAt)
 				}
 				mono
 			/>
-			<Row label={t('admin.userDetail.tag')} value={user.tag} muted={!user.tag} />
-			<Row label={t('admin.userDetail.description')} value={user.description} muted={!user.description} />
-
-			<SectionDivider>{t('admin.userDetail.squads')}</SectionDivider>
-			<Row label={t('admin.userDetail.internal')} value={internalSquads || null} muted={!internalSquads} />
-			<Row label={t('admin.userDetail.external')} value={user.externalSquadName} muted={!user.externalSquadName} />
-
-			<SectionDivider>{t('admin.userDetail.connection')}</SectionDivider>
+			<Row label={t("admin.userDetail.email")} value={user.email} mono muted={!user.email} />
 			<Row
-				label={t('admin.userDetail.firstConnected')}
+				label={t("admin.userDetail.telegramId")}
+				value={user.telegramId ? String(user.telegramId) : null}
+				mono
+			/>
+			<Row
+				label={t("admin.userDetail.devices")}
+				value={
+					isUnlimitedDevices(user.hwidDeviceLimit)
+						? t("admin.userDetail.devicesUnlimited")
+						: t("admin.userDetail.devicesCount", { n: user.hwidDeviceLimit })
+				}
+				mono
+			/>
+			<Row label={t("admin.userDetail.tag")} value={user.tag} muted={!user.tag} />
+			<Row
+				label={t("admin.userDetail.description")}
+				value={user.description}
+				muted={!user.description}
+			/>
+
+			<SectionDivider>{t("admin.userDetail.squads")}</SectionDivider>
+			<Row
+				label={t("admin.userDetail.internal")}
+				value={internalSquads || null}
+				muted={!internalSquads}
+			/>
+			<Row
+				label={t("admin.userDetail.external")}
+				value={user.externalSquadName}
+				muted={!user.externalSquadName}
+			/>
+
+			<SectionDivider>{t("admin.userDetail.connection")}</SectionDivider>
+			<Row
+				label={t("admin.userDetail.firstConnected")}
 				value={formatDateISO(ut.firstConnectedAt)}
 				mono
 				muted={!ut.firstConnectedAt}
 			/>
 			<Row
-				label={t('admin.userDetail.lastSeen')}
+				label={t("admin.userDetail.lastSeen")}
 				value={ut.onlineAt ? formatLastSeen(ut.onlineAt) : null}
 				mono
 				muted={!ut.onlineAt}

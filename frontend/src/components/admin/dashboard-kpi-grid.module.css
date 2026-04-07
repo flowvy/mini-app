@@ -1,0 +1,40 @@
+/* ── KPI Grid (2×2) ── */
+
+.grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+}
+
+.card {
+	background: var(--v2-bg-primary);
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-md);
+	padding: 12px 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.value {
+	font-size: 20px;
+	font-weight: 800;
+	font-family: var(--font-mono);
+	line-height: 1.1;
+	color: var(--v2-text-primary);
+}
+
+.label {
+	font-size: 10px;
+	font-weight: 600;
+	color: var(--v2-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	margin-top: 2px;
+}
+
+.sub {
+	font-size: 10px;
+	color: var(--v2-text-tertiary);
+	margin-top: 1px;
+}

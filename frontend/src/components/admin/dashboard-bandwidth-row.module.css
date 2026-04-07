@@ -1,0 +1,52 @@
+/* ── Bandwidth Row ── */
+
+.row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 14px;
+	min-height: 36px;
+	border-top: 1px solid var(--v2-border-tertiary);
+}
+
+.left {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.label {
+	font-size: 12px;
+	color: var(--v2-text-secondary);
+}
+
+.prev {
+	font-size: 9px;
+	color: var(--v2-text-tertiary);
+}
+
+.right {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 1px;
+}
+
+.current {
+	font-size: 12px;
+	font-weight: 600;
+	font-family: var(--font-mono);
+	color: var(--v2-text-primary);
+}
+
+.diffUp {
+	font-size: 9px;
+	font-family: var(--font-mono);
+	color: var(--v2-text-positive);
+}
+
+.diffDown {
+	font-size: 9px;
+	font-family: var(--font-mono);
+	color: var(--v2-text-negative);
+}

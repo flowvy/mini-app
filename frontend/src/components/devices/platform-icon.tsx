@@ -11,10 +11,10 @@ export const PlatformIcon: FC<PlatformIconProps> = ({ platform, size = 18 }) => 
 	const p = platform?.toLowerCase();
 	const label =
 		p === "android" || p === "ios"
-			? t('devices.platform.mobile')
+			? t("devices.platform.mobile")
 			: p === "macos" || p === "windows" || p === "linux"
-				? t('devices.platform.desktop')
-				: t('devices.platform.unknown');
+				? t("devices.platform.desktop")
+				: t("devices.platform.unknown");
 	const props = {
 		width: size,
 		height: size,

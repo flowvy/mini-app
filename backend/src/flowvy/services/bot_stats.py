@@ -55,7 +55,7 @@ class BotStatsService:
 
     async def _collect_users(self) -> BotUserStats:
         """Count users by activity window from DB."""
-        now = datetime.now(UTC)
+        now = datetime.now(UTC).replace(tzinfo=None)
 
         total = (
             await self._session.scalar(

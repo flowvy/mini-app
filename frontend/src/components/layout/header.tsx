@@ -47,7 +47,7 @@ export function Header() {
 					<span className={styles.title}>{t(meta.title)}</span>
 				</div>
 			) : (
-				<span className={styles.title}>{t('common.appName')}</span>
+				<span className={styles.title}>{t("common.appName")}</span>
 			)}
 			{isAdmin && (
 				<div className={styles.toggle}>
@@ -55,7 +55,7 @@ export function Header() {
 						type="button"
 						className={`${styles.toggleBtn} ${mode === "user" ? styles.activeBtn : ""}`}
 						onClick={() => handleToggle("user")}
-						aria-label={t('common.header.userModeLabel')}
+						aria-label={t("common.header.userModeLabel")}
 					>
 						<User size={16} />
 					</button>
@@ -63,7 +63,7 @@ export function Header() {
 						type="button"
 						className={`${styles.toggleBtn} ${mode === "admin" ? styles.activeBtn : ""}`}
 						onClick={() => handleToggle("admin")}
-						aria-label={t('common.header.adminModeLabel')}
+						aria-label={t("common.header.adminModeLabel")}
 					>
 						<UserStar size={16} />
 					</button>

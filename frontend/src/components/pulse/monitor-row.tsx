@@ -36,8 +36,8 @@ export const MonitorRow: FC<MonitorRowProps> = ({ monitor }) => {
 			</div>
 			<HeartbeatBar heartbeats={monitor.heartbeats} />
 			<div className={styles.timeline}>
-				<span>{t('pulse.timeline.past')}</span>
-				<span>{t('pulse.timeline.now')}</span>
+				<span>{t("pulse.timeline.past")}</span>
+				<span>{t("pulse.timeline.now")}</span>
 			</div>
 		</div>
 	);

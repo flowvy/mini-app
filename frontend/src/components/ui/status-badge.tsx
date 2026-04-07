@@ -22,5 +22,7 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status }: StatusBadgeProps) {
 	const { t } = useTranslation();
-	return <span className={`${styles.badge} ${STATUS_CLASS[status]}`}>{t(STATUS_LABEL[status])}</span>;
+	return (
+		<span className={`${styles.badge} ${STATUS_CLASS[status]}`}>{t(STATUS_LABEL[status])}</span>
+	);
 }

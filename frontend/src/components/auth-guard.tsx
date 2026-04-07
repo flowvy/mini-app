@@ -27,7 +27,7 @@ export function AuthGuard({ children }: AuthGuardProps): ReactElement {
 	if (isLoading) {
 		return (
 			<div className="fv-auth-screen">
-				<p style={{ color: "var(--v2-text-secondary)" }}>{t('common.loading')}</p>
+				<p style={{ color: "var(--v2-text-secondary)" }}>{t("common.loading")}</p>
 			</div>
 		);
 	}
@@ -35,9 +35,11 @@ export function AuthGuard({ children }: AuthGuardProps): ReactElement {
 	if (error || !user) {
 		return (
 			<div className="fv-auth-screen">
-				<p style={{ color: "var(--v2-text-danger, #e53935)" }}>{error || t('common.notAuthenticated')}</p>
+				<p style={{ color: "var(--v2-text-danger, #e53935)" }}>
+					{error || t("common.notAuthenticated")}
+				</p>
 				<button type="button" onClick={retry} className="fv-retry-btn">
-					{t('common.retry')}
+					{t("common.retry")}
 				</button>
 			</div>
 		);

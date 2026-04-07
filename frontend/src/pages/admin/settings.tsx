@@ -23,9 +23,9 @@ export const AdminSettings: FC = () => {
 			<div className={styles.page}>
 				<div className={styles.header}>
 					<Settings size={16} className={styles.headerIcon} />
-					<h1 className={styles.headerTitle}>{t('settings.title')}</h1>
+					<h1 className={styles.headerTitle}>{t("settings.title")}</h1>
 				</div>
-				<p style={{ color: "var(--v2-text-secondary)", fontSize: 12 }}>{t('settings.loading')}</p>
+				<p style={{ color: "var(--v2-text-secondary)", fontSize: 12 }}>{t("settings.loading")}</p>
 			</div>
 		);
 	}
@@ -35,9 +35,9 @@ export const AdminSettings: FC = () => {
 			<div className={styles.page}>
 				<div className={styles.header}>
 					<Settings size={16} className={styles.headerIcon} />
-					<h1 className={styles.headerTitle}>{t('settings.title')}</h1>
+					<h1 className={styles.headerTitle}>{t("settings.title")}</h1>
 				</div>
-				<p style={{ color: "var(--v2-text-negative)", fontSize: 12 }}>{t('settings.error')}</p>
+				<p style={{ color: "var(--v2-text-negative)", fontSize: 12 }}>{t("settings.error")}</p>
 			</div>
 		);
 	}
@@ -59,17 +59,17 @@ export const AdminSettings: FC = () => {
 		<div className={styles.page}>
 			<div className={styles.header}>
 				<Settings size={16} className={styles.headerIcon} />
-				<h1 className={styles.headerTitle}>{t('settings.title')}</h1>
+				<h1 className={styles.headerTitle}>{t("settings.title")}</h1>
 			</div>
 
 			{/* Integrations */}
 			<div className={styles.sectionBody}>
-				<div className={styles.sectionDivider}>{t('settings.integrations')}</div>
+				<div className={styles.sectionDivider}>{t("settings.integrations")}</div>
 
 				<div className={styles.row}>
 					<div className={styles.rowLeft}>
-						<span className={styles.rowLabel}>{t('settings.uptimeKuma')}</span>
-						<span className={styles.rowDesc}>{t('settings.uptimeKumaDesc')}</span>
+						<span className={styles.rowLabel}>{t("settings.uptimeKuma")}</span>
+						<span className={styles.rowDesc}>{t("settings.uptimeKumaDesc")}</span>
 					</div>
 					<Toggle
 						checked={settings.kumaEnabled}
@@ -81,11 +81,13 @@ export const AdminSettings: FC = () => {
 				{settings.kumaEnabled && (
 					<button type="button" className={styles.toolRow} onClick={() => setView("kuma")}>
 						<div className={styles.toolRowLeft}>
-							<span className={styles.toolRowLabel}>{t('settings.configure')}</span>
-							<span className={styles.toolRowDesc}>{t('settings.configureDesc')}</span>
+							<span className={styles.toolRowLabel}>{t("settings.configure")}</span>
+							<span className={styles.toolRowDesc}>{t("settings.configureDesc")}</span>
 						</div>
 						<span className={styles.toolRowRight}>
-							{kumaConfigured && <span className={styles.rowValuePositive}>{t('settings.configured')}</span>}
+							{kumaConfigured && (
+								<span className={styles.rowValuePositive}>{t("settings.configured")}</span>
+							)}
 							<span className={styles.toolRowChevron}>
 								<ChevronRight size={14} />
 							</span>
@@ -96,12 +98,12 @@ export const AdminSettings: FC = () => {
 
 			{/* Quick Links */}
 			<div className={`${styles.sectionBody} ${styles.sectionBodyGap}`}>
-				<div className={styles.sectionDivider}>{t('settings.quickLinksSection')}</div>
+				<div className={styles.sectionDivider}>{t("settings.quickLinksSection")}</div>
 
 				<button type="button" className={styles.toolRow} onClick={() => setView("links")}>
 					<div className={styles.toolRowLeft}>
-						<span className={styles.toolRowLabel}>{t('settings.supportAndRenew')}</span>
-						<span className={styles.toolRowDesc}>{t('settings.supportAndRenewDesc')}</span>
+						<span className={styles.toolRowLabel}>{t("settings.supportAndRenew")}</span>
+						<span className={styles.toolRowDesc}>{t("settings.supportAndRenewDesc")}</span>
 					</div>
 					<span className={styles.toolRowChevron}>
 						<ChevronRight size={14} />
@@ -111,12 +113,12 @@ export const AdminSettings: FC = () => {
 
 			{/* System */}
 			<div className={`${styles.sectionBody} ${styles.sectionBodyGap}`}>
-				<div className={styles.sectionDivider}>{t('settings.system')}</div>
+				<div className={styles.sectionDivider}>{t("settings.system")}</div>
 
 				<div className={styles.row}>
 					<div className={styles.rowLeft}>
-						<span className={styles.rowLabel}>{t('settings.remnawave')}</span>
-						<span className={styles.rowDesc}>{t('settings.remnawaveDesc')}</span>
+						<span className={styles.rowLabel}>{t("settings.remnawave")}</span>
+						<span className={styles.rowDesc}>{t("settings.remnawaveDesc")}</span>
 					</div>
 					<span className={styles.rowValuePositive}>
 						{settings.remnawaveVersion ? `v${settings.remnawaveVersion}` : "\u2014"}
@@ -125,8 +127,8 @@ export const AdminSettings: FC = () => {
 
 				<div className={styles.row}>
 					<div className={styles.rowLeft}>
-						<span className={styles.rowLabel}>{t('settings.flowvy')}</span>
-						<span className={styles.rowDesc}>{t('settings.flowvyDesc')}</span>
+						<span className={styles.rowLabel}>{t("settings.flowvy")}</span>
+						<span className={styles.rowDesc}>{t("settings.flowvyDesc")}</span>
 					</div>
 					<span className={styles.rowValue}>v{settings.flowvyVersion}</span>
 				</div>

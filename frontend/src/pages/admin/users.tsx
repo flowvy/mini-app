@@ -102,7 +102,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 		return (
 			<div className={styles.page}>
 				<div className={styles.empty}>
-					<span className={styles.emptyTitle}>{t('admin.users.error')}</span>
+					<span className={styles.emptyTitle}>{t("admin.users.error")}</span>
 				</div>
 			</div>
 		);
@@ -111,7 +111,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 	return (
 		<div className={styles.page}>
 			<div className={styles.header}>
-				<h1 className={styles.headerTitle}>{t('admin.users.title')}</h1>
+				<h1 className={styles.headerTitle}>{t("admin.users.title")}</h1>
 				{total > 0 && <span className={styles.headerCount}>{total}</span>}
 			</div>
 
@@ -122,7 +122,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 					value={searchInput}
 					onChange={(e) => setSearchInput(e.target.value)}
 					onKeyDown={handleSearch}
-					placeholder={t('admin.users.searchPlaceholder')}
+					placeholder={t("admin.users.searchPlaceholder")}
 					className={styles.searchInput}
 				/>
 				{isSearchMode && (
@@ -130,7 +130,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 						type="button"
 						className={styles.clearBtn}
 						onClick={handleClear}
-						aria-label={t('admin.users.clearSearchLabel')}
+						aria-label={t("admin.users.clearSearchLabel")}
 					>
 						<X size={12} />
 					</button>
@@ -145,15 +145,15 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 
 			{isSearchMode && search.error && (
 				<div className={styles.empty}>
-					<span className={styles.emptyTitle}>{t('admin.users.searchFailed')}</span>
+					<span className={styles.emptyTitle}>{t("admin.users.searchFailed")}</span>
 				</div>
 			)}
 
 			{isSearchMode && !search.isPending && displayUsers.length === 0 && (
 				<div className={styles.empty}>
 					<UserX size={36} className={styles.emptyIcon} />
-					<span className={styles.emptyTitle}>{t('admin.users.notFound')}</span>
-					<span className={styles.emptyDesc}>{t('admin.users.notFoundDesc')}</span>
+					<span className={styles.emptyTitle}>{t("admin.users.notFound")}</span>
+					<span className={styles.emptyDesc}>{t("admin.users.notFoundDesc")}</span>
 				</div>
 			)}
 
@@ -174,7 +174,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 					onClick={handleLoadMore}
 					disabled={list.isPending}
 				>
-					{list.isPending ? t('admin.users.loadingMore') : t('admin.users.loadMore')}
+					{list.isPending ? t("admin.users.loadingMore") : t("admin.users.loadMore")}
 				</button>
 			)}
 		</div>

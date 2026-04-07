@@ -43,7 +43,9 @@ export const DeviceRow: FC<DeviceRowProps> = ({
 			<div className={styles.info}>
 				<span className={styles.name}>{getDeviceName(device, t)}</span>
 				<span className={styles.meta}>{device.osVersion || device.platform}</span>
-				<span className={styles.date}>{t('devices.row.added', { date: formatShortDate(device.createdAt) })}</span>
+				<span className={styles.date}>
+					{t("devices.row.added", { date: formatShortDate(device.createdAt) })}
+				</span>
 			</div>
 			{isConfirming ? (
 				<button
@@ -52,7 +54,11 @@ export const DeviceRow: FC<DeviceRowProps> = ({
 					onClick={onDelete}
 					disabled={isDeleting}
 				>
-					{isDeleting ? <Loader2 size={12} className={styles.spinner} /> : t('devices.row.removeConfirm')}
+					{isDeleting ? (
+						<Loader2 size={12} className={styles.spinner} />
+					) : (
+						t("devices.row.removeConfirm")
+					)}
 				</button>
 			) : (
 				<button type="button" className={styles.iconBtn} onClick={onConfirm}>
@@ -66,7 +72,7 @@ export const DeviceRow: FC<DeviceRowProps> = ({
 						strokeLinecap="round"
 						strokeLinejoin="round"
 						role="img"
-						aria-label={t('devices.row.deleteLabel')}
+						aria-label={t("devices.row.deleteLabel")}
 					>
 						<polyline points="3 6 5 6 21 6" />
 						<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />

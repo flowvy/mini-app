@@ -72,7 +72,7 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 				<div className={styles.heroRow1}>
 					<div className={styles.heroLeft}>
 						{unlTraffic ? (
-							<span className={styles.heroUsed}>{t('admin.userHero.unlimited')}</span>
+							<span className={styles.heroUsed}>{t("admin.userHero.unlimited")}</span>
 						) : (
 							<>
 								<span className={styles.heroUsed}>{formatTraffic(ut.usedTrafficBytes)}</span>
@@ -88,7 +88,7 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 							>
 								{unlExpiry ? <InfinityIcon size={16} /> : formatExpiryCompact(daysLeft)}
 							</div>
-							<div className={styles.heroKpiLabel}>{t('admin.userHero.expiresLabel')}</div>
+							<div className={styles.heroKpiLabel}>{t("admin.userHero.expiresLabel")}</div>
 						</div>
 						<div className={styles.heroDivider} />
 						<div className={styles.heroKpi}>
@@ -99,7 +99,7 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 									user.hwidDeviceLimit
 								)}
 							</div>
-							<div className={styles.heroKpiLabel}>{t('admin.userHero.devicesLabel')}</div>
+							<div className={styles.heroKpiLabel}>{t("admin.userHero.devicesLabel")}</div>
 						</div>
 					</div>
 				</div>
@@ -115,7 +115,7 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 						<div className={styles.heroBarLabels}>
 							<span className={styles.heroBarLabel}>
 								<span className={styles.heroBarDot} style={{ background: fillColor }} />
-								{t('admin.userHero.usedPercent', { pct: Math.round(pct) })}
+								{t("admin.userHero.usedPercent", { pct: Math.round(pct) })}
 							</span>
 							<span className={styles.heroBarLabel}>
 								<span
@@ -133,15 +133,15 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 						<div className={styles.heroStatValue}>
 							{formatResetStrategy(user.trafficLimitStrategy as ResetStrategy)}
 						</div>
-						<div className={styles.heroStatLabel}>{t('admin.userHero.trafficResetLabel')}</div>
+						<div className={styles.heroStatLabel}>{t("admin.userHero.trafficResetLabel")}</div>
 					</div>
 					<div className={styles.heroStat}>
 						<div className={styles.heroStatValue}>{formatTraffic(ut.lifetimeUsedTrafficBytes)}</div>
-						<div className={styles.heroStatLabel}>{t('admin.userHero.allTimeLabel')}</div>
+						<div className={styles.heroStatLabel}>{t("admin.userHero.allTimeLabel")}</div>
 					</div>
 					<div className={styles.heroStat}>
 						<div className={styles.heroStatValue}>{formatLastSeen(ut.onlineAt)}</div>
-						<div className={styles.heroStatLabel}>{t('admin.userHero.lastSeenLabel')}</div>
+						<div className={styles.heroStatLabel}>{t("admin.userHero.lastSeenLabel")}</div>
 					</div>
 				</div>
 
@@ -177,7 +177,7 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 				open={!!confirm}
 				title={confirm?.title ?? ""}
 				confirmLabel={confirm?.confirmLabel ?? ""}
-				cancelLabel={t('admin.userHero.cancelLabel')}
+				cancelLabel={t("admin.userHero.cancelLabel")}
 				confirmVariant={confirm?.danger ? "danger" : "confirm"}
 				onConfirm={handleConfirm}
 				onCancel={() => setConfirm(null)}

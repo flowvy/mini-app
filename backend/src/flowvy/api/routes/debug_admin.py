@@ -7,7 +7,9 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from flowvy.api.routes.debug import check_debug
 from flowvy.schemas.admin_users import AdminUsersResponse
+from flowvy.schemas.dashboard import DashboardResponse
 from flowvy.services.admin_users import AdminUsersService
+from flowvy.services.dashboard import DashboardService
 from flowvy.services.remnawave import RemnawaveError
 
 router = APIRouter(
@@ -15,6 +17,16 @@ router = APIRouter(
     tags=["debug-admin"],
     route_class=DishkaRoute,
 )
+
+
+@router.get("/dashboard", response_model=DashboardResponse)
+async def debug_admin_dashboard(
+    request: Request,
+    service: FromDishka[DashboardService] = None,  # type: ignore[assignment]
+) -> DashboardResponse:
+    """Fetch admin dashboard without Telegram auth. DEBUG mode only."""
+    check_debug(request)
+    return await service.get_dashboard()
 
 
 @router.get("/users", response_model=AdminUsersResponse)

@@ -1,0 +1,105 @@
+/* ── Dashboard Page ── */
+
+.page {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 16px;
+	padding-bottom: 96px;
+	animation: fvFadeIn var(--duration-base) ease-out;
+}
+
+.loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	color: var(--v2-text-secondary);
+	font-size: 13px;
+}
+
+.error {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	color: var(--v2-text-negative);
+	font-size: 13px;
+}
+
+/* ── Section body (reusable detail-section pattern) ── */
+
+.sectionBody {
+	background: var(--v2-bg-primary);
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-md);
+	overflow: hidden;
+}
+
+.divider {
+	padding: 4px 14px 5px;
+	font-size: 10px;
+	font-weight: 600;
+	color: var(--v2-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	border-top: 1px solid var(--v2-border-tertiary);
+	background: color-mix(in srgb, var(--v2-bg-tertiary) 50%, transparent);
+}
+
+.sectionBody .divider:first-child {
+	border-top: none;
+}
+
+/* ── Row ── */
+
+.row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px 14px;
+	min-height: 32px;
+	border-top: 1px solid var(--v2-border-tertiary);
+}
+
+.rowLabel {
+	font-size: 12px;
+	color: var(--v2-text-secondary);
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.rowValue {
+	font-size: 12px;
+	color: var(--v2-text-primary);
+	text-align: right;
+}
+
+.mono {
+	font-family: var(--font-mono);
+}
+
+.muted {
+	color: var(--v2-text-tertiary);
+}
+
+/* ── Status dot (6px circle) ── */
+
+.dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+/* ── No-data placeholder ── */
+
+.noData {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 32px 16px;
+	color: var(--v2-text-tertiary);
+	font-size: 13px;
+}

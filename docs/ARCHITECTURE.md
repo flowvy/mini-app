@@ -293,6 +293,18 @@ Frontend TabBar conditionally renders the Pulse tab based on `user.features.puls
 - `BotStatsService` — REQUEST scope (needs AsyncSession + Redis)
 - `DashboardService` — REQUEST scope (needs RemnawaveClient + BotStatsService + Redis)
 
+### Dashboard Frontend
+
+Page: `pages/admin/dashboard.tsx` with segmented control (VPN | Bot tabs).
+
+**VPN tab**: KPI grid (Users, Nodes, Today bandwidth, Lifetime) → Users by status (color dots) → Online stats → Bandwidth periods (current + prev + diff ↑↓) → System (CPU, Memory, Uptime).
+
+**Bot tab**: KPI grid (Users, Active 24h, Requests today, Uptime) → User registrations → Activity (1h, 24h) → Requests → System (CPU, Memory, Uptime, Version).
+
+Components: `SegmentedControl` (reusable UI), `DashboardKpiGrid` (2×2 cards), `DashboardBandwidthRow` (label + current/prev/diff).
+
+Hook: `useDashboard()` — `queryKey: adminDashboard`, `staleTime: 30s`.
+
 ## TanStack Query (Frontend)
 
 ### Request Deduplication
@@ -308,7 +320,7 @@ export const queryKeys = {
   devices: ['devices'] as const,
   nodes: ['nodes'] as const,
   pulse: ['pulse'] as const,
-  adminStats: ['admin', 'stats'] as const,
+  adminDashboard: ['admin', 'dashboard'] as const,
   adminUsers: (start: number) => ['admin', 'users', start] as const,
   adminUsersSearch: (q: string) => ['admin', 'users', 'search', q] as const,
   adminSettings: ['admin', 'settings'] as const,
@@ -323,7 +335,7 @@ export const queryKeys = {
 | Devices | 0 | 5 min | Always refetch on mount |
 | Nodes | 30s | 5 min | Shared, changes slowly |
 | Pulse | 60s | 5 min | Kuma status, matches backend cache TTL |
-| Admin stats | 60s | 5 min | Aggregates, not critical |
+| Admin dashboard | 30s | 5 min | Matches backend cache TTL |
 | Admin users | 0 | 5 min | Admin manages, needs fresh |
 
 ### Invalidation After Mutations

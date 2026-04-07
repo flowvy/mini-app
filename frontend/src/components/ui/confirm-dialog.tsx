@@ -48,7 +48,12 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 			<dialog open className={styles.modal} aria-label={title}>
 				<div className={styles.header}>
 					<span className={styles.title}>{title}</span>
-					<button type="button" className={styles.closeBtn} onClick={onCancel} aria-label={t('common.confirmDialog.closeLabel')}>
+					<button
+						type="button"
+						className={styles.closeBtn}
+						onClick={onCancel}
+						aria-label={t("common.confirmDialog.closeLabel")}
+					>
 						<X size={16} />
 					</button>
 				</div>

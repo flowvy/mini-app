@@ -9,7 +9,7 @@ export const Support: FC = () => {
 		<div className={styles.page}>
 			<div className={styles.stubBody}>
 				<HelpCircle size={48} className={styles.icon} />
-				<span className={styles.title}>{t('common.comingSoon')}</span>
+				<span className={styles.title}>{t("common.comingSoon")}</span>
 			</div>
 		</div>
 	);

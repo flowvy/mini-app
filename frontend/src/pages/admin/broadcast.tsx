@@ -9,7 +9,7 @@ export const AdminBroadcast: FC = () => {
 		<div className={styles.page}>
 			<div className={styles.stubBody}>
 				<Megaphone size={48} className={styles.icon} />
-				<span className={styles.title}>{t('admin.broadcast.comingSoon')}</span>
+				<span className={styles.title}>{t("admin.broadcast.comingSoon")}</span>
 			</div>
 		</div>
 	);

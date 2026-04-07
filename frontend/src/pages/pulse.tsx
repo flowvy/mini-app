@@ -25,12 +25,10 @@ export const Pulse: FC = () => {
 			<div className={styles.page}>
 				<div className={styles.errorState}>
 					<AlertTriangle size={32} />
-					<span className={styles.errorTitle}>{t('pulse.error.title')}</span>
-					<span className={styles.errorDesc}>
-						{t('pulse.error.desc')}
-					</span>
+					<span className={styles.errorTitle}>{t("pulse.error.title")}</span>
+					<span className={styles.errorDesc}>{t("pulse.error.desc")}</span>
 					<button type="button" className={styles.retryBtn} onClick={refetch}>
-						{t('pulse.error.retry')}
+						{t("pulse.error.retry")}
 					</button>
 				</div>
 			</div>
@@ -39,7 +37,7 @@ export const Pulse: FC = () => {
 
 	return (
 		<div className={styles.page}>
-			<p className={styles.hint}>{t('pulse.hint')}</p>
+			<p className={styles.hint}>{t("pulse.hint")}</p>
 
 			<StatusBanner status={pulse.overallStatus} />
 
@@ -51,7 +49,7 @@ export const Pulse: FC = () => {
 
 			{pulse.incidents.length === 0 && (
 				<div className={styles.incidentsEmpty}>
-					<span className={styles.incidentsEmptyText}>{t('pulse.noIncidents')}</span>
+					<span className={styles.incidentsEmptyText}>{t("pulse.noIncidents")}</span>
 				</div>
 			)}
 		</div>

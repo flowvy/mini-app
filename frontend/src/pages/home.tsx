@@ -12,7 +12,7 @@ export const Home: FC = () => {
 	if (isPending) {
 		return (
 			<div className={styles.page}>
-				<p style={{ color: "var(--v2-text-secondary)" }}>{t('home.loading')}</p>
+				<p style={{ color: "var(--v2-text-secondary)" }}>{t("home.loading")}</p>
 			</div>
 		);
 	}
@@ -20,7 +20,7 @@ export const Home: FC = () => {
 	if (error) {
 		return (
 			<div className={styles.page}>
-				<p style={{ color: "var(--v2-text-negative)" }}>{t('home.error')}</p>
+				<p style={{ color: "var(--v2-text-negative)" }}>{t("home.error")}</p>
 			</div>
 		);
 	}
@@ -28,7 +28,7 @@ export const Home: FC = () => {
 	if (!subscription) {
 		return (
 			<div className={styles.page}>
-				<p style={{ color: "var(--v2-text-secondary)" }}>{t('home.noSubscription')}</p>
+				<p style={{ color: "var(--v2-text-secondary)" }}>{t("home.noSubscription")}</p>
 			</div>
 		);
 	}

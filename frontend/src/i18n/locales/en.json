@@ -1,303 +1,370 @@
 {
-  "common": {
-    "loading": "Loading...",
-    "notAuthenticated": "Not authenticated",
-    "retry": "Retry",
-    "appName": "Flowvy",
-    "comingSoon": "Coming soon",
-    "header": {
-      "pulse": "Pulse",
-      "devices": "Devices",
-      "support": "Support",
-      "users": "Users",
-      "broadcast": "Broadcast",
-      "userModeLabel": "User mode",
-      "adminModeLabel": "Admin mode"
-    },
-    "tab": {
-      "home": "Home",
-      "pulse": "Pulse",
-      "devices": "Devices",
-      "support": "Support",
-      "dashboard": "Dashboard",
-      "users": "Users",
-      "broadcast": "Broadcast",
-      "settings": "Settings"
-    },
-    "confirmDialog": {
-      "closeLabel": "Close"
-    },
-    "status": {
-      "active": "Active",
-      "limited": "Limited",
-      "disabled": "Disabled",
-      "expired": "Expired"
-    }
-  },
-  "home": {
-    "loading": "Loading...",
-    "error": "Failed to load subscription",
-    "noSubscription": "No active subscription",
-    "heroCard": {
-      "expiresLabel": "Expires",
-      "devicesLabel": "Devices",
-      "trafficUnlimited": "Unlimited",
-      "usedPercent": "Used {{pct}}%",
-      "trafficResetLabel": "Traffic Reset",
-      "nextResetLabel": "Next Reset",
-      "allTimeLabel": "All Time",
-      "lastUpdatedLabel": "Last Updated",
-      "copied": "Copied",
-      "copyLink": "Copy subscription link"
-    },
-    "detail": {
-      "accountInfo": "Account Info",
-      "created": "Created",
-      "createdHint": "When your account was created",
-      "expires": "Expires",
-      "expiresHint": "When this subscription expires",
-      "expiresUnlimited": "Unlimited",
-      "email": "Email",
-      "emailHint": "Account email address",
-      "telegramId": "Telegram ID",
-      "telegramIdHint": "Linked Telegram account",
-      "devices": "Devices",
-      "devicesHint": "Max devices connected at the same time",
-      "devicesUnlimited": "Unlimited",
-      "devicesCount": "{{n}} devices",
-      "profileSettings": "Profile Settings",
-      "autoUpdate": "Auto-update",
-      "autoUpdateHint": "Fetch profile updates automatically",
-      "autoUpdateOn": "On",
-      "autoUpdateOff": "Off",
-      "updateInterval": "Update interval",
-      "updateIntervalHint": "How often to check for updates",
-      "updateIntervalValue": "Every {{n}}h",
-      "quickLinks": "Quick Links",
-      "support": "Support",
-      "renew": "Renew",
-      "notSpecified": "Not specified"
-    }
-  },
-  "devices": {
-    "error": "Failed to load devices",
-    "hint": "Devices that have connected to your VPN subscription. Remove unused devices to free up slots.",
-    "empty": {
-      "ariaLabel": "No devices",
-      "title": "No devices",
-      "desc": "Connect a device to your VPN to see it here"
-    },
-    "removeAll": "Remove all devices",
-    "confirmAll": "Remove all {{n}} devices?",
-    "cancel": "Cancel",
-    "removeLoading": "...",
-    "remove": "Remove",
-    "row": {
-      "added": "Added {{date}}",
-      "removeConfirm": "Remove",
-      "deleteLabel": "Delete device"
-    },
-    "fallback": {
-      "android": "Android Device",
-      "ios": "iOS Device",
-      "macos": "Mac",
-      "windows": "Windows PC",
-      "linux": "Linux",
-      "unknown": "Unknown device"
-    },
-    "platform": {
-      "mobile": "Mobile device",
-      "desktop": "Desktop device",
-      "unknown": "Unknown device"
-    }
-  },
-  "pulse": {
-    "error": {
-      "title": "Unable to load status",
-      "desc": "Status page is temporarily unavailable. Please try again.",
-      "retry": "Retry"
-    },
-    "hint": "Service availability and planned maintenance updates.",
-    "noIncidents": "No active incidents",
-    "banner": {
-      "operational": "All systems operational",
-      "partial": "Partial system outage",
-      "maintenance": "Scheduled maintenance",
-      "down": "Major outage"
-    },
-    "timeline": {
-      "past": "40m",
-      "now": "now"
-    }
-  },
-  "settings": {
-    "title": "Settings",
-    "loading": "Loading...",
-    "error": "Failed to load settings",
-    "integrations": "Integrations",
-    "uptimeKuma": "Uptime Kuma",
-    "uptimeKumaDesc": "Status page monitoring",
-    "configure": "Configure",
-    "configureDesc": "URL, slug, connection test",
-    "configured": "Configured",
-    "quickLinksSection": "Quick Links",
-    "supportAndRenew": "Support & Renew",
-    "supportAndRenewDesc": "Links shown to users",
-    "system": "System",
-    "remnawave": "Remnawave",
-    "remnawaveDesc": "VPN panel",
-    "flowvy": "Flowvy",
-    "flowvyDesc": "Application version",
-    "kuma": {
-      "title": "Uptime Kuma",
-      "urlLabel": "URL",
-      "urlDesc": "Status page address",
-      "urlPlaceholder": "https://status.example.com",
-      "slugLabel": "Slug",
-      "slugDesc": "Status page identifier",
-      "slugPlaceholder": "service",
-      "statusLabel": "Status",
-      "connected": "Connected",
-      "notTested": "Not tested",
-      "test": "Test",
-      "saved": "Saved",
-      "saveChanges": "Save changes",
-      "discardTitle": "Discard changes?",
-      "discardConfirm": "Discard",
-      "discardCancel": "Keep editing",
-      "discardBody": "You have unsaved changes that will be lost."
-    },
-    "links": {
-      "title": "Quick Links",
-      "supportLabel": "Support",
-      "supportDesc": "Link shown to users on Support page",
-      "supportPlaceholder": "https://t.me/support",
-      "renewLabel": "Renew",
-      "renewDesc": "Subscription renewal link",
-      "renewPlaceholder": "https://example.com/renew",
-      "saved": "Saved",
-      "save": "Save",
-      "discardTitle": "Discard changes?",
-      "discardConfirm": "Discard",
-      "discardCancel": "Keep editing",
-      "discardBody": "You have unsaved changes that will be lost."
-    }
-  },
-  "admin": {
-    "dashboard": {
-      "comingSoon": "Coming soon"
-    },
-    "broadcast": {
-      "comingSoon": "Coming soon"
-    },
-    "users": {
-      "title": "Users",
-      "error": "Failed to load users",
-      "searchPlaceholder": "Search by name, ID or email",
-      "clearSearchLabel": "Clear search",
-      "searchFailed": "Search failed",
-      "notFound": "User not found",
-      "notFoundDesc": "Try a different username, Telegram ID, or email",
-      "loadingMore": "Loading...",
-      "loadMore": "Load more"
-    },
-    "userDetail": {
-      "accountInfo": "Account Info",
-      "created": "Created",
-      "expires": "Expires",
-      "expiresUnlimited": "Unlimited",
-      "email": "Email",
-      "telegramId": "Telegram ID",
-      "devices": "Devices",
-      "devicesUnlimited": "Unlimited",
-      "devicesCount": "{{n}} devices",
-      "tag": "Tag",
-      "description": "Description",
-      "squads": "Squads",
-      "internal": "Internal",
-      "external": "External",
-      "connection": "Connection",
-      "firstConnected": "First connected",
-      "lastSeen": "Last seen"
-    },
-    "userHero": {
-      "unlimited": "Unlimited",
-      "expiresLabel": "Expires",
-      "devicesLabel": "Devices",
-      "usedPercent": "Used {{pct}}%",
-      "trafficResetLabel": "Traffic Reset",
-      "allTimeLabel": "All Time",
-      "lastSeenLabel": "Last Seen",
-      "cancelLabel": "Cancel"
-    },
-    "actions": {
-      "disable": "Disable",
-      "enable": "Enable",
-      "disableTitle": "Disable user?",
-      "enableTitle": "Enable user?",
-      "disableDesc": "{{username}} will lose VPN access.",
-      "enableDesc": "{{username}} will regain VPN access.",
-      "resetTraffic": "Reset traffic",
-      "resetTrafficTitle": "Reset traffic?",
-      "resetTrafficDesc": "Traffic counter for {{username}} will be set to zero.",
-      "resetConfirm": "Reset",
-      "revoke": "Revoke",
-      "revokeTitle": "Revoke subscription?",
-      "revokeDesc": "Subscription link for {{username}} will stop working.",
-      "revokeConfirm": "Revoke",
-      "delete": "Delete",
-      "deleteTitle": "Delete user?",
-      "deleteDesc": "{{username}} will be permanently deleted. This cannot be undone.",
-      "deleteConfirm": "Delete"
-    }
-  },
-  "format": {
-    "traffic": {
-      "tb": "TB",
-      "gb": "GB",
-      "mb": "MB",
-      "kb": "KB"
-    },
-    "expiry": {
-      "expired": "Expired",
-      "today": "Today",
-      "oneDay": "1 day",
-      "days": "{{n}}d"
-    },
-    "date": {
-      "locale": "en"
-    },
-    "relative": {
-      "justNow": "just now",
-      "minutesAgo": "{{n}}m ago",
-      "hoursAgo": "{{n}}h ago",
-      "daysAgo": "{{n}}d ago"
-    },
-    "lastSeen": {
-      "never": "Never",
-      "now": "now",
-      "minutesAgo": "{{n}}m ago",
-      "hoursAgo": "{{n}}h ago",
-      "daysAgo": "{{n}}d ago",
-      "monthsAgo": "{{n}}mo ago"
-    },
-    "adminExpiry": {
-      "expired": "expired {{n}}d ago",
-      "today": "expires today",
-      "daysLeft": "{{n}}d left",
-      "monthsLeft": "{{n}}mo left"
-    },
-    "expiryCompact": {
-      "ago": "{{n}}d ago",
-      "today": "today",
-      "days": "{{n}}d",
-      "months": "{{n}}mo"
-    },
-    "resetStrategy": {
-      "monthly": "Monthly",
-      "weekly": "Weekly",
-      "daily": "Daily",
-      "never": "Never"
-    }
-  }
+	"common": {
+		"loading": "Loading...",
+		"notAuthenticated": "Not authenticated",
+		"retry": "Retry",
+		"appName": "Flowvy",
+		"comingSoon": "Coming soon",
+		"header": {
+			"pulse": "Pulse",
+			"devices": "Devices",
+			"support": "Support",
+			"users": "Users",
+			"broadcast": "Broadcast",
+			"userModeLabel": "User mode",
+			"adminModeLabel": "Admin mode"
+		},
+		"tab": {
+			"home": "Home",
+			"pulse": "Pulse",
+			"devices": "Devices",
+			"support": "Support",
+			"dashboard": "Dashboard",
+			"users": "Users",
+			"broadcast": "Broadcast",
+			"settings": "Settings"
+		},
+		"confirmDialog": {
+			"closeLabel": "Close"
+		},
+		"status": {
+			"active": "Active",
+			"limited": "Limited",
+			"disabled": "Disabled",
+			"expired": "Expired"
+		}
+	},
+	"home": {
+		"loading": "Loading...",
+		"error": "Failed to load subscription",
+		"noSubscription": "No active subscription",
+		"heroCard": {
+			"expiresLabel": "Expires",
+			"devicesLabel": "Devices",
+			"trafficUnlimited": "Unlimited",
+			"usedPercent": "Used {{pct}}%",
+			"trafficResetLabel": "Traffic Reset",
+			"nextResetLabel": "Next Reset",
+			"allTimeLabel": "All Time",
+			"lastUpdatedLabel": "Last Updated",
+			"copied": "Copied",
+			"copyLink": "Copy subscription link"
+		},
+		"detail": {
+			"accountInfo": "Account Info",
+			"created": "Created",
+			"createdHint": "When your account was created",
+			"expires": "Expires",
+			"expiresHint": "When this subscription expires",
+			"expiresUnlimited": "Unlimited",
+			"email": "Email",
+			"emailHint": "Account email address",
+			"telegramId": "Telegram ID",
+			"telegramIdHint": "Linked Telegram account",
+			"devices": "Devices",
+			"devicesHint": "Max devices connected at the same time",
+			"devicesUnlimited": "Unlimited",
+			"devicesCount": "{{n}} devices",
+			"profileSettings": "Profile Settings",
+			"autoUpdate": "Auto-update",
+			"autoUpdateHint": "Fetch profile updates automatically",
+			"autoUpdateOn": "On",
+			"autoUpdateOff": "Off",
+			"updateInterval": "Update interval",
+			"updateIntervalHint": "How often to check for updates",
+			"updateIntervalValue": "Every {{n}}h",
+			"quickLinks": "Quick Links",
+			"support": "Support",
+			"renew": "Renew",
+			"notSpecified": "Not specified"
+		}
+	},
+	"devices": {
+		"error": "Failed to load devices",
+		"hint": "Devices that have connected to your VPN subscription. Remove unused devices to free up slots.",
+		"empty": {
+			"ariaLabel": "No devices",
+			"title": "No devices",
+			"desc": "Connect a device to your VPN to see it here"
+		},
+		"removeAll": "Remove all devices",
+		"confirmAll": "Remove all {{n}} devices?",
+		"cancel": "Cancel",
+		"removeLoading": "...",
+		"remove": "Remove",
+		"row": {
+			"added": "Added {{date}}",
+			"removeConfirm": "Remove",
+			"deleteLabel": "Delete device"
+		},
+		"fallback": {
+			"android": "Android Device",
+			"ios": "iOS Device",
+			"macos": "Mac",
+			"windows": "Windows PC",
+			"linux": "Linux",
+			"unknown": "Unknown device"
+		},
+		"platform": {
+			"mobile": "Mobile device",
+			"desktop": "Desktop device",
+			"unknown": "Unknown device"
+		}
+	},
+	"pulse": {
+		"error": {
+			"title": "Unable to load status",
+			"desc": "Status page is temporarily unavailable. Please try again.",
+			"retry": "Retry"
+		},
+		"hint": "Service availability and planned maintenance updates.",
+		"noIncidents": "No active incidents",
+		"banner": {
+			"operational": "All systems operational",
+			"partial": "Partial system outage",
+			"maintenance": "Scheduled maintenance",
+			"down": "Major outage"
+		},
+		"timeline": {
+			"past": "40m",
+			"now": "now"
+		}
+	},
+	"settings": {
+		"title": "Settings",
+		"loading": "Loading...",
+		"error": "Failed to load settings",
+		"integrations": "Integrations",
+		"uptimeKuma": "Uptime Kuma",
+		"uptimeKumaDesc": "Status page monitoring",
+		"configure": "Configure",
+		"configureDesc": "URL, slug, connection test",
+		"configured": "Configured",
+		"quickLinksSection": "Quick Links",
+		"supportAndRenew": "Support & Renew",
+		"supportAndRenewDesc": "Links shown to users",
+		"system": "System",
+		"remnawave": "Remnawave",
+		"remnawaveDesc": "VPN panel",
+		"flowvy": "Flowvy",
+		"flowvyDesc": "Application version",
+		"kuma": {
+			"title": "Uptime Kuma",
+			"urlLabel": "URL",
+			"urlDesc": "Status page address",
+			"urlPlaceholder": "https://status.example.com",
+			"slugLabel": "Slug",
+			"slugDesc": "Status page identifier",
+			"slugPlaceholder": "service",
+			"statusLabel": "Status",
+			"connected": "Connected",
+			"notTested": "Not tested",
+			"test": "Test",
+			"saved": "Saved",
+			"saveChanges": "Save changes",
+			"discardTitle": "Discard changes?",
+			"discardConfirm": "Discard",
+			"discardCancel": "Keep editing",
+			"discardBody": "You have unsaved changes that will be lost."
+		},
+		"links": {
+			"title": "Quick Links",
+			"supportLabel": "Support",
+			"supportDesc": "Link shown to users on Support page",
+			"supportPlaceholder": "https://t.me/support",
+			"renewLabel": "Renew",
+			"renewDesc": "Subscription renewal link",
+			"renewPlaceholder": "https://example.com/renew",
+			"saved": "Saved",
+			"save": "Save",
+			"discardTitle": "Discard changes?",
+			"discardConfirm": "Discard",
+			"discardCancel": "Keep editing",
+			"discardBody": "You have unsaved changes that will be lost."
+		}
+	},
+	"admin": {
+		"dashboard": {
+			"loading": "Loading...",
+			"error": "Failed to load dashboard",
+			"tab": {
+				"vpn": "VPN",
+				"bot": "Bot"
+			},
+			"kpi": {
+				"users": "Users",
+				"nodes": "Nodes",
+				"today": "Today",
+				"lifetime": "Lifetime",
+				"active": "Active",
+				"requests": "Requests",
+				"uptime": "Uptime",
+				"onlineNow": "{{n}} online now",
+				"online": "online",
+				"allNodes": "all nodes",
+				"plusToday": "+{{n}} today",
+				"todaySub": "today",
+				"version": "v{{v}}"
+			},
+			"vpn": {
+				"usersByStatus": "Users by status",
+				"active": "Active",
+				"disabled": "Disabled",
+				"limited": "Limited",
+				"expired": "Expired",
+				"online": "Online",
+				"now": "Now",
+				"last24h": "Last 24h",
+				"last7d": "Last 7d",
+				"neverConnected": "Never connected",
+				"bandwidth": "Bandwidth",
+				"bwToday": "Today",
+				"bw7d": "7 days",
+				"bw30d": "30 days",
+				"bwMonth": "This month",
+				"bwYear": "This year",
+				"prev": "prev: {{v}}",
+				"system": "System",
+				"cpu": "CPU",
+				"cores": "{{n}} cores",
+				"memory": "Memory",
+				"uptimeLabel": "Uptime"
+			},
+			"bot": {
+				"users": "Users",
+				"total": "Total",
+				"registeredToday": "Registered today",
+				"registeredWeek": "Registered this week",
+				"activity": "Activity",
+				"active1h": "Active 1h",
+				"active24h": "Active 24h",
+				"requests": "Requests",
+				"totalRequests": "Total",
+				"todayRequests": "Today",
+				"system": "System",
+				"cpu": "CPU",
+				"cores": "{{n}} cores",
+				"memory": "Memory",
+				"uptimeLabel": "Uptime",
+				"versionLabel": "Version"
+			},
+			"noData": "Remnawave unavailable"
+		},
+		"broadcast": {
+			"comingSoon": "Coming soon"
+		},
+		"users": {
+			"title": "Users",
+			"error": "Failed to load users",
+			"searchPlaceholder": "Search by name, ID or email",
+			"clearSearchLabel": "Clear search",
+			"searchFailed": "Search failed",
+			"notFound": "User not found",
+			"notFoundDesc": "Try a different username, Telegram ID, or email",
+			"loadingMore": "Loading...",
+			"loadMore": "Load more"
+		},
+		"userDetail": {
+			"accountInfo": "Account Info",
+			"created": "Created",
+			"expires": "Expires",
+			"expiresUnlimited": "Unlimited",
+			"email": "Email",
+			"telegramId": "Telegram ID",
+			"devices": "Devices",
+			"devicesUnlimited": "Unlimited",
+			"devicesCount": "{{n}} devices",
+			"tag": "Tag",
+			"description": "Description",
+			"squads": "Squads",
+			"internal": "Internal",
+			"external": "External",
+			"connection": "Connection",
+			"firstConnected": "First connected",
+			"lastSeen": "Last seen"
+		},
+		"userHero": {
+			"unlimited": "Unlimited",
+			"expiresLabel": "Expires",
+			"devicesLabel": "Devices",
+			"usedPercent": "Used {{pct}}%",
+			"trafficResetLabel": "Traffic Reset",
+			"allTimeLabel": "All Time",
+			"lastSeenLabel": "Last Seen",
+			"cancelLabel": "Cancel"
+		},
+		"actions": {
+			"disable": "Disable",
+			"enable": "Enable",
+			"disableTitle": "Disable user?",
+			"enableTitle": "Enable user?",
+			"disableDesc": "{{username}} will lose VPN access.",
+			"enableDesc": "{{username}} will regain VPN access.",
+			"resetTraffic": "Reset traffic",
+			"resetTrafficTitle": "Reset traffic?",
+			"resetTrafficDesc": "Traffic counter for {{username}} will be set to zero.",
+			"resetConfirm": "Reset",
+			"revoke": "Revoke",
+			"revokeTitle": "Revoke subscription?",
+			"revokeDesc": "Subscription link for {{username}} will stop working.",
+			"revokeConfirm": "Revoke",
+			"delete": "Delete",
+			"deleteTitle": "Delete user?",
+			"deleteDesc": "{{username}} will be permanently deleted. This cannot be undone.",
+			"deleteConfirm": "Delete"
+		}
+	},
+	"format": {
+		"traffic": {
+			"tb": "TB",
+			"gb": "GB",
+			"mb": "MB",
+			"kb": "KB"
+		},
+		"expiry": {
+			"expired": "Expired",
+			"today": "Today",
+			"oneDay": "1 day",
+			"days": "{{n}}d"
+		},
+		"date": {
+			"locale": "en"
+		},
+		"relative": {
+			"justNow": "just now",
+			"minutesAgo": "{{n}}m ago",
+			"hoursAgo": "{{n}}h ago",
+			"daysAgo": "{{n}}d ago"
+		},
+		"lastSeen": {
+			"never": "Never",
+			"now": "now",
+			"minutesAgo": "{{n}}m ago",
+			"hoursAgo": "{{n}}h ago",
+			"daysAgo": "{{n}}d ago",
+			"monthsAgo": "{{n}}mo ago"
+		},
+		"adminExpiry": {
+			"expired": "expired {{n}}d ago",
+			"today": "expires today",
+			"daysLeft": "{{n}}d left",
+			"monthsLeft": "{{n}}mo left"
+		},
+		"expiryCompact": {
+			"ago": "{{n}}d ago",
+			"today": "today",
+			"days": "{{n}}d",
+			"months": "{{n}}mo"
+		},
+		"uptime": {
+			"daysHours": "{{d}}d {{h}}h",
+			"hours": "{{h}}h"
+		},
+		"resetStrategy": {
+			"monthly": "Monthly",
+			"weekly": "Weekly",
+			"daily": "Daily",
+			"never": "Never"
+		}
+	}
 }

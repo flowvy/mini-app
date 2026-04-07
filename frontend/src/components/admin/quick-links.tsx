@@ -58,14 +58,14 @@ export const QuickLinks: FC<QuickLinksProps> = ({ settings, onBack }) => {
 				<button type="button" className={styles.backBtn} onClick={handleBack}>
 					<ArrowLeft size={16} />
 				</button>
-				<h1 className={styles.headerTitle}>{t('settings.links.title')}</h1>
+				<h1 className={styles.headerTitle}>{t("settings.links.title")}</h1>
 			</div>
 
 			<div className={styles.sectionBody}>
 				<div className={styles.inputRow}>
 					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>{t('settings.links.supportLabel')}</span>
-						<span className={styles.rowDesc}>{t('settings.links.supportDesc')}</span>
+						<span className={styles.rowLabel}>{t("settings.links.supportLabel")}</span>
+						<span className={styles.rowDesc}>{t("settings.links.supportDesc")}</span>
 					</div>
 					<InputField
 						value={supportUrl}
@@ -73,14 +73,14 @@ export const QuickLinks: FC<QuickLinksProps> = ({ settings, onBack }) => {
 							setSupportUrl(v);
 							setSaved(false);
 						}}
-						placeholder={t('settings.links.supportPlaceholder')}
+						placeholder={t("settings.links.supportPlaceholder")}
 					/>
 				</div>
 
 				<div className={styles.inputRow}>
 					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>{t('settings.links.renewLabel')}</span>
-						<span className={styles.rowDesc}>{t('settings.links.renewDesc')}</span>
+						<span className={styles.rowLabel}>{t("settings.links.renewLabel")}</span>
+						<span className={styles.rowDesc}>{t("settings.links.renewDesc")}</span>
 					</div>
 					<InputField
 						value={renewUrl}
@@ -88,7 +88,7 @@ export const QuickLinks: FC<QuickLinksProps> = ({ settings, onBack }) => {
 							setRenewUrl(v);
 							setSaved(false);
 						}}
-						placeholder={t('settings.links.renewPlaceholder')}
+						placeholder={t("settings.links.renewPlaceholder")}
 					/>
 				</div>
 
@@ -96,12 +96,12 @@ export const QuickLinks: FC<QuickLinksProps> = ({ settings, onBack }) => {
 					<div className={styles.saveBar}>
 						{saved && (
 							<span className={styles.savedText}>
-								<Check size={12} /> {t('settings.links.saved')}
+								<Check size={12} /> {t("settings.links.saved")}
 							</span>
 						)}
 						{dirty && !saved && (
 							<ActionBtn onClick={handleSave} loading={updateMutation.isPending} size="md">
-								{t('settings.links.save')}
+								{t("settings.links.save")}
 							</ActionBtn>
 						)}
 					</div>
@@ -110,13 +110,13 @@ export const QuickLinks: FC<QuickLinksProps> = ({ settings, onBack }) => {
 
 			<ConfirmDialog
 				open={showDiscard}
-				title={t('settings.links.discardTitle')}
-				confirmLabel={t('settings.links.discardConfirm')}
-				cancelLabel={t('settings.links.discardCancel')}
+				title={t("settings.links.discardTitle")}
+				confirmLabel={t("settings.links.discardConfirm")}
+				cancelLabel={t("settings.links.discardCancel")}
 				onConfirm={onBack}
 				onCancel={() => setShowDiscard(false)}
 			>
-				<p>{t('settings.links.discardBody')}</p>
+				<p>{t("settings.links.discardBody")}</p>
 			</ConfirmDialog>
 		</div>
 	);

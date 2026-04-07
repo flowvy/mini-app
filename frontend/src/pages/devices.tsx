@@ -24,7 +24,7 @@ export const Devices: FC = () => {
 	if (error) {
 		return (
 			<div className={styles.empty}>
-				<span className={styles.emptyTitle}>{t('devices.error')}</span>
+				<span className={styles.emptyTitle}>{t("devices.error")}</span>
 			</div>
 		);
 	}
@@ -54,9 +54,7 @@ export const Devices: FC = () => {
 				</div>
 			)}
 
-			<p className={styles.pageHint}>
-				{t('devices.hint')}
-			</p>
+			<p className={styles.pageHint}>{t("devices.hint")}</p>
 
 			{devices.length > 0 ? (
 				<div className={styles.sectionBody}>
@@ -86,28 +84,30 @@ export const Devices: FC = () => {
 						strokeLinejoin="round"
 						className={styles.emptyIcon}
 						role="img"
-						aria-label={t('devices.empty.ariaLabel')}
+						aria-label={t("devices.empty.ariaLabel")}
 					>
 						<rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
 						<line x1="12" y1="18" x2="12.01" y2="18" />
 					</svg>
-					<span className={styles.emptyTitle}>{t('devices.empty.title')}</span>
-					<span className={styles.emptyDesc}>{t('devices.empty.desc')}</span>
+					<span className={styles.emptyTitle}>{t("devices.empty.title")}</span>
+					<span className={styles.emptyDesc}>{t("devices.empty.desc")}</span>
 				</div>
 			)}
 
 			{devices.length > 1 && !confirmAll && (
 				<button type="button" className={styles.dangerBtn} onClick={() => setConfirmAll(true)}>
-					{t('devices.removeAll')}
+					{t("devices.removeAll")}
 				</button>
 			)}
 
 			{confirmAll && (
 				<div className={styles.confirmBar}>
-					<span className={styles.confirmBarText}>{t('devices.confirmAll', { n: devices.length })}</span>
+					<span className={styles.confirmBarText}>
+						{t("devices.confirmAll", { n: devices.length })}
+					</span>
 					<div className={styles.confirmBarActions}>
 						<button type="button" className={styles.ghostBtn} onClick={() => setConfirmAll(false)}>
-							{t('devices.cancel')}
+							{t("devices.cancel")}
 						</button>
 						<button
 							type="button"
@@ -115,7 +115,7 @@ export const Devices: FC = () => {
 							onClick={handleDeleteAll}
 							disabled={deleteAll.isPending}
 						>
-							{deleteAll.isPending ? t('devices.removeLoading') : t('devices.remove')}
+							{deleteAll.isPending ? t("devices.removeLoading") : t("devices.remove")}
 						</button>
 					</div>
 				</div>

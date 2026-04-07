@@ -12,69 +12,71 @@ export function DetailSection({ subscription }: DetailSectionProps) {
 	const { t } = useTranslation();
 	const devicesValue =
 		subscription.deviceLimit == null || subscription.deviceLimit === 0
-			? t('home.detail.devicesUnlimited')
-			: t('home.detail.devicesCount', { n: subscription.deviceLimit });
+			? t("home.detail.devicesUnlimited")
+			: t("home.detail.devicesCount", { n: subscription.deviceLimit });
 
 	return (
 		<div className={styles.body}>
 			{/* Account Info */}
-			<div className={styles.divider}>{t('home.detail.accountInfo')}</div>
+			<div className={styles.divider}>{t("home.detail.accountInfo")}</div>
 			<Row
-				label={t('home.detail.created')}
-				hint={t('home.detail.createdHint')}
+				label={t("home.detail.created")}
+				hint={t("home.detail.createdHint")}
 				value={formatShortDate(subscription.createdAt)}
 				mono
 			/>
 			<Row
-				label={t('home.detail.expires')}
-				hint={t('home.detail.expiresHint')}
+				label={t("home.detail.expires")}
+				hint={t("home.detail.expiresHint")}
 				value={
 					isUnlimitedExpiry(subscription.expiresAt)
-						? t('home.detail.expiresUnlimited')
+						? t("home.detail.expiresUnlimited")
 						: formatShortDate(subscription.expiresAt)
 				}
 				mono
 			/>
 			<Row
-				label={t('home.detail.email')}
-				hint={t('home.detail.emailHint')}
+				label={t("home.detail.email")}
+				hint={t("home.detail.emailHint")}
 				value={subscription.email}
 				mono
 				muted={!subscription.email}
 			/>
 			<Row
-				label={t('home.detail.telegramId')}
-				hint={t('home.detail.telegramIdHint')}
+				label={t("home.detail.telegramId")}
+				hint={t("home.detail.telegramIdHint")}
 				value={subscription.telegramId}
 				mono
 				muted={!subscription.telegramId}
 			/>
 			<Row
-				label={t('home.detail.devices')}
-				hint={t('home.detail.devicesHint')}
+				label={t("home.detail.devices")}
+				hint={t("home.detail.devicesHint")}
 				value={devicesValue}
 				mono
 			/>
 
 			{/* Profile Settings */}
-			<div className={styles.divider}>{t('home.detail.profileSettings')}</div>
+			<div className={styles.divider}>{t("home.detail.profileSettings")}</div>
 			<Row
-				label={t('home.detail.autoUpdate')}
-				hint={t('home.detail.autoUpdateHint')}
-				value={subscription.autoUpdate ? t('home.detail.autoUpdateOn') : t('home.detail.autoUpdateOff')}
+				label={t("home.detail.autoUpdate")}
+				hint={t("home.detail.autoUpdateHint")}
+				value={
+					subscription.autoUpdate ? t("home.detail.autoUpdateOn") : t("home.detail.autoUpdateOff")
+				}
 				accent={subscription.autoUpdate}
 			/>
 			<Row
-				label={t('home.detail.updateInterval')}
-				hint={t('home.detail.updateIntervalHint')}
-				value={t('home.detail.updateIntervalValue', { n: subscription.updateInterval })}
+				label={t("home.detail.updateInterval")}
+				hint={t("home.detail.updateIntervalHint")}
+				value={t("home.detail.updateIntervalValue", { n: subscription.updateInterval })}
 				mono
 			/>
 
 			{/* Quick Links */}
-			<div className={styles.divider}>{t('home.detail.quickLinks')}</div>
-			<LinkRow label={t('home.detail.support')} url={subscription.supportUrl} />
-			<LinkRow label={t('home.detail.renew')} url={subscription.renewUrl} />
+			<div className={styles.divider}>{t("home.detail.quickLinks")}</div>
+			<LinkRow label={t("home.detail.support")} url={subscription.supportUrl} />
+			<LinkRow label={t("home.detail.renew")} url={subscription.renewUrl} />
 		</div>
 	);
 }
@@ -95,7 +97,7 @@ function Row({
 	accent?: boolean;
 }) {
 	const { t } = useTranslation();
-	const display = value ?? t('home.detail.notSpecified');
+	const display = value ?? t("home.detail.notSpecified");
 	const isMuted = muted ?? !value;
 	const cls = [
 		styles.rowValue,

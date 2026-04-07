@@ -60,10 +60,10 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 			? "var(--v2-text-negative)"
 			: "var(--v2-text-secondary)";
 	const connText = connStatus?.ok
-		? t('settings.kuma.connected')
+		? t("settings.kuma.connected")
 		: connStatus?.error
 			? connStatus.error
-			: t('settings.kuma.notTested');
+			: t("settings.kuma.notTested");
 
 	return (
 		<div className={styles.page}>
@@ -71,14 +71,14 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 				<button type="button" className={styles.backBtn} onClick={handleBack}>
 					<ArrowLeft size={16} />
 				</button>
-				<h1 className={styles.headerTitle}>{t('settings.kuma.title')}</h1>
+				<h1 className={styles.headerTitle}>{t("settings.kuma.title")}</h1>
 			</div>
 
 			<div className={styles.sectionBody}>
 				<div className={styles.inputRow}>
 					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>{t('settings.kuma.urlLabel')}</span>
-						<span className={styles.rowDesc}>{t('settings.kuma.urlDesc')}</span>
+						<span className={styles.rowLabel}>{t("settings.kuma.urlLabel")}</span>
+						<span className={styles.rowDesc}>{t("settings.kuma.urlDesc")}</span>
 					</div>
 					<InputField
 						value={url}
@@ -86,14 +86,14 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 							setUrl(v);
 							setSaved(false);
 						}}
-						placeholder={t('settings.kuma.urlPlaceholder')}
+						placeholder={t("settings.kuma.urlPlaceholder")}
 					/>
 				</div>
 
 				<div className={styles.inputRow}>
 					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>{t('settings.kuma.slugLabel')}</span>
-						<span className={styles.rowDesc}>{t('settings.kuma.slugDesc')}</span>
+						<span className={styles.rowLabel}>{t("settings.kuma.slugLabel")}</span>
+						<span className={styles.rowDesc}>{t("settings.kuma.slugDesc")}</span>
 					</div>
 					<InputField
 						value={slug}
@@ -101,13 +101,13 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 							setSlug(v);
 							setSaved(false);
 						}}
-						placeholder={t('settings.kuma.slugPlaceholder')}
+						placeholder={t("settings.kuma.slugPlaceholder")}
 					/>
 				</div>
 
 				<div className={styles.row}>
 					<div className={styles.rowLeft}>
-						<span className={styles.rowLabel}>{t('settings.kuma.statusLabel')}</span>
+						<span className={styles.rowLabel}>{t("settings.kuma.statusLabel")}</span>
 						<span className={styles.statusText} style={{ color: connColor }}>
 							{connText}
 						</span>
@@ -118,7 +118,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 						variant="action"
 						size="sm"
 					>
-						{t('settings.kuma.test')}
+						{t("settings.kuma.test")}
 					</ActionBtn>
 				</div>
 
@@ -126,12 +126,12 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 					<div className={styles.saveBar}>
 						{saved && (
 							<span className={styles.savedText}>
-								<Check size={12} /> {t('settings.kuma.saved')}
+								<Check size={12} /> {t("settings.kuma.saved")}
 							</span>
 						)}
 						{dirty && !saved && (
 							<ActionBtn onClick={handleSave} loading={updateMutation.isPending} size="md">
-								{t('settings.kuma.saveChanges')}
+								{t("settings.kuma.saveChanges")}
 							</ActionBtn>
 						)}
 					</div>
@@ -140,13 +140,13 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 
 			<ConfirmDialog
 				open={showDiscard}
-				title={t('settings.kuma.discardTitle')}
-				confirmLabel={t('settings.kuma.discardConfirm')}
-				cancelLabel={t('settings.kuma.discardCancel')}
+				title={t("settings.kuma.discardTitle")}
+				confirmLabel={t("settings.kuma.discardConfirm")}
+				cancelLabel={t("settings.kuma.discardCancel")}
 				onConfirm={onBack}
 				onCancel={() => setShowDiscard(false)}
 			>
-				<p>{t('settings.kuma.discardBody')}</p>
+				<p>{t("settings.kuma.discardBody")}</p>
 			</ConfirmDialog>
 		</div>
 	);
