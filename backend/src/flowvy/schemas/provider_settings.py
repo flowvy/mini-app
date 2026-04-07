@@ -20,6 +20,8 @@ class ProviderSettingsResponse(BaseModel):
     kuma_slug: str | None
     support_url: str | None
     renew_url: str | None
+    app_name: str | None = None
+    logo_url: str | None = None
     remnawave_version: str | None = None
     flowvy_version: str = "0.1.0"
     updated_at: int
@@ -38,6 +40,8 @@ class ProviderSettingsPatch(BaseModel):
     kuma_slug: str | None = None
     support_url: str | None = None
     renew_url: str | None = None
+    app_name: str | None = None
+    logo_url: str | None = None
 
 
 class KumaTestResponse(BaseModel):

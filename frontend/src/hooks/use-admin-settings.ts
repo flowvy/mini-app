@@ -24,10 +24,8 @@ export function useUpdateSettings() {
 
 	return useMutation<AdminSettings, Error, AdminSettingsPatch>({
 		mutationFn: (patch) => apiPatch<AdminSettings>(prefix, patch),
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: queryKeys.adminSettings,
-			});
+		onSuccess: (data) => {
+			queryClient.setQueryData(queryKeys.adminSettings, data);
 		},
 	});
 }

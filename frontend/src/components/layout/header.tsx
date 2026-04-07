@@ -1,5 +1,5 @@
 /**
- * App header — shows page title (or "Flowvy" on home) and admin/user mode toggle.
+ * App header — shows page title (or logo + app name on home) and admin/user mode toggle.
  */
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
@@ -7,6 +7,7 @@ import { Activity, HelpCircle, Megaphone, Smartphone, User, UserStar, Users } fr
 import { useTranslation } from "react-i18next";
 import { type AppMode, useMode } from "../../contexts/mode-context.tsx";
 import { useCurrentUser } from "../auth-guard.tsx";
+import { AppLogo } from "../ui/app-logo.tsx";
 import styles from "./header.module.css";
 
 interface PageMeta {
@@ -47,7 +48,10 @@ export function Header() {
 					<span className={styles.title}>{t(meta.title)}</span>
 				</div>
 			) : (
-				<span className={styles.title}>{t("common.appName")}</span>
+				<div className={styles.titleGroup}>
+					<AppLogo logoUrl={user.branding.logoUrl} size={20} />
+					<span className={styles.title}>{user.branding.appName || t("common.appName")}</span>
+				</div>
 			)}
 			{isAdmin && (
 				<div className={styles.toggle}>

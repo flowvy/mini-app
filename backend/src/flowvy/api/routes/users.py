@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends
 
 from flowvy.api.deps import get_current_init_data
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
-from flowvy.schemas.user import FeaturesResponse, UserResponse
+from flowvy.schemas.user import BrandingResponse, FeaturesResponse, UserResponse
 from flowvy.services.user import UserService
 
 router = APIRouter(prefix="/api", tags=["users"], route_class=DishkaRoute)
@@ -38,4 +38,8 @@ async def get_me(
     ps = await ps_repo.get()
     response = UserResponse.model_validate(user)
     response.features = FeaturesResponse(pulse=ps.kuma_enabled)
+    response.branding = BrandingResponse(
+        app_name=ps.app_name,
+        logo_url=ps.logo_url,
+    )
     return response

@@ -34,6 +34,8 @@ class ProviderSettingsService:
             kuma_slug=row.kuma_slug,
             support_url=row.support_url,
             renew_url=row.renew_url,
+            app_name=row.app_name,
+            logo_url=row.logo_url,
             remnawave_version=version,
             updated_at=int(row.updated_at.timestamp()),
         )

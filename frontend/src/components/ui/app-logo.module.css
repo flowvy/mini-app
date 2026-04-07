@@ -1,0 +1,20 @@
+/* ── AppLogo — theme-aware logo switching ── */
+
+.logo {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+}
+
+.dark,
+.light {
+	display: block;
+}
+
+:global([data-theme="dark"]) .light {
+	display: none;
+}
+
+:global([data-theme="light"]) .dark {
+	display: none;
+}

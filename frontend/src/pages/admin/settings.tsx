@@ -1,16 +1,17 @@
 import { ChevronRight, Settings } from "lucide-react";
 /**
- * Admin Settings page — three views: main, kuma config, quick links.
+ * Admin Settings page — four views: main, kuma config, quick links, branding.
  */
 import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { BrandingConfig } from "../../components/admin/branding-config.tsx";
 import { KumaConfig } from "../../components/admin/kuma-config.tsx";
 import { QuickLinks } from "../../components/admin/quick-links.tsx";
 import { Toggle } from "../../components/ui/toggle.tsx";
 import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import styles from "./settings.module.css";
 
-type View = "settings" | "kuma" | "links";
+type View = "settings" | "kuma" | "links" | "branding";
 
 export const AdminSettings: FC = () => {
 	const { t } = useTranslation();
@@ -47,6 +48,9 @@ export const AdminSettings: FC = () => {
 	}
 	if (view === "links") {
 		return <QuickLinks settings={settings} onBack={() => setView("settings")} />;
+	}
+	if (view === "branding") {
+		return <BrandingConfig settings={settings} onBack={() => setView("settings")} />;
 	}
 
 	const handleToggleKuma = (enabled: boolean) => {
@@ -107,6 +111,24 @@ export const AdminSettings: FC = () => {
 					</div>
 					<span className={styles.toolRowChevron}>
 						<ChevronRight size={14} />
+					</span>
+				</button>
+			</div>
+
+			{/* Branding */}
+			<div className={`${styles.sectionBody} ${styles.sectionBodyGap}`}>
+				<div className={styles.sectionDivider}>{t("settings.brandingSection")}</div>
+
+				<button type="button" className={styles.toolRow} onClick={() => setView("branding")}>
+					<div className={styles.toolRowLeft}>
+						<span className={styles.toolRowLabel}>{t("settings.brandingRow")}</span>
+						<span className={styles.toolRowDesc}>{t("settings.brandingRowDesc")}</span>
+					</div>
+					<span className={styles.toolRowRight}>
+						{settings.appName && <span className={styles.rowValue}>{settings.appName}</span>}
+						<span className={styles.toolRowChevron}>
+							<ChevronRight size={14} />
+						</span>
 					</span>
 				</button>
 			</div>

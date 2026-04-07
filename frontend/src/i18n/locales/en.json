@@ -167,6 +167,24 @@
 			"discardCancel": "Keep editing",
 			"discardBody": "You have unsaved changes that will be lost."
 		},
+		"brandingSection": "Branding",
+		"brandingRow": "Name & Logo",
+		"brandingRowDesc": "Customize app identity",
+		"branding": {
+			"title": "Branding",
+			"appNameLabel": "App Name",
+			"appNameDesc": "Displayed in the header",
+			"appNamePlaceholder": "Flowvy",
+			"logoUrlLabel": "Logo URL",
+			"logoUrlDesc": "External image for both themes",
+			"logoUrlPlaceholder": "https://example.com/logo.svg",
+			"saved": "Saved",
+			"save": "Save",
+			"discardTitle": "Discard changes?",
+			"discardConfirm": "Discard",
+			"discardCancel": "Keep editing",
+			"discardBody": "You have unsaved changes that will be lost."
+		},
 		"links": {
 			"title": "Quick Links",
 			"supportLabel": "Support",

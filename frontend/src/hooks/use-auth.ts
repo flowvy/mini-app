@@ -9,6 +9,11 @@ export interface FeaturesData {
 	pulse: boolean;
 }
 
+export interface BrandingData {
+	appName: string | null;
+	logoUrl: string | null;
+}
+
 export interface UserResponse {
 	id: number;
 	username: string | null;
@@ -16,6 +21,7 @@ export interface UserResponse {
 	role: string;
 	is_active: boolean;
 	features: FeaturesData;
+	branding: BrandingData;
 }
 
 interface AuthState {
@@ -32,6 +38,7 @@ const MOCK_USER: UserResponse = {
 	role: "ADMIN",
 	is_active: true,
 	features: { pulse: true },
+	branding: { appName: null, logoUrl: null },
 };
 
 const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
@@ -44,8 +51,16 @@ export function useAuth(): AuthState & { retry: () => void } {
 	const fetchUser = useCallback(async () => {
 		if (isMockAuth) {
 			try {
-				const settings = await apiGet<{ kumaEnabled: boolean }>("/debug/admin/settings");
-				setUser({ ...MOCK_USER, features: { pulse: settings.kumaEnabled } });
+				const settings = await apiGet<{
+					kumaEnabled: boolean;
+					appName: string | null;
+					logoUrl: string | null;
+				}>("/debug/admin/settings");
+				setUser({
+					...MOCK_USER,
+					features: { pulse: settings.kumaEnabled },
+					branding: { appName: settings.appName ?? null, logoUrl: settings.logoUrl ?? null },
+				});
 			} catch {
 				setUser(MOCK_USER);
 			}

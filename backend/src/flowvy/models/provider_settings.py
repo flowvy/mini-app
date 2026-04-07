@@ -19,4 +19,6 @@ class ProviderSettings(Base):
     kuma_slug: Mapped[str | None] = mapped_column(String(255), nullable=True)
     support_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     renew_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    app_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     updated_at: Mapped[updated_at]
