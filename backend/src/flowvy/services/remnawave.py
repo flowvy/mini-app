@@ -9,7 +9,6 @@ from flowvy.schemas.remnawave import (
     RemnawaveSubInfo,
     RemnawaveSubInfoUser,
     RemnawaveUserData,
-    RemnawaveUserTraffic,
 )
 
 
@@ -57,6 +56,15 @@ class RemnawaveClient:
         data = resp.json()
         return data.get("response", data)
 
+    async def _delete(self, path: str) -> None:
+        """Send DELETE request."""
+        resp = await self._http.delete(
+            f"{self._base}{path}",
+            headers=self._headers(),
+        )
+        if resp.status_code >= 400:
+            raise RemnawaveError(resp.status_code, resp.text)
+
     async def ping(self) -> bool:
         """Check Remnawave is reachable (``GET /api/auth/status``)."""
         resp = await self._http.get(
@@ -74,13 +82,13 @@ class RemnawaveClient:
         if not isinstance(data, list) or len(data) == 0:
             return None
         raw = data[0]
-        return _parse_user_data(raw)
+        return RemnawaveUserData.from_raw(raw)
 
     async def get_devices(self, user_uuid: str) -> list[RemnawaveDevice]:
         """Fetch all HWID devices for a Remnawave user."""
         data = await self._get(f"/api/hwid/devices/{user_uuid}")
         raw_devices = data.get("devices", [])
-        return [_parse_device(d) for d in raw_devices]
+        return [RemnawaveDevice.from_raw(d) for d in raw_devices]
 
     async def delete_device(self, user_uuid: str, hwid: str) -> None:
         """Delete a single HWID device."""
@@ -112,7 +120,7 @@ class RemnawaveClient:
         data = await self._get(f"/api/users/by-username/{username}")
         if not isinstance(data, dict) or not data:
             return None
-        return _parse_user_data(data)
+        return RemnawaveUserData.from_raw(data)
 
     async def search_user_by_email(
         self,
@@ -122,7 +130,32 @@ class RemnawaveClient:
         data = await self._get(f"/api/users/by-email/{email}")
         if not isinstance(data, dict) or not data:
             return None
-        return _parse_user_data(data)
+        return RemnawaveUserData.from_raw(data)
+
+    async def enable_user(self, uuid: str) -> dict:
+        """Enable a user (``POST /api/users/{uuid}/actions/enable``)."""
+        return await self._post(f"/api/users/{uuid}/actions/enable")
+
+    async def disable_user(self, uuid: str) -> dict:
+        """Disable a user (``POST /api/users/{uuid}/actions/disable``)."""
+        return await self._post(f"/api/users/{uuid}/actions/disable")
+
+    async def reset_user_traffic(self, uuid: str) -> dict:
+        """Reset traffic counters (``POST /api/users/{uuid}/actions/reset-traffic``)."""
+        return await self._post(f"/api/users/{uuid}/actions/reset-traffic")
+
+    async def revoke_user_subscription(self, uuid: str) -> dict:
+        """Revoke subscription link (``POST /api/users/{uuid}/actions/revoke``)."""
+        return await self._post(f"/api/users/{uuid}/actions/revoke")
+
+    async def delete_user(self, uuid: str) -> None:
+        """Delete user permanently (``DELETE /api/users/{uuid}``)."""
+        await self._delete(f"/api/users/{uuid}")
+
+    async def get_external_squads(self) -> list[dict]:
+        """Fetch all external squads (``GET /api/external-squads``)."""
+        data = await self._get("/api/external-squads")
+        return data.get("externalSquads", [])
 
     async def get_subscription_info(
         self,
@@ -149,45 +182,3 @@ class RemnawaveClient:
             ),
             subscription_url=data.get("subscriptionUrl", ""),
         )
-
-
-def _parse_device(raw: dict) -> RemnawaveDevice:
-    """Map camelCase JSON to RemnawaveDevice model."""
-    return RemnawaveDevice(
-        hwid=raw["hwid"],
-        user_uuid=raw["userUuid"],
-        platform=raw.get("platform"),
-        os_version=raw.get("osVersion"),
-        device_model=raw.get("deviceModel"),
-        user_agent=raw.get("userAgent"),
-        created_at=raw["createdAt"],
-        updated_at=raw["updatedAt"],
-    )
-
-
-def _parse_user_data(raw: dict) -> RemnawaveUserData:
-    """Map camelCase JSON to RemnawaveUserData model."""
-    traffic = raw.get("userTraffic", {})
-    return RemnawaveUserData(
-        uuid=raw["uuid"],
-        short_uuid=raw["shortUuid"],
-        username=raw["username"],
-        status=raw.get("status", "ACTIVE"),
-        traffic_limit_bytes=raw.get("trafficLimitBytes", 0),
-        traffic_limit_strategy=raw.get("trafficLimitStrategy", "NO_RESET"),
-        expire_at=raw["expireAt"],
-        created_at=raw["createdAt"],
-        updated_at=raw["updatedAt"],
-        telegram_id=raw.get("telegramId"),
-        email=raw.get("email"),
-        hwid_device_limit=raw.get("hwidDeviceLimit"),
-        tag=raw.get("tag"),
-        last_traffic_reset_at=raw.get("lastTrafficResetAt"),
-        subscription_url=raw["subscriptionUrl"],
-        user_traffic=RemnawaveUserTraffic(
-            used_traffic_bytes=traffic.get("usedTrafficBytes", 0),
-            lifetime_used_traffic_bytes=traffic.get("lifetimeUsedTrafficBytes", 0),
-            online_at=traffic.get("onlineAt"),
-            first_connected_at=traffic.get("firstConnectedAt"),
-        ),
-    )

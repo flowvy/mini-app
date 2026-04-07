@@ -18,6 +18,15 @@ class RemnawaveUserTraffic(BaseModel):
     first_connected_at: datetime | None = None
 
 
+class RemnawaveInternalSquad(BaseModel):
+    """Internal squad reference embedded in user response."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    uuid: str
+    name: str
+
+
 class RemnawaveUserData(BaseModel):
     """Single user object from ``GET /api/users/by-telegram-id``."""
 
@@ -36,9 +45,49 @@ class RemnawaveUserData(BaseModel):
     email: str | None = None
     hwid_device_limit: int | None = None
     tag: str | None = None
+    description: str | None = None
     last_traffic_reset_at: datetime | None = None
     subscription_url: str
+    active_internal_squads: list[RemnawaveInternalSquad] = []
+    external_squad_uuid: str | None = None
     user_traffic: RemnawaveUserTraffic
+
+    @classmethod
+    def from_raw(cls, raw: dict) -> RemnawaveUserData:
+        """Map camelCase JSON to model."""
+        traffic = raw.get("userTraffic", {})
+        squads_raw = raw.get("activeInternalSquads", [])
+        return cls(
+            uuid=raw["uuid"],
+            short_uuid=raw["shortUuid"],
+            username=raw["username"],
+            status=raw.get("status", "ACTIVE"),
+            traffic_limit_bytes=raw.get("trafficLimitBytes", 0),
+            traffic_limit_strategy=raw.get("trafficLimitStrategy", "NO_RESET"),
+            expire_at=raw["expireAt"],
+            created_at=raw["createdAt"],
+            updated_at=raw["updatedAt"],
+            telegram_id=raw.get("telegramId"),
+            email=raw.get("email"),
+            hwid_device_limit=raw.get("hwidDeviceLimit"),
+            tag=raw.get("tag"),
+            description=raw.get("description"),
+            last_traffic_reset_at=raw.get("lastTrafficResetAt"),
+            subscription_url=raw["subscriptionUrl"],
+            active_internal_squads=[
+                RemnawaveInternalSquad(uuid=s["uuid"], name=s["name"]) for s in squads_raw
+            ],
+            external_squad_uuid=raw.get("externalSquadUuid"),
+            user_traffic=RemnawaveUserTraffic(
+                used_traffic_bytes=traffic.get("usedTrafficBytes", 0),
+                lifetime_used_traffic_bytes=traffic.get(
+                    "lifetimeUsedTrafficBytes",
+                    0,
+                ),
+                online_at=traffic.get("onlineAt"),
+                first_connected_at=traffic.get("firstConnectedAt"),
+            ),
+        )
 
 
 class RemnawaveSubInfoUser(BaseModel):
@@ -83,3 +132,17 @@ class RemnawaveDevice(BaseModel):
     user_agent: str | None = None
     created_at: datetime
     updated_at: datetime
+
+    @classmethod
+    def from_raw(cls, raw: dict) -> RemnawaveDevice:
+        """Map camelCase JSON to model."""
+        return cls(
+            hwid=raw["hwid"],
+            user_uuid=raw["userUuid"],
+            platform=raw.get("platform"),
+            os_version=raw.get("osVersion"),
+            device_model=raw.get("deviceModel"),
+            user_agent=raw.get("userAgent"),
+            created_at=raw["createdAt"],
+            updated_at=raw["updatedAt"],
+        )

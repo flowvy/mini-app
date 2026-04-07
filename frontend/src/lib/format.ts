@@ -99,7 +99,7 @@ export function formatTrafficPair(used: number, limit: number): string {
 
 /** Format ISO date string to relative last-seen label. */
 export function formatLastSeen(onlineAt: string | null): string {
-	if (!onlineAt) return "never";
+	if (!onlineAt) return "Never";
 	const diff = Date.now() - new Date(onlineAt).getTime();
 	const mins = Math.floor(diff / 60000);
 	if (mins < 1) return "now";
@@ -129,6 +129,44 @@ export function getAdminExpiryColor(expireAt: string): string | null {
 	if (days < 0) return "var(--v2-text-negative)";
 	if (days <= 3) return "var(--v2-text-warning)";
 	return null;
+}
+
+/** Format ISO date string to "Mon DD, YYYY". */
+export function formatDateISO(iso: string | null): string {
+	if (!iso) return "\u2014";
+	const d = new Date(iso);
+	const mo = d.toLocaleString("en", { month: "short" });
+	return `${mo} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+/** Whether ISO expiry is effectively unlimited (year > 2090). */
+export function isUnlimitedExpiryISO(iso: string): boolean {
+	return new Date(iso).getFullYear() > 2090;
+}
+
+/** Whether device limit is unlimited (null or 0 in Remnawave). */
+export function isUnlimitedDevices(limit: number | null | undefined): boolean {
+	return !limit || limit === 0;
+}
+
+/** Days until ISO expiry (negative = expired). */
+export function getDaysLeftISO(iso: string): number {
+	return Math.floor((new Date(iso).getTime() - Date.now()) / 86400000);
+}
+
+/** CSS variable for ISO expiry color. */
+export function getExpiryColorISO(daysLeft: number): string | undefined {
+	if (daysLeft < 0) return "var(--v2-text-negative)";
+	if (daysLeft <= 3) return "var(--v2-text-warning)";
+	return undefined;
+}
+
+/** Compact expiry label for admin hero (days-based). */
+export function formatExpiryCompact(daysLeft: number): string {
+	if (daysLeft < 0) return `${Math.abs(daysLeft)}d ago`;
+	if (daysLeft === 0) return "today";
+	if (daysLeft <= 30) return `${daysLeft}d`;
+	return `${Math.floor(daysLeft / 30)}mo`;
 }
 
 const RESET_LABELS: Record<ResetStrategy, string> = {

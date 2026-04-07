@@ -3,11 +3,41 @@ import { type FC, type KeyboardEvent, useCallback, useEffect, useRef, useState }
 import { UserRow } from "../../components/admin/user-row.tsx";
 import { useAdminUsers, useSearchUser } from "../../hooks/use-admin-users.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
+import { UserDetailView } from "./user-detail.tsx";
 import styles from "./users.module.css";
 
 const PAGE_SIZE = 25;
 
+type View = "list" | "detail";
+
 export const AdminUsers: FC = () => {
+	const [view, setView] = useState<View>("list");
+	const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+
+	const handleSelectUser = useCallback((user: AdminUser) => {
+		setSelectedUser(user);
+		setView("detail");
+	}, []);
+
+	const handleBack = useCallback(() => {
+		setView("list");
+		setSelectedUser(null);
+	}, []);
+
+	if (view === "detail" && selectedUser) {
+		return <UserDetailView user={selectedUser} onBack={handleBack} />;
+	}
+
+	return <UserListView onSelectUser={handleSelectUser} />;
+};
+
+/* ── List View ── */
+
+interface UserListViewProps {
+	onSelectUser: (user: AdminUser) => void;
+}
+
+const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 	const [start, setStart] = useState(0);
 	const [allUsers, setAllUsers] = useState<AdminUser[]>([]);
 	const [searchInput, setSearchInput] = useState("");
@@ -129,7 +159,7 @@ export const AdminUsers: FC = () => {
 				<div className={styles.list}>
 					{displayUsers.map((user) => (
 						<div key={user.uuid} className={styles.card}>
-							<UserRow user={user} />
+							<UserRow user={user} onClick={() => onSelectUser(user)} />
 						</div>
 					))}
 				</div>

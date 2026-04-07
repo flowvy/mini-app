@@ -4,6 +4,11 @@ export interface AdminUserTraffic {
 	usedTrafficBytes: number;
 	lifetimeUsedTrafficBytes: number;
 	onlineAt: string | null;
+	firstConnectedAt: string | null;
+}
+
+export interface AdminUserInternalSquad {
+	name: string;
 }
 
 export interface AdminUser {
@@ -11,6 +16,7 @@ export interface AdminUser {
 	username: string;
 	status: SubscriptionStatus;
 	tag: string | null;
+	description: string | null;
 	trafficLimitBytes: number;
 	trafficLimitStrategy: string;
 	expireAt: string;
@@ -19,6 +25,8 @@ export interface AdminUser {
 	hwidDeviceLimit: number | null;
 	createdAt: string;
 	subscriptionUrl: string;
+	activeInternalSquads: AdminUserInternalSquad[];
+	externalSquadName: string | null;
 	userTraffic: AdminUserTraffic;
 }
 

@@ -78,3 +78,18 @@
 .confirm:disabled {
 	opacity: 0.4;
 }
+
+/* ── danger ── */
+
+.danger {
+	background: var(--v2-bg-negative-primary);
+	color: #fff;
+}
+
+.danger:hover:not(:disabled) {
+	opacity: 0.85;
+}
+
+.danger:disabled {
+	opacity: 0.4;
+}

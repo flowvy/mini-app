@@ -194,6 +194,7 @@ class BffServiceProvider(Provider):
     def get_admin_users_service(
         self,
         remnawave: RemnawaveClient,
+        redis: Redis,
     ) -> AdminUsersService:
         """Create admin users service."""
-        return AdminUsersService(remnawave)
+        return AdminUsersService(remnawave, redis)

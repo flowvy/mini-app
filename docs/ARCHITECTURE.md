@@ -69,7 +69,7 @@ flowvy/
 │       │   ├── remnawave.py      # RemnawaveClient (+get_metadata)
 │       │   ├── kuma.py           # UptimeKumaClient (public status page API)
 │       │   ├── subscription.py   # SubscriptionService (BFF + DB upsert)
-│       │   ├── admin_users.py     # AdminUsersService (Remnawave proxy + search)
+│       │   ├── admin_users.py     # AdminUsersService (list, search, actions, squad resolution)
 │       │   ├── devices.py        # DevicesService (BFF, DB read + Remnawave)
 │       │   ├── pulse.py          # PulseService (Kuma aggregation + Redis cache)
 │       │   ├── provider_settings.py  # ProviderSettingsService (CRUD + kuma test)
@@ -175,6 +175,7 @@ This enables `DevicesService` to read `remnawave_uuid` and `device_limit` from l
 **Global data (nodes, system stats)** — Redis cache:
 - Nodes: 30 second TTL
 - Pulse (Kuma status): 60 second TTL (key `pulse:data`)
+- External squads: 300 second TTL (key `external_squads`)
 - System stats / bandwidth: 60 second TTL
 - Webhook events from Remnawave (`node.connection_lost`) invalidate cache immediately
 
@@ -196,8 +197,10 @@ Our FastAPI does NOT proxy Remnawave 1:1. It aggregates data per screen.
 | Devices | `GET /api/me/devices` | DB read → `hwid/devices/{userUuid}` (fallback: `by-telegram-id` + DB upsert) |
 | Pulse | `GET /api/pulse` | Kuma: `status-page/{slug}` + `heartbeat/{slug}` (cached 60s) |
 | Admin Dashboard | `GET /api/admin/stats` | `system/stats` + `stats/bandwidth` (cached 60s) |
-| Admin Users | `GET /api/admin/users` | `users?size=N&start=N` |
-| Admin Users Search | `GET /api/admin/users/search?q=` | `by-username`, `by-telegram-id`, or `by-email` |
+| Admin Users | `GET /api/admin/users` | `users?size=N&start=N` + `external-squads` (cached) |
+| Admin Users Search | `GET /api/admin/users/search?q=` | `by-username`, `by-telegram-id`, or `by-email` + `external-squads` (cached) |
+| Admin User Actions | `POST /api/admin/users/{uuid}/{action}` | `users/{uuid}/actions/{action}` |
+| Admin User Delete | `DELETE /api/admin/users/{uuid}` | `DELETE users/{uuid}` |
 | Admin Settings | `GET/PATCH /api/admin/settings` | `system/metadata` (version) |
 
 One screen = one HTTP request to our backend. Backend does the aggregation.
@@ -217,6 +220,24 @@ Singleton table `provider_settings` (id=1) stores runtime-configurable settings:
 | GET | `/api/admin/settings/kuma/test` | Test Kuma connection |
 
 Admin auth: `get_current_admin` dependency validates Telegram initData + checks `user.role == ADMIN`.
+
+### Admin User Actions
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/admin/users/{uuid}/enable` | Enable user |
+| POST | `/api/admin/users/{uuid}/disable` | Disable user |
+| POST | `/api/admin/users/{uuid}/reset-traffic` | Reset traffic counters |
+| POST | `/api/admin/users/{uuid}/revoke` | Revoke subscription link |
+| DELETE | `/api/admin/users/{uuid}` | Permanently delete user |
+
+All routes proxy to Remnawave `users/{uuid}/actions/*` endpoints. Admin auth required.
+
+### External Squads Resolution
+
+`AdminUsersService` resolves `externalSquadUuid` → squad name via `GET /api/external-squads`.
+Result cached in Redis (key `external_squads`, 5 minute TTL). The resolved name is returned as
+`externalSquadName` in `AdminUserResponse`.
 
 ### Feature Flags
 

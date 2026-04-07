@@ -1,7 +1,8 @@
 /**
- * Lightweight confirm dialog — based on Desktop Modal + ConfirmDialog pattern.
- * Props-based (no global store), renders overlay with two action buttons.
+ * Confirm dialog — matches Desktop Modal + ConfirmDialog pattern.
+ * Header with title + close button, body, footer with action buttons.
  */
+import { X } from "lucide-react";
 import { type FC, type ReactNode, useRef } from "react";
 import { ActionBtn } from "./action-btn.tsx";
 import styles from "./confirm-dialog.module.css";
@@ -12,6 +13,7 @@ interface ConfirmDialogProps {
 	children: ReactNode;
 	confirmLabel: string;
 	cancelLabel: string;
+	confirmVariant?: "confirm" | "danger";
 	onConfirm: () => void;
 	onCancel: () => void;
 }
@@ -22,6 +24,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 	children,
 	confirmLabel,
 	cancelLabel,
+	confirmVariant = "confirm",
 	onConfirm,
 	onCancel,
 }) => {
@@ -43,13 +46,16 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 			<dialog open className={styles.modal} aria-label={title}>
 				<div className={styles.header}>
 					<span className={styles.title}>{title}</span>
+					<button type="button" className={styles.closeBtn} onClick={onCancel} aria-label="Close">
+						<X size={16} />
+					</button>
 				</div>
 				<div className={styles.body}>{children}</div>
 				<div className={styles.footer}>
 					<ActionBtn variant="ghost" size="md" onClick={onCancel}>
 						{cancelLabel}
 					</ActionBtn>
-					<ActionBtn variant="confirm" size="md" onClick={onConfirm}>
+					<ActionBtn variant={confirmVariant} size="md" onClick={onConfirm}>
 						{confirmLabel}
 					</ActionBtn>
 				</div>

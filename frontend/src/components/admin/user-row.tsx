@@ -14,9 +14,10 @@ import styles from "./user-row.module.css";
 
 interface UserRowProps {
 	user: AdminUser;
+	onClick?: () => void;
 }
 
-export const UserRow: FC<UserRowProps> = ({ user }) => {
+export const UserRow: FC<UserRowProps> = ({ user, onClick }) => {
 	const used = user.userTraffic.usedTrafficBytes;
 	const limit = user.trafficLimitBytes;
 	const pct = getTrafficPercent(used, limit);
@@ -29,7 +30,19 @@ export const UserRow: FC<UserRowProps> = ({ user }) => {
 	parts.push(formatLastSeen(user.userTraffic.onlineAt));
 
 	return (
-		<div className={styles.row}>
+		<div
+			className={styles.row}
+			onClick={onClick}
+			onKeyDown={
+				onClick
+					? (e) => {
+							if (e.key === "Enter") onClick();
+						}
+					: undefined
+			}
+			role={onClick ? "button" : undefined}
+			tabIndex={onClick ? 0 : undefined}
+		>
 			<div className={styles.rowContent}>
 				<div className={styles.line1}>
 					<span className={styles.username}>{user.username}</span>

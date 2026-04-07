@@ -7,7 +7,7 @@ import type { ButtonHTMLAttributes, FC, ReactNode } from "react";
 import styles from "./action-btn.module.css";
 
 interface ActionBtnProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-	variant?: "action" | "confirm" | "ghost";
+	variant?: "action" | "confirm" | "ghost" | "danger";
 	size?: "sm" | "md";
 	loading?: boolean;
 	children: ReactNode;

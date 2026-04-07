@@ -120,6 +120,45 @@
 	cursor: not-allowed;
 }
 
+/* ── Detail view ── */
+
+.detailPage {
+	display: flex;
+	flex-direction: column;
+	padding: 16px;
+	padding-bottom: 96px;
+	gap: 16px;
+	animation: var(--fv-anim-fade-in) 0.15s ease-out;
+}
+
+.detailHeader {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.backBtn {
+	padding: 4px;
+	border-radius: var(--radius-sm);
+	color: var(--v2-text-secondary);
+	display: flex;
+	align-items: center;
+	background: none;
+	border: none;
+	cursor: pointer;
+}
+
+.detailTitle {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--v2-text-primary);
+	margin: 0;
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 /* Empty / error states */
 .empty {
 	display: flex;
