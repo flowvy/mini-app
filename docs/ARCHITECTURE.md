@@ -61,6 +61,7 @@ flowvy/
 │       │       ├── devices.py    # GET/DELETE /api/me/devices
 │       │       ├── nodes.py      # GET /api/nodes
 │       │       ├── pulse.py      # GET /api/pulse (Uptime Kuma status)
+│       │       ├── webhooks.py   # POST /api/webhooks/remnawave (HMAC auth)
 │       │       └── admin/        # /api/admin/*
 │       │           ├── deps.py      # get_current_admin, CurrentAdmin
 │       │           ├── dashboard.py  # GET /api/admin/dashboard
@@ -78,17 +79,20 @@ flowvy/
 │       │   ├── bot_stats.py      # BotStatsService (psutil, DB counts, Redis)
 │       │   ├── dashboard.py      # DashboardService (aggregates both providers)
 │       │   ├── metrics_collector.py  # background task (flush last_seen, record snapshots)
-│       │   └── cache.py          # Redis cache helpers
+│       │   ├── cache.py          # Redis cache helpers
+│       │   └── webhook_handler.py  # WebhookHandlerService (verify, persist, dispatch)
 │       ├── repositories/
 │       │   ├── base.py           # generic CRUD
 │       │   ├── user.py
 │       │   ├── subscription.py   # upsert_from_remnawave
 │       │   ├── provider_settings.py  # singleton get/update
-│       │   └── invite.py
+│       │   ├── invite.py
+│       │   └── webhook_event.py  # WebhookEventRepository (save)
 │       ├── models/               # SQLAlchemy ORM
 │       │   ├── base.py, user.py, subscription.py, invite.py
 │       │   ├── bot_metrics.py    # BotMetricsHistory (periodic snapshots)
-│       │   └── provider_settings.py  # singleton runtime config
+│       │   ├── provider_settings.py  # singleton runtime config
+│       │   └── webhook_event.py  # WebhookEvent (Remnawave webhook log)
 │       └── schemas/              # Pydantic v2
 │           ├── user.py           # UserResponse + FeaturesResponse
 │           ├── devices.py        # DeviceResponse, DevicesResponse
@@ -97,7 +101,8 @@ flowvy/
 │           ├── provider_settings.py  # ProviderSettingsResponse/Patch
 │           ├── admin_users.py    # AdminUserResponse, AdminUsersResponse
 │           ├── dashboard.py      # DashboardResponse, BotStatsResponse
-│           └── remnawave.py      # response models from Remnawave
+│           ├── remnawave.py      # response models from Remnawave
+│           └── webhooks.py       # WebhookPayload
 ├── frontend/
 │   ├── package.json
 │   ├── vite.config.ts
@@ -191,6 +196,33 @@ This enables `DevicesService` to read `remnawave_uuid` and `device_limit` from l
 **Remnawave unavailable** — frontend shows maintenance screen for users, error details for admins. No stale data served.
 
 **Manual refresh** — button sends `?force=true`, backend bypasses cache.
+
+### Webhooks
+
+Remnawave sends event webhooks to `POST /api/webhooks/remnawave`. Auth via HMAC-SHA256 signature (no JWT).
+
+**Config**: `REMNAWAVE_WEBHOOK_SECRET` env var → `Settings.remnawave_webhook_secret`. If not set — endpoint returns 404.
+
+**Verification**: `X-Remnawave-Signature` header contains HMAC-SHA256 of the raw body using the shared secret. Compared with `hmac.compare_digest()`.
+
+**Payload**: `{ scope, event, timestamp, data }` — persisted to `webhook_events` table for audit/replay.
+
+**Event flow**:
+```
+Remnawave → POST /api/webhooks/remnawave
+  → verify HMAC signature
+  → parse WebhookPayload
+  → save to webhook_events (DB)
+  → dispatch to handlers by scope
+```
+
+**Handler registry**: `WebhookHandlerService` maps scope → handler list. MVP handlers:
+- `user.*` / `user_hwid_devices.*` — invalidate `dashboard:remnawave` cache on mutating events (modified, deleted, traffic_reset, revoked, enabled, disabled)
+- `node.*` — invalidate `pulse:data` cache on any node event
+
+Cache keys imported from `DashboardService.CACHE_KEY` and `PulseService.CACHE_KEY` — single source of truth.
+
+**Scopes/events**: user, node, user_hwid_devices, service, crm. Full list in `skills/integrations/SKILL.md`.
 
 ### Endpoints Used (22 for MVP)
 

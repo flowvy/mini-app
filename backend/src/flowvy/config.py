@@ -23,4 +23,5 @@ class Settings(BaseSettings):
     remnawave_api_token: str = ""
     init_data_ttl: int = 86400
     metrics_snapshot_interval_seconds: int = 600
+    remnawave_webhook_secret: str | None = None
     debug: bool = True

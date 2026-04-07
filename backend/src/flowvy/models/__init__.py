@@ -6,6 +6,7 @@ from flowvy.models.invite import Invite
 from flowvy.models.provider_settings import ProviderSettings
 from flowvy.models.subscription import Subscription, SubscriptionStatus
 from flowvy.models.user import User, UserRole
+from flowvy.models.webhook_event import WebhookEvent
 
 __all__ = [
     "Base",
@@ -16,4 +17,5 @@ __all__ = [
     "SubscriptionStatus",
     "User",
     "UserRole",
+    "WebhookEvent",
 ]

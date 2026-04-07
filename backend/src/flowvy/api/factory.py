@@ -24,6 +24,7 @@ from flowvy.api.routes.health import router as health_router
 from flowvy.api.routes.pulse import router as pulse_router
 from flowvy.api.routes.subscription import router as subscription_router
 from flowvy.api.routes.users import router as users_router
+from flowvy.api.routes.webhooks import router as webhooks_router
 from flowvy.bot.factory import create_bot, create_dispatcher
 from flowvy.config import Settings
 from flowvy.di import (
@@ -37,6 +38,7 @@ from flowvy.di import (
     ServiceProvider,
 )
 from flowvy.di_dashboard import DashboardProvider
+from flowvy.di_webhooks import WebhooksProvider
 from flowvy.services.metrics_collector import run_metrics_collector
 from flowvy.services.remnawave import RemnawaveClient
 
@@ -104,6 +106,7 @@ def create_app() -> FastAPI:
         RemnawaveProvider(),
         BffServiceProvider(),
         DashboardProvider(),
+        WebhooksProvider(),
     )
 
     app.include_router(health_router)
@@ -114,6 +117,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_dashboard_router)
     app.include_router(admin_settings_router)
     app.include_router(admin_users_router)
+    app.include_router(webhooks_router)
     app.include_router(debug_router)
     app.include_router(debug_admin_router)
 
