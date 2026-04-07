@@ -51,8 +51,9 @@ flowvy/
 │       │   ├── factory.py        # create_bot(), create_dispatcher()
 │       │   └── handlers/         # /start, admin commands
 │       ├── api/
-│       │   ├── factory.py        # create_app(), webhook route, lifespan
-│       │   ├── deps.py           # get_current_init_data()
+│       │   ├── factory.py        # create_app(), webhook route, lifespan, metrics task
+│       │   ├── deps.py           # get_current_init_data() + last_seen tracking
+│       │   ├── middleware.py     # MetricsMiddleware (request counters)
 │       │   └── routes/
 │       │       ├── health.py     # GET /api/health
 │       │       ├── users.py      # GET /api/me
@@ -62,17 +63,21 @@ flowvy/
 │       │       ├── pulse.py      # GET /api/pulse (Uptime Kuma status)
 │       │       └── admin/        # /api/admin/*
 │       │           ├── deps.py      # get_current_admin, CurrentAdmin
+│       │           ├── dashboard.py  # GET /api/admin/dashboard
 │       │           ├── settings.py  # GET/PATCH /api/admin/settings, kuma test
 │       │           └── users.py     # GET /api/admin/users, search
 │       ├── services/
 │       │   ├── user.py
-│       │   ├── remnawave.py      # RemnawaveClient (+get_metadata)
+│       │   ├── remnawave.py      # RemnawaveClient (+get_metadata, +system stats)
 │       │   ├── kuma.py           # UptimeKumaClient (public status page API)
 │       │   ├── subscription.py   # SubscriptionService (BFF + DB upsert)
 │       │   ├── admin_users.py     # AdminUsersService (list, search, actions, squad resolution)
 │       │   ├── devices.py        # DevicesService (BFF, DB read + Remnawave)
 │       │   ├── pulse.py          # PulseService (Kuma aggregation + Redis cache)
 │       │   ├── provider_settings.py  # ProviderSettingsService (CRUD + kuma test)
+│       │   ├── bot_stats.py      # BotStatsService (psutil, DB counts, Redis)
+│       │   ├── dashboard.py      # DashboardService (aggregates both providers)
+│       │   ├── metrics_collector.py  # background task (flush last_seen, record snapshots)
 │       │   └── cache.py          # Redis cache helpers
 │       ├── repositories/
 │       │   ├── base.py           # generic CRUD
@@ -82,6 +87,7 @@ flowvy/
 │       │   └── invite.py
 │       ├── models/               # SQLAlchemy ORM
 │       │   ├── base.py, user.py, subscription.py, invite.py
+│       │   ├── bot_metrics.py    # BotMetricsHistory (periodic snapshots)
 │       │   └── provider_settings.py  # singleton runtime config
 │       └── schemas/              # Pydantic v2
 │           ├── user.py           # UserResponse + FeaturesResponse
@@ -90,6 +96,7 @@ flowvy/
 │           ├── pulse.py          # PulseResponse, PulseGroup, PulseMonitor
 │           ├── provider_settings.py  # ProviderSettingsResponse/Patch
 │           ├── admin_users.py    # AdminUserResponse, AdminUsersResponse
+│           ├── dashboard.py      # DashboardResponse, BotStatsResponse
 │           └── remnawave.py      # response models from Remnawave
 ├── frontend/
 │   ├── package.json
@@ -176,7 +183,9 @@ This enables `DevicesService` to read `remnawave_uuid` and `device_limit` from l
 - Nodes: 30 second TTL
 - Pulse (Kuma status): 60 second TTL (key `pulse:data`)
 - External squads: 300 second TTL (key `external_squads`)
-- System stats / bandwidth: 60 second TTL
+- Dashboard Remnawave stats: 30 second TTL (key `dashboard:remnawave`)
+- Bot request counters: `bot:requests:total`, `bot:requests:{YYYY-MM-DD}` (no TTL, cumulative)
+- Bot last seen: `bot:last_seen` hash (flushed to DB every N minutes)
 - Webhook events from Remnawave (`node.connection_lost`) invalidate cache immediately
 
 **Remnawave unavailable** — frontend shows maintenance screen for users, error details for admins. No stale data served.
@@ -196,7 +205,7 @@ Our FastAPI does NOT proxy Remnawave 1:1. It aggregates data per screen.
 | Home | `GET /api/me/subscription` | `by-telegram-id` → `sub/{shortUuid}/info` + DB upsert |
 | Devices | `GET /api/me/devices` | DB read → `hwid/devices/{userUuid}` (fallback: `by-telegram-id` + DB upsert) |
 | Pulse | `GET /api/pulse` | Kuma: `status-page/{slug}` + `heartbeat/{slug}` (cached 60s) |
-| Admin Dashboard | `GET /api/admin/stats` | `system/stats` + `stats/bandwidth` (cached 60s) |
+| Admin Dashboard | `GET /api/admin/dashboard` | `system/stats` + `system/stats/bandwidth` (cached 30s) + bot metrics (DB + Redis) |
 | Admin Users | `GET /api/admin/users` | `users?size=N&start=N` + `external-squads` (cached) |
 | Admin Users Search | `GET /api/admin/users/search?q=` | `by-username`, `by-telegram-id`, or `by-email` + `external-squads` (cached) |
 | Admin User Actions | `POST /api/admin/users/{uuid}/{action}` | `users/{uuid}/actions/{action}` |
@@ -243,6 +252,46 @@ Result cached in Redis (key `external_squads`, 5 minute TTL). The resolved name 
 
 `GET /api/me` returns `features: { pulse: bool }` read from `provider_settings.kuma_enabled`.
 Frontend TabBar conditionally renders the Pulse tab based on `user.features.pulse`.
+
+## Admin Dashboard
+
+`GET /api/admin/dashboard` aggregates two metric providers into one response:
+
+### Remnawave Stats (proxied raw)
+
+- `GET /api/system/stats` → CPU, memory, uptime, user status counts, online stats, nodes
+- `GET /api/system/stats/bandwidth` → bandwidth by period (2 days, 7 days, 30 days, calendar month, year)
+- Both cached in Redis (key `dashboard:remnawave`, TTL 30s)
+- Returns raw `dict` — no Pydantic models, structure may change upstream
+
+### Bot Stats (own metrics)
+
+**System**: `psutil` CPU cores, memory, app uptime, version.
+**Users**: DB counts — total, new today, new this week, active 1h, active 24h.
+**Requests**: Redis counters — `bot:requests:total`, `bot:requests:{YYYY-MM-DD}`.
+
+### Bot Metrics Collection
+
+**Request counting** — `MetricsMiddleware` runs on every HTTP request:
+- `INCR bot:requests:total`
+- `INCR bot:requests:{YYYY-MM-DD}`
+
+**User activity tracking** — `get_current_init_data` auth dependency:
+- After successful HMAC validation: `HSET bot:last_seen {telegram_id} {unix_ts}`
+- No DB writes in the request path
+
+**Background task** — `run_metrics_collector` (started in lifespan):
+- Interval: `METRICS_SNAPSHOT_INTERVAL_SECONDS` (default 600s / 10 min)
+- Flushes `bot:last_seen` Redis hash → `users.last_active_at` (batch UPDATE)
+- Inserts snapshot row into `bot_metrics_history` (cumulative `api_requests_count`)
+- Uses APP-scope dependencies: `Redis`, `async_sessionmaker`
+- Graceful shutdown via `task.cancel()`
+
+### DI Providers
+
+`DashboardProvider` (in `di_dashboard.py`):
+- `BotStatsService` — REQUEST scope (needs AsyncSession + Redis)
+- `DashboardService` — REQUEST scope (needs RemnawaveClient + BotStatsService + Redis)
 
 ## TanStack Query (Frontend)
 
@@ -374,7 +423,7 @@ Lifespan: `bot.set_webhook()` + `dp.emit_startup()` on start, `dp.emit_shutdown(
 ## Dependency Injection (Dishka)
 
 - `APP` scope: Settings, AsyncEngine, Redis, httpx.AsyncClient, RemnawaveClient, UptimeKumaClient
-- `REQUEST` scope: AsyncSession, repositories, services (incl. PulseService)
+- `REQUEST` scope: AsyncSession, repositories, services (incl. PulseService, BotStatsService, DashboardService)
 
 ## Mini App Modes
 

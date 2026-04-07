@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from dishka import make_async_container
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from redis.asyncio import Redis
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from flowvy.api.middleware import MetricsMiddleware
+from flowvy.api.routes.admin.dashboard import router as admin_dashboard_router
 from flowvy.api.routes.admin.settings import router as admin_settings_router
 from flowvy.api.routes.admin.users import router as admin_users_router
 from flowvy.api.routes.debug import router as debug_router
@@ -31,6 +36,8 @@ from flowvy.di import (
     RepositoryProvider,
     ServiceProvider,
 )
+from flowvy.di_dashboard import DashboardProvider
+from flowvy.services.metrics_collector import run_metrics_collector
 from flowvy.services.remnawave import RemnawaveClient
 
 
@@ -55,7 +62,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             msg = f"Remnawave unreachable at {settings.remnawave_url}"
             raise RuntimeError(msg)
 
+    redis = await container.get(Redis)
+    sm = await container.get(async_sessionmaker[AsyncSession])
+    metrics_task = asyncio.create_task(
+        run_metrics_collector(redis, sm, settings.metrics_snapshot_interval_seconds),
+    )
+
     yield
+
+    metrics_task.cancel()
+    with suppress(asyncio.CancelledError):
+        await metrics_task
 
     if hasattr(app.state, "dp"):
         await app.state.dp.emit_shutdown(bot=app.state.bot)
@@ -86,6 +103,7 @@ def create_app() -> FastAPI:
         HttpClientProvider(),
         RemnawaveProvider(),
         BffServiceProvider(),
+        DashboardProvider(),
     )
 
     app.include_router(health_router)
@@ -93,6 +111,7 @@ def create_app() -> FastAPI:
     app.include_router(subscription_router)
     app.include_router(devices_router)
     app.include_router(pulse_router)
+    app.include_router(admin_dashboard_router)
     app.include_router(admin_settings_router)
     app.include_router(admin_users_router)
     app.include_router(debug_router)
@@ -112,4 +131,5 @@ def create_app() -> FastAPI:
         return Response(status_code=200)
 
     setup_dishka(container=container, app=app)
+    app.add_middleware(MetricsMiddleware)
     return app

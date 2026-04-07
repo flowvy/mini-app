@@ -152,6 +152,14 @@ class RemnawaveClient:
         """Delete user permanently (``DELETE /api/users/{uuid}``)."""
         await self._delete(f"/api/users/{uuid}")
 
+    async def get_system_stats(self) -> dict:
+        """Fetch system stats (``GET /api/system/stats``). Raw dict."""
+        return await self._get("/api/system/stats")
+
+    async def get_bandwidth_stats(self) -> dict:
+        """Fetch bandwidth stats (``GET /api/system/stats/bandwidth``). Raw dict."""
+        return await self._get("/api/system/stats/bandwidth")
+
     async def get_external_squads(self) -> list[dict]:
         """Fetch all external squads (``GET /api/external-squads``)."""
         data = await self._get("/api/external-squads")

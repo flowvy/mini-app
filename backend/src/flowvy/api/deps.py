@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime, timedelta
 
 from aiogram.utils.web_app import WebAppInitData, safe_parse_webapp_init_data
 from fastapi import HTTPException, Request, status
+from redis.asyncio import Redis
 
 
 async def get_current_init_data(request: Request) -> WebAppInitData:
     """Extract and validate Telegram initData from Authorization header.
 
     Expected header format: ``Authorization: tma <raw_init_data>``.
+    After successful validation, records last-seen timestamp in Redis.
 
     Raises:
         HTTPException(401): on missing/invalid/expired initData.
@@ -49,5 +52,9 @@ async def get_current_init_data(request: Request) -> WebAppInitData:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="No user data in initData",
         )
+
+    container = request.state.dishka_container
+    redis: Redis = await container.get(Redis)
+    await redis.hset("bot:last_seen", str(init_data.user.id), str(int(time.time())))
 
     return init_data

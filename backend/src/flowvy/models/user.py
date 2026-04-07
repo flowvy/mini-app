@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import datetime
 import enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String
+from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from flowvy.models.base import Base, bigint_pk, created_at, updated_at
@@ -32,6 +33,10 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(String(255))
     role: Mapped[UserRole] = mapped_column(default=UserRole.USER)
     is_active: Mapped[bool] = mapped_column(default=True)
+    last_active_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        default=None,
+    )
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]
 
