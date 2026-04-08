@@ -6,6 +6,7 @@ import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 
+from aiogram import Bot
 from dishka import make_async_container
 from dishka.integrations.aiogram import setup_dishka as setup_dishka_aiogram
 from dishka.integrations.fastapi import setup_dishka
@@ -26,7 +27,7 @@ from flowvy.api.routes.pulse import router as pulse_router
 from flowvy.api.routes.subscription import router as subscription_router
 from flowvy.api.routes.users import router as users_router
 from flowvy.api.routes.webhooks import router as webhooks_router
-from flowvy.bot.factory import create_bot, create_dispatcher
+from flowvy.bot.factory import create_dispatcher
 from flowvy.config import Settings
 from flowvy.di import (
     BffServiceProvider,
@@ -38,6 +39,7 @@ from flowvy.di import (
     RepositoryProvider,
     ServiceProvider,
 )
+from flowvy.di_bot import BotProvider
 from flowvy.di_dashboard import DashboardProvider
 from flowvy.di_webhooks import WebhooksProvider
 from flowvy.services.metrics_collector import run_metrics_collector
@@ -51,7 +53,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     container = app.state.dishka_container
 
     if settings.bot_token:
-        bot = create_bot(settings)
+        bot = await container.get(Bot)
         dp = create_dispatcher()
         app.state.bot = bot
         app.state.dp = dp
@@ -108,6 +110,7 @@ def create_app() -> FastAPI:
         BffServiceProvider(),
         DashboardProvider(),
         WebhooksProvider(),
+        BotProvider(),
     )
 
     app.include_router(health_router)
