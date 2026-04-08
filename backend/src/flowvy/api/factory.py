@@ -30,7 +30,6 @@ from flowvy.api.routes.webhooks import router as webhooks_router
 from flowvy.bot.factory import create_dispatcher
 from flowvy.config import Settings
 from flowvy.di import (
-    BffServiceProvider,
     ConfigProvider,
     DatabaseProvider,
     HttpClientProvider,
@@ -39,6 +38,7 @@ from flowvy.di import (
     RepositoryProvider,
     ServiceProvider,
 )
+from flowvy.di_bff import BffServiceProvider
 from flowvy.di_bot import BotProvider
 from flowvy.di_dashboard import DashboardProvider
 from flowvy.di_webhooks import WebhooksProvider

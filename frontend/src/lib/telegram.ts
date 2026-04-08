@@ -12,6 +12,10 @@ import {
 
 let initialized = false;
 
+function setTheme(isDark: boolean): void {
+	document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+}
+
 export function initTelegramApp(): void {
 	if (initialized) {
 		return;
@@ -21,25 +25,32 @@ export function initTelegramApp(): void {
 	try {
 		init();
 
+		if (themeParams.mount.isAvailable()) {
+			themeParams.mount();
+			if (themeParams.bindCssVars.isAvailable()) {
+				themeParams.bindCssVars();
+			}
+		}
+
 		if (miniApp.mount.isAvailable()) {
 			miniApp.mount();
 		}
-		miniApp.ready();
 
-		if (themeParams.mount.isAvailable()) {
-			themeParams.mount();
-		}
+		setTheme(miniApp.isDark());
+		miniApp.isDark.sub(setTheme);
+
+		miniApp.ready();
 
 		if (viewport.mount.isAvailable()) {
 			viewport.mount();
 			void viewport.expand();
 		}
-
-		const isDark = miniApp.isDark();
-		document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
+		if (viewport.requestFullscreen.isAvailable()) {
+			void viewport.requestFullscreen();
+		}
 	} catch {
 		// Outside Telegram — dev mode, default to dark theme
-		document.documentElement.setAttribute("data-theme", "dark");
+		setTheme(true);
 	}
 }
 

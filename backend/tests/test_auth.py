@@ -13,6 +13,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from flowvy.api.factory import create_app
+from flowvy.config import Settings
 from flowvy.repositories.user import UserRepository
 from flowvy.services.user import UserService
 
@@ -64,7 +65,7 @@ class TestUserService:
     async def test_creates_new_user(self, session: AsyncSession) -> None:
         """First call creates a new user record."""
         repo = UserRepository(session)
-        service = UserService(repo)
+        service = UserService(repo, Settings())
 
         user = await service.get_or_create(111, "alice", "Alice A")
         await session.commit()
@@ -80,7 +81,7 @@ class TestUserService:
     ) -> None:
         """Second call returns existing user without creating duplicate."""
         repo = UserRepository(session)
-        service = UserService(repo)
+        service = UserService(repo, Settings())
 
         first = await service.get_or_create(222, "bob", "Bob B")
         await session.commit()
@@ -95,7 +96,7 @@ class TestUserService:
     ) -> None:
         """Updates username/full_name when Telegram profile changes."""
         repo = UserRepository(session)
-        service = UserService(repo)
+        service = UserService(repo, Settings())
 
         await service.get_or_create(333, "old_name", "Old Name")
         await session.commit()

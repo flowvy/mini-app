@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,3 +26,14 @@ class Settings(BaseSettings):
     metrics_snapshot_interval_seconds: int = 600
     remnawave_webhook_secret: str | None = None
     debug: bool = True
+    admin_telegram_ids: list[int] = []
+
+    @field_validator("admin_telegram_ids", mode="before")
+    @classmethod
+    def parse_admin_ids(cls, v: object) -> list[int]:
+        """Parse comma-separated string into list of ints."""
+        if isinstance(v, str):
+            if not v.strip():
+                return []
+            return [int(x.strip()) for x in v.split(",")]
+        return v  # type: ignore[return-value]
