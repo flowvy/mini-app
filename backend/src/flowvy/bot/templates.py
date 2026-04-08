@@ -24,10 +24,10 @@ class MessageTemplate:
 
 DEFAULTS: dict[str, MessageTemplate] = {
     "welcome": MessageTemplate(
-        text="Welcome! \U0001f4f1\nManage your service directly in Telegram.",
+        text='Welcome! <tg-emoji emoji-id="5287454313059226906">\U0001f4f1</tg-emoji>\nManage your service directly in Telegram.',
         media_path=ASSETS_DIR / "main_card.mp4",
         media_type="animation",
-        button_text="\U0001f680 Open {{ app_name }}",
+        button_text="Open {{ app_name }}",
     ),
 }
 

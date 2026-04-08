@@ -8,8 +8,7 @@
       "Bash(git push --force*)",
       "Read(~/.ssh/*)",
       "Read(~/.aws/*)",
-      "Read(**/.env)",
-      "Read(**/.env.*)"
+      "Read(**/.env.production)"
     ]
   },
   "hooks": {
