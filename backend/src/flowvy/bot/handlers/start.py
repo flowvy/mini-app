@@ -10,6 +10,8 @@ from aiogram.types import (
     Message,
     WebAppInfo,
 )
+from dishka import FromDishka
+from dishka.integrations.aiogram import inject
 
 from flowvy.config import Settings
 
@@ -17,9 +19,9 @@ router = Router(name="start")
 
 
 @router.message(CommandStart())
-async def cmd_start(message: Message) -> None:
+@inject
+async def cmd_start(message: Message, settings: FromDishka[Settings]) -> None:
     """Greet user and show Mini App button if webapp_url is configured."""
-    settings = Settings()
     text = "Welcome to Flowvy! Tap the button below to open the app."
 
     if settings.webapp_url:

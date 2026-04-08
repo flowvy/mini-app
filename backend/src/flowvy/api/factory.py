@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 
 from dishka import make_async_container
+from dishka.integrations.aiogram import setup_dishka as setup_dishka_aiogram
 from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,17 +48,17 @@ from flowvy.services.remnawave import RemnawaveClient
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Manage bot lifecycle: set webhook on start, cleanup on stop."""
     settings = app.state.settings
+    container = app.state.dishka_container
 
     if settings.bot_token:
         bot = create_bot(settings)
         dp = create_dispatcher()
         app.state.bot = bot
         app.state.dp = dp
+        setup_dishka_aiogram(container=container, router=dp)
         if settings.webhook_url:
             await bot.set_webhook(settings.webhook_url)
         await dp.emit_startup(bot=bot)
-
-    container = app.state.dishka_container
     if settings.remnawave_url:
         remnawave = await container.get(RemnawaveClient)
         if not await remnawave.ping():
