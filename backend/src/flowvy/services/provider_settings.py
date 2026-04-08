@@ -36,6 +36,10 @@ class ProviderSettingsService:
             renew_url=row.renew_url,
             app_name=row.app_name,
             logo_url=row.logo_url,
+            welcome_text=row.welcome_text,
+            welcome_media_url=row.welcome_media_url,
+            welcome_media_type=row.welcome_media_type,
+            welcome_button_text=row.welcome_button_text,
             remnawave_version=version,
             updated_at=int(row.updated_at.timestamp()),
         )

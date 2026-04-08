@@ -1,0 +1,51 @@
+/* ── Textarea ── */
+
+.textarea {
+	width: 100%;
+	padding: 8px 10px;
+	border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);
+	border-radius: var(--radius-sm);
+	background: var(--v2-bg-primary);
+	color: var(--v2-text-primary);
+	font-size: 12px;
+	font-family: var(--font-mono);
+	outline: none;
+	transition: border-color 0.15s;
+	box-sizing: border-box;
+	resize: vertical;
+	min-height: 80px;
+	line-height: 1.5;
+}
+
+.textarea::placeholder {
+	color: var(--v2-text-tertiary);
+}
+
+.textareaFocused {
+	border-color: var(--v2-bg-positive-secondary);
+}
+
+/* ── Info banner ── */
+
+.infoBanner {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 14px;
+	border-radius: var(--radius-md);
+	background: var(--v2-bg-primary);
+	border: 1px solid var(--v2-border-tertiary);
+	margin-top: 16px;
+}
+
+.infoBannerIcon {
+	flex-shrink: 0;
+	color: var(--v2-icon-secondary);
+	margin-top: 1px;
+}
+
+.infoBannerText {
+	font-size: 11px;
+	color: var(--v2-text-secondary);
+	line-height: 1.4;
+}

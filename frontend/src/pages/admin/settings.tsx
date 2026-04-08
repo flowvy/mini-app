@@ -7,11 +7,12 @@ import { useTranslation } from "react-i18next";
 import { BrandingConfig } from "../../components/admin/branding-config.tsx";
 import { KumaConfig } from "../../components/admin/kuma-config.tsx";
 import { QuickLinks } from "../../components/admin/quick-links.tsx";
+import { WelcomeConfig } from "../../components/admin/welcome-config.tsx";
 import { Toggle } from "../../components/ui/toggle.tsx";
 import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import styles from "./settings.module.css";
 
-type View = "settings" | "kuma" | "links" | "branding";
+type View = "settings" | "kuma" | "links" | "branding" | "welcome";
 
 export const AdminSettings: FC = () => {
 	const { t } = useTranslation();
@@ -51,6 +52,9 @@ export const AdminSettings: FC = () => {
 	}
 	if (view === "branding") {
 		return <BrandingConfig settings={settings} onBack={() => setView("settings")} />;
+	}
+	if (view === "welcome") {
+		return <WelcomeConfig settings={settings} onBack={() => setView("settings")} />;
 	}
 
 	const handleToggleKuma = (enabled: boolean) => {
@@ -129,6 +133,21 @@ export const AdminSettings: FC = () => {
 						<span className={styles.toolRowChevron}>
 							<ChevronRight size={14} />
 						</span>
+					</span>
+				</button>
+			</div>
+
+			{/* Bot */}
+			<div className={`${styles.sectionBody} ${styles.sectionBodyGap}`}>
+				<div className={styles.sectionDivider}>{t("settings.bot.section")}</div>
+
+				<button type="button" className={styles.toolRow} onClick={() => setView("welcome")}>
+					<div className={styles.toolRowLeft}>
+						<span className={styles.toolRowLabel}>{t("settings.bot.welcomeRow")}</span>
+						<span className={styles.toolRowDesc}>{t("settings.bot.welcomeRowDesc")}</span>
+					</div>
+					<span className={styles.toolRowChevron}>
+						<ChevronRight size={14} />
 					</span>
 				</button>
 			</div>

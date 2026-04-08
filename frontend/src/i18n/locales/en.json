@@ -199,6 +199,34 @@
 			"discardConfirm": "Discard",
 			"discardCancel": "Keep editing",
 			"discardBody": "You have unsaved changes that will be lost."
+		},
+		"bot": {
+			"section": "Bot",
+			"welcomeRow": "Welcome Message",
+			"welcomeRowDesc": "Greeting sent on /start"
+		},
+		"welcome": {
+			"title": "Welcome Message",
+			"messageLabel": "Message",
+			"messageDesc": "HTML supported. Use {{ app_name }} for dynamic name.",
+			"messagePlaceholder": "Welcome! \ud83d\udcf1\nManage your service directly in Telegram.",
+			"mediaUrlLabel": "Media URL",
+			"mediaUrlDesc": "Animation (MP4/GIF) or photo. Leave empty for default.",
+			"mediaUrlPlaceholder": "https://example.com/video.mp4",
+			"mediaTypeLabel": "Media Type",
+			"mediaTypeAnimation": "Animation",
+			"mediaTypePhoto": "Photo",
+			"mediaTypeNone": "None",
+			"buttonTextLabel": "Button Text",
+			"buttonTextDesc": "Text on the Mini App button.",
+			"buttonTextPlaceholder": "\ud83d\ude80 Open {{ app_name }}",
+			"premiumWarning": "Custom emoji (<tg-emoji>) require Telegram Premium on the bot owner's account.",
+			"saved": "Saved",
+			"save": "Save",
+			"discardTitle": "Discard changes?",
+			"discardConfirm": "Discard",
+			"discardCancel": "Keep editing",
+			"discardBody": "You have unsaved changes that will be lost."
 		}
 	},
 	"admin": {
