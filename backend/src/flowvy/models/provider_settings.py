@@ -21,4 +21,10 @@ class ProviderSettings(Base):
     renew_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     app_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     logo_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    welcome_text: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    welcome_media_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    welcome_media_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    welcome_button_text: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )
     updated_at: Mapped[updated_at]

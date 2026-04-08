@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from aiogram import Bot
@@ -18,12 +18,12 @@ from aiogram.types import (
 )
 from redis.asyncio import Redis
 
+from flowvy.bot.templates import DEFAULTS, MessageTemplate, render
 from flowvy.config import Settings
 from flowvy.models.provider_settings import ProviderSettings
 
 logger = logging.getLogger(__name__)
 
-ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
 FILE_ID_PREFIX = "bot:file_id:"
 
 
@@ -96,28 +96,57 @@ class MessageSender:
         settings: Settings,
         provider_settings: ProviderSettings | None = None,
     ) -> Message | None:
-        """Send welcome message with default template."""
+        """Send welcome message resolved from template + provider overrides."""
+        tmpl = self.resolve_template("welcome", provider_settings)
         app_name = "Flowvy"
         if provider_settings and provider_settings.app_name:
             app_name = provider_settings.app_name
+        context = {"app_name": app_name}
 
-        text = "Welcome! \U0001f4f1\nManage your service directly in Telegram."
+        text = render(tmpl.text, context)
 
         if not settings.webapp_url:
             return await self.send(chat_id=chat_id, text=text)
 
-        button = InlineButton(
-            text=f"\U0001f680 Open {app_name}",
-            web_app_url=settings.webapp_url,
+        button_text = render(tmpl.button_text, context) if tmpl.button_text else None
+        buttons = (
+            [InlineButton(text=button_text, web_app_url=settings.webapp_url)]
+            if button_text
+            else None
         )
-        media_path = ASSETS_DIR / "main_card.mp4"
         return await self.send(
             chat_id=chat_id,
             text=text,
-            media_path=media_path,
-            media_type="animation",
-            buttons=[button],
+            media_url=tmpl.media_url,
+            media_path=tmpl.media_path,
+            media_type=tmpl.media_type,
+            buttons=buttons,
         )
+
+    @staticmethod
+    def resolve_template(
+        name: str,
+        provider_settings: ProviderSettings | None,
+    ) -> MessageTemplate:
+        """Resolve template: DEFAULTS base + provider_settings overrides."""
+        base = DEFAULTS[name]
+        if provider_settings is None:
+            return base
+
+        overrides: dict[str, object] = {}
+        if provider_settings.welcome_text is not None:
+            overrides["text"] = provider_settings.welcome_text
+        if provider_settings.welcome_media_url is not None:
+            overrides["media_url"] = provider_settings.welcome_media_url
+            overrides["media_path"] = None
+        if provider_settings.welcome_media_type is not None:
+            overrides["media_type"] = provider_settings.welcome_media_type
+        if provider_settings.welcome_button_text is not None:
+            overrides["button_text"] = provider_settings.welcome_button_text
+
+        if not overrides:
+            return base
+        return replace(base, **overrides)
 
     def _build_keyboard(
         self,

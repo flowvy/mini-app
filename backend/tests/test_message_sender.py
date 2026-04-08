@@ -9,8 +9,9 @@ import pytest
 from aiogram.exceptions import TelegramForbiddenError
 from aiogram.types import FSInputFile
 
+from flowvy.bot.templates import ASSETS_DIR
 from flowvy.config import Settings
-from flowvy.services.message_sender import ASSETS_DIR, InlineButton, MessageSender
+from flowvy.services.message_sender import InlineButton, MessageSender
 
 
 @pytest.fixture
@@ -121,6 +122,10 @@ async def test_send_welcome_custom_app_name(sender: MessageSender, bot: AsyncMoc
     settings = Settings(webapp_url="https://app.example.com")
     ps = MagicMock()
     ps.app_name = "MyVPN"
+    ps.welcome_text = None
+    ps.welcome_media_url = None
+    ps.welcome_media_type = None
+    ps.welcome_button_text = None
     await sender.send_welcome(chat_id=123, settings=settings, provider_settings=ps)
     bot.send_animation.assert_called_once()
     markup = bot.send_animation.call_args.kwargs["reply_markup"]
