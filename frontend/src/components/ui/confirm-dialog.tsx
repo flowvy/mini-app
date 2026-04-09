@@ -5,6 +5,7 @@
 import { X } from "lucide-react";
 import { type FC, type ReactNode, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { hapticImpact, hapticNotification } from "../../lib/haptics.ts";
 import { ActionBtn } from "./action-btn.tsx";
 import styles from "./confirm-dialog.module.css";
 
@@ -59,10 +60,24 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 				</div>
 				<div className={styles.body}>{children}</div>
 				<div className={styles.footer}>
-					<ActionBtn variant="ghost" size="md" onClick={onCancel}>
+					<ActionBtn
+						variant="ghost"
+						size="md"
+						onClick={() => {
+							hapticImpact("light");
+							onCancel();
+						}}
+					>
 						{cancelLabel}
 					</ActionBtn>
-					<ActionBtn variant={confirmVariant} size="md" onClick={onConfirm}>
+					<ActionBtn
+						variant={confirmVariant}
+						size="md"
+						onClick={() => {
+							hapticNotification("warning");
+							onConfirm();
+						}}
+					>
 						{confirmLabel}
 					</ActionBtn>
 				</div>

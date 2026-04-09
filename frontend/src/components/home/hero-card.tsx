@@ -14,6 +14,7 @@ import {
 	isUnlimitedExpiry,
 	isUnlimitedTraffic,
 } from "../../lib/format.ts";
+import { hapticNotification } from "../../lib/haptics.ts";
 import type { SubscriptionData } from "../../types/subscription.ts";
 import { CheckIcon, CopyIcon } from "../ui/icons.tsx";
 import { StatusBadge } from "../ui/status-badge.tsx";
@@ -40,6 +41,7 @@ export function HeroCard({ subscription }: HeroCardProps) {
 		navigator.clipboard.writeText(connectionLink).then(() => {
 			if (timerRef.current) clearTimeout(timerRef.current);
 			setCopied(true);
+			hapticNotification("success");
 			timerRef.current = setTimeout(() => setCopied(false), 2000);
 		});
 	}, [connectionLink]);

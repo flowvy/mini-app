@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react";
 import { Activity, HelpCircle, Megaphone, Smartphone, User, UserStar, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { type AppMode, useMode } from "../../contexts/mode-context.tsx";
+import { hapticSelection } from "../../lib/haptics.ts";
 import { useCurrentUser } from "../auth-guard.tsx";
 import { AppLogo } from "../ui/app-logo.tsx";
 import styles from "./header.module.css";
@@ -35,6 +36,7 @@ export function Header() {
 
 	const handleToggle = (next: AppMode) => {
 		if (next === mode) return;
+		hapticSelection();
 		setMode(next);
 		const target = next === "admin" ? "/admin/dashboard" : "/";
 		void navigate({ to: target });

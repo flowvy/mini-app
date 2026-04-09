@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useMode } from "../../contexts/mode-context.tsx";
+import { hapticImpact } from "../../lib/haptics.ts";
 import { useCurrentUser } from "../auth-guard.tsx";
 import styles from "./tab-bar.module.css";
 
@@ -53,7 +54,13 @@ export function TabBar({ compact }: TabBarProps) {
 	return (
 		<nav className={`${styles.tabBar} ${compact ? styles.compact : ""}`}>
 			{tabs.map((tab) => (
-				<Link key={tab.to} to={tab.to} activeOptions={{ exact: true }} className={styles.tab}>
+				<Link
+					key={tab.to}
+					to={tab.to}
+					activeOptions={{ exact: true }}
+					className={styles.tab}
+					onClick={() => hapticImpact("light")}
+				>
 					{({ isActive }) => {
 						const Icon = tab.icon;
 						return (

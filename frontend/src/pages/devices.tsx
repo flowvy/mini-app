@@ -3,6 +3,7 @@ import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DeviceRow } from "../components/devices/device-row.tsx";
 import { useDeleteAllDevices, useDeleteDevice, useDevices } from "../hooks/use-devices.ts";
+import { hapticNotification } from "../lib/haptics.ts";
 import styles from "./devices.module.css";
 
 export const Devices: FC = () => {
@@ -34,12 +35,14 @@ export const Devices: FC = () => {
 
 	const handleDelete = (hwid: string) => {
 		deleteDevice.mutate(hwid, {
+			onSuccess: () => hapticNotification("success"),
 			onSettled: () => setConfirmHwid(null),
 		});
 	};
 
 	const handleDeleteAll = () => {
 		deleteAll.mutate(undefined, {
+			onSuccess: () => hapticNotification("success"),
 			onSettled: () => setConfirmAll(false),
 		});
 	};
@@ -95,7 +98,14 @@ export const Devices: FC = () => {
 			)}
 
 			{devices.length > 1 && !confirmAll && (
-				<button type="button" className={styles.dangerBtn} onClick={() => setConfirmAll(true)}>
+				<button
+					type="button"
+					className={styles.dangerBtn}
+					onClick={() => {
+						hapticNotification("warning");
+						setConfirmAll(true);
+					}}
+				>
 					{t("devices.removeAll")}
 				</button>
 			)}
