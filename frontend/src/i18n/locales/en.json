@@ -294,7 +294,11 @@
 				"uptimeLabel": "Uptime",
 				"versionLabel": "Version"
 			},
-			"noData": "Remnawave unavailable"
+			"noData": "Remnawave unavailable",
+			"domain": {
+				"vpn": "VPN Infrastructure",
+				"bot": "Bot Analytics"
+			}
 		},
 		"broadcast": {
 			"comingSoon": "Coming soon"

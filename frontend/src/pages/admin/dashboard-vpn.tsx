@@ -1,9 +1,7 @@
 import { DashboardBandwidthRow } from "../../components/admin/dashboard-bandwidth-row.tsx";
-import { DashboardKpiGrid } from "../../components/admin/dashboard-kpi-grid.tsx";
-import type { KpiItem } from "../../components/admin/dashboard-kpi-grid.tsx";
-import { formatMemory, formatTraffic, formatUptime } from "../../lib/format.ts";
+import { formatMemory, formatUptime } from "../../lib/format.ts";
 import type { DashboardResponse } from "../../types/dashboard.ts";
-import { Row, StatusRow, formatBwDiffSub } from "./dashboard-rows.tsx";
+import { Row, StatusRow } from "./dashboard-rows.tsx";
 import styles from "./dashboard.module.css";
 
 export function VpnContent({
@@ -15,37 +13,8 @@ export function VpnContent({
 
 	if (!rw || !bw) return <div className={styles.noData}>{t("admin.dashboard.noData")}</div>;
 
-	const kpis: KpiItem[] = [
-		{
-			label: "admin.dashboard.kpi.users",
-			value: rw.users.totalUsers,
-			sub: t("admin.dashboard.kpi.onlineNow", { n: rw.onlineStats.onlineNow }),
-			subColor: "var(--v2-text-positive)",
-		},
-		{
-			label: "admin.dashboard.kpi.nodes",
-			value: rw.nodes.totalOnline,
-			sub: t("admin.dashboard.kpi.online"),
-		},
-		{
-			label: "admin.dashboard.kpi.today",
-			value: bw.bandwidthLastTwoDays.current,
-			sub: formatBwDiffSub(bw.bandwidthLastTwoDays.difference),
-		},
-		{
-			label: "admin.dashboard.kpi.lifetime",
-			value: formatTraffic(Number(rw.nodes.totalBytesLifetime)),
-			sub: t("admin.dashboard.kpi.allNodes"),
-		},
-	];
-	kpis[2].subColor = bw.bandwidthLastTwoDays.difference.startsWith("-")
-		? "var(--v2-text-negative)"
-		: "var(--v2-text-positive)";
-
 	return (
 		<>
-			<DashboardKpiGrid items={kpis} />
-
 			<div className={styles.sectionBody}>
 				<div className={styles.divider}>{t("admin.dashboard.vpn.usersByStatus")}</div>
 				<StatusRow
