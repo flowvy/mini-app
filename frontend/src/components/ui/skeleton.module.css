@@ -1,0 +1,11 @@
+.skeleton {
+	background: var(--v2-bg-tertiary);
+	animation: var(--fv-anim-pulse) 1.5s ease-in-out infinite;
+	border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.skeleton {
+		animation: none;
+	}
+}
