@@ -73,9 +73,6 @@
 			"updateInterval": "Update interval",
 			"updateIntervalHint": "How often to check for updates",
 			"updateIntervalValue": "Every {{n}}h",
-			"quickLinks": "Quick Links",
-			"support": "Support",
-			"renew": "Renew",
 			"notSpecified": "Not specified"
 		}
 	},

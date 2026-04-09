@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { formatShortDate, isUnlimitedExpiry } from "../../lib/format.ts";
 import type { SubscriptionData } from "../../types/subscription.ts";
-import { ExternalLinkIcon } from "../ui/icons.tsx";
 import styles from "./detail-section.module.css";
 
 interface DetailSectionProps {
@@ -72,11 +71,6 @@ export function DetailSection({ subscription }: DetailSectionProps) {
 				value={t("home.detail.updateIntervalValue", { n: subscription.updateInterval })}
 				mono
 			/>
-
-			{/* Quick Links */}
-			<div className={styles.divider}>{t("home.detail.quickLinks")}</div>
-			<LinkRow label={t("home.detail.support")} url={subscription.supportUrl} />
-			<LinkRow label={t("home.detail.renew")} url={subscription.renewUrl} />
 		</div>
 	);
 }
@@ -119,18 +113,6 @@ function Row({
 				<span className={styles.rowLabel}>{label}</span>
 			)}
 			<span className={cls}>{display}</span>
-		</div>
-	);
-}
-
-function LinkRow({ label, url }: { label: string; url: string | null }) {
-	if (!url) return null;
-	return (
-		<div className={styles.row}>
-			<span className={styles.rowLabel}>{label}</span>
-			<a href={url} target="_blank" rel="noopener noreferrer" className={styles.linkBtn}>
-				<ExternalLinkIcon size={13} />
-			</a>
 		</div>
 	);
 }

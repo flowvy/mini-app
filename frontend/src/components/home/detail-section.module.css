@@ -76,22 +76,3 @@
 .rowAccent {
 	color: var(--v2-text-positive);
 }
-
-/* ── Link row icon button ── */
-
-.linkBtn {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 28px;
-	height: 28px;
-	border-radius: var(--radius-sm);
-	color: var(--v2-text-tertiary);
-	flex-shrink: 0;
-	transition: background var(--duration-fast), color var(--duration-fast);
-}
-
-.linkBtn:hover {
-	background: var(--v2-bg-secondary);
-	color: var(--v2-text-primary);
-}

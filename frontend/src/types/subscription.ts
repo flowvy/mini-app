@@ -20,8 +20,6 @@ export interface SubscriptionData {
 	telegramId: string | null;
 	autoUpdate: boolean;
 	updateInterval: number;
-	supportUrl: string | null;
-	renewUrl: string | null;
 }
 
 export interface ServerData {
