@@ -14,7 +14,7 @@
 	width: 320px;
 	max-width: calc(100vw - 32px);
 	background: var(--v2-floor-0);
-	border-radius: 10px;
+	border-radius: var(--radius-md);
 	border: 1px solid var(--v2-border-tertiary);
 	box-shadow: var(--v2-shadow);
 	display: flex;

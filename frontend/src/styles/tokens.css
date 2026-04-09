@@ -8,9 +8,9 @@
 
 /* ── Radius & timing ── */
 :root {
-	--radius-sm: 6px;
-	--radius-md: 8px;
-	--radius-lg: 12px;
+	--radius-sm: 8px;
+	--radius-md: 12px;
+	--radius-lg: 16px;
 	--radius-xl: 16px;
 	--radius-2xl: 22px;
 	--duration-fast: 0.1s;

@@ -28,7 +28,7 @@
 
 .backBtn {
 	padding: 4px;
-	border-radius: 6px;
+	border-radius: var(--radius-sm);
 	color: var(--v2-icon-secondary);
 	display: flex;
 	align-items: center;

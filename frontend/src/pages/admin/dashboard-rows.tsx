@@ -23,7 +23,7 @@ export function StatusRow({ label, value, dot }: { label: string; value: number;
 	return (
 		<div className={styles.row}>
 			<span className={styles.rowLabel}>
-				<span className={styles.dot} style={{ background: dot }} />
+				<span className={styles.dot} style={{ background: dot, boxShadow: `0 0 6px ${dot}` }} />
 				{label}
 			</span>
 			<span className={`${styles.rowValue} ${styles.mono}`}>{value}</span>
