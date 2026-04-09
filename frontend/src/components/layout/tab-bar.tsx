@@ -38,7 +38,11 @@ const ADMIN_TABS: TabDefinition[] = [
 	{ to: "/admin/settings", label: "common.tab.settings", icon: Settings },
 ];
 
-export function TabBar() {
+interface TabBarProps {
+	compact?: boolean;
+}
+
+export function TabBar({ compact }: TabBarProps) {
 	const { t } = useTranslation();
 	const { mode } = useMode();
 	const user = useCurrentUser();
@@ -47,7 +51,7 @@ export function TabBar() {
 	const tabs = mode === "admin" ? ADMIN_TABS : userTabs;
 
 	return (
-		<nav className={styles.tabBar}>
+		<nav className={`${styles.tabBar} ${compact ? styles.compact : ""}`}>
 			{tabs.map((tab) => (
 				<Link key={tab.to} to={tab.to} activeOptions={{ exact: true }} className={styles.tab}>
 					{({ isActive }) => {

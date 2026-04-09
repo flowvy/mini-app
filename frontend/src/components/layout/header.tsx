@@ -41,38 +41,40 @@ export function Header() {
 	};
 
 	return (
-		<header className={styles.header}>
-			{meta ? (
-				<div className={styles.titleGroup}>
-					<meta.icon size={16} className={styles.titleIcon} />
-					<span className={styles.title}>{t(meta.title)}</span>
-				</div>
-			) : (
-				<div className={styles.titleGroup}>
-					<AppLogo logoUrl={user.branding.logoUrl} size={20} />
-					<span className={styles.title}>{user.branding.appName || t("common.appName")}</span>
-				</div>
-			)}
-			{isAdmin && (
-				<div className={styles.toggle}>
-					<button
-						type="button"
-						className={`${styles.toggleBtn} ${mode === "user" ? styles.activeBtn : ""}`}
-						onClick={() => handleToggle("user")}
-						aria-label={t("common.header.userModeLabel")}
-					>
-						<User size={16} />
-					</button>
-					<button
-						type="button"
-						className={`${styles.toggleBtn} ${mode === "admin" ? styles.activeBtn : ""}`}
-						onClick={() => handleToggle("admin")}
-						aria-label={t("common.header.adminModeLabel")}
-					>
-						<UserStar size={16} />
-					</button>
-				</div>
-			)}
-		</header>
+		<div className={styles.headerWrap}>
+			<header className={styles.header}>
+				{meta ? (
+					<div className={styles.titleGroup}>
+						<meta.icon size={16} className={styles.titleIcon} />
+						<span className={styles.title}>{t(meta.title)}</span>
+					</div>
+				) : (
+					<div className={styles.titleGroup}>
+						<AppLogo logoUrl={user.branding.logoUrl} size={20} />
+						<span className={styles.title}>{user.branding.appName || t("common.appName")}</span>
+					</div>
+				)}
+				{isAdmin && (
+					<div className={styles.toggle}>
+						<button
+							type="button"
+							className={`${styles.toggleBtn} ${mode === "user" ? styles.activeBtn : ""}`}
+							onClick={() => handleToggle("user")}
+							aria-label={t("common.header.userModeLabel")}
+						>
+							<User size={16} />
+						</button>
+						<button
+							type="button"
+							className={`${styles.toggleBtn} ${mode === "admin" ? styles.activeBtn : ""}`}
+							onClick={() => handleToggle("admin")}
+							aria-label={t("common.header.adminModeLabel")}
+						>
+							<UserStar size={16} />
+						</button>
+					</div>
+				)}
+			</header>
+		</div>
 	);
 }
