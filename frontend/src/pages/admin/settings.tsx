@@ -8,6 +8,7 @@ import { BrandingConfig } from "../../components/admin/branding-config.tsx";
 import { KumaConfig } from "../../components/admin/kuma-config.tsx";
 import { QuickLinks } from "../../components/admin/quick-links.tsx";
 import { WelcomeConfig } from "../../components/admin/welcome-config.tsx";
+import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { Toggle } from "../../components/ui/toggle.tsx";
 import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import styles from "./settings.module.css";
@@ -21,15 +22,7 @@ export const AdminSettings: FC = () => {
 	const updateMutation = useUpdateSettings();
 
 	if (isPending || (!settings && !error)) {
-		return (
-			<div className={styles.page}>
-				<div className={styles.header}>
-					<Settings size={16} className={styles.headerIcon} />
-					<h1 className={styles.headerTitle}>{t("settings.title")}</h1>
-				</div>
-				<p style={{ color: "var(--v2-text-secondary)", fontSize: 12 }}>{t("settings.loading")}</p>
-			</div>
-		);
+		return <PageLoading />;
 	}
 
 	if (error || !settings) {

@@ -166,3 +166,14 @@ select:focus-visible {
 	opacity: 0.5;
 	cursor: not-allowed;
 }
+
+/* ── Auth screen (full-page loading / error) ── */
+
+.fv-auth-screen {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-height: 100dvh;
+	gap: 12px;
+}

@@ -68,16 +68,3 @@
 .retryBtn:hover {
 	background: var(--v2-bg-secondary);
 }
-
-/* Loading */
-.loading {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 56px 20px;
-}
-
-.spinner {
-	color: var(--v2-text-tertiary);
-	animation: var(--fv-anim-spin) 0.8s linear infinite;
-}

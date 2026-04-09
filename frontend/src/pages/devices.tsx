@@ -1,7 +1,7 @@
-import { Loader2 } from "lucide-react";
 import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DeviceRow } from "../components/devices/device-row.tsx";
+import { PageLoading } from "../components/ui/page-loading.tsx";
 import { useDeleteAllDevices, useDeleteDevice, useDevices } from "../hooks/use-devices.ts";
 import { hapticNotification } from "../lib/haptics.ts";
 import styles from "./devices.module.css";
@@ -15,11 +15,7 @@ export const Devices: FC = () => {
 	const [confirmAll, setConfirmAll] = useState(false);
 
 	if (isPending) {
-		return (
-			<div className={styles.empty}>
-				<Loader2 size={24} className={styles.emptyIcon} />
-			</div>
-		);
+		return <PageLoading />;
 	}
 
 	if (error) {

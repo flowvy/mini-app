@@ -9,15 +9,6 @@
 	animation: fvFadeIn var(--duration-base) ease-out;
 }
 
-.loading {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	flex: 1;
-	color: var(--v2-text-secondary);
-	font-size: 13px;
-}
-
 .error {
 	display: flex;
 	align-items: center;

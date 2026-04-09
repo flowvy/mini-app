@@ -7,3 +7,52 @@
 	padding: 16px;
 	animation: var(--fv-anim-fade-in) 0.15s ease-out;
 }
+
+/* ── Skeleton HeroCard ── */
+
+.skeletonHero {
+	background: var(--v2-bg-primary);
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-lg);
+	padding: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.skeletonHeroTop {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.skeletonStats {
+	display: flex;
+	border-top: 1px solid var(--v2-border-tertiary);
+	padding-top: 12px;
+}
+
+.skeletonStats > * {
+	flex: 1;
+}
+
+/* ── Skeleton DetailSection ── */
+
+.skeletonSection {
+	background: var(--v2-bg-primary);
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-md);
+	overflow: hidden;
+}
+
+.skeletonSectionTitle {
+	padding: 8px 14px;
+}
+
+.skeletonRow {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px 14px;
+	border-top: 1px solid var(--v2-border-tertiary);
+}

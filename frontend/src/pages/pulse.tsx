@@ -1,8 +1,9 @@
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import { MonitorGroup } from "../components/pulse/monitor-group.tsx";
 import { StatusBanner } from "../components/pulse/status-banner.tsx";
+import { PageLoading } from "../components/ui/page-loading.tsx";
 import { usePulse } from "../hooks/use-pulse.ts";
 import styles from "./pulse.module.css";
 
@@ -11,13 +12,7 @@ export const Pulse: FC = () => {
 	const { t } = useTranslation();
 
 	if (isPending) {
-		return (
-			<div className={styles.page}>
-				<div className={styles.loading}>
-					<Loader2 size={24} className={styles.spinner} />
-				</div>
-			</div>
-		);
+		return <PageLoading />;
 	}
 
 	if (error || !pulse) {

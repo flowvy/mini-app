@@ -3,6 +3,7 @@ import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import { DashboardDomainHeader } from "../../components/admin/dashboard-domain-header.tsx";
 import { DashboardHighlightKpi } from "../../components/admin/dashboard-highlight-kpi.tsx";
+import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { useDashboard } from "../../hooks/use-dashboard.ts";
 import { BotContent } from "./dashboard-bot.tsx";
 import { VpnContent } from "./dashboard-vpn.tsx";
@@ -12,7 +13,7 @@ export const AdminDashboard: FC = () => {
 	const { t } = useTranslation();
 	const { data, isPending, error } = useDashboard();
 
-	if (isPending) return <div className={styles.loading}>{t("admin.dashboard.loading")}</div>;
+	if (isPending) return <PageLoading />;
 	if (error || !data) return <div className={styles.error}>{t("admin.dashboard.error")}</div>;
 
 	return (

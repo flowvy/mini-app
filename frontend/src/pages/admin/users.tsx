@@ -1,10 +1,12 @@
-import { Loader2, UserX, X } from "lucide-react";
+import { UserX, X } from "lucide-react";
 import { type FC, type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { UserRow } from "../../components/admin/user-row.tsx";
+import { SpinnerIcon } from "../../components/ui/spinner-icon.tsx";
 import { useAdminUsers, useSearchUser } from "../../hooks/use-admin-users.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
 import { UserDetailView } from "./user-detail.tsx";
+import { UsersListSkeleton } from "./users-skeleton.tsx";
 import styles from "./users.module.css";
 
 const PAGE_SIZE = 25;
@@ -89,13 +91,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 	const hasMore = !isSearchMode && total > 0 && start + PAGE_SIZE < total;
 
 	if (!isSearchMode && list.isPending && allUsers.length === 0) {
-		return (
-			<div className={styles.page}>
-				<div className={styles.empty}>
-					<Loader2 size={24} className={styles.emptyIcon} />
-				</div>
-			</div>
-		);
+		return <UsersListSkeleton />;
 	}
 
 	if (!isSearchMode && list.error && allUsers.length === 0) {
@@ -139,7 +135,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 
 			{isSearchMode && search.isPending && (
 				<div className={styles.empty}>
-					<Loader2 size={24} className={styles.emptyIcon} />
+					<SpinnerIcon size={24} color="var(--v2-text-tertiary)" />
 				</div>
 			)}
 
@@ -174,7 +170,11 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 					onClick={handleLoadMore}
 					disabled={list.isPending}
 				>
-					{list.isPending ? t("admin.users.loadingMore") : t("admin.users.loadMore")}
+					{list.isPending ? (
+						<SpinnerIcon size={12} color="var(--v2-text-secondary)" />
+					) : (
+						t("admin.users.loadMore")
+					)}
 				</button>
 			)}
 		</div>

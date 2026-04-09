@@ -5,6 +5,7 @@
 import { type ReactElement, type ReactNode, createContext, useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { type UserResponse, useAuth } from "../hooks/use-auth.ts";
+import { SpinnerIcon } from "./ui/spinner-icon.tsx";
 
 const UserContext = createContext<UserResponse | null>(null);
 
@@ -27,7 +28,7 @@ export function AuthGuard({ children }: AuthGuardProps): ReactElement {
 	if (isLoading) {
 		return (
 			<div className="fv-auth-screen">
-				<p style={{ color: "var(--v2-text-secondary)" }}>{t("common.loading")}</p>
+				<SpinnerIcon size={24} color="var(--v2-text-secondary)" />
 			</div>
 		);
 	}

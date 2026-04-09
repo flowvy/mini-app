@@ -1,6 +1,5 @@
 {
 	"common": {
-		"loading": "Loading...",
 		"notAuthenticated": "Not authenticated",
 		"retry": "Retry",
 		"appName": "Flowvy",
@@ -35,7 +34,6 @@
 		}
 	},
 	"home": {
-		"loading": "Loading...",
 		"error": "Failed to load subscription",
 		"noSubscription": "No active subscription",
 		"heroCard": {
@@ -127,7 +125,6 @@
 	},
 	"settings": {
 		"title": "Settings",
-		"loading": "Loading...",
 		"error": "Failed to load settings",
 		"integrations": "Integrations",
 		"uptimeKuma": "Uptime Kuma",
@@ -226,7 +223,6 @@
 	},
 	"admin": {
 		"dashboard": {
-			"loading": "Loading...",
 			"error": "Failed to load dashboard",
 			"tab": {
 				"vpn": "VPN",
@@ -306,7 +302,6 @@
 			"searchFailed": "Search failed",
 			"notFound": "User not found",
 			"notFoundDesc": "Try a different username, Telegram ID, or email",
-			"loadingMore": "Loading...",
 			"loadMore": "Load more"
 		},
 		"userDetail": {
