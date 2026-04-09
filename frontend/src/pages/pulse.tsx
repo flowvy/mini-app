@@ -37,8 +37,6 @@ export const Pulse: FC = () => {
 
 	return (
 		<div className={styles.page}>
-			<p className={styles.hint}>{t("pulse.hint")}</p>
-
 			<StatusBanner status={pulse.overallStatus} />
 
 			<div className={styles.groups}>

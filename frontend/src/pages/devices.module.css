@@ -29,16 +29,6 @@
 	color: var(--v2-text-tertiary);
 }
 
-/* Hint */
-.pageHint {
-	font-size: 10px;
-	color: var(--v2-text-secondary);
-	opacity: 0.6;
-	line-height: 1.5;
-	margin-top: 0;
-	margin-bottom: 16px;
-}
-
 /* Section body */
 .sectionBody {
 	background: var(--v2-bg-primary);

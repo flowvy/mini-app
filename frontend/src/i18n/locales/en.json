@@ -78,7 +78,6 @@
 	},
 	"devices": {
 		"error": "Failed to load devices",
-		"hint": "Devices that have connected to your VPN subscription. Remove unused devices to free up slots.",
 		"empty": {
 			"ariaLabel": "No devices",
 			"title": "No devices",
@@ -114,7 +113,6 @@
 			"desc": "Status page is temporarily unavailable. Please try again.",
 			"retry": "Retry"
 		},
-		"hint": "Service availability and planned maintenance updates.",
 		"noIncidents": "No active incidents",
 		"banner": {
 			"operational": "All systems operational",

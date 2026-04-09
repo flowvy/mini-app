@@ -5,13 +5,6 @@
 	animation: var(--fv-anim-fade-in) 0.15s ease-out;
 }
 
-.hint {
-	font-size: 12px;
-	color: var(--v2-text-secondary);
-	line-height: 1.4;
-	margin-bottom: 16px;
-}
-
 /* Groups container */
 .groups {
 	display: flex;

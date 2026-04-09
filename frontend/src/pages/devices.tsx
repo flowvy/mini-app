@@ -57,8 +57,6 @@ export const Devices: FC = () => {
 				</div>
 			)}
 
-			<p className={styles.pageHint}>{t("devices.hint")}</p>
-
 			{devices.length > 0 ? (
 				<div className={styles.sectionBody}>
 					{devices.map((device, i) => (
