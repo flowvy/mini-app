@@ -7,6 +7,7 @@ import {
 	miniApp,
 	retrieveLaunchParams,
 	retrieveRawInitData,
+	swipeBehavior,
 	themeParams,
 	viewport,
 } from "@telegram-apps/sdk-react";
@@ -59,6 +60,17 @@ export function initTelegramApp(): void {
 		setTheme(miniApp.isDark());
 		miniApp.isDark.sub(setTheme);
 		miniApp.ready();
+	} catch {
+		/* non-critical */
+	}
+
+	try {
+		if (swipeBehavior.mount.isAvailable()) {
+			swipeBehavior.mount();
+			if (swipeBehavior.disableVertical.isAvailable()) {
+				swipeBehavior.disableVertical();
+			}
+		}
 	} catch {
 		/* non-critical */
 	}
