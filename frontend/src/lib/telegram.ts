@@ -5,12 +5,24 @@
 import {
 	init,
 	miniApp,
+	retrieveLaunchParams,
 	retrieveRawInitData,
 	themeParams,
 	viewport,
 } from "@telegram-apps/sdk-react";
 
 let initialized = false;
+
+const MOBILE_PLATFORMS = new Set(["android", "android_x", "ios"]);
+
+function isMobilePlatform(): boolean {
+	try {
+		const lp = retrieveLaunchParams();
+		return MOBILE_PLATFORMS.has(lp.tgWebAppPlatform);
+	} catch {
+		return false;
+	}
+}
 
 function setTheme(isDark: boolean): void {
 	document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
@@ -24,33 +36,47 @@ export function initTelegramApp(): void {
 
 	try {
 		init();
+	} catch {
+		setTheme(true);
+		return;
+	}
 
-		if (themeParams.mount.isAvailable()) {
-			themeParams.mount();
-			if (themeParams.bindCssVars.isAvailable()) {
-				themeParams.bindCssVars();
-			}
+	try {
+		if (themeParams.mountSync.isAvailable()) {
+			themeParams.mountSync();
 		}
-
-		if (miniApp.mount.isAvailable()) {
-			miniApp.mount();
-		}
-
-		setTheme(miniApp.isDark());
-		miniApp.isDark.sub(setTheme);
-
-		miniApp.ready();
-
-		if (viewport.mount.isAvailable()) {
-			viewport.mount();
-			void viewport.expand();
-		}
-		if (viewport.requestFullscreen.isAvailable()) {
-			void viewport.requestFullscreen();
+		if (themeParams.bindCssVars.isAvailable()) {
+			themeParams.bindCssVars();
 		}
 	} catch {
-		// Outside Telegram — dev mode, default to dark theme
-		setTheme(true);
+		/* non-critical */
+	}
+
+	try {
+		if (miniApp.mountSync.isAvailable()) {
+			miniApp.mountSync();
+		}
+		setTheme(miniApp.isDark());
+		miniApp.isDark.sub(setTheme);
+		miniApp.ready();
+	} catch {
+		/* non-critical */
+	}
+
+	try {
+		if (viewport.mount.isAvailable() && !viewport.isMounting()) {
+			void viewport.mount().then(() => {
+				if (viewport.bindCssVars.isAvailable()) {
+					viewport.bindCssVars();
+				}
+				void viewport.expand();
+				if (isMobilePlatform() && viewport.requestFullscreen.isAvailable()) {
+					void viewport.requestFullscreen();
+				}
+			});
+		}
+	} catch {
+		/* non-critical */
 	}
 }
 

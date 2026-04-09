@@ -106,6 +106,36 @@ class TestUserService:
         assert updated.username == "new_name"
         assert updated.full_name == "New Name"
 
+    @pytest.mark.asyncio
+    async def test_syncs_admin_role(self, session: AsyncSession) -> None:
+        """Promotes user to ADMIN when telegram_id is in ADMIN_TELEGRAM_IDS."""
+        repo = UserRepository(session)
+        settings = Settings(admin_telegram_ids=[444])
+        service = UserService(repo, settings)
+
+        user = await service.get_or_create(444, "admin", "Admin A")
+        await session.commit()
+
+        assert user.role.value == "admin"
+
+    @pytest.mark.asyncio
+    async def test_demotes_removed_admin(self, session: AsyncSession) -> None:
+        """Demotes user to USER when removed from ADMIN_TELEGRAM_IDS."""
+        repo = UserRepository(session)
+        admin_settings = Settings(admin_telegram_ids=[555])
+        admin_service = UserService(repo, admin_settings)
+
+        user = await admin_service.get_or_create(555, "ex", "Ex Admin")
+        await session.commit()
+        assert user.role.value == "admin"
+
+        no_admin_settings = Settings(admin_telegram_ids=[])
+        demote_service = UserService(repo, no_admin_settings)
+
+        demoted = await demote_service.get_or_create(555, "ex", "Ex Admin")
+        await session.commit()
+        assert demoted.role.value == "user"
+
 
 # --- GET /api/me integration tests ---
 

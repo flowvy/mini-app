@@ -7,7 +7,7 @@
 	align-items: stretch;
 	background: var(--v2-bg-primary);
 	border-top: 1px solid var(--v2-border-tertiary);
-	padding-bottom: env(safe-area-inset-bottom, 0px);
+	padding-bottom: calc(var(--tg-viewport-safe-area-inset-bottom, 0px) + var(--tg-viewport-content-safe-area-inset-bottom, 0px));
 	z-index: 100;
 }
 

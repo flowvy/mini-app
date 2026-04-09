@@ -29,7 +29,7 @@ export function Header() {
 	const { mode, setMode } = useMode();
 	const navigate = useNavigate();
 	const location = useLocation();
-	const isAdmin = user.role === "ADMIN";
+	const isAdmin = user.role === "admin";
 
 	const meta = PAGE_META[location.pathname];
 

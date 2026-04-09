@@ -139,5 +139,3 @@ class RemnawaveProvider(Provider):
             token=settings.remnawave_api_token,
             http=http,
         )
-
-

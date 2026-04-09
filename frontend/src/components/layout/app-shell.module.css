@@ -8,5 +8,5 @@
 	display: flex;
 	flex-direction: column;
 	flex: 1;
-	padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+	padding-bottom: calc(60px + var(--tg-viewport-safe-area-inset-bottom, 0px) + var(--tg-viewport-content-safe-area-inset-bottom, 0px));
 }
