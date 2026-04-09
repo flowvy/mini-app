@@ -2,7 +2,7 @@
 
 .tabBar {
 	position: absolute;
-	bottom: max(10px, calc(var(--tg-viewport-safe-area-inset-bottom, 0px) - 12px));
+	bottom: max(10px, var(--tg-viewport-safe-area-inset-bottom, 0px));
 	left: 0;
 	right: 0;
 	margin: 0 auto;
