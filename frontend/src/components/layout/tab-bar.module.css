@@ -1,79 +1,138 @@
+/* iOS 26 tab bar — glass container + subtle selected tint + scale animations */
+
 .tabBar {
 	position: absolute;
-	bottom: calc(
-		10px +
-		var(--tg-viewport-safe-area-inset-bottom, 0px) +
-		var(--tg-viewport-content-safe-area-inset-bottom, 0px)
-	);
-	left: 16px;
-	right: 16px;
+	bottom: max(10px, calc(var(--tg-viewport-safe-area-inset-bottom, 0px) - 12px));
+	left: 0;
+	right: 0;
+	margin: 0 auto;
+	width: calc(100% - 36px);
+	max-width: 474px;
 	display: flex;
 	align-items: stretch;
-	background: var(--v2-glass-bg-bar);
-	backdrop-filter: var(--v2-glass-blur-bar);
-	-webkit-backdrop-filter: var(--v2-glass-blur-bar);
-	border: 1px solid var(--v2-glass-border);
-	border-radius: var(--radius-2xl);
-	box-shadow: var(--v2-glass-shadow-tab);
+	min-height: 56px;
+	padding: 2px;
+	border-radius: 40px;
 	z-index: 100;
+
+	/* Light glass (default) */
+	background: rgba(255, 255, 255, 0.72);
+	backdrop-filter: blur(2px) saturate(360%);
+	-webkit-backdrop-filter: blur(2px) saturate(360%);
+	border: 0.5px solid rgba(0, 0, 0, 0.06);
+	box-shadow: inset 0 0 8px 0 rgba(220, 220, 220, 0.2), 0 0 10px 0 rgba(220, 220, 220, 0.82);
+
+	/* Selected tab background — light accent */
+	--tab-selected-bg: rgba(58, 177, 118, 0.095);
+
+	transform: translateZ(0);
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
+	transition: transform 140ms ease-out;
 }
+
+/* Dark: system preference (before JS sets data-theme) */
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme]) .tabBar {
+		background: rgba(33, 33, 33, 0.72);
+		border-color: rgba(255, 255, 255, 0.08);
+		box-shadow: inset 0 0 8px 0 rgba(40, 40, 40, 0.2), 0 0 10px 0 rgba(0, 0, 0, 0.5);
+		--tab-selected-bg: rgba(73, 221, 147, 0.095);
+	}
+}
+
+/* Dark: explicit */
+:root[data-theme="dark"] .tabBar {
+	background: rgba(33, 33, 33, 0.72);
+	border-color: rgba(255, 255, 255, 0.08);
+	box-shadow: inset 0 0 8px 0 rgba(40, 40, 40, 0.2), 0 0 10px 0 rgba(0, 0, 0, 0.5);
+	--tab-selected-bg: rgba(73, 221, 147, 0.095);
+}
+
+/* Container scales when any tab is pressed */
+.tabBar:has(.tab:active) {
+	will-change: transform;
+	transform: scale(1.038) translateZ(0);
+}
+
+.tabBar:not(:has(.tab:active)) {
+	will-change: auto;
+}
+
+/* ── Tab button ── */
 
 .tab {
 	flex: 1;
 	display: flex;
-	align-items: center;
-	justify-content: center;
-	text-decoration: none;
-	-webkit-tap-highlight-color: transparent;
-}
-
-.tabInner {
-	display: flex;
 	flex-direction: column;
 	align-items: center;
+	justify-content: center;
 	gap: 3px;
-	padding: 8px 12px;
-	border-radius: var(--radius-lg);
+	min-height: 56px;
+	border-radius: 32px;
+	text-decoration: none;
 	color: var(--v2-text-secondary);
 	font-weight: 400;
-	transition: background var(--duration-base) ease, color var(--duration-base) ease, padding 0.25s
-		ease;
+	background: transparent;
+	-webkit-tap-highlight-color: transparent;
+	transition: transform 140ms ease-out, background var(--duration-base) ease, color
+		var(--duration-base) ease;
 }
 
-.tabInner.active {
-	background: var(--v2-bg-positive-quaternary);
-	color: var(--v2-text-positive);
-	font-weight: 600;
+.tab:active {
+	transform: scale(1.1);
 }
+
+/* ── Icon ── */
 
 .icon {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	height: 32px;
 	color: var(--v2-icon-primary);
+	transition: filter 140ms ease, color var(--duration-base) ease;
 }
 
-.active .icon {
-	color: var(--v2-icon-positive);
+.tab:active .icon {
+	filter: brightness(1.04);
 }
+
+/* ── Label ── */
 
 .label {
 	font-size: 10px;
-	font-weight: inherit;
+	font-weight: 400;
 	line-height: 1;
 	height: 12px;
 	opacity: 1;
 	overflow: hidden;
-	transition: height 0.25s ease, opacity 0.2s ease;
+	transition: height 0.25s ease, opacity 0.2s ease, filter 140ms ease, color var(--duration-base)
+		ease;
 }
 
-/* Compact: labels collapse */
+.tab:active .label {
+	filter: brightness(1.04);
+}
+
+/* ── Selected state ── */
+
+.selected {
+	background: var(--tab-selected-bg);
+	color: var(--v2-text-positive);
+	font-weight: 600;
+}
+
+.selected .icon {
+	color: var(--v2-text-positive);
+}
+
+.selected .label {
+	font-weight: 600;
+}
+
+/* ── Compact: labels collapse on scroll ── */
+
 .compact .label {
 	height: 0;
 	opacity: 0;
-}
-
-.compact .tabInner {
-	padding: 8px 12px 4px;
 }

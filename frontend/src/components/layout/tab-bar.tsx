@@ -53,27 +53,22 @@ export function TabBar({ compact }: TabBarProps) {
 
 	return (
 		<nav className={`${styles.tabBar} ${compact ? styles.compact : ""}`}>
-			{tabs.map((tab) => (
-				<Link
-					key={tab.to}
-					to={tab.to}
-					activeOptions={{ exact: true }}
-					className={styles.tab}
-					onClick={() => hapticImpact("light")}
-				>
-					{({ isActive }) => {
-						const Icon = tab.icon;
-						return (
-							<div className={`${styles.tabInner} ${isActive ? styles.active : ""}`}>
-								<span className={styles.icon}>
-									<Icon size={20} />
-								</span>
-								<span className={styles.label}>{t(tab.label)}</span>
-							</div>
-						);
-					}}
-				</Link>
-			))}
+			{tabs.map((tab) => {
+				const Icon = tab.icon;
+				return (
+					<Link
+						key={tab.to}
+						to={tab.to}
+						activeOptions={{ exact: true }}
+						className={styles.tab}
+						activeProps={{ className: styles.selected }}
+						onClick={() => hapticImpact("light")}
+					>
+						<Icon size={26} className={styles.icon} />
+						<span className={styles.label}>{t(tab.label)}</span>
+					</Link>
+				);
+			})}
 		</nav>
 	);
 }
