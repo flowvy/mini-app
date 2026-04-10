@@ -1,4 +1,11 @@
 .shell {
+	--shell-top: calc(
+		66px +
+		var(--tg-viewport-safe-area-inset-top, 0px) +
+		var(--tg-viewport-content-safe-area-inset-top, 0px)
+	);
+	--shell-bottom: calc(76px + max(10px, var(--tg-viewport-safe-area-inset-bottom, 0px)));
+
 	position: relative;
 	height: 100dvh;
 	overflow: hidden;
@@ -7,37 +14,7 @@
 .content {
 	height: 100%;
 	overflow-y: auto;
-	padding-top: calc(
-		66px +
-		var(--tg-viewport-safe-area-inset-top, 0px) +
-		var(--tg-viewport-content-safe-area-inset-top, 0px)
-	);
-	padding-bottom: calc(110px + var(--tg-viewport-safe-area-inset-bottom, 0px));
+	padding-top: var(--shell-top);
+	padding-bottom: var(--shell-bottom);
 	-webkit-overflow-scrolling: touch;
-}
-
-.edgeTop {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	height: calc(
-		20px +
-		var(--tg-viewport-safe-area-inset-top, 0px) +
-		var(--tg-viewport-content-safe-area-inset-top, 0px)
-	);
-	background: var(--v2-edge-top);
-	z-index: 9;
-	pointer-events: none;
-}
-
-.edgeBottom {
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	height: calc(30px + var(--tg-viewport-safe-area-inset-bottom, 0px));
-	background: var(--v2-edge-bottom);
-	z-index: 9;
-	pointer-events: none;
 }

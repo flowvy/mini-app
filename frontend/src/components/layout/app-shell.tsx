@@ -4,6 +4,7 @@
 import { Outlet } from "@tanstack/react-router";
 import { useScrollCompact } from "../../hooks/use-scroll-compact.ts";
 import styles from "./app-shell.module.css";
+import { EdgeBlur } from "./edge-blur.tsx";
 import { Header } from "./header.tsx";
 import { TabBar } from "./tab-bar.tsx";
 
@@ -11,13 +12,13 @@ export function AppShell() {
 	const { compact, onScroll } = useScrollCompact();
 	return (
 		<div className={styles.shell}>
-			<div className={styles.edgeTop} />
+			<EdgeBlur side="top" />
 			<Header />
 			<main className={styles.content} onScroll={onScroll}>
 				<Outlet />
 			</main>
 			<TabBar compact={compact} />
-			<div className={styles.edgeBottom} />
+			<EdgeBlur side="bottom" />
 		</div>
 	);
 }

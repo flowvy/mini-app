@@ -1,0 +1,262 @@
+.container {
+	position: absolute;
+	left: 0;
+	right: 0;
+	pointer-events: none;
+	z-index: 9;
+}
+
+.containerTop {
+	top: 0;
+	height: var(--shell-top);
+}
+
+.containerBottom {
+	bottom: 0;
+	height: var(--shell-bottom);
+}
+
+.layer {
+	position: absolute;
+	inset: 0;
+}
+
+/* ── Top layers (to top: 0% = content edge, 100% = screen edge) ──
+   Bottom 15% is blur-free so content boundary stays clean. */
+
+.containerTop .layer1 {
+	backdrop-filter: blur(1px);
+	-webkit-backdrop-filter: blur(1px);
+	mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 15%,
+		rgba(0, 0, 0, 1) 25%,
+		rgba(0, 0, 0, 1) 40%,
+		rgba(0, 0, 0, 0) 50%
+	);
+	-webkit-mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 15%,
+		rgba(0, 0, 0, 1) 25%,
+		rgba(0, 0, 0, 1) 40%,
+		rgba(0, 0, 0, 0) 50%
+	);
+}
+
+.containerTop .layer2 {
+	backdrop-filter: blur(2px);
+	-webkit-backdrop-filter: blur(2px);
+	mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 25%,
+		rgba(0, 0, 0, 1) 35%,
+		rgba(0, 0, 0, 1) 50%,
+		rgba(0, 0, 0, 0) 58%
+	);
+	-webkit-mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 25%,
+		rgba(0, 0, 0, 1) 35%,
+		rgba(0, 0, 0, 1) 50%,
+		rgba(0, 0, 0, 0) 58%
+	);
+}
+
+.containerTop .layer3 {
+	backdrop-filter: blur(4px);
+	-webkit-backdrop-filter: blur(4px);
+	mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 35%,
+		rgba(0, 0, 0, 1) 45%,
+		rgba(0, 0, 0, 1) 60%,
+		rgba(0, 0, 0, 0) 68%
+	);
+	-webkit-mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 35%,
+		rgba(0, 0, 0, 1) 45%,
+		rgba(0, 0, 0, 1) 60%,
+		rgba(0, 0, 0, 0) 68%
+	);
+}
+
+.containerTop .layer4 {
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 45%,
+		rgba(0, 0, 0, 1) 55%,
+		rgba(0, 0, 0, 1) 70%,
+		rgba(0, 0, 0, 0) 78%
+	);
+	-webkit-mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 45%,
+		rgba(0, 0, 0, 1) 55%,
+		rgba(0, 0, 0, 1) 70%,
+		rgba(0, 0, 0, 0) 78%
+	);
+}
+
+.containerTop .layer5 {
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 55%,
+		rgba(0, 0, 0, 1) 65%,
+		rgba(0, 0, 0, 1) 80%,
+		rgba(0, 0, 0, 0) 88%
+	);
+	-webkit-mask-image: linear-gradient(
+		to top,
+		rgba(0, 0, 0, 0) 55%,
+		rgba(0, 0, 0, 1) 65%,
+		rgba(0, 0, 0, 1) 80%,
+		rgba(0, 0, 0, 0) 88%
+	);
+}
+
+.containerTop .layer6 {
+	backdrop-filter: blur(32px);
+	-webkit-backdrop-filter: blur(32px);
+	mask-image: linear-gradient(to top, rgba(0, 0, 0, 0) 65%, rgba(0, 0, 0, 1) 80%);
+	-webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0) 65%, rgba(0, 0, 0, 1) 80%);
+}
+
+.containerTop .layer7 {
+	z-index: 10;
+	backdrop-filter: blur(64px);
+	-webkit-backdrop-filter: blur(64px);
+	mask-image: linear-gradient(to top, rgba(0, 0, 0, 0) 75%, rgba(0, 0, 0, 1) 100%);
+	-webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0) 75%, rgba(0, 0, 0, 1) 100%);
+}
+
+/* ── Bottom layers (to bottom: 0% = content edge, 100% = screen edge) ──
+   Top 15% is blur-free so content boundary stays clean. */
+
+.containerBottom .layer1 {
+	backdrop-filter: blur(1px);
+	-webkit-backdrop-filter: blur(1px);
+	mask-image: linear-gradient(
+		to bottom,
+		rgba(0, 0, 0, 0) 15%,
+		rgba(0, 0, 0, 1) 25%,
+		rgba(0, 0, 0, 1) 40%,
+		rgba(0, 0, 0, 0) 50%
+	);
+	-webkit-mask-image: linear-gradient(
+		to bottom,
+		rgba(0, 0, 0, 0) 15%,
+		rgba(0, 0, 0, 1) 25%,
+		rgba(0, 0, 0, 1) 40%,
+		rgba(0, 0, 0, 0) 50%
+	);
+}
+
+.containerBottom .layer2 {
+	backdrop-filter: blur(2px);
+	-webkit-backdrop-filter: blur(2px);
+	mask-image: linear-gradient(
+		to bottom,
+		rgba(0, 0, 0, 0) 25%,
+		rgba(0, 0, 0, 1) 35%,
+		rgba(0, 0, 0, 1) 50%,
+		rgba(0, 0, 0, 0) 58%
+	);
+	-webkit-mask-image: linear-gradient(
+		to bottom,
+		rgba(0, 0, 0, 0) 25%,
+		rgba(0, 0, 0, 1) 35%,
+		rgba(0, 0, 0, 1) 50%,
+		rgba(0, 0, 0, 0) 58%
+	);
+}
+
+.containerBottom .layer3 {
+	backdrop-filter: blur(4px);
+	-webkit-backdrop-filter: blur(4px);
+	mask-image: linear-gradient(
+		to bottom,
+		rgba(0, 0, 0, 0) 35%,
+		rgba(0, 0, 0, 1) 45%,
+		rgba(0, 0, 0, 1) 60%,
+		rgba(0, 0, 0, 0) 68%
+	);
+	-webkit-mask-image: linear-gradient(
+		to bottom,
+		rgba(0, 0, 0, 0) 35%,
+		rgba(0, 0, 0, 1) 45%,
+		rgba(0, 0, 0, 1) 60%,
+		rgba(0, 0, 0, 0) 68%
+	);
+}
+
+.containerBottom .layer4 {
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	mask-image: linear-gradient(
+		to bottom,
+		rgba(0, 0, 0, 0) 45%,
+		rgba(0, 0, 0, 1) 55%,
+		rgba(0, 0, 0, 1) 70%,
+		rgba(0, 0, 0, 0) 78%
+	);
+	-webkit-mask-image: linear-gradient(
+		to bottom,
+		rgba(0, 0, 0, 0) 45%,
+		rgba(0, 0, 0, 1) 55%,
+		rgba(0, 0, 0, 1) 70%,
+		rgba(0, 0, 0, 0) 78%
+	);
+}
+
+.containerBottom .layer5 {
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+	mask-image: linear-gradient(
+		to bottom,
+		rgba(0, 0, 0, 0) 55%,
+		rgba(0, 0, 0, 1) 65%,
+		rgba(0, 0, 0, 1) 80%,
+		rgba(0, 0, 0, 0) 88%
+	);
+	-webkit-mask-image: linear-gradient(
+		to bottom,
+		rgba(0, 0, 0, 0) 55%,
+		rgba(0, 0, 0, 1) 65%,
+		rgba(0, 0, 0, 1) 80%,
+		rgba(0, 0, 0, 0) 88%
+	);
+}
+
+.containerBottom .layer6 {
+	backdrop-filter: blur(32px);
+	-webkit-backdrop-filter: blur(32px);
+	mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 65%, rgba(0, 0, 0, 1) 80%);
+	-webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 65%, rgba(0, 0, 0, 1) 80%);
+}
+
+.containerBottom .layer7 {
+	z-index: 10;
+	backdrop-filter: blur(64px);
+	-webkit-backdrop-filter: blur(64px);
+	mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 75%, rgba(0, 0, 0, 1) 100%);
+	-webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0) 75%, rgba(0, 0, 0, 1) 100%);
+}
+
+/* ── Cap (solid gradient to hide scroll artifacts) ── */
+
+.containerTop .cap {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(to bottom, var(--v2-floor-0) 0%, transparent 45%);
+}
+
+.containerBottom .cap {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(to top, var(--v2-floor-0) 0%, transparent 45%);
+}
