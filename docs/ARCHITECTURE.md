@@ -481,24 +481,25 @@ Lifespan: `bot.set_webhook()` + `dp.emit_startup()` on start, `dp.emit_shutdown(
 
 ### Page Header
 
-The global `Header` component uses `PAGE_META` — a map of `pathname → { title, icon }` — to display the current page name with an icon. Pages **not** in `PAGE_META` see the fallback title "Flowvy".
+The global `Header` component uses `PAGE_META` — a map of `pathname → { title, icon }` — to display the current page name with an icon. Pages **not** in `PAGE_META` show the AppLogo + appName fallback.
 
-**Simple pages** (no sub-navigation): registered in `PAGE_META`. The global Header shows their title + icon. The page component renders only content, no header of its own.
+**Home (`/`) and Dashboard (`/admin/dashboard`)**: not in `PAGE_META`. The global Header shows AppLogo + appName (branded or "Flowvy").
 
-Examples: Pulse, Devices, Support, Users, Broadcast.
+**All other pages**: registered in `PAGE_META`. The global Header shows their icon + title. Pages do **not** render a duplicate internal title header.
 
-**Drill-down pages** (with sub-screens): **not** registered in `PAGE_META`. They render their own header inside the page component and manage title/back button via `useState<View>`. The global Header shows "Flowvy" for these pages.
+Examples: Pulse, Devices, Support, Users, Broadcast, Settings.
 
-Examples: Settings (main → Kuma Config / Quick Links).
+**Drill-down sub-screens** use `useState<View>` without changing the pathname, so they inherit the parent page's icon + title from `PAGE_META`. Sub-screens render their own contextual header (back button + sub-screen title) inside the page component — this is not a duplicate of the global header.
+
+Examples: Settings → Kuma Config, Users → User Detail.
 
 ```
-Simple page:              Drill-down page (main):     Drill-down page (sub):
-┌──────────────────┐      ┌──────────────────┐        ┌──────────────────┐
-│ [icon] Pulse  [T]│      │ Flowvy        [T]│        │ Flowvy        [T]│
-├──────────────────┤      ├──────────────────┤        ├──────────────────┤
-│                  │      │ [⚙] Settings     │        │ [←] Uptime Kuma  │
-│ ...page content  │      │                  │        │                  │
-│                  │      │ ...settings rows │        │ ...config form   │
-└──────────────────┘      └──────────────────┘        └──────────────────┘
-[T] = admin/user toggle
+Home / Dashboard:         Simple page:              Drill-down sub-screen:
+┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
+│ [logo] Flowvy [T]│      │ [icon] Pulse  [T]│      │ [icon] Users  [T]│
+├──────────────────┤      ├──────────────────┤      ├──────────────────┤
+│                  │      │                  │      │ [←] @username ●  │
+│ ...page content  │      │ ...page content  │      │                  │
+└──────────────────┘      └──────────────────┘      └──────────────────┘
+[T] = admin toggle (admins only)
 ```

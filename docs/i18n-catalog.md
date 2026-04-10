@@ -19,6 +19,7 @@ Shared UI strings: auth guard, header, tab bar, loading states, confirm dialogs.
 | common.header.support | `Support` | components/layout/header.tsx:19 | PAGE_META title |
 | common.header.users | `Users` | components/layout/header.tsx:20 | PAGE_META title |
 | common.header.broadcast | `Broadcast` | components/layout/header.tsx:21 | PAGE_META title |
+| common.header.settings | `Settings` | components/layout/header.tsx:34 | PAGE_META title |
 | common.header.userModeLabel | `User mode` | components/layout/header.tsx:56 | aria-label |
 | common.header.adminModeLabel | `Admin mode` | components/layout/header.tsx:63 | aria-label |
 | common.tab.home | `Home` | components/layout/tab-bar.tsx:27 | tab label |

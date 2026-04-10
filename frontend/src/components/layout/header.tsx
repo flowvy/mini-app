@@ -3,7 +3,16 @@
  */
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
-import { Activity, HelpCircle, Megaphone, Smartphone, User, UserStar, Users } from "lucide-react";
+import {
+	Activity,
+	HelpCircle,
+	Megaphone,
+	Settings,
+	Smartphone,
+	User,
+	UserStar,
+	Users,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { type AppMode, useMode } from "../../contexts/mode-context.tsx";
 import { hapticSelection } from "../../lib/haptics.ts";
@@ -22,6 +31,7 @@ const PAGE_META: Record<string, PageMeta> = {
 	"/support": { title: "common.header.support", icon: HelpCircle },
 	"/admin/users": { title: "common.header.users", icon: Users },
 	"/admin/broadcast": { title: "common.header.broadcast", icon: Megaphone },
+	"/admin/settings": { title: "common.header.settings", icon: Settings },
 };
 
 export function Header() {

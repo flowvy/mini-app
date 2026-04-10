@@ -106,11 +106,6 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 
 	return (
 		<div className={styles.page}>
-			<div className={styles.header}>
-				<h1 className={styles.headerTitle}>{t("admin.users.title")}</h1>
-				{total > 0 && <span className={styles.headerCount}>{total}</span>}
-			</div>
-
 			<div className={styles.searchWrap}>
 				<input
 					ref={inputRef}

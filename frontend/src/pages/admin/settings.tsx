@@ -1,5 +1,5 @@
 /** Admin Settings page — five views: main, kuma config, quick links, branding, welcome. */
-import { ChevronRight, Settings } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BrandingConfig } from "../../components/admin/branding-config.tsx";
@@ -64,10 +64,6 @@ export const AdminSettings: FC = () => {
 	if (error || !settings) {
 		return (
 			<div className={styles.page}>
-				<div className={styles.header}>
-					<Settings size={16} className={styles.headerIcon} />
-					<h1 className={styles.headerTitle}>{t("settings.title")}</h1>
-				</div>
 				<p style={{ color: "var(--v2-text-negative)", fontSize: 12 }}>{t("settings.error")}</p>
 			</div>
 		);
@@ -94,11 +90,6 @@ export const AdminSettings: FC = () => {
 
 	return (
 		<div className={styles.page}>
-			<div className={styles.header}>
-				<Settings size={16} className={styles.headerIcon} />
-				<h1 className={styles.headerTitle}>{t("settings.title")}</h1>
-			</div>
-
 			<FormSectionHeader>{t("settings.integrations")}</FormSectionHeader>
 			<FormSectionCard>
 				<FormRow label={t("settings.uptimeKuma")}>
