@@ -32,8 +32,6 @@ class ProviderSettingsService:
             kuma_enabled=row.kuma_enabled,
             kuma_url=row.kuma_url,
             kuma_slug=row.kuma_slug,
-            support_url=row.support_url,
-            renew_url=row.renew_url,
             app_name=row.app_name,
             logo_url=row.logo_url,
             welcome_text=row.welcome_text,

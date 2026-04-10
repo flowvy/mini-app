@@ -5,7 +5,6 @@ from __future__ import annotations
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, HTTPException, Request, status
 
-from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.schemas.devices import DevicesResponse
 from flowvy.schemas.pulse import PulseResponse
 from flowvy.schemas.subscription import SubscriptionResponse
@@ -32,7 +31,6 @@ async def debug_subscription(
     telegram_id: int,
     request: Request,
     service: FromDishka[SubscriptionService] = None,  # type: ignore[assignment]
-    ps_repo: FromDishka[ProviderSettingsRepository] = None,  # type: ignore[assignment]
 ) -> SubscriptionResponse:
     """Fetch subscription without Telegram auth. DEBUG mode only."""
     check_debug(request)
@@ -49,9 +47,6 @@ async def debug_subscription(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No subscription found for this telegram_id",
         )
-    ps = await ps_repo.get()
-    result.support_url = ps.support_url
-    result.renew_url = ps.renew_url
     return result
 
 

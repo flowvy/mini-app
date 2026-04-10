@@ -134,7 +134,7 @@ flowvy/
 │       │   ├── home/             # HeroCard, DetailSections
 │       │   ├── devices/          # DeviceRow, PlatformIcon
 │       │   ├── pulse/            # StatusBanner, HeartbeatBar, MonitorRow, MonitorGroup
-│       │   ├── admin/            # KumaConfig, QuickLinks, UserRow
+│       │   ├── admin/            # KumaConfig, UserRow
 │       │   └── layout/           # AppShell, Header, TabBar
 │       ├── pages/
 │       │   ├── home.tsx, pulse.tsx, devices.tsx, support.tsx
@@ -405,7 +405,7 @@ Dot-separated, grouped by domain:
 | `home.*` | Home page: hero card, detail section, subscription states |
 | `devices.*` | Devices page, device row, platform icons |
 | `pulse.*` | Pulse/status page, status banner, monitor rows |
-| `settings.*` | Admin settings, Kuma config, quick links sub-screens |
+| `settings.*` | Admin settings, Kuma config, branding, welcome sub-screens |
 | `admin.*` | Admin pages: users list, user detail/hero, user actions |
 | `format.*` | Format helpers: traffic units, time expressions, strategy labels |
 

@@ -1,10 +1,9 @@
-/** Admin Settings page — five views: main, kuma config, quick links, branding, welcome. */
+/** Admin Settings page — four views: main, kuma config, branding, welcome. */
 import { ChevronRight } from "lucide-react";
 import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BrandingConfig } from "../../components/admin/branding-config.tsx";
 import { KumaConfig } from "../../components/admin/kuma-config.tsx";
-import { QuickLinks } from "../../components/admin/quick-links.tsx";
 import { WelcomeConfig } from "../../components/admin/welcome-config.tsx";
 import {
 	FormRow,
@@ -18,7 +17,7 @@ import { Toggle } from "../../components/ui/toggle.tsx";
 import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import styles from "./settings.module.css";
 
-type View = "settings" | "kuma" | "links" | "branding" | "welcome";
+type View = "settings" | "kuma" | "branding" | "welcome";
 
 interface SettingsToolRowProps {
 	label: string;
@@ -72,9 +71,6 @@ export const AdminSettings: FC = () => {
 	if (view === "kuma") {
 		return <KumaConfig settings={settings} onBack={() => setView("settings")} />;
 	}
-	if (view === "links") {
-		return <QuickLinks settings={settings} onBack={() => setView("settings")} />;
-	}
 	if (view === "branding") {
 		return <BrandingConfig settings={settings} onBack={() => setView("settings")} />;
 	}
@@ -113,15 +109,6 @@ export const AdminSettings: FC = () => {
 				)}
 			</FormSectionCard>
 			<FormSectionFooter>{t("settings.integrationsHint")}</FormSectionFooter>
-
-			<FormSectionHeader>{t("settings.quickLinksSection")}</FormSectionHeader>
-			<FormSectionCard>
-				<SettingsToolRow
-					label={t("settings.supportAndRenew")}
-					desc={t("settings.supportAndRenewDesc")}
-					onClick={() => setView("links")}
-				/>
-			</FormSectionCard>
 
 			<FormSectionHeader>{t("settings.brandingSection")}</FormSectionHeader>
 			<FormSectionCard>

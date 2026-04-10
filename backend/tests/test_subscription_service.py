@@ -65,8 +65,7 @@ async def test_get_for_user_maps_fields() -> None:
     assert result.connection_link == "https://panel.example.com/sub/abc123"
     assert result.email == "test@example.com"
     assert result.telegram_id == "123456789"
-    assert result.support_url is None
-    assert result.renew_url is None
+    assert result.auto_update is True
 
 
 @pytest.mark.asyncio
@@ -130,6 +129,4 @@ async def test_camel_case_serialization() -> None:
     assert "updatedAt" in data
     assert "autoUpdate" in data
     assert "updateInterval" in data
-    assert "supportUrl" in data
-    assert "renewUrl" in data
     assert "telegramId" in data

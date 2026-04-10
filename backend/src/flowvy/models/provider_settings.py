@@ -17,8 +17,6 @@ class ProviderSettings(Base):
     kuma_enabled: Mapped[bool] = mapped_column(default=False)
     kuma_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     kuma_slug: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    support_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    renew_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     app_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     logo_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     welcome_text: Mapped[str | None] = mapped_column(String(2000), nullable=True)

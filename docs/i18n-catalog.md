@@ -76,9 +76,6 @@ Home page: hero card, detail sections, subscription states.
 | home.detail.updateInterval | `Update interval` | components/home/detail-section.tsx:65 | row label |
 | home.detail.updateIntervalHint | `How often to check for updates` | components/home/detail-section.tsx:66 | row hint |
 | home.detail.updateIntervalValue | `Every {n}h` | components/home/detail-section.tsx:67 | row value (template) |
-| home.detail.quickLinks | `Quick Links` | components/home/detail-section.tsx:73 | section divider |
-| home.detail.support | `Support` | components/home/detail-section.tsx:74 | link row label |
-| home.detail.renew | `Renew` | components/home/detail-section.tsx:75 | link row label |
 | home.detail.notSpecified | `Not specified` | components/home/detail-section.tsx:95 | fallback row value |
 
 ---
@@ -136,7 +133,7 @@ Pulse/status page, status banner, monitor components.
 
 ## settings.*
 
-Admin settings page, Kuma config, quick links.
+Admin settings page, Kuma config, branding, welcome.
 
 | Key | English | File | Context |
 |-----|---------|------|---------|
@@ -149,9 +146,6 @@ Admin settings page, Kuma config, quick links.
 | settings.configure | `Configure` | pages/admin/settings.tsx:82 | tool row label |
 | settings.configureDesc | `URL, slug, connection test` | pages/admin/settings.tsx:83 | tool row description |
 | settings.configured | `Configured` | pages/admin/settings.tsx:86 | status value |
-| settings.quickLinksSection | `Quick Links` | pages/admin/settings.tsx:97 | section divider |
-| settings.supportAndRenew | `Support & Renew` | pages/admin/settings.tsx:101 | tool row label |
-| settings.supportAndRenewDesc | `Links shown to users` | pages/admin/settings.tsx:102 | tool row description |
 | settings.system | `System` | pages/admin/settings.tsx:112 | section divider |
 | settings.remnawave | `Remnawave` | pages/admin/settings.tsx:116 | row label |
 | settings.remnawaveDesc | `VPN panel` | pages/admin/settings.tsx:117 | row description |
@@ -174,20 +168,6 @@ Admin settings page, Kuma config, quick links.
 | settings.kuma.discardConfirm | `Discard` | components/admin/kuma-config.tsx:142 | dialog confirm label |
 | settings.kuma.discardCancel | `Keep editing` | components/admin/kuma-config.tsx:143 | dialog cancel label |
 | settings.kuma.discardBody | `You have unsaved changes that will be lost.` | components/admin/kuma-config.tsx:147 | dialog body |
-| settings.links.title | `Quick Links` | components/admin/quick-links.tsx:59 | sub-screen header |
-| settings.links.supportLabel | `Support` | components/admin/quick-links.tsx:65 | input label |
-| settings.links.supportDesc | `Link shown to users on Support page` | components/admin/quick-links.tsx:66 | input description |
-| settings.links.supportPlaceholder | `https://t.me/support` | components/admin/quick-links.tsx:74 | input placeholder |
-| settings.links.renewLabel | `Renew` | components/admin/quick-links.tsx:80 | input label |
-| settings.links.renewDesc | `Subscription renewal link` | components/admin/quick-links.tsx:81 | input description |
-| settings.links.renewPlaceholder | `https://example.com/renew` | components/admin/quick-links.tsx:89 | input placeholder |
-| settings.links.saved | `Saved` | components/admin/quick-links.tsx:97 | saved confirmation |
-| settings.links.save | `Save` | components/admin/quick-links.tsx:101 | button label |
-| settings.links.discardTitle | `Discard changes?` | components/admin/quick-links.tsx:110 | dialog title |
-| settings.links.discardConfirm | `Discard` | components/admin/quick-links.tsx:111 | dialog confirm label |
-| settings.links.discardCancel | `Keep editing` | components/admin/quick-links.tsx:112 | dialog cancel label |
-| settings.links.discardBody | `You have unsaved changes that will be lost.` | components/admin/quick-links.tsx:117 | dialog body |
-
 ---
 
 ## admin.*

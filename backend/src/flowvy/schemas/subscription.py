@@ -32,5 +32,3 @@ class SubscriptionResponse(BaseModel):
     telegram_id: str | None
     auto_update: bool
     update_interval: int
-    support_url: str | None
-    renew_url: str | None

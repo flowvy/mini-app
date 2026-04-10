@@ -18,8 +18,6 @@ class ProviderSettingsResponse(BaseModel):
     kuma_enabled: bool
     kuma_url: str | None
     kuma_slug: str | None
-    support_url: str | None
-    renew_url: str | None
     app_name: str | None = None
     logo_url: str | None = None
     welcome_text: str | None = None
@@ -44,8 +42,6 @@ class ProviderSettingsPatch(BaseModel):
     kuma_enabled: bool | None = None
     kuma_url: str | None = None
     kuma_slug: str | None = None
-    support_url: str | None = None
-    renew_url: str | None = None
     app_name: str | None = None
     logo_url: str | None = None
     welcome_text: str | None = None

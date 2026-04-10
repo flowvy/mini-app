@@ -2,8 +2,6 @@ export interface AdminSettings {
 	kumaEnabled: boolean;
 	kumaUrl: string | null;
 	kumaSlug: string | null;
-	supportUrl: string | null;
-	renewUrl: string | null;
 	appName: string | null;
 	logoUrl: string | null;
 	welcomeText: string | null;
@@ -21,8 +19,6 @@ export interface AdminSettingsPatch {
 	kumaEnabled?: boolean;
 	kumaUrl?: string | null;
 	kumaSlug?: string | null;
-	supportUrl?: string | null;
-	renewUrl?: string | null;
 	appName?: string | null;
 	logoUrl?: string | null;
 	welcomeText?: string | null;

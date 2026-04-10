@@ -73,8 +73,6 @@ class SubscriptionService:
             telegram_id=str(user.telegram_id) if user.telegram_id else None,
             auto_update=True,
             update_interval=24,
-            support_url=None,
-            renew_url=None,
         )
 
 

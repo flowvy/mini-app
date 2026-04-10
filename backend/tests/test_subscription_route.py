@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 from dishka import Provider, Scope, make_async_container, provide
@@ -11,7 +11,6 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from flowvy.api.routes.subscription import router
-from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.schemas.subscription import SubscriptionResponse
 from flowvy.services.remnawave import RemnawaveError
 from flowvy.services.subscription import SubscriptionService
@@ -34,33 +33,20 @@ FAKE_RESPONSE = SubscriptionResponse(
     telegram_id="123456789",
     auto_update=True,
     update_interval=24,
-    support_url=None,
-    renew_url=None,
 )
 
 
-def _mock_init_data() -> MagicMock:
+def _mock_init_data() -> AsyncMock:
     """Build a mock WebAppInitData with user.id."""
-    init_data = MagicMock()
-    init_data.user = MagicMock()
+    init_data = AsyncMock()
+    init_data.user = AsyncMock()
     init_data.user.id = 123456789
     return init_data
-
-
-def _mock_ps_repo() -> AsyncMock:
-    """Build a mock ProviderSettingsRepository."""
-    repo = AsyncMock(spec=ProviderSettingsRepository)
-    ps = MagicMock()
-    ps.support_url = None
-    ps.renew_url = None
-    repo.get = AsyncMock(return_value=ps)
-    return repo
 
 
 def _create_test_app(service_mock: AsyncMock) -> FastAPI:
     """Build a minimal FastAPI app with Dishka and mocked service."""
     app = FastAPI()
-    ps_repo_mock = _mock_ps_repo()
 
     class TestProvider(Provider):
         scope = Scope.REQUEST
@@ -68,10 +54,6 @@ def _create_test_app(service_mock: AsyncMock) -> FastAPI:
         @provide
         def subscription_service(self) -> SubscriptionService:
             return service_mock  # type: ignore[return-value]
-
-        @provide
-        def provider_settings_repo(self) -> ProviderSettingsRepository:
-            return ps_repo_mock  # type: ignore[return-value]
 
     container = make_async_container(TestProvider())
     app.include_router(router)
