@@ -50,12 +50,15 @@ class MessageSender:
         media_url: str | None = None,
         media_type: str | None = None,
         media_path: Path | None = None,
+        media_file_id: str | None = None,
         buttons: list[InlineButton] | None = None,
     ) -> Message | None:
         """Send message. On Telegram error (blocked, not found) — log, return None."""
         reply_markup = self._build_keyboard(buttons) if buttons else None
         media = None
-        if media_path:
+        if media_file_id:
+            media = media_file_id
+        elif media_path:
             media = await self._resolve_media(media_path)
         elif media_url:
             media = media_url
@@ -119,6 +122,7 @@ class MessageSender:
             text=text,
             media_url=tmpl.media_url,
             media_path=tmpl.media_path,
+            media_file_id=tmpl.media_file_id,
             media_type=tmpl.media_type,
             buttons=buttons,
         )
@@ -136,7 +140,11 @@ class MessageSender:
         overrides: dict[str, object] = {}
         if provider_settings.welcome_text is not None:
             overrides["text"] = provider_settings.welcome_text
-        if provider_settings.welcome_media_url is not None:
+        if provider_settings.welcome_media_file_id is not None:
+            overrides["media_file_id"] = provider_settings.welcome_media_file_id
+            overrides["media_url"] = None
+            overrides["media_path"] = None
+        elif provider_settings.welcome_media_url is not None:
             overrides["media_url"] = provider_settings.welcome_media_url
             overrides["media_path"] = None
         if provider_settings.welcome_media_type is not None:

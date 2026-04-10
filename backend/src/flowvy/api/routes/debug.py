@@ -7,15 +7,9 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.schemas.devices import DevicesResponse
-from flowvy.schemas.provider_settings import (
-    KumaTestResponse,
-    ProviderSettingsPatch,
-    ProviderSettingsResponse,
-)
 from flowvy.schemas.pulse import PulseResponse
 from flowvy.schemas.subscription import SubscriptionResponse
 from flowvy.services.devices import DevicesService
-from flowvy.services.provider_settings import ProviderSettingsService
 from flowvy.services.pulse import PulseService
 from flowvy.services.remnawave import RemnawaveError
 from flowvy.services.subscription import SubscriptionService
@@ -131,37 +125,6 @@ async def debug_delete_all_devices(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Remnawave unavailable: {exc.detail}",
         ) from exc
-
-
-@router.get("/admin/settings", response_model=ProviderSettingsResponse)
-async def debug_admin_settings(
-    request: Request,
-    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
-) -> ProviderSettingsResponse:
-    """Read admin settings without Telegram auth. DEBUG mode only."""
-    check_debug(request)
-    return await service.get()
-
-
-@router.patch("/admin/settings", response_model=ProviderSettingsResponse)
-async def debug_patch_admin_settings(
-    patch: ProviderSettingsPatch,
-    request: Request,
-    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
-) -> ProviderSettingsResponse:
-    """Update admin settings without Telegram auth. DEBUG mode only."""
-    check_debug(request)
-    return await service.update(patch)
-
-
-@router.get("/admin/settings/kuma/test", response_model=KumaTestResponse)
-async def debug_test_kuma(
-    request: Request,
-    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
-) -> KumaTestResponse:
-    """Test Kuma connection without Telegram auth. DEBUG mode only."""
-    check_debug(request)
-    return await service.test_kuma()
 
 
 @router.get("/pulse", response_model=PulseResponse)

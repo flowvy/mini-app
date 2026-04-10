@@ -25,6 +25,8 @@ class ProviderSettingsResponse(BaseModel):
     welcome_text: str | None = None
     welcome_media_url: str | None = None
     welcome_media_type: str | None = None
+    welcome_media_file_id: str | None = None
+    welcome_media_file_name: str | None = None
     welcome_button_text: str | None = None
     remnawave_version: str | None = None
     flowvy_version: str = "0.1.0"
@@ -49,7 +51,19 @@ class ProviderSettingsPatch(BaseModel):
     welcome_text: str | None = None
     welcome_media_url: str | None = None
     welcome_media_type: str | None = None
+    welcome_media_file_id: str | None = None
+    welcome_media_file_name: str | None = None
     welcome_button_text: str | None = None
+
+
+class WelcomeMediaUploadResponse(BaseModel):
+    """POST /api/admin/settings/welcome-media response."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    file_id: str
+    file_name: str
+    media_type: str
 
 
 class KumaTestResponse(BaseModel):

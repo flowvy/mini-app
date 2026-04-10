@@ -79,7 +79,7 @@
 	opacity: 0.4;
 }
 
-/* ── danger ── */
+/* ── danger (solid — confirm dialogs) ── */
 
 .danger {
 	background: var(--v2-bg-negative-primary);
@@ -92,4 +92,16 @@
 
 .danger:disabled {
 	opacity: 0.4;
+}
+
+/* ── dangerOutline (outline — inline destructive actions) ── */
+
+.dangerOutline {
+	border-color: var(--v2-border-negative-secondary);
+	color: var(--v2-text-negative);
+}
+
+.dangerOutline:hover:not(:disabled) {
+	background: var(--v2-bg-negative-secondary);
+	border-color: var(--v2-border-negative-primary);
 }

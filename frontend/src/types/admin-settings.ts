@@ -9,6 +9,8 @@ export interface AdminSettings {
 	welcomeText: string | null;
 	welcomeMediaUrl: string | null;
 	welcomeMediaType: string | null;
+	welcomeMediaFileId: string | null;
+	welcomeMediaFileName: string | null;
 	welcomeButtonText: string | null;
 	remnawaveVersion: string | null;
 	flowvyVersion: string;
@@ -26,7 +28,15 @@ export interface AdminSettingsPatch {
 	welcomeText?: string | null;
 	welcomeMediaUrl?: string | null;
 	welcomeMediaType?: string | null;
+	welcomeMediaFileId?: string | null;
+	welcomeMediaFileName?: string | null;
 	welcomeButtonText?: string | null;
+}
+
+export interface WelcomeMediaUpload {
+	fileId: string;
+	fileName: string;
+	mediaType: string;
 }
 
 export interface KumaTestResult {

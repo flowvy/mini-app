@@ -16,6 +16,7 @@ dependencies = [
     "httpx>=0.28,<1",
     "structlog>=24.0,<25",
     "psutil>=6.0,<7",
+    "python-multipart>=0.0.24",
 ]
 
 [dependency-groups]

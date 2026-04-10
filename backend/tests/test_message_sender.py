@@ -125,6 +125,7 @@ async def test_send_welcome_custom_app_name(sender: MessageSender, bot: AsyncMoc
     ps.welcome_text = None
     ps.welcome_media_url = None
     ps.welcome_media_type = None
+    ps.welcome_media_file_id = None
     ps.welcome_button_text = None
     await sender.send_welcome(chat_id=123, settings=settings, provider_settings=ps)
     bot.send_animation.assert_called_once()

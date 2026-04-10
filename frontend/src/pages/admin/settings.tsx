@@ -1,7 +1,5 @@
+/** Admin Settings page — five views: main, kuma config, quick links, branding, welcome. */
 import { ChevronRight, Settings } from "lucide-react";
-/**
- * Admin Settings page — five views: main, kuma config, quick links, branding, welcome.
- */
 import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BrandingConfig } from "../../components/admin/branding-config.tsx";

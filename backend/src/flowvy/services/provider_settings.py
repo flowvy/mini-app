@@ -39,6 +39,8 @@ class ProviderSettingsService:
             welcome_text=row.welcome_text,
             welcome_media_url=row.welcome_media_url,
             welcome_media_type=row.welcome_media_type,
+            welcome_media_file_id=row.welcome_media_file_id,
+            welcome_media_file_name=row.welcome_media_file_name,
             welcome_button_text=row.welcome_button_text,
             remnawave_version=version,
             updated_at=int(row.updated_at.timestamp()),

@@ -55,3 +55,24 @@ export function apiPatch<T>(path: string, body?: unknown): Promise<T> {
 export function apiDelete<T = void>(path: string): Promise<T> {
 	return request<T>("DELETE", path);
 }
+
+export async function apiUploadFile<T>(path: string, file: File): Promise<T> {
+	const formData = new FormData();
+	formData.append("file", file);
+	const initData = getRawInitData();
+	if (initData) {
+		formData.append("initData", initData);
+	}
+
+	const response = await fetch(`${BASE_URL}${path}`, {
+		method: "POST",
+		body: formData,
+	});
+
+	if (!response.ok) {
+		const detail = await response.text();
+		throw new ApiError(response.status, detail);
+	}
+
+	return response.json() as Promise<T>;
+}

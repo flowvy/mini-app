@@ -1,10 +1,11 @@
-/** Welcome Message sub-screen — text, media URL, button text, save. */
+/** Welcome Message sub-screen — text, media file upload, button text, save. */
 import { ArrowLeft } from "lucide-react";
 import { type FC, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
+import { apiUploadFile } from "../../lib/api.ts";
 import ss from "../../pages/admin/settings.module.css";
-import type { AdminSettings } from "../../types/admin-settings.ts";
+import type { AdminSettings, WelcomeMediaUpload } from "../../types/admin-settings.ts";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { FormSaveButton } from "../ui/form-save-button.tsx";
 import {
@@ -15,6 +16,10 @@ import {
 	FormSectionHeader,
 	FormTextarea,
 } from "../ui/form-section.tsx";
+import { WelcomeMediaRow } from "./welcome-media-row.tsx";
+
+const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
+const prefix = isMockAuth ? "/debug/admin/settings" : "/admin/settings";
 
 interface WelcomeConfigProps {
 	settings: AdminSettings;
@@ -24,17 +29,30 @@ interface WelcomeConfigProps {
 export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 	const { t } = useTranslation();
 	const [text, setText] = useState(settings.welcomeText ?? "");
-	const [mediaUrl, setMediaUrl] = useState(settings.welcomeMediaUrl ?? "");
 	const [buttonText, setButtonText] = useState(settings.welcomeButtonText ?? "");
+	const [mediaFileId, setMediaFileId] = useState(settings.welcomeMediaFileId);
+	const [mediaFileName, setMediaFileName] = useState(settings.welcomeMediaFileName);
+	const [mediaType, setMediaType] = useState(settings.welcomeMediaType);
 	const [saved, setSaved] = useState(false);
 	const [showDiscard, setShowDiscard] = useState(false);
+	const [uploading, setUploading] = useState(false);
 
 	const updateMutation = useUpdateSettings();
 
 	const initText = settings.welcomeText ?? "";
-	const initMediaUrl = settings.welcomeMediaUrl ?? "";
 	const initButtonText = settings.welcomeButtonText ?? "";
-	const dirty = text !== initText || mediaUrl !== initMediaUrl || buttonText !== initButtonText;
+	const textDirty = text !== initText || buttonText !== initButtonText;
+	const mediaDirty =
+		mediaFileId !== settings.welcomeMediaFileId ||
+		mediaFileName !== settings.welcomeMediaFileName ||
+		mediaType !== settings.welcomeMediaType;
+	const dirty = textDirty || mediaDirty;
+
+	const isDefault = mediaFileId === null && settings.welcomeMediaUrl === null;
+	const displayName = mediaFileId
+		? (mediaFileName ?? "custom")
+		: (settings.welcomeMediaUrl ?? "main_card.mp4");
+	const displayType = mediaType ?? "animation";
 
 	useEffect(() => {
 		if (saved) {
@@ -54,11 +72,35 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 	const handleSave = async () => {
 		await updateMutation.mutateAsync({
 			welcomeText: text || null,
-			welcomeMediaUrl: mediaUrl || null,
-			welcomeMediaType: null,
 			welcomeButtonText: buttonText || null,
+			welcomeMediaFileId: mediaFileId,
+			welcomeMediaFileName: mediaFileName,
+			welcomeMediaType: mediaType,
+			welcomeMediaUrl: mediaFileId ? null : undefined,
 		});
 		setSaved(true);
+	};
+
+	const handlePickFile = async (file: File) => {
+		setUploading(true);
+		try {
+			const result = await apiUploadFile<WelcomeMediaUpload>(`${prefix}/welcome-media`, file);
+			setMediaFileId(result.fileId);
+			setMediaFileName(result.fileName);
+			setMediaType(result.mediaType);
+			setSaved(false);
+		} catch {
+			/* upload failed — state unchanged */
+		} finally {
+			setUploading(false);
+		}
+	};
+
+	const handleReset = () => {
+		setMediaFileId(null);
+		setMediaFileName(null);
+		setMediaType(null);
+		setSaved(false);
 	};
 
 	return (
@@ -85,17 +127,14 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 
 			<FormSectionHeader>{t("settings.welcome.mediaSection")}</FormSectionHeader>
 			<FormSectionCard>
-				<FormRow label={t("settings.welcome.mediaUrlLabel")}>
-					<FormInlineInput
-						value={mediaUrl}
-						onChange={(v) => {
-							setMediaUrl(v);
-							setSaved(false);
-						}}
-						placeholder={t("settings.welcome.mediaUrlPlaceholder")}
-						mono
-					/>
-				</FormRow>
+				<WelcomeMediaRow
+					fileName={displayName}
+					mediaType={displayType}
+					isDefault={isDefault && !mediaDirty}
+					uploading={uploading}
+					onPickFile={handlePickFile}
+					onReset={handleReset}
+				/>
 			</FormSectionCard>
 			<FormSectionFooter>{t("settings.welcome.mediaHint")}</FormSectionFooter>
 

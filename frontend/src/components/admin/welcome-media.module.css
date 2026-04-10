@@ -1,0 +1,46 @@
+/* ── Welcome Media Row ── */
+
+.row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 11px 14px;
+	min-height: 44px;
+}
+
+.icon {
+	flex-shrink: 0;
+	color: var(--v2-icon-secondary);
+}
+
+.info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.fileName {
+	font-size: 13px;
+	color: var(--v2-text-primary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.fileType {
+	font-size: 11px;
+	color: var(--v2-text-secondary);
+}
+
+.actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
+}
+
+.hiddenInput {
+	display: none;
+}

@@ -64,6 +64,7 @@ def test_resolve_template_ps_no_overrides() -> None:
     ps.welcome_text = None
     ps.welcome_media_url = None
     ps.welcome_media_type = None
+    ps.welcome_media_file_id = None
     ps.welcome_button_text = None
     result = MessageSender.resolve_template("welcome", ps)
     assert result == DEFAULTS["welcome"]
@@ -75,6 +76,7 @@ def test_resolve_template_ps_override_text() -> None:
     ps.welcome_text = "Custom welcome!"
     ps.welcome_media_url = None
     ps.welcome_media_type = None
+    ps.welcome_media_file_id = None
     ps.welcome_button_text = None
     result = MessageSender.resolve_template("welcome", ps)
     assert result.text == "Custom welcome!"
@@ -87,6 +89,7 @@ def test_resolve_template_ps_override_media_url() -> None:
     ps.welcome_text = None
     ps.welcome_media_url = "https://example.com/video.mp4"
     ps.welcome_media_type = None
+    ps.welcome_media_file_id = None
     ps.welcome_button_text = None
     result = MessageSender.resolve_template("welcome", ps)
     assert result.media_url == "https://example.com/video.mp4"
@@ -99,9 +102,25 @@ def test_resolve_template_ps_override_button() -> None:
     ps.welcome_text = None
     ps.welcome_media_url = None
     ps.welcome_media_type = None
+    ps.welcome_media_file_id = None
     ps.welcome_button_text = "Launch {{ app_name }}"
     result = MessageSender.resolve_template("welcome", ps)
     assert result.button_text == "Launch {{ app_name }}"
+
+
+def test_resolve_template_ps_override_file_id() -> None:
+    """PS welcome_media_file_id overrides media_url and media_path."""
+    ps = MagicMock()
+    ps.welcome_text = None
+    ps.welcome_media_url = "https://example.com/old.mp4"
+    ps.welcome_media_type = "animation"
+    ps.welcome_media_file_id = "fid_custom_123"
+    ps.welcome_button_text = None
+    result = MessageSender.resolve_template("welcome", ps)
+    assert result.media_file_id == "fid_custom_123"
+    assert result.media_url is None
+    assert result.media_path is None
+    assert result.media_type == "animation"
 
 
 def test_resolve_template_unknown_name_raises() -> None:

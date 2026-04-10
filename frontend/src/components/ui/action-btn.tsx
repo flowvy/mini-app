@@ -8,7 +8,7 @@ import styles from "./action-btn.module.css";
 import { SpinnerIcon } from "./spinner-icon.tsx";
 
 interface ActionBtnProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-	variant?: "action" | "confirm" | "ghost" | "danger";
+	variant?: "action" | "confirm" | "ghost" | "danger" | "dangerOutline";
 	size?: "sm" | "md";
 	loading?: boolean;
 	children: ReactNode;
