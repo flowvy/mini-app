@@ -1,9 +1,7 @@
-import { Bot, Globe } from "lucide-react";
-import type { FC } from "react";
+import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DashboardDomainHeader } from "../../components/admin/dashboard-domain-header.tsx";
-import { DashboardHighlightKpi } from "../../components/admin/dashboard-highlight-kpi.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
+import { SegmentedControl } from "../../components/ui/segmented-control.tsx";
 import { useDashboard } from "../../hooks/use-dashboard.ts";
 import { BotContent } from "./dashboard-bot.tsx";
 import { VpnContent } from "./dashboard-vpn.tsx";
@@ -12,17 +10,24 @@ import styles from "./dashboard.module.css";
 export const AdminDashboard: FC = () => {
 	const { t } = useTranslation();
 	const { data, isPending, error } = useDashboard();
+	const [tab, setTab] = useState<"vpn" | "bot">("vpn");
 
 	if (isPending) return <PageLoading />;
 	if (error || !data) return <div className={styles.error}>{t("admin.dashboard.error")}</div>;
 
+	const tabOptions = [
+		{ key: "vpn", label: t("admin.dashboard.tab.vpn") },
+		{ key: "bot", label: t("admin.dashboard.tab.bot") },
+	];
+
 	return (
 		<div className={styles.page}>
-			<DashboardHighlightKpi data={data} />
-			<DashboardDomainHeader icon={Globe} label={t("admin.dashboard.domain.vpn")} />
-			<VpnContent data={data} t={t} />
-			<DashboardDomainHeader icon={Bot} label={t("admin.dashboard.domain.bot")} />
-			<BotContent data={data} t={t} />
+			<SegmentedControl
+				options={tabOptions}
+				value={tab}
+				onChange={(k) => setTab(k as "vpn" | "bot")}
+			/>
+			{tab === "vpn" ? <VpnContent data={data} t={t} /> : <BotContent data={data} t={t} />}
 		</div>
 	);
 };
