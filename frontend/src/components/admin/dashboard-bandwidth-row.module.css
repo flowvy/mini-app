@@ -6,7 +6,6 @@
 	align-items: center;
 	padding: 8px 14px;
 	min-height: 36px;
-	border-top: 1px solid var(--v2-border-tertiary);
 }
 
 .left {

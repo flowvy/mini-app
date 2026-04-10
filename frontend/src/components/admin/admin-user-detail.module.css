@@ -1,34 +1,11 @@
 /* ── Admin User Detail Section ── */
 
-.sectionBody {
-	background: var(--v2-bg-primary);
-	border: 1px solid var(--v2-border-tertiary);
-	border-radius: var(--radius-md);
-	overflow: hidden;
-}
-
-.sectionDivider {
-	padding: 4px 14px 5px;
-	font-size: 10px;
-	font-weight: 600;
-	color: var(--v2-text-secondary);
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
-	border-top: 1px solid var(--v2-border-tertiary);
-	background: color-mix(in srgb, var(--v2-bg-tertiary) 50%, transparent);
-}
-
-.sectionDividerFirst {
-	border-top: none;
-}
-
 .sectionRow {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	padding: 9px 14px;
 	min-height: 36px;
-	border-top: 1px solid var(--v2-border-tertiary);
 }
 
 .rowLabel {

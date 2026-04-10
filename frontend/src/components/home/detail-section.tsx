@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { formatShortDate, isUnlimitedExpiry } from "../../lib/format.ts";
 import type { SubscriptionData } from "../../types/subscription.ts";
+import { FormRowSeparator, FormSectionCard, FormSectionHeader } from "../ui/form-section.tsx";
 import styles from "./detail-section.module.css";
 
 interface DetailSectionProps {
@@ -15,62 +16,69 @@ export function DetailSection({ subscription }: DetailSectionProps) {
 			: t("home.detail.devicesCount", { n: subscription.deviceLimit });
 
 	return (
-		<div className={styles.body}>
-			{/* Account Info */}
-			<div className={styles.divider}>{t("home.detail.accountInfo")}</div>
-			<Row
-				label={t("home.detail.created")}
-				hint={t("home.detail.createdHint")}
-				value={formatShortDate(subscription.createdAt)}
-				mono
-			/>
-			<Row
-				label={t("home.detail.expires")}
-				hint={t("home.detail.expiresHint")}
-				value={
-					isUnlimitedExpiry(subscription.expiresAt)
-						? t("home.detail.expiresUnlimited")
-						: formatShortDate(subscription.expiresAt)
-				}
-				mono
-			/>
-			<Row
-				label={t("home.detail.email")}
-				hint={t("home.detail.emailHint")}
-				value={subscription.email}
-				mono
-				muted={!subscription.email}
-			/>
-			<Row
-				label={t("home.detail.telegramId")}
-				hint={t("home.detail.telegramIdHint")}
-				value={subscription.telegramId}
-				mono
-				muted={!subscription.telegramId}
-			/>
-			<Row
-				label={t("home.detail.devices")}
-				hint={t("home.detail.devicesHint")}
-				value={devicesValue}
-				mono
-			/>
+		<div>
+			<FormSectionHeader>{t("home.detail.accountInfo")}</FormSectionHeader>
+			<FormSectionCard>
+				<Row
+					label={t("home.detail.created")}
+					hint={t("home.detail.createdHint")}
+					value={formatShortDate(subscription.createdAt)}
+					mono
+				/>
+				<FormRowSeparator />
+				<Row
+					label={t("home.detail.expires")}
+					hint={t("home.detail.expiresHint")}
+					value={
+						isUnlimitedExpiry(subscription.expiresAt)
+							? t("home.detail.expiresUnlimited")
+							: formatShortDate(subscription.expiresAt)
+					}
+					mono
+				/>
+				<FormRowSeparator />
+				<Row
+					label={t("home.detail.email")}
+					hint={t("home.detail.emailHint")}
+					value={subscription.email}
+					mono
+					muted={!subscription.email}
+				/>
+				<FormRowSeparator />
+				<Row
+					label={t("home.detail.telegramId")}
+					hint={t("home.detail.telegramIdHint")}
+					value={subscription.telegramId}
+					mono
+					muted={!subscription.telegramId}
+				/>
+				<FormRowSeparator />
+				<Row
+					label={t("home.detail.devices")}
+					hint={t("home.detail.devicesHint")}
+					value={devicesValue}
+					mono
+				/>
+			</FormSectionCard>
 
-			{/* Profile Settings */}
-			<div className={styles.divider}>{t("home.detail.profileSettings")}</div>
-			<Row
-				label={t("home.detail.autoUpdate")}
-				hint={t("home.detail.autoUpdateHint")}
-				value={
-					subscription.autoUpdate ? t("home.detail.autoUpdateOn") : t("home.detail.autoUpdateOff")
-				}
-				accent={subscription.autoUpdate}
-			/>
-			<Row
-				label={t("home.detail.updateInterval")}
-				hint={t("home.detail.updateIntervalHint")}
-				value={t("home.detail.updateIntervalValue", { n: subscription.updateInterval })}
-				mono
-			/>
+			<FormSectionHeader>{t("home.detail.profileSettings")}</FormSectionHeader>
+			<FormSectionCard>
+				<Row
+					label={t("home.detail.autoUpdate")}
+					hint={t("home.detail.autoUpdateHint")}
+					value={
+						subscription.autoUpdate ? t("home.detail.autoUpdateOn") : t("home.detail.autoUpdateOff")
+					}
+					accent={subscription.autoUpdate}
+				/>
+				<FormRowSeparator />
+				<Row
+					label={t("home.detail.updateInterval")}
+					hint={t("home.detail.updateIntervalHint")}
+					value={t("home.detail.updateIntervalValue", { n: subscription.updateInterval })}
+					mono
+				/>
+			</FormSectionCard>
 		</div>
 	);
 }

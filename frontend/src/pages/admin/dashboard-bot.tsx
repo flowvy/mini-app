@@ -1,9 +1,13 @@
 import { DashboardKpiGrid } from "../../components/admin/dashboard-kpi-grid.tsx";
 import type { KpiItem } from "../../components/admin/dashboard-kpi-grid.tsx";
+import {
+	FormRowSeparator,
+	FormSectionCard,
+	FormSectionHeader,
+} from "../../components/ui/form-section.tsx";
 import { formatMemory, formatUptime } from "../../lib/format.ts";
 import type { DashboardResponse } from "../../types/dashboard.ts";
 import { Row } from "./dashboard-rows.tsx";
-import styles from "./dashboard.module.css";
 
 export function BotContent({
 	data,
@@ -36,52 +40,61 @@ export function BotContent({
 	];
 
 	return (
-		<>
+		<div>
 			<DashboardKpiGrid items={kpis} />
 
-			<div className={styles.sectionBody}>
-				<div className={styles.divider}>{t("admin.dashboard.bot.users")}</div>
+			<FormSectionHeader>{t("admin.dashboard.bot.users")}</FormSectionHeader>
+			<FormSectionCard>
 				<Row label={t("admin.dashboard.bot.total")} value={users.totalUsers} />
+				<FormRowSeparator />
 				<Row
 					label={t("admin.dashboard.bot.registeredToday")}
 					value={`+${users.newToday}`}
 					accent="var(--v2-text-positive)"
 				/>
+				<FormRowSeparator />
 				<Row label={t("admin.dashboard.bot.registeredWeek")} value={`+${users.newThisWeek}`} />
+			</FormSectionCard>
 
-				<div className={styles.divider}>{t("admin.dashboard.bot.activity")}</div>
+			<FormSectionHeader>{t("admin.dashboard.bot.activity")}</FormSectionHeader>
+			<FormSectionCard>
 				<Row label={t("admin.dashboard.bot.active1h")} value={users.active1H} />
+				<FormRowSeparator />
 				<Row label={t("admin.dashboard.bot.active24h")} value={users.active24H} />
-			</div>
+			</FormSectionCard>
 
-			<div className={styles.sectionBody}>
-				<div className={styles.divider}>{t("admin.dashboard.bot.requests")}</div>
+			<FormSectionHeader>{t("admin.dashboard.bot.requests")}</FormSectionHeader>
+			<FormSectionCard>
 				<Row
 					label={t("admin.dashboard.bot.totalRequests")}
 					value={requests.totalRequests.toLocaleString()}
 				/>
+				<FormRowSeparator />
 				<Row
 					label={t("admin.dashboard.bot.todayRequests")}
 					value={requests.todayRequests.toLocaleString()}
 				/>
-			</div>
+			</FormSectionCard>
 
-			<div className={styles.sectionBody}>
-				<div className={styles.divider}>{t("admin.dashboard.bot.system")}</div>
+			<FormSectionHeader>{t("admin.dashboard.bot.system")}</FormSectionHeader>
+			<FormSectionCard>
 				<Row
 					label={t("admin.dashboard.bot.cpu")}
 					value={t("admin.dashboard.bot.cores", { n: system.cpuCores })}
 				/>
+				<FormRowSeparator />
 				<Row
 					label={t("admin.dashboard.bot.memory")}
 					value={formatMemory(system.memoryUsed, system.memoryTotal)}
 				/>
+				<FormRowSeparator />
 				<Row
 					label={t("admin.dashboard.bot.uptimeLabel")}
 					value={formatUptime(system.uptimeSeconds)}
 				/>
+				<FormRowSeparator />
 				<Row label={t("admin.dashboard.bot.versionLabel")} value={system.version} />
-			</div>
-		</>
+			</FormSectionCard>
+		</div>
 	);
 }

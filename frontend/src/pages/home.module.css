@@ -3,7 +3,7 @@
 .page {
 	display: flex;
 	flex-direction: column;
-	gap: 20px;
+	gap: 8px;
 	padding: 16px;
 	animation: var(--fv-anim-fade-in) 0.15s ease-out;
 }
