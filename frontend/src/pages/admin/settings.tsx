@@ -1,6 +1,6 @@
 import { ChevronRight, Settings } from "lucide-react";
 /**
- * Admin Settings page — four views: main, kuma config, quick links, branding.
+ * Admin Settings page — five views: main, kuma config, quick links, branding, welcome.
  */
 import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,12 +8,50 @@ import { BrandingConfig } from "../../components/admin/branding-config.tsx";
 import { KumaConfig } from "../../components/admin/kuma-config.tsx";
 import { QuickLinks } from "../../components/admin/quick-links.tsx";
 import { WelcomeConfig } from "../../components/admin/welcome-config.tsx";
+import {
+	FormRow,
+	FormRowSeparator,
+	FormSectionCard,
+	FormSectionFooter,
+	FormSectionHeader,
+} from "../../components/ui/form-section.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { Toggle } from "../../components/ui/toggle.tsx";
 import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import styles from "./settings.module.css";
 
 type View = "settings" | "kuma" | "links" | "branding" | "welcome";
+
+interface SettingsToolRowProps {
+	label: string;
+	desc?: string;
+	value?: string;
+	valuePositive?: boolean;
+	onClick: () => void;
+}
+
+const SettingsToolRow: FC<SettingsToolRowProps> = ({
+	label,
+	desc,
+	value,
+	valuePositive,
+	onClick,
+}) => (
+	<button type="button" className={styles.toolRow} onClick={onClick}>
+		<div className={styles.toolRowLeft}>
+			<span className={styles.toolRowLabel}>{label}</span>
+			{desc && <span className={styles.toolRowDesc}>{desc}</span>}
+		</div>
+		<span className={styles.toolRowRight}>
+			{value && (
+				<span className={valuePositive ? styles.rowValuePositive : styles.rowValue}>{value}</span>
+			)}
+			<span className={styles.toolRowChevron}>
+				<ChevronRight size={14} />
+			</span>
+		</span>
+	</button>
+);
 
 export const AdminSettings: FC = () => {
 	const { t } = useTranslation();
@@ -63,110 +101,84 @@ export const AdminSettings: FC = () => {
 				<h1 className={styles.headerTitle}>{t("settings.title")}</h1>
 			</div>
 
-			{/* Integrations */}
-			<div className={styles.sectionBody}>
-				<div className={styles.sectionDivider}>{t("settings.integrations")}</div>
-
-				<div className={styles.row}>
-					<div className={styles.rowLeft}>
-						<span className={styles.rowLabel}>{t("settings.uptimeKuma")}</span>
-						<span className={styles.rowDesc}>{t("settings.uptimeKumaDesc")}</span>
-					</div>
+			<FormSectionHeader>{t("settings.integrations")}</FormSectionHeader>
+			<FormSectionCard>
+				<FormRow label={t("settings.uptimeKuma")}>
 					<Toggle
 						checked={settings.kumaEnabled}
 						onChange={handleToggleKuma}
 						disabled={updateMutation.isPending}
 					/>
-				</div>
-
+				</FormRow>
 				{settings.kumaEnabled && (
-					<button type="button" className={styles.toolRow} onClick={() => setView("kuma")}>
-						<div className={styles.toolRowLeft}>
-							<span className={styles.toolRowLabel}>{t("settings.configure")}</span>
-							<span className={styles.toolRowDesc}>{t("settings.configureDesc")}</span>
-						</div>
-						<span className={styles.toolRowRight}>
-							{kumaConfigured && (
-								<span className={styles.rowValuePositive}>{t("settings.configured")}</span>
-							)}
-							<span className={styles.toolRowChevron}>
-								<ChevronRight size={14} />
-							</span>
-						</span>
-					</button>
+					<>
+						<FormRowSeparator />
+						<SettingsToolRow
+							label={t("settings.configure")}
+							desc={t("settings.configureDesc")}
+							value={kumaConfigured ? t("settings.configured") : undefined}
+							valuePositive={!!kumaConfigured}
+							onClick={() => setView("kuma")}
+						/>
+					</>
 				)}
-			</div>
+			</FormSectionCard>
+			<FormSectionFooter>{t("settings.integrationsHint")}</FormSectionFooter>
 
-			{/* Quick Links */}
-			<div className={`${styles.sectionBody} ${styles.sectionBodyGap}`}>
-				<div className={styles.sectionDivider}>{t("settings.quickLinksSection")}</div>
+			<FormSectionHeader>{t("settings.quickLinksSection")}</FormSectionHeader>
+			<FormSectionCard>
+				<SettingsToolRow
+					label={t("settings.supportAndRenew")}
+					desc={t("settings.supportAndRenewDesc")}
+					onClick={() => setView("links")}
+				/>
+			</FormSectionCard>
 
-				<button type="button" className={styles.toolRow} onClick={() => setView("links")}>
-					<div className={styles.toolRowLeft}>
-						<span className={styles.toolRowLabel}>{t("settings.supportAndRenew")}</span>
-						<span className={styles.toolRowDesc}>{t("settings.supportAndRenewDesc")}</span>
-					</div>
-					<span className={styles.toolRowChevron}>
-						<ChevronRight size={14} />
-					</span>
-				</button>
-			</div>
+			<FormSectionHeader>{t("settings.brandingSection")}</FormSectionHeader>
+			<FormSectionCard>
+				<SettingsToolRow
+					label={t("settings.brandingRow")}
+					desc={t("settings.brandingRowDesc")}
+					value={settings.appName || undefined}
+					onClick={() => setView("branding")}
+				/>
+			</FormSectionCard>
 
-			{/* Branding */}
-			<div className={`${styles.sectionBody} ${styles.sectionBodyGap}`}>
-				<div className={styles.sectionDivider}>{t("settings.brandingSection")}</div>
+			<FormSectionHeader>{t("settings.bot.section")}</FormSectionHeader>
+			<FormSectionCard>
+				<SettingsToolRow
+					label={t("settings.bot.welcomeRow")}
+					desc={t("settings.bot.welcomeRowDesc")}
+					onClick={() => setView("welcome")}
+				/>
+			</FormSectionCard>
 
-				<button type="button" className={styles.toolRow} onClick={() => setView("branding")}>
-					<div className={styles.toolRowLeft}>
-						<span className={styles.toolRowLabel}>{t("settings.brandingRow")}</span>
-						<span className={styles.toolRowDesc}>{t("settings.brandingRowDesc")}</span>
-					</div>
-					<span className={styles.toolRowRight}>
-						{settings.appName && <span className={styles.rowValue}>{settings.appName}</span>}
-						<span className={styles.toolRowChevron}>
-							<ChevronRight size={14} />
-						</span>
-					</span>
-				</button>
-			</div>
-
-			{/* Bot */}
-			<div className={`${styles.sectionBody} ${styles.sectionBodyGap}`}>
-				<div className={styles.sectionDivider}>{t("settings.bot.section")}</div>
-
-				<button type="button" className={styles.toolRow} onClick={() => setView("welcome")}>
-					<div className={styles.toolRowLeft}>
-						<span className={styles.toolRowLabel}>{t("settings.bot.welcomeRow")}</span>
-						<span className={styles.toolRowDesc}>{t("settings.bot.welcomeRowDesc")}</span>
-					</div>
-					<span className={styles.toolRowChevron}>
-						<ChevronRight size={14} />
-					</span>
-				</button>
-			</div>
-
-			{/* System */}
-			<div className={`${styles.sectionBody} ${styles.sectionBodyGap}`}>
-				<div className={styles.sectionDivider}>{t("settings.system")}</div>
-
-				<div className={styles.row}>
-					<div className={styles.rowLeft}>
-						<span className={styles.rowLabel}>{t("settings.remnawave")}</span>
-						<span className={styles.rowDesc}>{t("settings.remnawaveDesc")}</span>
-					</div>
-					<span className={styles.rowValuePositive}>
+			<FormSectionHeader>{t("settings.system")}</FormSectionHeader>
+			<FormSectionCard>
+				<FormRow label={t("settings.remnawave")}>
+					<span
+						style={{
+							fontSize: 11,
+							color: "var(--v2-text-positive)",
+							fontFamily: "var(--font-mono)",
+						}}
+					>
 						{settings.remnawaveVersion ? `v${settings.remnawaveVersion}` : "\u2014"}
 					</span>
-				</div>
-
-				<div className={styles.row}>
-					<div className={styles.rowLeft}>
-						<span className={styles.rowLabel}>{t("settings.flowvy")}</span>
-						<span className={styles.rowDesc}>{t("settings.flowvyDesc")}</span>
-					</div>
-					<span className={styles.rowValue}>v{settings.flowvyVersion}</span>
-				</div>
-			</div>
+				</FormRow>
+				<FormRowSeparator />
+				<FormRow label={t("settings.flowvy")}>
+					<span
+						style={{
+							fontSize: 12,
+							color: "var(--v2-text-secondary)",
+							fontFamily: "var(--font-mono)",
+						}}
+					>
+						v{settings.flowvyVersion}
+					</span>
+				</FormRow>
+			</FormSectionCard>
 		</div>
 	);
 };

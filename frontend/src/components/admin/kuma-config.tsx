@@ -1,15 +1,24 @@
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 /**
  * Kuma configuration sub-screen — URL, slug, connection test, save.
  */
 import { type FC, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTestKuma, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
-import styles from "../../pages/admin/settings.module.css";
+import ss from "../../pages/admin/settings.module.css";
 import type { AdminSettings } from "../../types/admin-settings.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
-import { InputField } from "../ui/input-field.tsx";
+import { FormSaveButton } from "../ui/form-save-button.tsx";
+import {
+	FormInlineInput,
+	FormRow,
+	FormRowSeparator,
+	FormSectionCard,
+	FormSectionFooter,
+	FormSectionHeader,
+} from "../ui/form-section.tsx";
+import styles from "./kuma-config.module.css";
 
 interface KumaConfigProps {
 	settings: AdminSettings;
@@ -66,52 +75,44 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 			: t("settings.kuma.notTested");
 
 	return (
-		<div className={styles.page}>
-			<div className={styles.subHeader}>
-				<button type="button" className={styles.backBtn} onClick={handleBack}>
+		<div className={ss.page}>
+			<div className={ss.subHeader}>
+				<button type="button" className={ss.backBtn} onClick={handleBack}>
 					<ArrowLeft size={16} />
 				</button>
-				<h1 className={styles.headerTitle}>{t("settings.kuma.title")}</h1>
+				<h1 className={ss.headerTitle}>{t("settings.kuma.title")}</h1>
 			</div>
 
-			<div className={styles.sectionBody}>
-				<div className={styles.inputRow}>
-					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>{t("settings.kuma.urlLabel")}</span>
-						<span className={styles.rowDesc}>{t("settings.kuma.urlDesc")}</span>
-					</div>
-					<InputField
+			<FormSectionHeader>{t("settings.kuma.connectionSection")}</FormSectionHeader>
+			<FormSectionCard>
+				<FormRow label={t("settings.kuma.urlLabel")}>
+					<FormInlineInput
 						value={url}
 						onChange={(v) => {
 							setUrl(v);
 							setSaved(false);
 						}}
 						placeholder={t("settings.kuma.urlPlaceholder")}
+						mono
 					/>
-				</div>
-
-				<div className={styles.inputRow}>
-					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>{t("settings.kuma.slugLabel")}</span>
-						<span className={styles.rowDesc}>{t("settings.kuma.slugDesc")}</span>
-					</div>
-					<InputField
+				</FormRow>
+				<FormRowSeparator />
+				<FormRow label={t("settings.kuma.slugLabel")}>
+					<FormInlineInput
 						value={slug}
 						onChange={(v) => {
 							setSlug(v);
 							setSaved(false);
 						}}
 						placeholder={t("settings.kuma.slugPlaceholder")}
+						mono
 					/>
-				</div>
-
-				<div className={styles.row}>
-					<div className={styles.rowLeft}>
-						<span className={styles.rowLabel}>{t("settings.kuma.statusLabel")}</span>
-						<span className={styles.statusText} style={{ color: connColor }}>
-							{connText}
-						</span>
-					</div>
+				</FormRow>
+				<FormRowSeparator />
+				<FormRow label={t("settings.kuma.statusLabel")}>
+					<span className={styles.statusText} style={{ color: connColor }}>
+						{connText}
+					</span>
 					<ActionBtn
 						onClick={() => testMutation.mutate()}
 						loading={testMutation.isPending}
@@ -120,23 +121,15 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 					>
 						{t("settings.kuma.test")}
 					</ActionBtn>
-				</div>
+				</FormRow>
+			</FormSectionCard>
+			<FormSectionFooter>{t("settings.kuma.connectionHint")}</FormSectionFooter>
 
-				{(dirty || saved) && (
-					<div className={styles.saveBar}>
-						{saved && (
-							<span className={styles.savedText}>
-								<Check size={12} /> {t("settings.kuma.saved")}
-							</span>
-						)}
-						{dirty && !saved && (
-							<ActionBtn onClick={handleSave} loading={updateMutation.isPending} size="md">
-								{t("settings.kuma.saveChanges")}
-							</ActionBtn>
-						)}
-					</div>
-				)}
-			</div>
+			<FormSaveButton
+				dirty={dirty && !saved}
+				loading={updateMutation.isPending}
+				onSave={handleSave}
+			/>
 
 			<ConfirmDialog
 				open={showDiscard}

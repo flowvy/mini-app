@@ -46,78 +46,6 @@
 	margin: 0;
 }
 
-/* ── Section body (card) ── */
-
-.sectionBody {
-	background: var(--v2-bg-primary);
-	border: 1px solid var(--v2-border-tertiary);
-	border-radius: var(--radius-md);
-	overflow: hidden;
-}
-
-.sectionBody > * + * {
-	border-top: 1px solid var(--v2-border-tertiary);
-}
-
-.sectionBodyGap {
-	margin-top: 16px;
-}
-
-/* ── Section divider ── */
-
-.sectionDivider {
-	padding: 4px 14px 5px;
-	font-size: 10px;
-	font-weight: 600;
-	color: var(--v2-text-secondary);
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
-	background: color-mix(in srgb, var(--v2-bg-tertiary) 50%, transparent);
-}
-
-/* ── Rows ── */
-
-.row {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 10px 14px;
-	gap: 16px;
-}
-
-.rowLeft {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	min-width: 0;
-}
-
-.rowLabel {
-	font-size: 12.5px;
-	font-weight: 500;
-	color: var(--v2-text-primary);
-}
-
-.rowDesc {
-	font-size: 10.5px;
-	color: var(--v2-text-secondary);
-}
-
-.statusText {
-	font-size: 10.5px;
-}
-
-.rowValue {
-	font-size: 12px;
-	font-family: var(--font-mono);
-	color: var(--v2-text-secondary);
-}
-
-.rowValuePositive {
-	font-size: 10.5px;
-	color: var(--v2-text-positive);
-}
-
 /* ── Tool row (drill-down) ── */
 
 .toolRow {
@@ -165,36 +93,15 @@
 	display: flex;
 }
 
-/* ── Input row (sub-screens) ── */
+/* ── Value badges (used by SettingsToolRow) ── */
 
-.inputRow {
-	padding: 10px 14px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+.rowValue {
+	font-size: 12px;
+	font-family: var(--font-mono);
+	color: var(--v2-text-secondary);
 }
 
-.inputRowLabels {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-}
-
-/* ── Save bar ── */
-
-.saveBar {
-	display: flex;
-	align-items: center;
-	justify-content: flex-end;
-	padding: 10px 14px;
-	gap: 10px;
-}
-
-.savedText {
-	display: flex;
-	align-items: center;
-	gap: 5px;
-	font-size: 11px;
-	font-weight: 500;
+.rowValuePositive {
+	font-size: 10.5px;
 	color: var(--v2-text-positive);
 }
