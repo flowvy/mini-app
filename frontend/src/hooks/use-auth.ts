@@ -35,7 +35,7 @@ const MOCK_USER: UserResponse = {
 	id: 1,
 	username: "dev_admin",
 	full_name: "Dev Admin",
-	role: "ADMIN",
+	role: "admin",
 	is_active: true,
 	features: { pulse: true },
 	branding: { appName: null, logoUrl: null },

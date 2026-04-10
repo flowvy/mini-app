@@ -1,15 +1,20 @@
-import { ArrowLeft, Check } from "lucide-react";
-/**
- * Branding sub-screen — app name, logo URL, save.
- */
+/** Branding sub-screen — app name, logo URL, save. */
+import { ArrowLeft } from "lucide-react";
 import { type FC, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
-import styles from "../../pages/admin/settings.module.css";
+import ss from "../../pages/admin/settings.module.css";
 import type { AdminSettings } from "../../types/admin-settings.ts";
-import { ActionBtn } from "../ui/action-btn.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
-import { InputField } from "../ui/input-field.tsx";
+import { FormSaveButton } from "../ui/form-save-button.tsx";
+import {
+	FormInlineInput,
+	FormRow,
+	FormRowSeparator,
+	FormSectionCard,
+	FormSectionFooter,
+	FormSectionHeader,
+} from "../ui/form-section.tsx";
 
 interface BrandingConfigProps {
 	settings: AdminSettings;
@@ -53,21 +58,18 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings, onBack }) =>
 	};
 
 	return (
-		<div className={styles.page}>
-			<div className={styles.subHeader}>
-				<button type="button" className={styles.backBtn} onClick={handleBack}>
+		<div className={ss.page}>
+			<div className={ss.subHeader}>
+				<button type="button" className={ss.backBtn} onClick={handleBack}>
 					<ArrowLeft size={16} />
 				</button>
-				<h1 className={styles.headerTitle}>{t("settings.branding.title")}</h1>
+				<h1 className={ss.headerTitle}>{t("settings.branding.title")}</h1>
 			</div>
 
-			<div className={styles.sectionBody}>
-				<div className={styles.inputRow}>
-					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>{t("settings.branding.appNameLabel")}</span>
-						<span className={styles.rowDesc}>{t("settings.branding.appNameDesc")}</span>
-					</div>
-					<InputField
+			<FormSectionHeader>{t("settings.branding.identitySection")}</FormSectionHeader>
+			<FormSectionCard>
+				<FormRow label={t("settings.branding.appNameLabel")}>
+					<FormInlineInput
 						value={appName}
 						onChange={(v) => {
 							setAppName(v);
@@ -75,38 +77,27 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings, onBack }) =>
 						}}
 						placeholder={t("settings.branding.appNamePlaceholder")}
 					/>
-				</div>
-
-				<div className={styles.inputRow}>
-					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>{t("settings.branding.logoUrlLabel")}</span>
-						<span className={styles.rowDesc}>{t("settings.branding.logoUrlDesc")}</span>
-					</div>
-					<InputField
+				</FormRow>
+				<FormRowSeparator />
+				<FormRow label={t("settings.branding.logoUrlLabel")}>
+					<FormInlineInput
 						value={logoUrl}
 						onChange={(v) => {
 							setLogoUrl(v);
 							setSaved(false);
 						}}
 						placeholder={t("settings.branding.logoUrlPlaceholder")}
+						mono
 					/>
-				</div>
+				</FormRow>
+			</FormSectionCard>
+			<FormSectionFooter>{t("settings.branding.identityHint")}</FormSectionFooter>
 
-				{(dirty || saved) && (
-					<div className={styles.saveBar}>
-						{saved && (
-							<span className={styles.savedText}>
-								<Check size={12} /> {t("settings.branding.saved")}
-							</span>
-						)}
-						{dirty && !saved && (
-							<ActionBtn onClick={handleSave} loading={updateMutation.isPending} size="md">
-								{t("settings.branding.save")}
-							</ActionBtn>
-						)}
-					</div>
-				)}
-			</div>
+			<FormSaveButton
+				dirty={dirty && !saved}
+				loading={updateMutation.isPending}
+				onSave={handleSave}
+			/>
 
 			<ConfirmDialog
 				open={showDiscard}

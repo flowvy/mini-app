@@ -1,0 +1,118 @@
+/* ── Section Header ── */
+
+.header {
+	padding-top: 16px;
+	padding-bottom: 6px;
+	padding-left: 14px;
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--v2-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.header:first-child {
+	padding-top: 0;
+}
+
+/* ── Section Footer ── */
+
+.footer {
+	padding-top: 6px;
+	padding-left: 14px;
+	font-size: 11px;
+	color: var(--v2-text-tertiary);
+	line-height: 1.45;
+}
+
+.warning {
+	color: var(--v2-text-negative);
+}
+
+/* ── Section Card ── */
+
+.card {
+	background: var(--v2-bg-primary);
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-md);
+	overflow: hidden;
+}
+
+/* ── Row ── */
+
+.row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 11px 14px;
+	gap: 12px;
+	min-height: 44px;
+}
+
+.rowLabel {
+	font-size: 13px;
+	color: var(--v2-text-primary);
+	flex-shrink: 0;
+}
+
+.rowValue {
+	flex: 1;
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	min-width: 0;
+}
+
+/* ── Row Separator ── */
+
+.separator {
+	margin-left: 14px;
+	height: 1px;
+	background: var(--v2-border-tertiary);
+}
+
+/* ── Textarea ── */
+
+.textareaWrap {
+	padding: 11px 14px;
+}
+
+.textarea {
+	width: 100%;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: var(--v2-text-primary);
+	font-size: 13px;
+	font-family: var(--font-mono);
+	resize: none;
+	line-height: 1.5;
+	outline: none;
+	box-sizing: border-box;
+}
+
+.textarea::placeholder {
+	color: var(--v2-text-tertiary);
+}
+
+/* ── Inline Input ── */
+
+.inlineInput {
+	width: 100%;
+	text-align: right;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: var(--v2-text-primary);
+	font-size: 13px;
+	font-family: var(--font-sans);
+	outline: none;
+}
+
+.inlineInput::placeholder {
+	color: var(--v2-text-tertiary);
+}
+
+.inlineInput.mono {
+	font-family: var(--font-mono);
+}

@@ -1,55 +1,40 @@
-/** Welcome Message sub-screen — text, media URL, media type, button text, save. */
-import { ArrowLeft, Check, Info } from "lucide-react";
+/** Welcome Message sub-screen — text, media URL, button text, save. */
+import { ArrowLeft } from "lucide-react";
 import { type FC, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import ss from "../../pages/admin/settings.module.css";
 import type { AdminSettings } from "../../types/admin-settings.ts";
-import { ActionBtn } from "../ui/action-btn.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
-import { InputField } from "../ui/input-field.tsx";
-import { SegmentedControl } from "../ui/segmented-control.tsx";
-import styles from "./welcome-config.module.css";
+import { FormSaveButton } from "../ui/form-save-button.tsx";
+import {
+	FormInlineInput,
+	FormRow,
+	FormSectionCard,
+	FormSectionFooter,
+	FormSectionHeader,
+	FormTextarea,
+} from "../ui/form-section.tsx";
 
 interface WelcomeConfigProps {
 	settings: AdminSettings;
 	onBack: () => void;
 }
 
-const MEDIA_TYPE_OPTIONS = [
-	{ key: "animation", label: "settings.welcome.mediaTypeAnimation" },
-	{ key: "photo", label: "settings.welcome.mediaTypePhoto" },
-	{ key: "none", label: "settings.welcome.mediaTypeNone" },
-];
-
-function resolveMediaType(url: string | null, type: string | null): string {
-	if (type) return type;
-	return url ? "animation" : "none";
-}
-
 export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 	const { t } = useTranslation();
 	const [text, setText] = useState(settings.welcomeText ?? "");
 	const [mediaUrl, setMediaUrl] = useState(settings.welcomeMediaUrl ?? "");
-	const [mediaType, setMediaType] = useState(
-		resolveMediaType(settings.welcomeMediaUrl, settings.welcomeMediaType),
-	);
 	const [buttonText, setButtonText] = useState(settings.welcomeButtonText ?? "");
 	const [saved, setSaved] = useState(false);
 	const [showDiscard, setShowDiscard] = useState(false);
-	const [textareaFocused, setTextareaFocused] = useState(false);
 
 	const updateMutation = useUpdateSettings();
 
 	const initText = settings.welcomeText ?? "";
 	const initMediaUrl = settings.welcomeMediaUrl ?? "";
-	const initMediaType = resolveMediaType(settings.welcomeMediaUrl, settings.welcomeMediaType);
 	const initButtonText = settings.welcomeButtonText ?? "";
-	const dirty =
-		text !== initText ||
-		mediaUrl !== initMediaUrl ||
-		mediaType !== initMediaType ||
-		buttonText !== initButtonText;
+	const dirty = text !== initText || mediaUrl !== initMediaUrl || buttonText !== initButtonText;
 
 	useEffect(() => {
 		if (saved) {
@@ -70,16 +55,11 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 		await updateMutation.mutateAsync({
 			welcomeText: text || null,
 			welcomeMediaUrl: mediaUrl || null,
-			welcomeMediaType: mediaType === "none" ? null : mediaType,
+			welcomeMediaType: null,
 			welcomeButtonText: buttonText || null,
 		});
 		setSaved(true);
 	};
-
-	const translatedOptions = MEDIA_TYPE_OPTIONS.map((opt) => ({
-		key: opt.key,
-		label: t(opt.label),
-	}));
 
 	return (
 		<div className={ss.page}>
@@ -90,61 +70,39 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 				<h1 className={ss.headerTitle}>{t("settings.welcome.title")}</h1>
 			</div>
 
-			<div className={ss.sectionBody}>
-				<div className={ss.inputRow}>
-					<div className={ss.inputRowLabels}>
-						<span className={ss.rowLabel}>{t("settings.welcome.messageLabel")}</span>
-						<span className={ss.rowDesc}>{t("settings.welcome.messageDesc")}</span>
-					</div>
-					<textarea
-						value={text}
-						onChange={(e) => {
-							setText(e.target.value);
-							setSaved(false);
-						}}
-						placeholder={t("settings.welcome.messagePlaceholder")}
-						onFocus={() => setTextareaFocused(true)}
-						onBlur={() => setTextareaFocused(false)}
-						className={`${styles.textarea} ${textareaFocused ? styles.textareaFocused : ""}`}
-						rows={4}
-					/>
-				</div>
+			<FormSectionHeader>{t("settings.welcome.messageSection")}</FormSectionHeader>
+			<FormSectionCard>
+				<FormTextarea
+					value={text}
+					onChange={(v) => {
+						setText(v);
+						setSaved(false);
+					}}
+					placeholder={t("settings.welcome.messagePlaceholder")}
+				/>
+			</FormSectionCard>
+			<FormSectionFooter>{t("settings.welcome.messageHint")}</FormSectionFooter>
 
-				<div className={ss.inputRow}>
-					<div className={ss.inputRowLabels}>
-						<span className={ss.rowLabel}>{t("settings.welcome.mediaUrlLabel")}</span>
-						<span className={ss.rowDesc}>{t("settings.welcome.mediaUrlDesc")}</span>
-					</div>
-					<InputField
+			<FormSectionHeader>{t("settings.welcome.mediaSection")}</FormSectionHeader>
+			<FormSectionCard>
+				<FormRow label={t("settings.welcome.mediaUrlLabel")}>
+					<FormInlineInput
 						value={mediaUrl}
 						onChange={(v) => {
 							setMediaUrl(v);
 							setSaved(false);
 						}}
 						placeholder={t("settings.welcome.mediaUrlPlaceholder")}
+						mono
 					/>
-				</div>
+				</FormRow>
+			</FormSectionCard>
+			<FormSectionFooter>{t("settings.welcome.mediaHint")}</FormSectionFooter>
 
-				<div className={ss.inputRow}>
-					<div className={ss.inputRowLabels}>
-						<span className={ss.rowLabel}>{t("settings.welcome.mediaTypeLabel")}</span>
-					</div>
-					<SegmentedControl
-						options={translatedOptions}
-						value={mediaType}
-						onChange={(v) => {
-							setMediaType(v);
-							setSaved(false);
-						}}
-					/>
-				</div>
-
-				<div className={ss.inputRow}>
-					<div className={ss.inputRowLabels}>
-						<span className={ss.rowLabel}>{t("settings.welcome.buttonTextLabel")}</span>
-						<span className={ss.rowDesc}>{t("settings.welcome.buttonTextDesc")}</span>
-					</div>
-					<InputField
+			<FormSectionHeader>{t("settings.welcome.buttonSection")}</FormSectionHeader>
+			<FormSectionCard>
+				<FormRow label={t("settings.welcome.buttonTextLabel")}>
+					<FormInlineInput
 						value={buttonText}
 						onChange={(v) => {
 							setButtonText(v);
@@ -152,28 +110,17 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 						}}
 						placeholder={t("settings.welcome.buttonTextPlaceholder")}
 					/>
-				</div>
+				</FormRow>
+			</FormSectionCard>
+			<FormSectionFooter>{t("settings.welcome.buttonHint")}</FormSectionFooter>
 
-				{(dirty || saved) && (
-					<div className={ss.saveBar}>
-						{saved && (
-							<span className={ss.savedText}>
-								<Check size={12} /> {t("settings.welcome.saved")}
-							</span>
-						)}
-						{dirty && !saved && (
-							<ActionBtn onClick={handleSave} loading={updateMutation.isPending} size="md">
-								{t("settings.welcome.save")}
-							</ActionBtn>
-						)}
-					</div>
-				)}
-			</div>
+			<FormSectionFooter warning>{t("settings.welcome.premiumWarning")}</FormSectionFooter>
 
-			<div className={styles.infoBanner}>
-				<Info size={16} className={styles.infoBannerIcon} />
-				<span className={styles.infoBannerText}>{t("settings.welcome.premiumWarning")}</span>
-			</div>
+			<FormSaveButton
+				dirty={dirty && !saved}
+				loading={updateMutation.isPending}
+				onSave={handleSave}
+			/>
 
 			<ConfirmDialog
 				open={showDiscard}

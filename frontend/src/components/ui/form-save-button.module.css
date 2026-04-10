@@ -1,0 +1,31 @@
+/* ── Full-width Save Button ── */
+
+.wrapper {
+	margin-top: 20px;
+}
+
+.btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	padding: 13px 16px;
+	border: none;
+	border-radius: var(--radius-md);
+	background: var(--v2-bg-primary-inverted);
+	color: var(--v2-text-primary-inverted);
+	font-size: 14px;
+	font-weight: 600;
+	font-family: inherit;
+	cursor: pointer;
+	transition: opacity var(--duration-base);
+}
+
+.btn:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.btn:hover:not(:disabled) {
+	opacity: 0.85;
+}

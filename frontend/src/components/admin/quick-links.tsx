@@ -1,15 +1,20 @@
-import { ArrowLeft, Check } from "lucide-react";
-/**
- * Quick Links sub-screen — support URL, renew URL, save.
- */
+/** Quick Links sub-screen — support URL, renew URL, save. */
+import { ArrowLeft } from "lucide-react";
 import { type FC, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
-import styles from "../../pages/admin/settings.module.css";
+import ss from "../../pages/admin/settings.module.css";
 import type { AdminSettings } from "../../types/admin-settings.ts";
-import { ActionBtn } from "../ui/action-btn.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
-import { InputField } from "../ui/input-field.tsx";
+import { FormSaveButton } from "../ui/form-save-button.tsx";
+import {
+	FormInlineInput,
+	FormRow,
+	FormRowSeparator,
+	FormSectionCard,
+	FormSectionFooter,
+	FormSectionHeader,
+} from "../ui/form-section.tsx";
 
 interface QuickLinksProps {
 	settings: AdminSettings;
@@ -53,60 +58,47 @@ export const QuickLinks: FC<QuickLinksProps> = ({ settings, onBack }) => {
 	};
 
 	return (
-		<div className={styles.page}>
-			<div className={styles.subHeader}>
-				<button type="button" className={styles.backBtn} onClick={handleBack}>
+		<div className={ss.page}>
+			<div className={ss.subHeader}>
+				<button type="button" className={ss.backBtn} onClick={handleBack}>
 					<ArrowLeft size={16} />
 				</button>
-				<h1 className={styles.headerTitle}>{t("settings.links.title")}</h1>
+				<h1 className={ss.headerTitle}>{t("settings.links.title")}</h1>
 			</div>
 
-			<div className={styles.sectionBody}>
-				<div className={styles.inputRow}>
-					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>{t("settings.links.supportLabel")}</span>
-						<span className={styles.rowDesc}>{t("settings.links.supportDesc")}</span>
-					</div>
-					<InputField
+			<FormSectionHeader>{t("settings.links.linksSection")}</FormSectionHeader>
+			<FormSectionCard>
+				<FormRow label={t("settings.links.supportLabel")}>
+					<FormInlineInput
 						value={supportUrl}
 						onChange={(v) => {
 							setSupportUrl(v);
 							setSaved(false);
 						}}
 						placeholder={t("settings.links.supportPlaceholder")}
+						mono
 					/>
-				</div>
-
-				<div className={styles.inputRow}>
-					<div className={styles.inputRowLabels}>
-						<span className={styles.rowLabel}>{t("settings.links.renewLabel")}</span>
-						<span className={styles.rowDesc}>{t("settings.links.renewDesc")}</span>
-					</div>
-					<InputField
+				</FormRow>
+				<FormRowSeparator />
+				<FormRow label={t("settings.links.renewLabel")}>
+					<FormInlineInput
 						value={renewUrl}
 						onChange={(v) => {
 							setRenewUrl(v);
 							setSaved(false);
 						}}
 						placeholder={t("settings.links.renewPlaceholder")}
+						mono
 					/>
-				</div>
+				</FormRow>
+			</FormSectionCard>
+			<FormSectionFooter>{t("settings.links.linksHint")}</FormSectionFooter>
 
-				{(dirty || saved) && (
-					<div className={styles.saveBar}>
-						{saved && (
-							<span className={styles.savedText}>
-								<Check size={12} /> {t("settings.links.saved")}
-							</span>
-						)}
-						{dirty && !saved && (
-							<ActionBtn onClick={handleSave} loading={updateMutation.isPending} size="md">
-								{t("settings.links.save")}
-							</ActionBtn>
-						)}
-					</div>
-				)}
-			</div>
+			<FormSaveButton
+				dirty={dirty && !saved}
+				loading={updateMutation.isPending}
+				onSave={handleSave}
+			/>
 
 			<ConfirmDialog
 				open={showDiscard}
