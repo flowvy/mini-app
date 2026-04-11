@@ -75,7 +75,13 @@ const routeTree = rootRoute.addChildren([
 	adminSettingsRoute,
 ]);
 
-export const router = createRouter({ routeTree });
+export const router = createRouter({
+	routeTree,
+	defaultPreload: "intent",
+	scrollRestoration: true,
+	scrollToTopSelectors: ['[data-scroll-restoration-id="main-content"]'],
+	defaultViewTransition: true,
+});
 
 declare module "@tanstack/react-router" {
 	interface Register {

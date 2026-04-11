@@ -114,7 +114,8 @@ a {
 /* ── Default transitions ── */
 a,
 button {
-	transition: all 0.15s ease;
+	transition: color var(--duration-base) ease, background-color var(--duration-base) ease,
+		border-color var(--duration-base) ease, opacity var(--duration-base) ease;
 }
 
 /* ── Reduced motion ── */

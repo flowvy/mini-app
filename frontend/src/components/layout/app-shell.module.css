@@ -17,4 +17,6 @@
 	padding-top: var(--shell-top);
 	padding-bottom: var(--shell-bottom);
 	-webkit-overflow-scrolling: touch;
+	overscroll-behavior-y: contain;
+	touch-action: pan-y;
 }

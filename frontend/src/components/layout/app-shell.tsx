@@ -9,12 +9,12 @@ import { Header } from "./header.tsx";
 import { TabBar } from "./tab-bar.tsx";
 
 export function AppShell() {
-	const { compact, onScroll } = useScrollCompact();
+	const { compact, scrollRef } = useScrollCompact();
 	return (
 		<div className={styles.shell}>
 			<EdgeBlur side="top" />
 			<Header />
-			<main className={styles.content} onScroll={onScroll}>
+			<main ref={scrollRef} className={styles.content} data-scroll-restoration-id="main-content">
 				<Outlet />
 			</main>
 			<TabBar compact={compact} />
