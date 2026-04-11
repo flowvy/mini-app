@@ -1,8 +1,9 @@
+import { useBlocker } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 /**
  * Kuma configuration sub-screen — URL, slug, connection test, save.
  */
-import { type FC, useCallback, useEffect, useState } from "react";
+import { type FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTestKuma, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import ss from "../../pages/admin/settings.module.css";
@@ -30,7 +31,6 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 	const [url, setUrl] = useState(settings.kumaUrl ?? "");
 	const [slug, setSlug] = useState(settings.kumaSlug ?? "");
 	const [saved, setSaved] = useState(false);
-	const [showDiscard, setShowDiscard] = useState(false);
 
 	const updateMutation = useUpdateSettings();
 	const testMutation = useTestKuma();
@@ -39,20 +39,17 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 	const initSlug = settings.kumaSlug ?? "";
 	const dirty = url !== initUrl || slug !== initSlug;
 
+	const blocker = useBlocker({
+		shouldBlockFn: () => dirty,
+		withResolver: true,
+	});
+
 	useEffect(() => {
 		if (saved) {
 			const timer = setTimeout(() => setSaved(false), 2000);
 			return () => clearTimeout(timer);
 		}
 	}, [saved]);
-
-	const handleBack = useCallback(() => {
-		if (dirty) {
-			setShowDiscard(true);
-		} else {
-			onBack();
-		}
-	}, [dirty, onBack]);
 
 	const handleSave = async () => {
 		await updateMutation.mutateAsync({
@@ -77,7 +74,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 	return (
 		<div className={ss.page}>
 			<div className={ss.subHeader}>
-				<button type="button" className={ss.backBtn} onClick={handleBack}>
+				<button type="button" className={ss.backBtn} onClick={onBack}>
 					<ArrowLeft size={16} />
 				</button>
 				<h1 className={ss.headerTitle}>{t("settings.kuma.title")}</h1>
@@ -132,12 +129,12 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 			/>
 
 			<ConfirmDialog
-				open={showDiscard}
+				open={blocker.status === "blocked"}
 				title={t("settings.kuma.discardTitle")}
 				confirmLabel={t("settings.kuma.discardConfirm")}
 				cancelLabel={t("settings.kuma.discardCancel")}
-				onConfirm={onBack}
-				onCancel={() => setShowDiscard(false)}
+				onConfirm={() => blocker.proceed?.()}
+				onCancel={() => blocker.reset?.()}
 			>
 				<p>{t("settings.kuma.discardBody")}</p>
 			</ConfirmDialog>

@@ -1,70 +1,33 @@
+import { useNavigate } from "@tanstack/react-router";
 import { UserX, X } from "lucide-react";
-import { type FC, type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
+import { type FC, type KeyboardEvent, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { UserRow } from "../../components/admin/user-row.tsx";
 import { SpinnerIcon } from "../../components/ui/spinner-icon.tsx";
 import { useAdminUsers, useSearchUser } from "../../hooks/use-admin-users.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
-import { UserDetailView } from "./user-detail.tsx";
 import { UsersListSkeleton } from "./users-skeleton.tsx";
 import styles from "./users.module.css";
 
-const PAGE_SIZE = 25;
-
-type View = "list" | "detail";
-
 export const AdminUsers: FC = () => {
-	const [view, setView] = useState<View>("list");
-	const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-
-	const handleSelectUser = useCallback((user: AdminUser) => {
-		setSelectedUser(user);
-		setView("detail");
-	}, []);
-
-	const handleBack = useCallback(() => {
-		setView("list");
-		setSelectedUser(null);
-	}, []);
-
-	if (view === "detail" && selectedUser) {
-		return <UserDetailView user={selectedUser} onBack={handleBack} />;
-	}
-
-	return <UserListView onSelectUser={handleSelectUser} />;
-};
-
-/* ── List View ── */
-
-interface UserListViewProps {
-	onSelectUser: (user: AdminUser) => void;
-}
-
-const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
-	const [start, setStart] = useState(0);
-	const [allUsers, setAllUsers] = useState<AdminUser[]>([]);
+	const navigate = useNavigate();
 	const [searchInput, setSearchInput] = useState("");
 	const [searchQuery, setSearchQuery] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
 	const { t } = useTranslation();
 
-	const list = useAdminUsers(PAGE_SIZE, start);
+	const list = useAdminUsers();
 	const search = useSearchUser(searchQuery);
 
 	const isSearchMode = searchQuery.length > 0;
+	const allUsers = list.data?.pages.flatMap((p) => p.users) ?? [];
 
-	// Accumulate users across pages
-	useEffect(() => {
-		const users = list.data?.users;
-		if (users && !isSearchMode) {
-			setAllUsers((prev) => {
-				if (start === 0) return users;
-				const existing = new Set(prev.map((u) => u.uuid));
-				const fresh = users.filter((u) => !existing.has(u.uuid));
-				return [...prev, ...fresh];
-			});
-		}
-	}, [list.data, start, isSearchMode]);
+	const handleSelectUser = useCallback(
+		(user: AdminUser) => {
+			navigate({ to: "/admin/users/$userId", params: { userId: user.uuid } });
+		},
+		[navigate],
+	);
 
 	const handleSearch = useCallback(
 		(e: KeyboardEvent<HTMLInputElement>) => {
@@ -82,13 +45,8 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 		inputRef.current?.focus();
 	}, []);
 
-	const handleLoadMore = useCallback(() => {
-		setStart((prev) => prev + PAGE_SIZE);
-	}, []);
-
-	const total = list.data?.total ?? 0;
 	const displayUsers = isSearchMode ? (search.data?.users ?? []) : allUsers;
-	const hasMore = !isSearchMode && total > 0 && start + PAGE_SIZE < total;
+	const hasMore = !isSearchMode && list.hasNextPage;
 
 	if (!isSearchMode && list.isPending && allUsers.length === 0) {
 		return <UsersListSkeleton />;
@@ -152,7 +110,7 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 				<div className={styles.list}>
 					{displayUsers.map((user) => (
 						<div key={user.uuid} className={styles.card}>
-							<UserRow user={user} onClick={() => onSelectUser(user)} />
+							<UserRow user={user} onClick={() => handleSelectUser(user)} />
 						</div>
 					))}
 				</div>
@@ -162,10 +120,10 @@ const UserListView: FC<UserListViewProps> = ({ onSelectUser }) => {
 				<button
 					type="button"
 					className={styles.loadMore}
-					onClick={handleLoadMore}
-					disabled={list.isPending}
+					onClick={() => list.fetchNextPage()}
+					disabled={list.isFetchingNextPage}
 				>
-					{list.isPending ? (
+					{list.isFetchingNextPage ? (
 						<SpinnerIcon size={12} color="var(--v2-text-secondary)" />
 					) : (
 						t("admin.users.loadMore")

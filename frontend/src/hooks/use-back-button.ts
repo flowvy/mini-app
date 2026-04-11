@@ -1,0 +1,63 @@
+import { useLocation, useRouter } from "@tanstack/react-router";
+import { backButton } from "@telegram-apps/sdk-react";
+/**
+ * Global Telegram BackButton hook — shows/hides based on route depth.
+ * Call once in AppShell. On tab routes the button is hidden;
+ * on drill-down routes it navigates back via router history.
+ */
+import { useEffect } from "react";
+
+const TAB_PATHS = new Set([
+	"/",
+	"/pulse",
+	"/devices",
+	"/support",
+	"/admin/dashboard",
+	"/admin/users",
+	"/admin/broadcast",
+	"/admin/settings",
+]);
+
+export function useBackButton(): void {
+	const location = useLocation();
+	const router = useRouter();
+	const isTabRoute = TAB_PATHS.has(location.pathname);
+	const fallback = location.pathname.startsWith("/admin") ? "/admin/dashboard" : "/";
+
+	useEffect(() => {
+		if (isTabRoute) {
+			try {
+				if (backButton.hide.isAvailable()) backButton.hide();
+			} catch {
+				/* non-critical */
+			}
+			return;
+		}
+
+		const handleBack = () => {
+			if (router.history.canGoBack()) {
+				router.history.back();
+			} else {
+				void router.navigate({ to: fallback });
+			}
+		};
+
+		try {
+			if (backButton.mount.isAvailable()) backButton.mount();
+			if (backButton.show.isAvailable()) backButton.show();
+			backButton.onClick(handleBack);
+		} catch {
+			/* non-critical — outside Telegram environment */
+			return;
+		}
+
+		return () => {
+			try {
+				backButton.offClick(handleBack);
+				if (backButton.hide.isAvailable()) backButton.hide();
+			} catch {
+				/* non-critical */
+			}
+		};
+	}, [isTabRoute, router, fallback]);
+}

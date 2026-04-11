@@ -5,7 +5,11 @@ import { createRootRoute, createRoute, createRouter } from "@tanstack/react-rout
 import { AppShell } from "./components/layout/app-shell.tsx";
 import { AdminBroadcast } from "./pages/admin/broadcast.tsx";
 import { AdminDashboard } from "./pages/admin/dashboard.tsx";
+import { AdminBrandingConfig } from "./pages/admin/settings-branding.tsx";
+import { AdminKumaConfig } from "./pages/admin/settings-kuma.tsx";
+import { AdminWelcomeConfig } from "./pages/admin/settings-welcome.tsx";
 import { AdminSettings } from "./pages/admin/settings.tsx";
+import { AdminUserDetailPage } from "./pages/admin/user-detail-page.tsx";
 import { AdminUsers } from "./pages/admin/users.tsx";
 import { Devices } from "./pages/devices.tsx";
 import { Home } from "./pages/home.tsx";
@@ -52,6 +56,12 @@ const adminUsersRoute = createRoute({
 	component: AdminUsers,
 });
 
+const adminUserDetailRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/users/$userId",
+	component: AdminUserDetailPage,
+});
+
 const adminBroadcastRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/broadcast",
@@ -64,6 +74,24 @@ const adminSettingsRoute = createRoute({
 	component: AdminSettings,
 });
 
+const adminSettingsKumaRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/kuma",
+	component: AdminKumaConfig,
+});
+
+const adminSettingsBrandingRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/branding",
+	component: AdminBrandingConfig,
+});
+
+const adminSettingsWelcomeRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/welcome",
+	component: AdminWelcomeConfig,
+});
+
 const routeTree = rootRoute.addChildren([
 	homeRoute,
 	pulseRoute,
@@ -71,8 +99,12 @@ const routeTree = rootRoute.addChildren([
 	supportRoute,
 	adminDashboardRoute,
 	adminUsersRoute,
+	adminUserDetailRoute,
 	adminBroadcastRoute,
 	adminSettingsRoute,
+	adminSettingsKumaRoute,
+	adminSettingsBrandingRoute,
+	adminSettingsWelcomeRoute,
 ]);
 
 export const router = createRouter({

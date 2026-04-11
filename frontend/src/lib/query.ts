@@ -18,7 +18,8 @@ export const queryKeys = {
 	nodes: ["nodes"] as const,
 	pulse: ["pulse"] as const,
 	adminDashboard: ["admin", "dashboard"] as const,
-	adminUsers: (start: number) => ["admin", "users", start] as const,
+	adminUsers: ["admin", "users", "list"] as const,
+	adminUser: (uuid: string) => ["admin", "users", "detail", uuid] as const,
 	adminUsersSearch: (q: string) => ["admin", "users", "search", q] as const,
 	adminSettings: ["admin", "settings"] as const,
 };

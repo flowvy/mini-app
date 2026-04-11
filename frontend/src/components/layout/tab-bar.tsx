@@ -50,7 +50,9 @@ export function TabBar({ compact }: TabBarProps) {
 	const userTabs = showPulse ? USER_TABS : USER_TABS.filter((tab) => tab.to !== "/pulse");
 	const tabs = mode === "admin" ? ADMIN_TABS : userTabs;
 
-	const activeIndex = tabs.findIndex((tab) => tab.to === location.pathname);
+	const isActiveTab = (tabTo: string) =>
+		tabTo === "/" ? location.pathname === "/" : location.pathname.startsWith(tabTo);
+	const activeIndex = tabs.findIndex((tab) => isActiveTab(tab.to));
 	const pillStyle =
 		activeIndex >= 0
 			? {
@@ -77,12 +79,12 @@ export function TabBar({ compact }: TabBarProps) {
 			<div className={styles.pill} style={pillStyle} />
 			{tabs.map((tab, index) => {
 				const Icon = tab.icon;
-				const isActive = tab.to === location.pathname;
+				const isActive = isActiveTab(tab.to);
 				return (
 					<Link
 						key={tab.to}
 						to={tab.to}
-						activeOptions={{ exact: true }}
+						activeOptions={{ exact: tab.to === "/" }}
 						className={`${styles.tab} ${isActive ? styles.selected : ""}`}
 						onClick={() => handleClick(index)}
 					>

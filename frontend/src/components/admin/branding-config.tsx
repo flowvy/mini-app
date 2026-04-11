@@ -1,6 +1,7 @@
+import { useBlocker } from "@tanstack/react-router";
 /** Branding sub-screen — app name, logo URL, save. */
 import { ArrowLeft } from "lucide-react";
-import { type FC, useCallback, useEffect, useState } from "react";
+import { type FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import ss from "../../pages/admin/settings.module.css";
@@ -26,7 +27,6 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings, onBack }) =>
 	const [appName, setAppName] = useState(settings.appName ?? "");
 	const [logoUrl, setLogoUrl] = useState(settings.logoUrl ?? "");
 	const [saved, setSaved] = useState(false);
-	const [showDiscard, setShowDiscard] = useState(false);
 
 	const updateMutation = useUpdateSettings();
 
@@ -34,20 +34,17 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings, onBack }) =>
 	const initLogoUrl = settings.logoUrl ?? "";
 	const dirty = appName !== initAppName || logoUrl !== initLogoUrl;
 
+	const blocker = useBlocker({
+		shouldBlockFn: () => dirty,
+		withResolver: true,
+	});
+
 	useEffect(() => {
 		if (saved) {
 			const timer = setTimeout(() => setSaved(false), 2000);
 			return () => clearTimeout(timer);
 		}
 	}, [saved]);
-
-	const handleBack = useCallback(() => {
-		if (dirty) {
-			setShowDiscard(true);
-		} else {
-			onBack();
-		}
-	}, [dirty, onBack]);
 
 	const handleSave = async () => {
 		await updateMutation.mutateAsync({
@@ -60,7 +57,7 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings, onBack }) =>
 	return (
 		<div className={ss.page}>
 			<div className={ss.subHeader}>
-				<button type="button" className={ss.backBtn} onClick={handleBack}>
+				<button type="button" className={ss.backBtn} onClick={onBack}>
 					<ArrowLeft size={16} />
 				</button>
 				<h1 className={ss.headerTitle}>{t("settings.branding.title")}</h1>
@@ -100,12 +97,12 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings, onBack }) =>
 			/>
 
 			<ConfirmDialog
-				open={showDiscard}
+				open={blocker.status === "blocked"}
 				title={t("settings.branding.discardTitle")}
 				confirmLabel={t("settings.branding.discardConfirm")}
 				cancelLabel={t("settings.branding.discardCancel")}
-				onConfirm={onBack}
-				onCancel={() => setShowDiscard(false)}
+				onConfirm={() => blocker.proceed?.()}
+				onCancel={() => blocker.reset?.()}
 			>
 				<p>{t("settings.branding.discardBody")}</p>
 			</ConfirmDialog>

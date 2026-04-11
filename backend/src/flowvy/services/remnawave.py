@@ -112,6 +112,10 @@ class RemnawaveClient:
         """Fetch paginated user list (``GET /api/users``)."""
         return await self._get(f"/api/users?size={size}&start={start}")
 
+    async def get_user_by_uuid(self, uuid: str) -> dict:
+        """Fetch single user by UUID (``GET /api/users/{uuid}``)."""
+        return await self._get(f"/api/users/{uuid}")
+
     async def search_user_by_username(
         self,
         username: str,

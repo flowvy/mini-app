@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, status
 
 from flowvy.api.routes.admin.settings import ALLOWED_MIME, MAX_FILE_SIZE
 from flowvy.api.routes.debug import check_debug
-from flowvy.schemas.admin_users import AdminUsersResponse
+from flowvy.schemas.admin_users import AdminUserResponse, AdminUsersResponse
 from flowvy.schemas.provider_settings import (
     KumaTestResponse,
     ProviderSettingsPatch,
@@ -70,6 +70,74 @@ async def debug_search_users(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Remnawave unavailable: {exc.detail}",
+        ) from exc
+
+
+@router.get("/users/{uuid}", response_model=AdminUserResponse)
+async def debug_admin_user(
+    uuid: str,
+    request: Request,
+    service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
+) -> AdminUserResponse:
+    """Fetch single admin user without Telegram auth. DEBUG mode only."""
+    check_debug(request)
+    try:
+        return await service.get_user(uuid)
+    except RemnawaveError as exc:
+        if exc.status == 404:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            ) from exc
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Remnawave unavailable: {exc.detail}",
+        ) from exc
+
+
+@router.post("/users/{uuid}/{action}")
+async def debug_user_action(
+    uuid: str,
+    action: str,
+    request: Request,
+    service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
+) -> dict:
+    """Proxy user actions without Telegram auth. DEBUG mode only."""
+    check_debug(request)
+    actions = {
+        "enable": service.enable_user,
+        "disable": service.disable_user,
+        "reset-traffic": service.reset_user_traffic,
+        "revoke": service.revoke_user_subscription,
+    }
+    handler = actions.get(action)
+    if not handler:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Unknown action: {action}")
+    try:
+        await handler(uuid)
+        return {"ok": True}
+    except RemnawaveError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Remnawave error: {exc.detail}",
+        ) from exc
+
+
+@router.delete("/users/{uuid}")
+async def debug_delete_user(
+    uuid: str,
+    request: Request,
+    service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
+) -> dict:
+    """Delete user without Telegram auth. DEBUG mode only."""
+    check_debug(request)
+    try:
+        await service.delete_user(uuid)
+        return {"ok": True}
+    except RemnawaveError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Remnawave error: {exc.detail}",
         ) from exc
 
 

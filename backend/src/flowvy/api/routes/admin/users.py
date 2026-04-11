@@ -6,7 +6,7 @@ from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, HTTPException, Query, status
 
 from flowvy.api.routes.admin.deps import CurrentAdmin
-from flowvy.schemas.admin_users import AdminUsersResponse
+from flowvy.schemas.admin_users import AdminUserResponse, AdminUsersResponse
 from flowvy.services.admin_users import AdminUsersService
 from flowvy.services.remnawave import RemnawaveError
 
@@ -46,6 +46,27 @@ async def search_users(
     except RemnawaveError as exc:
         if exc.status == 404:
             return AdminUsersResponse(users=[], total=0)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Remnawave unavailable: {exc.detail}",
+        ) from exc
+
+
+@router.get("/users/{uuid}", response_model=AdminUserResponse)
+async def get_user(
+    uuid: str,
+    _admin: CurrentAdmin,
+    service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
+) -> AdminUserResponse:
+    """Return single user by UUID."""
+    try:
+        return await service.get_user(uuid)
+    except RemnawaveError as exc:
+        if exc.status == 404:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            ) from exc
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Remnawave unavailable: {exc.detail}",

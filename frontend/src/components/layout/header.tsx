@@ -32,6 +32,9 @@ const PAGE_META: Record<string, PageMeta> = {
 	"/admin/users": { title: "common.header.users", icon: Users },
 	"/admin/broadcast": { title: "common.header.broadcast", icon: Megaphone },
 	"/admin/settings": { title: "common.header.settings", icon: Settings },
+	"/admin/settings/kuma": { title: "common.header.settings", icon: Settings },
+	"/admin/settings/branding": { title: "common.header.settings", icon: Settings },
+	"/admin/settings/welcome": { title: "common.header.settings", icon: Settings },
 };
 
 export function Header() {
@@ -42,7 +45,9 @@ export function Header() {
 	const location = useLocation();
 	const isAdmin = user.role === "admin";
 
-	const meta = PAGE_META[location.pathname];
+	const meta =
+		PAGE_META[location.pathname] ??
+		Object.entries(PAGE_META).find(([path]) => location.pathname.startsWith(`${path}/`))?.[1];
 
 	const handleToggle = (next: AppMode) => {
 		if (next === mode) return;

@@ -37,6 +37,12 @@ class AdminUsersService:
         users = [_to_response(raw, squad_map) for raw in data.get("users", [])]
         return AdminUsersResponse(users=users, total=data.get("total", 0))
 
+    async def get_user(self, uuid: str) -> AdminUserResponse:
+        """Fetch single user from Remnawave + resolve squad."""
+        raw = await self._remnawave.get_user_by_uuid(uuid)
+        squad_map = await self._get_external_squads_map()
+        return _to_response(raw, squad_map)
+
     async def search_user(self, query: str) -> AdminUsersResponse:
         """Search user by query — auto-detects type."""
         query = query.strip()

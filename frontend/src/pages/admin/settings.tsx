@@ -1,10 +1,8 @@
-/** Admin Settings page — four views: main, kuma config, branding, welcome. */
+/** Admin Settings page — main list, sub-screens are separate routes. */
+import { useNavigate } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
-import { type FC, useState } from "react";
+import type { FC } from "react";
 import { useTranslation } from "react-i18next";
-import { BrandingConfig } from "../../components/admin/branding-config.tsx";
-import { KumaConfig } from "../../components/admin/kuma-config.tsx";
-import { WelcomeConfig } from "../../components/admin/welcome-config.tsx";
 import {
 	FormRow,
 	FormRowSeparator,
@@ -16,8 +14,6 @@ import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { Toggle } from "../../components/ui/toggle.tsx";
 import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import styles from "./settings.module.css";
-
-type View = "settings" | "kuma" | "branding" | "welcome";
 
 interface SettingsToolRowProps {
 	label: string;
@@ -52,7 +48,7 @@ const SettingsToolRow: FC<SettingsToolRowProps> = ({
 
 export const AdminSettings: FC = () => {
 	const { t } = useTranslation();
-	const [view, setView] = useState<View>("settings");
+	const navigate = useNavigate();
 	const { settings, isPending, error } = useAdminSettings();
 	const updateMutation = useUpdateSettings();
 
@@ -66,16 +62,6 @@ export const AdminSettings: FC = () => {
 				<p style={{ color: "var(--v2-text-negative)", fontSize: 12 }}>{t("settings.error")}</p>
 			</div>
 		);
-	}
-
-	if (view === "kuma") {
-		return <KumaConfig settings={settings} onBack={() => setView("settings")} />;
-	}
-	if (view === "branding") {
-		return <BrandingConfig settings={settings} onBack={() => setView("settings")} />;
-	}
-	if (view === "welcome") {
-		return <WelcomeConfig settings={settings} onBack={() => setView("settings")} />;
 	}
 
 	const handleToggleKuma = (enabled: boolean) => {
@@ -103,7 +89,7 @@ export const AdminSettings: FC = () => {
 							desc={t("settings.configureDesc")}
 							value={kumaConfigured ? t("settings.configured") : undefined}
 							valuePositive={!!kumaConfigured}
-							onClick={() => setView("kuma")}
+							onClick={() => navigate({ to: "/admin/settings/kuma" })}
 						/>
 					</>
 				)}
@@ -116,7 +102,7 @@ export const AdminSettings: FC = () => {
 					label={t("settings.brandingRow")}
 					desc={t("settings.brandingRowDesc")}
 					value={settings.appName || undefined}
-					onClick={() => setView("branding")}
+					onClick={() => navigate({ to: "/admin/settings/branding" })}
 				/>
 			</FormSectionCard>
 
@@ -125,7 +111,7 @@ export const AdminSettings: FC = () => {
 				<SettingsToolRow
 					label={t("settings.bot.welcomeRow")}
 					desc={t("settings.bot.welcomeRowDesc")}
-					onClick={() => setView("welcome")}
+					onClick={() => navigate({ to: "/admin/settings/welcome" })}
 				/>
 			</FormSectionCard>
 
