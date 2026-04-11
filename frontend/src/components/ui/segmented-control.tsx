@@ -1,3 +1,5 @@
+import { useCallback } from "react";
+import { useSwipe } from "../../hooks/use-swipe.ts";
 import styles from "./segmented-control.module.css";
 
 export interface SegmentedControlOption {
@@ -12,8 +14,34 @@ export interface SegmentedControlProps {
 }
 
 export function SegmentedControl({ options, value, onChange }: SegmentedControlProps) {
+	const activeIndex = options.findIndex((o) => o.key === value);
+
+	const handleSwipeLeft = useCallback(() => {
+		if (activeIndex < options.length - 1) {
+			onChange(options[activeIndex + 1].key);
+		}
+	}, [activeIndex, options, onChange]);
+
+	const handleSwipeRight = useCallback(() => {
+		if (activeIndex > 0) {
+			onChange(options[activeIndex - 1].key);
+		}
+	}, [activeIndex, options, onChange]);
+
+	const { onTouchStart, onTouchEnd } = useSwipe({
+		onSwipeLeft: handleSwipeLeft,
+		onSwipeRight: handleSwipeRight,
+	});
+
 	return (
-		<div className={styles.root}>
+		<div className={styles.root} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+			<div
+				className={styles.pill}
+				style={{
+					width: `calc((100% - 6px) / ${options.length})`,
+					transform: `translateX(${activeIndex * 100}%)`,
+				}}
+			/>
 			{options.map((opt) => (
 				<button
 					key={opt.key}

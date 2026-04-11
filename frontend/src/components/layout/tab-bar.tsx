@@ -1,7 +1,4 @@
-/**
- * Bottom tab bar — renders user or admin tabs based on current mode.
- */
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 import {
 	Activity,
@@ -13,6 +10,7 @@ import {
 	Smartphone,
 	Users,
 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMode } from "../../contexts/mode-context.tsx";
 import { hapticImpact } from "../../lib/haptics.ts";
@@ -47,24 +45,50 @@ export function TabBar({ compact }: TabBarProps) {
 	const { t } = useTranslation();
 	const { mode } = useMode();
 	const user = useCurrentUser();
+	const location = useLocation();
 	const showPulse = user.features?.pulse ?? false;
-	const userTabs = showPulse ? USER_TABS : USER_TABS.filter((t) => t.to !== "/pulse");
+	const userTabs = showPulse ? USER_TABS : USER_TABS.filter((tab) => tab.to !== "/pulse");
 	const tabs = mode === "admin" ? ADMIN_TABS : userTabs;
+
+	const activeIndex = tabs.findIndex((tab) => tab.to === location.pathname);
+	const pillStyle =
+		activeIndex >= 0
+			? {
+					width: `calc((100% - 4px) / ${tabs.length})`,
+					transform: `translateX(${activeIndex * 100}%)`,
+				}
+			: { opacity: 0 };
+
+	const [bouncingIndex, setBouncingIndex] = useState<number | null>(null);
+
+	const handleClick = useCallback((index: number) => {
+		hapticImpact("light");
+		setBouncingIndex(index);
+	}, []);
+
+	useEffect(() => {
+		if (bouncingIndex === null) return;
+		const timer = setTimeout(() => setBouncingIndex(null), 400);
+		return () => clearTimeout(timer);
+	}, [bouncingIndex]);
 
 	return (
 		<nav className={`${styles.tabBar} ${compact ? styles.compact : ""}`}>
-			{tabs.map((tab) => {
+			<div className={styles.pill} style={pillStyle} />
+			{tabs.map((tab, index) => {
 				const Icon = tab.icon;
+				const isActive = tab.to === location.pathname;
 				return (
 					<Link
 						key={tab.to}
 						to={tab.to}
 						activeOptions={{ exact: true }}
-						className={styles.tab}
-						activeProps={{ className: styles.selected }}
-						onClick={() => hapticImpact("light")}
+						className={`${styles.tab} ${isActive ? styles.selected : ""}`}
+						onClick={() => handleClick(index)}
 					>
-						<Icon size={26} className={styles.icon} />
+						<span className={`${styles.icon} ${bouncingIndex === index ? styles.bouncing : ""}`}>
+							<Icon size={26} />
+						</span>
 						<span className={styles.label}>{t(tab.label)}</span>
 					</Link>
 				);
