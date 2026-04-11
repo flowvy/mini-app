@@ -16,11 +16,11 @@
 	z-index: 100;
 
 	/* Light glass (default) */
-	background: rgba(255, 255, 255, 0.72);
-	backdrop-filter: blur(2px) saturate(360%);
-	-webkit-backdrop-filter: blur(2px) saturate(360%);
-	border: 0.5px solid rgba(0, 0, 0, 0.06);
-	box-shadow: inset 0 0 8px 0 rgba(220, 220, 220, 0.2), 0 0 10px 0 rgba(220, 220, 220, 0.82);
+	background: var(--v2-glass-bg-bar);
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+	border: 0.5px solid var(--v2-glass-border);
+	box-shadow: var(--v2-glass-shadow-bar), var(--v2-glass-highlight);
 
 	/* Selected tab background — light accent */
 	--tab-selected-bg: rgba(58, 177, 118, 0.095);
@@ -34,18 +34,18 @@
 /* Dark: system preference (before JS sets data-theme) */
 @media (prefers-color-scheme: dark) {
 	:root:not([data-theme]) .tabBar {
-		background: rgba(33, 33, 33, 0.72);
-		border-color: rgba(255, 255, 255, 0.08);
-		box-shadow: inset 0 0 8px 0 rgba(40, 40, 40, 0.2), 0 0 10px 0 rgba(0, 0, 0, 0.5);
+		background: var(--v2-glass-bg-bar);
+		border-color: var(--v2-glass-border);
+		box-shadow: var(--v2-glass-shadow-bar), var(--v2-glass-highlight);
 		--tab-selected-bg: rgba(73, 221, 147, 0.095);
 	}
 }
 
 /* Dark: explicit */
 :root[data-theme="dark"] .tabBar {
-	background: rgba(33, 33, 33, 0.72);
-	border-color: rgba(255, 255, 255, 0.08);
-	box-shadow: inset 0 0 8px 0 rgba(40, 40, 40, 0.2), 0 0 10px 0 rgba(0, 0, 0, 0.5);
+	background: var(--v2-glass-bg-bar);
+	border-color: var(--v2-glass-border);
+	box-shadow: var(--v2-glass-shadow-bar), var(--v2-glass-highlight);
 	--tab-selected-bg: rgba(73, 221, 147, 0.095);
 }
 

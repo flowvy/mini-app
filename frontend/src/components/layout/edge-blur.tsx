@@ -12,13 +12,6 @@ export function EdgeBlur({ side }: EdgeBlurProps) {
 
 	return (
 		<div className={containerClass}>
-			<div className={`${styles.layer} ${styles.layer1}`} />
-			<div className={`${styles.layer} ${styles.layer2}`} />
-			<div className={`${styles.layer} ${styles.layer3}`} />
-			<div className={`${styles.layer} ${styles.layer4}`} />
-			<div className={`${styles.layer} ${styles.layer5}`} />
-			<div className={`${styles.layer} ${styles.layer6}`} />
-			<div className={`${styles.layer} ${styles.layer7}`} />
 			<div className={styles.cap} />
 		</div>
 	);
