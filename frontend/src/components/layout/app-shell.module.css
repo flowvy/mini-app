@@ -20,3 +20,13 @@
 	overscroll-behavior-y: contain;
 	touch-action: pan-y;
 }
+
+/* Ensure scroll container is always scrollable (Telegram Sticky App pattern).
+   Without this, WKWebView treats short pages as non-scrollable and
+   interprets swipe-down as a system "close/minimize" gesture. */
+.content::after {
+	content: "";
+	display: block;
+	height: 1px;
+	width: 100%;
+}

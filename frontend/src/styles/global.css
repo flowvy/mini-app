@@ -30,6 +30,7 @@
 html,
 body {
 	height: 100%;
+	overflow: hidden;
 	background: var(--v2-floor-0);
 	color: var(--v2-text-primary);
 	font-family: var(--font-sans);
@@ -52,11 +53,10 @@ html.popup-window[data-win10] body {
 	background: var(--v2-floor-0);
 }
 
-/* Text is not selectable, horizontal overflow blocked */
+/* Text is not selectable */
 body {
 	user-select: none;
 	-webkit-user-select: none;
-	overflow-x: hidden;
 }
 
 #root {

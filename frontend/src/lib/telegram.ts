@@ -29,6 +29,19 @@ function setTheme(isDark: boolean): void {
 	document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
 }
 
+function syncNativeColors(isDark: boolean): void {
+	try {
+		if (miniApp.setHeaderColor.isAvailable()) {
+			miniApp.setHeaderColor(isDark ? "#171717" : "#f2f2f2");
+		}
+		if (miniApp.setBackgroundColor.isAvailable()) {
+			miniApp.setBackgroundColor(isDark ? "#171717" : "#f2f2f2");
+		}
+	} catch {
+		/* non-critical */
+	}
+}
+
 export function initTelegramApp(): void {
 	if (initialized) {
 		return;
@@ -58,7 +71,11 @@ export function initTelegramApp(): void {
 			miniApp.mountSync();
 		}
 		setTheme(miniApp.isDark());
-		miniApp.isDark.sub(setTheme);
+		syncNativeColors(miniApp.isDark());
+		miniApp.isDark.sub((isDark) => {
+			setTheme(isDark);
+			syncNativeColors(isDark);
+		});
 		miniApp.ready();
 	} catch {
 		/* non-critical */
@@ -90,6 +107,7 @@ export function initTelegramApp(): void {
 	} catch {
 		/* non-critical */
 	}
+
 }
 
 export function getRawInitData(): string | undefined {
