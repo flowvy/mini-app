@@ -66,7 +66,7 @@ flowvy/
 │       │           ├── deps.py      # get_current_admin, CurrentAdmin
 │       │           ├── dashboard.py  # GET /api/admin/dashboard
 │       │           ├── settings.py  # GET/PATCH /api/admin/settings, kuma test
-│       │           └── users.py     # GET /api/admin/users, search
+│       │           └── users.py     # GET /api/admin/users, users/all, search, actions
 │       ├── services/
 │       │   ├── user.py
 │       │   ├── remnawave.py      # RemnawaveClient (+get_metadata, +system stats)
@@ -126,7 +126,8 @@ flowvy/
 │       │   ├── use-nodes.ts         # TanStack Query → /api/nodes
 │       │   ├── use-pulse.ts         # TanStack Query → /api/pulse
 │       │   ├── use-admin-settings.ts # TanStack Query → /api/admin/settings
-│       │   └── use-admin-users.ts   # TanStack Query → /api/admin/users
+│       │   ├── use-admin-users.ts   # TanStack Query → /api/admin/users (detail, search, mutations)
+│       │   └── use-all-admin-users.ts # TanStack Query → /api/admin/users/all (full list, 30s staleTime)
 │       ├── contexts/
 │       │   └── mode-context.tsx  # user/admin mode switch
 │       ├── components/
@@ -134,7 +135,7 @@ flowvy/
 │       │   ├── home/             # HeroCard, DetailSections
 │       │   ├── devices/          # DeviceRow, PlatformIcon
 │       │   ├── pulse/            # StatusBanner, HeartbeatBar, MonitorRow, MonitorGroup
-│       │   ├── admin/            # KumaConfig, UserRow
+│       │   ├── admin/            # KumaConfig, UserRow, FilterChips, VirtualizedUserList
 │       │   └── layout/           # AppShell, Header, TabBar
 │       ├── pages/
 │       │   ├── home.tsx, pulse.tsx, devices.tsx, support.tsx
@@ -238,8 +239,9 @@ Our FastAPI does NOT proxy Remnawave 1:1. It aggregates data per screen.
 | Devices | `GET /api/me/devices` | DB read → `hwid/devices/{userUuid}` (fallback: `by-telegram-id` + DB upsert) |
 | Pulse | `GET /api/pulse` | Kuma: `status-page/{slug}` + `heartbeat/{slug}` (cached 60s) |
 | Admin Dashboard | `GET /api/admin/dashboard` | `system/stats` + `system/stats/bandwidth` (cached 30s) + bot metrics (DB + Redis) |
-| Admin Users | `GET /api/admin/users` | `users?size=N&start=N` + `external-squads` (cached) |
-| Admin Users Search | `GET /api/admin/users/search?q=` | `by-username`, `by-telegram-id`, or `by-email` + `external-squads` (cached) |
+| Admin Users | `GET /api/admin/users/all` | `users?size=500&start=N` paged until total reached + `external-squads` (cached). Full list cached in TanStack Query (30s staleTime); filtering, search and sort happen client-side with virtualized rendering. |
+| Admin Users (legacy paged) | `GET /api/admin/users?size=&start=` | `users?size=N&start=N` + `external-squads` (cached). Kept for compatibility, not used by the Mini App list screen. |
+| Admin Users Search | `GET /api/admin/users/search?q=` | `by-username`, `by-telegram-id`, or `by-email` + `external-squads` (cached). Kept for compatibility — the Mini App now filters the cached `/all` response instead. |
 | Admin User Actions | `POST /api/admin/users/{uuid}/{action}` | `users/{uuid}/actions/{action}` |
 | Admin User Delete | `DELETE /api/admin/users/{uuid}` | `DELETE users/{uuid}` |
 | Admin Settings | `GET/PATCH /api/admin/settings` | `system/metadata` (version) |
@@ -353,7 +355,9 @@ export const queryKeys = {
   nodes: ['nodes'] as const,
   pulse: ['pulse'] as const,
   adminDashboard: ['admin', 'dashboard'] as const,
-  adminUsers: (start: number) => ['admin', 'users', start] as const,
+  adminUsers: ['admin', 'users', 'list'] as const,
+  adminUsersAll: ['admin', 'users', 'all'] as const,
+  adminUser: (uuid: string) => ['admin', 'users', 'detail', uuid] as const,
   adminUsersSearch: (q: string) => ['admin', 'users', 'search', q] as const,
   adminSettings: ['admin', 'settings'] as const,
 };
@@ -368,7 +372,7 @@ export const queryKeys = {
 | Nodes | 30s | 5 min | Shared, changes slowly |
 | Pulse | 60s | 5 min | Kuma status, matches backend cache TTL |
 | Admin dashboard | 30s | 5 min | Matches backend cache TTL |
-| Admin users | 0 | 5 min | Admin manages, needs fresh |
+| Admin users (all) | 30s | 5 min | Full list loaded once, filtered client-side; 30s balances freshness vs. list/detail/back navigation |
 
 ### Invalidation After Mutations
 

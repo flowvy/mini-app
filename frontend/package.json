@@ -13,6 +13,7 @@
 	"dependencies": {
 		"@tanstack/react-query": "^5.96.2",
 		"@tanstack/react-router": "^1.168.10",
+		"@tanstack/react-virtual": "^3.13.23",
 		"@telegram-apps/sdk-react": "^3.0.0",
 		"geist": "^1.7.0",
 		"i18next": "^26.0.3",

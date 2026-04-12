@@ -1,0 +1,28 @@
+.list {
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.inner {
+	position: relative;
+	width: 100%;
+}
+
+.item {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	contain: layout style paint;
+}
+
+.card {
+	background: var(--v2-bg-primary);
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-md);
+	padding: 10px 14px;
+	height: 58px;
+	box-sizing: border-box;
+}

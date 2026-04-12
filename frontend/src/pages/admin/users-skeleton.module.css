@@ -1,5 +1,31 @@
 /* ── Users Skeleton ── */
 
+.searchBlock {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-bottom: 12px;
+}
+
+.chipsRow {
+	display: flex;
+	gap: 6px;
+	overflow: hidden;
+}
+
+.list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.card {
+	background: var(--v2-bg-primary);
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-md);
+	padding: 10px 14px;
+}
+
 .skeletonRow {
 	display: flex;
 	align-items: center;

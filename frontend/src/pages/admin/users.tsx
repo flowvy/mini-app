@@ -1,58 +1,93 @@
 import { useNavigate } from "@tanstack/react-router";
 import { UserX, X } from "lucide-react";
-import { type FC, type KeyboardEvent, useCallback, useRef, useState } from "react";
+import { type FC, useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { UserRow } from "../../components/admin/user-row.tsx";
-import { SpinnerIcon } from "../../components/ui/spinner-icon.tsx";
-import { useAdminUsers, useSearchUser } from "../../hooks/use-admin-users.ts";
+import { FILTER_KEYS, FilterChips, type FilterKey } from "../../components/admin/filter-chips.tsx";
+import { VirtualizedUserList } from "../../components/admin/virtualized-user-list.tsx";
+import { useAllAdminUsers } from "../../hooks/use-all-admin-users.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
 import { UsersListSkeleton } from "./users-skeleton.tsx";
 import styles from "./users.module.css";
 
+const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
+
+function isOnline(onlineAt: string | null | undefined): boolean {
+	if (!onlineAt) return false;
+	return Date.now() - new Date(onlineAt).getTime() < ONLINE_THRESHOLD_MS;
+}
+
+function emptyCounts(): Record<FilterKey, number> {
+	return FILTER_KEYS.reduce(
+		(acc, k) => {
+			acc[k] = 0;
+			return acc;
+		},
+		{} as Record<FilterKey, number>,
+	);
+}
+
+function onlineTs(user: AdminUser): number {
+	return user.userTraffic.onlineAt ? new Date(user.userTraffic.onlineAt).getTime() : 0;
+}
+
 export const AdminUsers: FC = () => {
 	const navigate = useNavigate();
-	const [searchInput, setSearchInput] = useState("");
-	const [searchQuery, setSearchQuery] = useState("");
-	const inputRef = useRef<HTMLInputElement>(null);
 	const { t } = useTranslation();
+	const { data, isPending, error } = useAllAdminUsers();
+	const [searchInput, setSearchInput] = useState("");
+	const [filter, setFilter] = useState<FilterKey>("ALL");
+	const inputRef = useRef<HTMLInputElement>(null);
 
-	const list = useAdminUsers();
-	const search = useSearchUser(searchQuery);
+	const allUsers = data?.users;
 
-	const isSearchMode = searchQuery.length > 0;
-	const allUsers = list.data?.pages.flatMap((p) => p.users) ?? [];
+	const counts = useMemo<Record<FilterKey, number>>(() => {
+		const c = emptyCounts();
+		if (!allUsers) return c;
+		for (const u of allUsers) {
+			c.ALL++;
+			if (u.status === "ACTIVE") c.ACTIVE++;
+			else if (u.status === "DISABLED") c.DISABLED++;
+			else if (u.status === "LIMITED") c.LIMITED++;
+			else if (u.status === "EXPIRED") c.EXPIRED++;
+			if (isOnline(u.userTraffic.onlineAt)) c.ONLINE++;
+		}
+		return c;
+	}, [allUsers]);
 
-	const handleSelectUser = useCallback(
-		(user: AdminUser) => {
-			navigate({ to: "/admin/users/$userId", params: { userId: user.uuid } });
+	const filtered = useMemo<AdminUser[]>(() => {
+		if (!allUsers) return [];
+		let list: AdminUser[] = allUsers;
+		if (filter === "ONLINE") list = list.filter((u) => isOnline(u.userTraffic.onlineAt));
+		else if (filter !== "ALL") list = list.filter((u) => u.status === filter);
+
+		const q = searchInput.trim().toLowerCase();
+		if (q) {
+			list = list.filter((u) => {
+				if (u.username.toLowerCase().includes(q)) return true;
+				if (u.tag?.toLowerCase().includes(q)) return true;
+				if (u.telegramId && String(u.telegramId).includes(q)) return true;
+				return false;
+			});
+		}
+
+		return [...list].sort((a, b) => onlineTs(b) - onlineTs(a));
+	}, [allUsers, filter, searchInput]);
+
+	const handleUserClick = useCallback(
+		(uuid: string) => {
+			navigate({ to: "/admin/users/$userId", params: { userId: uuid } });
 		},
 		[navigate],
 	);
 
-	const handleSearch = useCallback(
-		(e: KeyboardEvent<HTMLInputElement>) => {
-			if (e.key === "Enter") {
-				const q = searchInput.trim();
-				if (q) setSearchQuery(q);
-			}
-		},
-		[searchInput],
-	);
-
 	const handleClear = useCallback(() => {
 		setSearchInput("");
-		setSearchQuery("");
 		inputRef.current?.focus();
 	}, []);
 
-	const displayUsers = isSearchMode ? (search.data?.users ?? []) : allUsers;
-	const hasMore = !isSearchMode && list.hasNextPage;
+	if (isPending) return <UsersListSkeleton />;
 
-	if (!isSearchMode && list.isPending && allUsers.length === 0) {
-		return <UsersListSkeleton />;
-	}
-
-	if (!isSearchMode && list.error && allUsers.length === 0) {
+	if (error) {
 		return (
 			<div className={styles.page}>
 				<div className={styles.empty}>
@@ -64,71 +99,39 @@ export const AdminUsers: FC = () => {
 
 	return (
 		<div className={styles.page}>
-			<div className={styles.searchWrap}>
-				<input
-					ref={inputRef}
-					type="text"
-					value={searchInput}
-					onChange={(e) => setSearchInput(e.target.value)}
-					onKeyDown={handleSearch}
-					placeholder={t("admin.users.searchPlaceholder")}
-					className={styles.searchInput}
-				/>
-				{isSearchMode && (
-					<button
-						type="button"
-						className={styles.clearBtn}
-						onClick={handleClear}
-						aria-label={t("admin.users.clearSearchLabel")}
-					>
-						<X size={12} />
-					</button>
-				)}
+			<div className={styles.searchBlock}>
+				<div className={styles.searchWrap}>
+					<input
+						ref={inputRef}
+						type="text"
+						value={searchInput}
+						onChange={(e) => setSearchInput(e.target.value)}
+						placeholder={t("admin.users.searchPlaceholder")}
+						className={styles.searchInput}
+						aria-label={t("admin.users.searchLabel")}
+					/>
+					{searchInput && (
+						<button
+							type="button"
+							className={styles.clearBtn}
+							onClick={handleClear}
+							aria-label={t("admin.users.clearSearchLabel")}
+						>
+							<X size={12} />
+						</button>
+					)}
+				</div>
+				<FilterChips active={filter} onChange={setFilter} counts={counts} />
 			</div>
 
-			{isSearchMode && search.isPending && (
-				<div className={styles.empty}>
-					<SpinnerIcon size={24} color="var(--v2-text-tertiary)" />
-				</div>
-			)}
-
-			{isSearchMode && search.error && (
-				<div className={styles.empty}>
-					<span className={styles.emptyTitle}>{t("admin.users.searchFailed")}</span>
-				</div>
-			)}
-
-			{isSearchMode && !search.isPending && displayUsers.length === 0 && (
+			{filtered.length === 0 ? (
 				<div className={styles.empty}>
 					<UserX size={36} className={styles.emptyIcon} />
-					<span className={styles.emptyTitle}>{t("admin.users.notFound")}</span>
-					<span className={styles.emptyDesc}>{t("admin.users.notFoundDesc")}</span>
+					<span className={styles.emptyTitle}>{t("admin.users.empty.title")}</span>
+					<span className={styles.emptyDesc}>{t("admin.users.empty.description")}</span>
 				</div>
-			)}
-
-			{displayUsers.length > 0 && (
-				<div className={styles.list}>
-					{displayUsers.map((user) => (
-						<div key={user.uuid} className={styles.card}>
-							<UserRow user={user} onClick={() => handleSelectUser(user)} />
-						</div>
-					))}
-				</div>
-			)}
-
-			{hasMore && (
-				<button
-					type="button"
-					className={styles.loadMore}
-					onClick={() => list.fetchNextPage()}
-					disabled={list.isFetchingNextPage}
-				>
-					{list.isFetchingNextPage ? (
-						<SpinnerIcon size={12} color="var(--v2-text-secondary)" />
-					) : (
-						t("admin.users.loadMore")
-					)}
-				</button>
+			) : (
+				<VirtualizedUserList users={filtered} onUserClick={handleUserClick} />
 			)}
 		</div>
 	);

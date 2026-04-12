@@ -271,14 +271,24 @@
 			"comingSoon": "Coming soon"
 		},
 		"users": {
-			"title": "Users",
 			"error": "Failed to load users",
-			"searchPlaceholder": "Search by name, ID or email",
+			"searchPlaceholder": "Search by name, ID or tag",
+			"searchLabel": "Search users",
+			"listLabel": "Users list",
 			"clearSearchLabel": "Clear search",
-			"searchFailed": "Search failed",
-			"notFound": "User not found",
-			"notFoundDesc": "Try a different username, Telegram ID, or email",
-			"loadMore": "Load more"
+			"filter": {
+				"label": "Filter by status",
+				"all": "All",
+				"active": "Active",
+				"disabled": "Disabled",
+				"limited": "Limited",
+				"expired": "Expired",
+				"online": "Online"
+			},
+			"empty": {
+				"title": "No users found",
+				"description": "Try a different search or filter"
+			}
 		},
 		"userDetail": {
 			"accountInfo": "Account Info",

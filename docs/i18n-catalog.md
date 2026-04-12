@@ -178,15 +178,20 @@ Admin pages: users list, user detail, user actions, dashboard, broadcast.
 |-----|---------|------|---------|
 | admin.dashboard.comingSoon | `Coming soon` | pages/admin/dashboard.tsx:10 | stub page text |
 | admin.broadcast.comingSoon | `Coming soon` | pages/admin/broadcast.tsx:10 | stub page text |
-| admin.users.title | `Users` | pages/admin/users.tsx:112 | page header title |
-| admin.users.error | `Failed to load users` | pages/admin/users.tsx:103 | error message |
-| admin.users.searchPlaceholder | `Search by name, ID or email` | pages/admin/users.tsx:123 | input placeholder |
-| admin.users.clearSearchLabel | `Clear search` | pages/admin/users.tsx:131 | aria-label |
-| admin.users.searchFailed | `Search failed` | pages/admin/users.tsx:146 | error message |
-| admin.users.notFound | `User not found` | pages/admin/users.tsx:153 | empty state title |
-| admin.users.notFoundDesc | `Try a different username, Telegram ID, or email` | pages/admin/users.tsx:154 | empty state description |
-| admin.users.loadingMore | `Loading...` | pages/admin/users.tsx:175 | load more button loading |
-| admin.users.loadMore | `Load more` | pages/admin/users.tsx:175 | load more button label |
+| admin.users.error | `Failed to load users` | pages/admin/users.tsx | error message |
+| admin.users.searchPlaceholder | `Search by name, ID or tag` | pages/admin/users.tsx | input placeholder |
+| admin.users.searchLabel | `Search users` | pages/admin/users.tsx | aria-label on search input |
+| admin.users.listLabel | `Users list` | components/admin/virtualized-user-list.tsx | aria-label on `<ul>` |
+| admin.users.clearSearchLabel | `Clear search` | pages/admin/users.tsx | aria-label on clear button |
+| admin.users.empty.title | `No users found` | pages/admin/users.tsx | empty state title (after filter/search) |
+| admin.users.empty.description | `Try a different search or filter` | pages/admin/users.tsx | empty state description |
+| admin.users.filter.label | `Filter by status` | components/admin/filter-chips.tsx | aria-label on chip group |
+| admin.users.filter.all | `All` | components/admin/filter-chips.tsx | chip label |
+| admin.users.filter.active | `Active` | components/admin/filter-chips.tsx | chip label |
+| admin.users.filter.disabled | `Disabled` | components/admin/filter-chips.tsx | chip label |
+| admin.users.filter.limited | `Limited` | components/admin/filter-chips.tsx | chip label |
+| admin.users.filter.expired | `Expired` | components/admin/filter-chips.tsx | chip label |
+| admin.users.filter.online | `Online` | components/admin/filter-chips.tsx | chip label (online within 5 min) |
 | admin.userDetail.accountInfo | `Account Info` | components/admin/admin-user-detail.tsx:56 | section divider |
 | admin.userDetail.created | `Created` | components/admin/admin-user-detail.tsx:57 | row label |
 | admin.userDetail.expires | `Expires` | components/admin/admin-user-detail.tsx:59 | row label |
