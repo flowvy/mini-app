@@ -107,7 +107,6 @@ export function initTelegramApp(): void {
 	} catch {
 		/* non-critical */
 	}
-
 }
 
 export function getRawInitData(): string | undefined {

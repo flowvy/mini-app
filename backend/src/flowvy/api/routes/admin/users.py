@@ -52,6 +52,21 @@ async def search_users(
         ) from exc
 
 
+@router.get("/users/all", response_model=AdminUsersResponse)
+async def get_all_users(
+    _admin: CurrentAdmin,
+    service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
+) -> AdminUsersResponse:
+    """Return all users from Remnawave (batched internally)."""
+    try:
+        return await service.get_all_users()
+    except RemnawaveError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Remnawave unavailable: {exc.detail}",
+        ) from exc
+
+
 @router.get("/users/{uuid}", response_model=AdminUserResponse)
 async def get_user(
     uuid: str,

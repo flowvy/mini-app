@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
 
 from redis.asyncio import Redis
 
@@ -15,6 +17,8 @@ from flowvy.schemas.admin_users import (
 from flowvy.schemas.remnawave import RemnawaveUserData
 from flowvy.services.remnawave import RemnawaveClient
 
+logger = logging.getLogger(__name__)
+
 SQUADS_CACHE_KEY = "external_squads"
 SQUADS_CACHE_TTL = 300
 
@@ -25,6 +29,24 @@ class AdminUsersService:
     def __init__(self, remnawave: RemnawaveClient, redis: Redis) -> None:
         self._remnawave = remnawave
         self._redis = redis
+
+    async def get_all_users(self) -> AdminUsersResponse:
+        """Fetch all users by batching Remnawave API calls."""
+        batch_size = 100
+        first = await self._remnawave.get_users(batch_size, 0)
+        total = first.get("total", 0)
+        all_raw: list[dict] = list(first.get("users", []))
+        if total > batch_size:
+            remaining = range(batch_size, total, batch_size)
+            logger.info("Fetching all users: %d total, %d batches", total, len(remaining) + 1)
+            batches = await asyncio.gather(
+                *(self._remnawave.get_users(batch_size, s) for s in remaining),
+            )
+            for batch in batches:
+                all_raw.extend(batch.get("users", []))
+        squad_map = await self._get_external_squads_map()
+        users = [_to_response(raw, squad_map) for raw in all_raw]
+        return AdminUsersResponse(users=users, total=total)
 
     async def get_users(
         self,
