@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class RemnawaveUserTraffic(BaseModel):
@@ -28,11 +28,12 @@ class RemnawaveInternalSquad(BaseModel):
 
 
 class RemnawaveUserData(BaseModel):
-    """Single user object from ``GET /api/users/by-telegram-id``."""
+    """User object shared by Remnawave 2.x and 3.x responses."""
 
     model_config = ConfigDict(populate_by_name=True)
 
-    uuid: str
+    provider_id: int
+    uuid: str | None = None
     short_uuid: str
     username: str
     status: str
@@ -48,7 +49,7 @@ class RemnawaveUserData(BaseModel):
     description: str | None = None
     last_traffic_reset_at: datetime | None = None
     subscription_url: str
-    active_internal_squads: list[RemnawaveInternalSquad] = []
+    active_internal_squads: list[RemnawaveInternalSquad] = Field(default_factory=list)
     external_squad_uuid: str | None = None
     user_traffic: RemnawaveUserTraffic
 
@@ -58,7 +59,8 @@ class RemnawaveUserData(BaseModel):
         traffic = raw.get("userTraffic", {})
         squads_raw = raw.get("activeInternalSquads", [])
         return cls(
-            uuid=raw["uuid"],
+            provider_id=raw["id"],
+            uuid=raw.get("uuid"),
             short_uuid=raw["shortUuid"],
             username=raw["username"],
             status=raw.get("status", "ACTIVE"),
@@ -120,12 +122,13 @@ class RemnawaveSubInfo(BaseModel):
 
 
 class RemnawaveDevice(BaseModel):
-    """Single device from ``GET /api/hwid/devices/{userUuid}``."""
+    """Single device from the version-specific user HWID endpoint."""
 
     model_config = ConfigDict(populate_by_name=True)
 
     hwid: str
-    user_uuid: str
+    user_uuid: str | None = None
+    user_id: int | None = None
     platform: str | None = None
     os_version: str | None = None
     device_model: str | None = None
@@ -133,12 +136,20 @@ class RemnawaveDevice(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    @model_validator(mode="after")
+    def validate_owner_reference(self) -> RemnawaveDevice:
+        """Require the owner key used by either supported Remnawave contract."""
+        if self.user_uuid is None and self.user_id is None:
+            raise ValueError("device owner reference is missing")
+        return self
+
     @classmethod
     def from_raw(cls, raw: dict) -> RemnawaveDevice:
         """Map camelCase JSON to model."""
         return cls(
             hwid=raw["hwid"],
-            user_uuid=raw["userUuid"],
+            user_uuid=raw.get("userUuid"),
+            user_id=raw.get("userId"),
             platform=raw.get("platform"),
             os_version=raw.get("osVersion"),
             device_model=raw.get("deviceModel"),

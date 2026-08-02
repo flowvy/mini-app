@@ -14,7 +14,7 @@ class PulseHeartbeat(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     status: int
-    ping: int | None = None
+    ping: float | None = None
 
 
 class PulseMonitor(BaseModel):

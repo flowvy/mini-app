@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from flowvy.models.subscription import SubscriptionStatus
@@ -52,6 +53,91 @@ async def test_get_by_remnawave_uuid(session: AsyncSession) -> None:
 
     missing = await repo.get_by_remnawave_uuid(uuid.uuid4())
     assert missing is None
+
+
+async def test_get_by_remnawave_user_id(session: AsyncSession) -> None:
+    """Find subscription by the stable numeric Remnawave identity."""
+    await _create_user(session)
+    repo = SubscriptionRepository(session)
+    await repo.create(user_id=200001, remnawave_user_id=314)
+
+    found = await repo.get_by_remnawave_user_id(314)
+
+    assert found is not None
+    assert found.remnawave_user_id == 314
+    assert await repo.get_by_remnawave_user_id(2718) is None
+
+
+async def test_upsert_attaches_numeric_id_to_legacy_uuid_record(
+    session: AsyncSession,
+) -> None:
+    """A 2.x cache row gains its numeric identity without losing the UUID."""
+    await _create_user(session)
+    repo = SubscriptionRepository(session)
+    legacy_uuid = uuid.uuid4()
+    legacy = await repo.create(user_id=200001, remnawave_uuid=legacy_uuid)
+
+    updated = await repo.upsert_from_remnawave(
+        user_id=200001,
+        remnawave_user_id=314,
+        remnawave_uuid=str(legacy_uuid),
+        status="ACTIVE",
+        device_limit=3,
+        expires_at=None,
+    )
+
+    assert updated.id == legacy.id
+    assert updated.remnawave_user_id == 314
+    assert updated.remnawave_uuid == legacy_uuid
+
+
+async def test_upsert_3_x_claims_only_unambiguous_local_record(
+    session: AsyncSession,
+) -> None:
+    """A UUID-less 3.x response upgrades one clear legacy cache row in place."""
+    await _create_user(session)
+    repo = SubscriptionRepository(session)
+    legacy_uuid = uuid.uuid4()
+    legacy = await repo.create(user_id=200001, remnawave_uuid=legacy_uuid)
+
+    updated = await repo.upsert_from_remnawave(
+        user_id=200001,
+        remnawave_user_id=314,
+        remnawave_uuid=None,
+        status="ACTIVE",
+        device_limit=3,
+        expires_at=None,
+    )
+
+    assert updated.id == legacy.id
+    assert updated.remnawave_user_id == 314
+    assert updated.remnawave_uuid == legacy_uuid
+
+
+async def test_upsert_rejects_conflicting_provider_identities(
+    session: AsyncSession,
+) -> None:
+    """Numeric and UUID identities must never silently merge two rows."""
+    await _create_user(session)
+    repo = SubscriptionRepository(session)
+    first_uuid = uuid.uuid4()
+    second_uuid = uuid.uuid4()
+    await repo.create(
+        user_id=200001,
+        remnawave_user_id=314,
+        remnawave_uuid=first_uuid,
+    )
+    await repo.create(user_id=200001, remnawave_uuid=second_uuid)
+
+    with pytest.raises(ValueError, match="Conflicting Remnawave"):
+        await repo.upsert_from_remnawave(
+            user_id=200001,
+            remnawave_user_id=314,
+            remnawave_uuid=str(second_uuid),
+            status="ACTIVE",
+            device_limit=3,
+            expires_at=None,
+        )
 
 
 async def test_get_active_by_user_id(session: AsyncSession) -> None:

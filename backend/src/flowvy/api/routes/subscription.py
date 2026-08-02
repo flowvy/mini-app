@@ -8,14 +8,14 @@ from aiogram.utils.web_app import WebAppInitData
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from flowvy.api.deps import get_current_init_data
+from flowvy.api.deps import get_current_active_init_data
 from flowvy.schemas.subscription import SubscriptionResponse
 from flowvy.services.remnawave import RemnawaveError
 from flowvy.services.subscription import SubscriptionService
 
 router = APIRouter(prefix="/api", tags=["subscription"], route_class=DishkaRoute)
 
-CurrentInitData = Annotated[WebAppInitData, Depends(get_current_init_data)]
+CurrentInitData = Annotated[WebAppInitData, Depends(get_current_active_init_data)]
 
 
 @router.get("/me/subscription", response_model=SubscriptionResponse)
@@ -29,7 +29,7 @@ async def get_my_subscription(
     except RemnawaveError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Remnawave unavailable: {exc.detail}",
+            detail="Remnawave unavailable",
         ) from exc
 
     if result is None:

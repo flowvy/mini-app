@@ -10,6 +10,7 @@ from flowvy.schemas.remnawave import RemnawaveUserData, RemnawaveUserTraffic
 from flowvy.services.subscription import SubscriptionService
 
 FAKE_USER = RemnawaveUserData(
+    provider_id=42,
     uuid="550e8400-e29b-41d4-a716-446655440000",
     short_uuid="abc123",
     username="testuser",
@@ -77,6 +78,31 @@ async def test_get_for_user_returns_none() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_for_3_x_user_caches_numeric_identity_without_uuid() -> None:
+    """A Remnawave 3.x user is cached by numeric ID without requiring UUID."""
+    user = RemnawaveUserData.model_validate(
+        {
+            **FAKE_USER.model_dump(),
+            "provider_id": 314,
+            "uuid": None,
+        }
+    )
+    service = _make_service(remnawave_return=user)
+
+    result = await service.get_for_user(123456789)
+
+    assert result is not None
+    service._sub_repo.upsert_from_remnawave.assert_awaited_once_with(
+        user_id=123456789,
+        remnawave_user_id=314,
+        remnawave_uuid=None,
+        status=user.status,
+        device_limit=user.hwid_device_limit,
+        expires_at=user.expire_at,
+    )
+
+
+@pytest.mark.asyncio
 async def test_refill_date_computed_for_month() -> None:
     """Should compute next refill date for MONTH strategy."""
     service = _make_service()
@@ -90,6 +116,7 @@ async def test_refill_date_computed_for_month() -> None:
 async def test_refill_date_none_for_no_reset() -> None:
     """Should return None refill_date when strategy is NO_RESET."""
     user = RemnawaveUserData(
+        provider_id=42,
         uuid="550e8400-e29b-41d4-a716-446655440000",
         short_uuid="abc123",
         username="testuser",

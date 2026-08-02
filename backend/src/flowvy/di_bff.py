@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterable
+
 import httpx
 from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
 
+from flowvy.config import Settings
+from flowvy.kuma_target import KumaTargetPolicy
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.user import UserRepository
@@ -22,9 +26,20 @@ class BffServiceProvider(Provider):
     """Provides BFF services (REQUEST scope) and their APP-scope clients."""
 
     @provide(scope=Scope.APP)
-    def get_kuma(self, http: httpx.AsyncClient) -> UptimeKumaClient:
-        """Create Uptime Kuma API client."""
-        return UptimeKumaClient(http)
+    async def get_kuma(self, settings: Settings) -> AsyncIterable[UptimeKumaClient]:
+        """Create a proxy-free Uptime Kuma client with no pooled connections."""
+        policy = KumaTargetPolicy(settings.kuma_allowed_private_origins)
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(10.0, connect=5.0),
+            follow_redirects=False,
+            trust_env=False,
+            limits=httpx.Limits(max_keepalive_connections=0),
+        ) as http:
+            yield UptimeKumaClient(
+                http,
+                policy,
+                max_response_bytes=settings.kuma_max_response_bytes,
+            )
 
     @provide(scope=Scope.REQUEST)
     def get_subscription_service(
@@ -61,9 +76,11 @@ class BffServiceProvider(Provider):
         self,
         repo: ProviderSettingsRepository,
         remnawave: RemnawaveClient,
+        kuma: UptimeKumaClient,
+        redis: Redis,
     ) -> ProviderSettingsService:
         """Create provider settings service."""
-        return ProviderSettingsService(repo, remnawave)
+        return ProviderSettingsService(repo, remnawave, kuma, redis)
 
     @provide(scope=Scope.REQUEST)
     def get_admin_users_service(

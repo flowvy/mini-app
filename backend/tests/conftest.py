@@ -17,12 +17,27 @@ from flowvy.models import Base
 TEST_DATABASE_URL = "postgresql+asyncpg://test:test@localhost:5432/test"
 
 
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Mark tests using database fixtures so the fast gate stays service-free."""
+    for item in items:
+        if {"engine", "session"}.intersection(item.fixturenames):
+            item.add_marker(pytest.mark.integration)
+
+
 @pytest.fixture(autouse=True)
 def _env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Set minimal env vars so Settings() can be constructed."""
     monkeypatch.setenv("BOT_TOKEN", "000000:TEST")
     monkeypatch.setenv("DATABASE_URL", TEST_DATABASE_URL)
     monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/0")
+    monkeypatch.setenv("DEBUG", "false")
+    monkeypatch.setenv("WEBHOOK_URL", "")
+    monkeypatch.setenv("TELEGRAM_WEBHOOK_SECRET", "")
+    monkeypatch.setenv("WEBAPP_URL", "http://localhost:5173")
+    monkeypatch.setenv("ADMIN_TELEGRAM_IDS", "")
+    monkeypatch.setenv("REMNAWAVE_URL", "")
+    monkeypatch.setenv("REMNAWAVE_API_TOKEN", "")
+    monkeypatch.setenv("REMNAWAVE_WEBHOOK_SECRET", "")
 
 
 @pytest.fixture

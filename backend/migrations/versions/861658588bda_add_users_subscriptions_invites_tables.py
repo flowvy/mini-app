@@ -83,4 +83,11 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_invites_code"), table_name="invites")
     op.drop_table("invites")
     op.drop_table("users")
+    sa.Enum(
+        "ACTIVE",
+        "EXPIRED",
+        "SUSPENDED",
+        name="subscriptionstatus",
+    ).drop(op.get_bind(), checkfirst=True)
+    sa.Enum("USER", "ADMIN", name="userrole").drop(op.get_bind(), checkfirst=True)
     # ### end Alembic commands ###

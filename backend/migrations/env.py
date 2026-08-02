@@ -6,12 +6,33 @@ import asyncio
 from logging.config import fileConfig
 
 from alembic import context
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from flowvy.models import Base
 
+
+class MigrationSettings(BaseSettings):
+    """Load only the database setting required by Alembic."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    database_url: str = "postgresql+asyncpg://flowvy:flowvy_dev@localhost:5432/flowvy"
+
+
 config = context.config
+# Use the same environment/.env/default precedence for the database URL without
+# loading or validating unrelated application secrets. Alembic Config performs
+# percent interpolation, so preserve URL-encoded values.
+config.set_main_option(
+    "sqlalchemy.url",
+    MigrationSettings().database_url.replace("%", "%%"),
+)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

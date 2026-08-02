@@ -39,6 +39,7 @@ class SubscriptionService:
         await self._user_repo.ensure_exists(telegram_id, user.username)
         await self._sub_repo.upsert_from_remnawave(
             user_id=telegram_id,
+            remnawave_user_id=user.provider_id,
             remnawave_uuid=user.uuid,
             status=user.status,
             device_limit=user.hwid_device_limit,

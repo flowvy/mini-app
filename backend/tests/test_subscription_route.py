@@ -60,9 +60,9 @@ def _create_test_app(service_mock: AsyncMock) -> FastAPI:
     setup_dishka(container=container, app=app)
 
     # Override auth dependency
-    from flowvy.api.deps import get_current_init_data
+    from flowvy.api.deps import get_current_active_init_data
 
-    app.dependency_overrides[get_current_init_data] = _mock_init_data
+    app.dependency_overrides[get_current_active_init_data] = _mock_init_data
     return app
 
 
@@ -111,3 +111,5 @@ async def test_subscription_remnawave_error() -> None:
         resp = await client.get("/api/me/subscription")
 
     assert resp.status_code == 502
+    assert resp.json()["detail"] == "Remnawave unavailable"
+    assert "Service Unavailable" not in resp.text

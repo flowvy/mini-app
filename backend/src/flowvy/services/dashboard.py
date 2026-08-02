@@ -7,9 +7,10 @@ import json
 import logging
 from typing import Any
 
+from pydantic import ValidationError
 from redis.asyncio import Redis
 
-from flowvy.schemas.dashboard import DashboardResponse
+from flowvy.schemas.dashboard import DashboardResponse, RemnawaveBandwidth, RemnawaveStats
 from flowvy.services.bot_stats import BotStatsService
 from flowvy.services.remnawave import RemnawaveClient, RemnawaveError
 
@@ -39,10 +40,26 @@ class DashboardService:
 
         cached = await self._redis.get(CACHE_KEY)
         if cached:
-            rw_data = json.loads(cached)
-            rw_stats = rw_data.get("stats")
-            rw_bw = rw_data.get("bandwidth")
-        else:
+            try:
+                rw_data = json.loads(cached)
+                if not isinstance(rw_data, dict):
+                    raise ValueError("dashboard cache is not an object")
+                raw_stats = rw_data.get("stats")
+                raw_bandwidth = rw_data.get("bandwidth")
+                rw_stats = (
+                    RemnawaveStats.model_validate(raw_stats).model_dump(by_alias=True)
+                    if raw_stats is not None
+                    else None
+                )
+                rw_bw = (
+                    RemnawaveBandwidth.model_validate(raw_bandwidth).model_dump(by_alias=True)
+                    if raw_bandwidth is not None
+                    else None
+                )
+            except (json.JSONDecodeError, TypeError, ValueError, ValidationError):
+                await self._redis.delete(CACHE_KEY)
+                cached = None
+        if not cached:
             rw_stats, rw_bw = await asyncio.gather(
                 self._safe_remnawave(self._remnawave.get_system_stats),
                 self._safe_remnawave(self._remnawave.get_bandwidth_stats),

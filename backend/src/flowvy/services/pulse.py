@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
 
+from pydantic import ValidationError
 from redis.asyncio import Redis
 
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
+from flowvy.schemas.kuma import KumaHeartbeatPage, KumaStatusPage
 from flowvy.schemas.pulse import (
     PulseGroup,
     PulseHeartbeat,
@@ -45,7 +46,10 @@ class PulseService:
 
         cached = await self._redis.get(CACHE_KEY)
         if cached:
-            return PulseResponse.model_validate_json(cached)
+            try:
+                return PulseResponse.model_validate_json(cached)
+            except (ValidationError, ValueError):
+                await self._redis.delete(CACHE_KEY)
 
         status_data, heartbeat_data = await asyncio.gather(
             self._kuma.get_status_page(ps.kuma_url, ps.kuma_slug),
@@ -63,51 +67,49 @@ class PulseService:
 
     def _aggregate(
         self,
-        status_data: dict[str, Any],
-        heartbeat_data: dict[str, Any],
+        status_data: KumaStatusPage,
+        heartbeat_data: KumaHeartbeatPage,
     ) -> PulseResponse:
-        """Transform raw Kuma JSON into PulseResponse."""
-        hb_list: dict[str, list[dict]] = heartbeat_data.get("heartbeatList", {})
-        uptime_list: dict[str, float] = heartbeat_data.get("uptimeList", {})
+        """Transform validated Kuma data into PulseResponse."""
 
         groups: list[PulseGroup] = []
         all_statuses: list[str] = []
 
-        for group in status_data.get("publicGroupList", []):
+        for group in status_data.public_group_list:
             monitors: list[PulseMonitor] = []
-            for mon in group.get("monitorList", []):
-                mid = mon["id"]
-                raw_beats = hb_list.get(str(mid), [])[-MAX_BEATS:]
+            for monitor in group.monitor_list:
+                mid = monitor.id
+                raw_beats = heartbeat_data.heartbeat_list.get(str(mid), [])[-MAX_BEATS:]
                 heartbeats = [
-                    PulseHeartbeat(status=b["status"], ping=b.get("ping")) for b in raw_beats
+                    PulseHeartbeat(status=beat.status, ping=beat.ping) for beat in raw_beats
                 ]
 
-                current = raw_beats[-1]["status"] if raw_beats else 2
+                current = raw_beats[-1].status if raw_beats else 2
                 status_str = STATUS_MAP.get(current, "pending")
                 all_statuses.append(status_str)
 
                 uptime_key = f"{mid}_24"
-                uptime_24h = uptime_list.get(uptime_key, 0.0)
+                uptime_24h = heartbeat_data.uptime_list.get(uptime_key, 0.0)
 
                 monitors.append(
                     PulseMonitor(
                         id=mid,
-                        name=mon.get("name", f"Monitor {mid}"),
+                        name=monitor.name,
                         status=status_str,
                         uptime_24h=uptime_24h,
                         heartbeats=heartbeats,
                     )
                 )
-            groups.append(PulseGroup(name=group.get("name", ""), monitors=monitors))
+            groups.append(PulseGroup(name=group.name, monitors=monitors))
 
         overall = self._compute_overall(all_statuses)
 
         incidents: list[PulseIncident] = []
-        for inc in status_data.get("incident", {}).get("list", []):
+        for incident in status_data.active_incidents:
             incidents.append(
                 PulseIncident(
-                    title=inc.get("title", ""),
-                    created_at=inc.get("createdDate", ""),
+                    title=incident.title,
+                    created_at=incident.created_date,
                 )
             )
 
@@ -123,11 +125,13 @@ class PulseService:
     ) -> str:
         """Derive overall status from individual monitor statuses."""
         if not statuses:
-            return "operational"
+            return "partial"
+        if all(status == "down" for status in statuses):
+            return "down"
         if "down" in statuses:
+            return "partial"
+        if "pending" in statuses:
             return "partial"
         if "maintenance" in statuses:
             return "maintenance"
-        if "pending" in statuses:
-            return "operational"
         return "operational"

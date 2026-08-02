@@ -44,7 +44,7 @@ class AdminUserResponse(BaseModel):
         serialize_by_alias=True,
     )
 
-    uuid: str
+    id: int
     username: str
     status: str
     tag: str | None = None

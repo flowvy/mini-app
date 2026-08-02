@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel
+
+from flowvy.kuma_target import normalize_kuma_base_url, normalize_kuma_slug
 
 
 class ProviderSettingsResponse(BaseModel):
@@ -40,16 +42,32 @@ class ProviderSettingsPatch(BaseModel):
     )
 
     kuma_enabled: bool | None = None
-    kuma_url: str | None = None
-    kuma_slug: str | None = None
-    app_name: str | None = None
-    logo_url: str | None = None
-    welcome_text: str | None = None
-    welcome_media_url: str | None = None
-    welcome_media_type: str | None = None
+    kuma_url: str | None = Field(default=None, max_length=512)
+    kuma_slug: str | None = Field(default=None, max_length=255)
+    app_name: str | None = Field(default=None, max_length=100)
+    logo_url: str | None = Field(default=None, max_length=512)
+    welcome_text: str | None = Field(default=None, max_length=2000)
+    welcome_media_url: str | None = Field(default=None, max_length=512)
+    welcome_media_type: str | None = Field(default=None, max_length=20)
     welcome_media_file_id: str | None = None
     welcome_media_file_name: str | None = None
-    welcome_button_text: str | None = None
+    welcome_button_text: str | None = Field(default=None, max_length=100)
+
+    @field_validator("kuma_url")
+    @classmethod
+    def validate_kuma_url(cls, value: str | None) -> str | None:
+        """Normalize a configured Kuma origin and reject URL smuggling."""
+        if value is None or not value.strip():
+            return None
+        return normalize_kuma_base_url(value)
+
+    @field_validator("kuma_slug")
+    @classmethod
+    def validate_kuma_slug(cls, value: str | None) -> str | None:
+        """Keep the status-page identifier to one safe path segment."""
+        if value is None or not value.strip():
+            return None
+        return normalize_kuma_slug(value)
 
 
 class WelcomeMediaUploadResponse(BaseModel):

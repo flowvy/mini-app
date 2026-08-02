@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Integer, String
+from sqlalchemy import Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from flowvy.models.base import Base, updated_at
@@ -22,7 +22,7 @@ class ProviderSettings(Base):
     welcome_text: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     welcome_media_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     welcome_media_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    welcome_media_file_id: Mapped[str | None] = mapped_column(nullable=True)
-    welcome_media_file_name: Mapped[str | None] = mapped_column(nullable=True)
+    welcome_media_file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    welcome_media_file_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     welcome_button_text: Mapped[str | None] = mapped_column(String(100), nullable=True)
     updated_at: Mapped[updated_at]

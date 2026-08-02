@@ -8,14 +8,14 @@ from aiogram.utils.web_app import WebAppInitData
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from flowvy.api.deps import get_current_init_data
+from flowvy.api.deps import get_current_active_init_data
 from flowvy.schemas.pulse import PulseResponse
 from flowvy.services.kuma import KumaError
 from flowvy.services.pulse import PulseService
 
 router = APIRouter(prefix="/api", tags=["pulse"], route_class=DishkaRoute)
 
-CurrentInitData = Annotated[WebAppInitData, Depends(get_current_init_data)]
+CurrentInitData = Annotated[WebAppInitData, Depends(get_current_active_init_data)]
 
 
 @router.get("/pulse", response_model=PulseResponse)
@@ -29,7 +29,7 @@ async def get_pulse(
     except KumaError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Status page unavailable: {exc.detail}",
+            detail="Status page unavailable",
         ) from exc
 
     if result is None:

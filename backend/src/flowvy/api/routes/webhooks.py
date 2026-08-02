@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import datetime
+import hashlib
+import json
 import logging
 
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Request, Response, status
+from pydantic import ValidationError
 
 from flowvy.config import Settings
 from flowvy.schemas.webhooks import WebhookPayload
@@ -14,6 +18,24 @@ from flowvy.services.webhook_handler import WebhookHandlerService
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["webhooks"], route_class=DishkaRoute)
+
+
+async def _read_limited_body(request: Request, limit: int) -> bytes | None:
+    """Read at most ``limit`` bytes, returning none as soon as it is exceeded."""
+    content_length = request.headers.get("content-length")
+    if content_length:
+        try:
+            if int(content_length) > limit:
+                return None
+        except ValueError:
+            return None
+
+    body = bytearray()
+    async for chunk in request.stream():
+        if len(chunk) > limit - len(body):
+            return None
+        body.extend(chunk)
+    return bytes(body)
 
 
 @router.post(
@@ -30,10 +52,16 @@ async def receive_remnawave_webhook(
         return Response(status_code=status.HTTP_404_NOT_FOUND)
 
     signature = request.headers.get("X-Remnawave-Signature", "")
-    if not signature:
+    provider_timestamp = request.headers.get("X-Remnawave-Timestamp", "")
+    if not signature or not provider_timestamp:
         return Response(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    body = await request.body()
+    body = await _read_limited_body(
+        request,
+        settings.remnawave_webhook_max_body_bytes,
+    )
+    if body is None:
+        return Response(status_code=status.HTTP_413_CONTENT_TOO_LARGE)
 
     if not WebhookHandlerService.verify_signature(
         body,
@@ -43,8 +71,32 @@ async def receive_remnawave_webhook(
         logger.warning("Invalid webhook signature")
         return Response(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    payload = WebhookPayload.model_validate_json(body)
-    await handler.handle_event(payload)
+    try:
+        decoded = json.loads(body)
+        if not isinstance(decoded, dict):
+            raise ValueError
+        body_timestamp = decoded.get("timestamp")
+        if not isinstance(body_timestamp, str) or body_timestamp != provider_timestamp:
+            logger.warning("Webhook timestamp header does not match signed payload")
+            return Response(status_code=status.HTTP_401_UNAUTHORIZED)
+        payload = WebhookPayload.model_validate(decoded)
+    except (json.JSONDecodeError, UnicodeDecodeError, ValidationError, ValueError, TypeError):
+        logger.warning("Malformed webhook payload")
+        return Response(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
+
+    now = datetime.datetime.now(datetime.UTC)
+    oldest = now - datetime.timedelta(
+        seconds=settings.remnawave_webhook_max_age_seconds,
+    )
+    newest = now + datetime.timedelta(
+        seconds=settings.remnawave_webhook_future_tolerance_seconds,
+    )
+    if not oldest <= payload.timestamp <= newest:
+        logger.warning("Webhook timestamp is outside the accepted freshness window")
+        return Response(status_code=status.HTTP_401_UNAUTHORIZED)
+
+    delivery_key = hashlib.sha256(body).hexdigest()
+    await handler.handle_event(payload, delivery_key)
 
     return Response(
         content='{"ok":true}',

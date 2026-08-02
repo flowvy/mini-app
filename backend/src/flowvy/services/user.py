@@ -7,6 +7,10 @@ from flowvy.models.user import User, UserRole
 from flowvy.repositories.user import UserRepository
 
 
+class InactiveUserError(Exception):
+    """Raised when a disabled user tries to refresh or create a session."""
+
+
 class UserService:
     """Operations on users: lookup, creation, profile sync."""
 
@@ -34,6 +38,8 @@ class UserService:
         expected_role = self._expected_role(telegram_id)
         user = await self._repo.get_by_telegram_id(telegram_id)
         if user is not None:
+            if not user.is_active:
+                raise InactiveUserError
             updates: dict[str, object] = {}
             if user.username != username:
                 updates["username"] = username

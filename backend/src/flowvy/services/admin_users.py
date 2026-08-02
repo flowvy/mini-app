@@ -59,18 +59,18 @@ class AdminUsersService:
         users = [_to_response(raw, squad_map) for raw in data.get("users", [])]
         return AdminUsersResponse(users=users, total=data.get("total", 0))
 
-    async def get_user(self, uuid: str) -> AdminUserResponse:
+    async def get_user(self, user_id: int) -> AdminUserResponse:
         """Fetch single user from Remnawave + resolve squad."""
-        raw = await self._remnawave.get_user_by_uuid(uuid)
+        user = await self._remnawave.get_user_by_id(user_id)
         squad_map = await self._get_external_squads_map()
-        return _to_response(raw, squad_map)
+        return _map_user_data(user, squad_map)
 
     async def search_user(self, query: str) -> AdminUsersResponse:
         """Search user by query — auto-detects type."""
         query = query.strip()
         if query.isdigit():
             result = await self._remnawave.get_user_by_telegram_id(int(query))
-        elif "@" in query or "." in query:
+        elif "@" in query:
             result = await self._remnawave.search_user_by_email(query)
         else:
             result = await self._remnawave.search_user_by_username(query)
@@ -81,25 +81,25 @@ class AdminUsersService:
         users = [_map_user_data(result, squad_map)]
         return AdminUsersResponse(users=users, total=1)
 
-    async def enable_user(self, uuid: str) -> None:
+    async def enable_user(self, user_id: int) -> None:
         """Enable a user in Remnawave."""
-        await self._remnawave.enable_user(uuid)
+        await self._remnawave.enable_user(user_id)
 
-    async def disable_user(self, uuid: str) -> None:
+    async def disable_user(self, user_id: int) -> None:
         """Disable a user in Remnawave."""
-        await self._remnawave.disable_user(uuid)
+        await self._remnawave.disable_user(user_id)
 
-    async def reset_user_traffic(self, uuid: str) -> None:
+    async def reset_user_traffic(self, user_id: int) -> None:
         """Reset traffic counters for a user."""
-        await self._remnawave.reset_user_traffic(uuid)
+        await self._remnawave.reset_user_traffic(user_id)
 
-    async def revoke_user_subscription(self, uuid: str) -> None:
+    async def revoke_user_subscription(self, user_id: int) -> None:
         """Revoke subscription link for a user."""
-        await self._remnawave.revoke_user_subscription(uuid)
+        await self._remnawave.revoke_user_subscription(user_id)
 
-    async def delete_user(self, uuid: str) -> None:
+    async def delete_user(self, user_id: int) -> None:
         """Permanently delete a user from Remnawave."""
-        await self._remnawave.delete_user(uuid)
+        await self._remnawave.delete_user(user_id)
 
     async def _get_external_squads_map(self) -> dict[str, str]:
         """Return uuid→name map, cached in Redis for 5 minutes."""
@@ -125,7 +125,7 @@ def _to_response(
     ext_uuid = raw.get("externalSquadUuid")
     squads_raw = raw.get("activeInternalSquads", [])
     return AdminUserResponse(
-        uuid=raw["uuid"],
+        id=raw["id"],
         username=raw["username"],
         status=raw.get("status", "ACTIVE"),
         tag=raw.get("tag"),
@@ -158,7 +158,7 @@ def _map_user_data(
     """Map typed RemnawaveUserData to admin user response."""
     ext_uuid = user.external_squad_uuid
     return AdminUserResponse(
-        uuid=user.uuid,
+        id=user.provider_id,
         username=user.username,
         status=user.status,
         tag=user.tag,

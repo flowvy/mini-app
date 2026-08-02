@@ -6,18 +6,25 @@ import logging
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError
-from aiogram.types import BufferedInputFile
+from aiogram.types import InputFile
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, HTTPException, UploadFile, status
 
 from flowvy.api.routes.admin.deps import CurrentAdmin, CurrentAdminForm
+from flowvy.media_upload import (
+    EmptyMediaError,
+    MediaTooLargeError,
+    UploadInputFile,
+    safe_media_filename,
+    validate_media_size,
+)
 from flowvy.schemas.provider_settings import (
     KumaTestResponse,
     ProviderSettingsPatch,
     ProviderSettingsResponse,
     WelcomeMediaUploadResponse,
 )
-from flowvy.services.provider_settings import ProviderSettingsService
+from flowvy.services.provider_settings import ProviderSettingsError, ProviderSettingsService
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +60,10 @@ async def patch_settings(
     service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
 ) -> ProviderSettingsResponse:
     """Partial update of provider settings."""
-    return await service.update(patch)
+    try:
+        return await service.update(patch)
+    except ProviderSettingsError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
 
 
 @router.get("/settings/kuma/test", response_model=KumaTestResponse)
@@ -79,34 +89,44 @@ async def upload_welcome_media(
     if not media_type:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unsupported file type")
 
-    data = await file.read()
-    if len(data) > MAX_FILE_SIZE:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "File too large (max 10 MB)")
+    try:
+        await validate_media_size(file, MAX_FILE_SIZE)
+    except MediaTooLargeError as exc:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "File too large (max 10 MB)",
+        ) from exc
+    except EmptyMediaError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "File is empty") from exc
 
-    buf = BufferedInputFile(data, filename=file.filename or "media")
+    upload: InputFile = UploadInputFile(file)
     try:
         if media_type == "animation":
             msg = await bot.send_animation(
                 chat_id=admin.user.id,
-                animation=buf,
+                animation=upload,
             )
             file_id = msg.animation.file_id
         else:
-            msg = await bot.send_photo(chat_id=admin.user.id, photo=buf)
+            msg = await bot.send_photo(chat_id=admin.user.id, photo=upload)
             file_id = msg.photo[-1].file_id
-        await bot.delete_message(
-            chat_id=admin.user.id,
-            message_id=msg.message_id,
-        )
     except TelegramAPIError as exc:
         logger.exception("Failed to upload welcome media via bot")
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            f"Bot cannot send message to your chat: {exc}",
+            "Bot could not upload this media",
         ) from exc
+
+    try:
+        await bot.delete_message(
+            chat_id=admin.user.id,
+            message_id=msg.message_id,
+        )
+    except TelegramAPIError:
+        logger.warning("Failed to delete temporary welcome media message", exc_info=True)
 
     return WelcomeMediaUploadResponse(
         file_id=file_id,
-        file_name=file.filename or "media",
+        file_name=safe_media_filename(file.filename),
         media_type=media_type,
     )

@@ -33,6 +33,17 @@ class SubscriptionRepository(BaseRepository[Subscription]):
         result = await self._session.execute(stmt)
         return result.scalars().one_or_none()
 
+    async def get_by_remnawave_user_id(
+        self,
+        remnawave_user_id: int,
+    ) -> Subscription | None:
+        """Find subscription by the numeric Remnawave user identity."""
+        stmt = select(Subscription).where(
+            Subscription.remnawave_user_id == remnawave_user_id,
+        )
+        result = await self._session.execute(stmt)
+        return result.scalars().one_or_none()
+
     async def get_active_by_user_id(self, user_id: int) -> list[Subscription]:
         """Return only active subscriptions for a user."""
         stmt = select(Subscription).where(
@@ -45,25 +56,39 @@ class SubscriptionRepository(BaseRepository[Subscription]):
     async def upsert_from_remnawave(
         self,
         user_id: int,
-        remnawave_uuid: str,
+        remnawave_user_id: int,
+        remnawave_uuid: str | None,
         status: str,
         device_limit: int | None,
         expires_at: datetime.datetime | None,
     ) -> Subscription:
         """Insert or update subscription from Remnawave data."""
-        rn_uuid = uuid.UUID(remnawave_uuid)
+        rn_uuid = uuid.UUID(remnawave_uuid) if remnawave_uuid is not None else None
         naive_expires = _strip_tz(expires_at)
-        sub = await self.get_by_remnawave_uuid(rn_uuid)
+        by_id = await self.get_by_remnawave_user_id(remnawave_user_id)
+        by_uuid = await self.get_by_remnawave_uuid(rn_uuid) if rn_uuid is not None else None
+        if by_id is not None and by_uuid is not None and by_id.id != by_uuid.id:
+            raise ValueError("Conflicting Remnawave subscription identities")
+        sub = by_id or by_uuid
+        if sub is None:
+            local = await self.get_by_user_id(user_id)
+            unclaimed = [item for item in local if item.remnawave_user_id is None]
+            if len(local) == 1 and len(unclaimed) == 1:
+                sub = unclaimed[0]
         mapped_status = _map_remnawave_status(status)
         if sub is not None:
             return await self.update(
                 sub,
+                user_id=user_id,
+                remnawave_user_id=remnawave_user_id,
+                remnawave_uuid=rn_uuid if rn_uuid is not None else sub.remnawave_uuid,
                 status=mapped_status,
                 device_limit=device_limit,
                 expires_at=naive_expires,
             )
         return await self.create(
             user_id=user_id,
+            remnawave_user_id=remnawave_user_id,
             remnawave_uuid=rn_uuid,
             status=mapped_status,
             device_limit=device_limit,
@@ -86,4 +111,4 @@ def _map_remnawave_status(status: str) -> SubscriptionStatus:
         "DISABLED": SubscriptionStatus.SUSPENDED,
         "LIMITED": SubscriptionStatus.ACTIVE,
     }
-    return mapping.get(status, SubscriptionStatus.ACTIVE)
+    return mapping.get(status, SubscriptionStatus.SUSPENDED)

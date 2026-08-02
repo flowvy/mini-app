@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import httpx
+from redis.asyncio import Redis
 
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.schemas.provider_settings import (
@@ -10,7 +10,15 @@ from flowvy.schemas.provider_settings import (
     ProviderSettingsPatch,
     ProviderSettingsResponse,
 )
+from flowvy.services.kuma import KumaError, UptimeKumaClient
+from flowvy.services.pulse import CACHE_KEY
 from flowvy.services.remnawave import RemnawaveClient, RemnawaveError
+
+KUMA_FIELDS = frozenset({"kuma_enabled", "kuma_url", "kuma_slug"})
+
+
+class ProviderSettingsError(ValueError):
+    """Raised when merged provider settings are inconsistent."""
 
 
 class ProviderSettingsService:
@@ -20,9 +28,13 @@ class ProviderSettingsService:
         self,
         repo: ProviderSettingsRepository,
         remnawave: RemnawaveClient,
+        kuma: UptimeKumaClient,
+        redis: Redis,
     ) -> None:
         self._repo = repo
         self._remnawave = remnawave
+        self._kuma = kuma
+        self._redis = redis
 
     async def get(self) -> ProviderSettingsResponse:
         """Return current settings with system info."""
@@ -50,7 +62,21 @@ class ProviderSettingsService:
     ) -> ProviderSettingsResponse:
         """Apply partial update and return refreshed settings."""
         data = patch.model_dump(exclude_unset=True)
+        if KUMA_FIELDS.intersection(data):
+            current = await self._repo.get()
+            enabled = data.get("kuma_enabled", current.kuma_enabled)
+            kuma_url = data.get("kuma_url", current.kuma_url)
+            kuma_slug = data.get("kuma_slug", current.kuma_slug)
+            if enabled and (not kuma_url or not kuma_slug):
+                raise ProviderSettingsError("Kuma URL and slug are required when Pulse is enabled")
+            if enabled:
+                try:
+                    await self._kuma.validate_target(kuma_url, kuma_slug)
+                except KumaError as exc:
+                    raise ProviderSettingsError(exc.detail) from exc
         await self._repo.update_partial(data)
+        if KUMA_FIELDS.intersection(data):
+            await self._redis.delete(CACHE_KEY)
         return await self.get()
 
     async def test_kuma(self) -> KumaTestResponse:
@@ -58,25 +84,11 @@ class ProviderSettingsService:
         row = await self._repo.get()
         if not row.kuma_url or not row.kuma_slug:
             return KumaTestResponse(ok=False, error="URL and slug are required")
-        url = f"{row.kuma_url.rstrip('/')}/api/status-page/{row.kuma_slug}"
         try:
-            async with httpx.AsyncClient(
-                timeout=httpx.Timeout(5.0),
-            ) as client:
-                resp = await client.get(url)
-            if resp.status_code != 200:
-                return KumaTestResponse(
-                    ok=False,
-                    error=f"HTTP {resp.status_code}",
-                )
-            resp.json()
+            await self._kuma.get_status_page(row.kuma_url, row.kuma_slug)
             return KumaTestResponse(ok=True)
-        except httpx.TimeoutException:
-            return KumaTestResponse(ok=False, error="Connection timed out")
-        except httpx.ConnectError:
-            return KumaTestResponse(ok=False, error="Connection refused")
-        except Exception as exc:
-            return KumaTestResponse(ok=False, error=str(exc))
+        except KumaError as exc:
+            return KumaTestResponse(ok=False, error=exc.detail)
 
     async def _get_remnawave_version(self) -> str | None:
         """Fetch Remnawave version from /api/system/metadata."""

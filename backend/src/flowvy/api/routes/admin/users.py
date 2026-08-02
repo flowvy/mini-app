@@ -30,7 +30,7 @@ async def get_users(
     except RemnawaveError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Remnawave unavailable: {exc.detail}",
+            detail="Remnawave unavailable",
         ) from exc
 
 
@@ -48,7 +48,7 @@ async def search_users(
             return AdminUsersResponse(users=[], total=0)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Remnawave unavailable: {exc.detail}",
+            detail="Remnawave unavailable",
         ) from exc
 
 
@@ -63,19 +63,19 @@ async def get_all_users(
     except RemnawaveError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Remnawave unavailable: {exc.detail}",
+            detail="Remnawave unavailable",
         ) from exc
 
 
-@router.get("/users/{uuid}", response_model=AdminUserResponse)
+@router.get("/users/{user_id}", response_model=AdminUserResponse)
 async def get_user(
-    uuid: str,
+    user_id: int,
     _admin: CurrentAdmin,
     service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
 ) -> AdminUserResponse:
-    """Return single user by UUID."""
+    """Return single user by its numeric provider ID."""
     try:
-        return await service.get_user(uuid)
+        return await service.get_user(user_id)
     except RemnawaveError as exc:
         if exc.status == 404:
             raise HTTPException(
@@ -84,90 +84,90 @@ async def get_user(
             ) from exc
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Remnawave unavailable: {exc.detail}",
+            detail="Remnawave unavailable",
         ) from exc
 
 
-@router.post("/users/{uuid}/enable")
+@router.post("/users/{user_id}/enable")
 async def enable_user(
-    uuid: str,
+    user_id: int,
     _admin: CurrentAdmin,
     service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
 ) -> dict:
     """Enable a user."""
     try:
-        await service.enable_user(uuid)
+        await service.enable_user(user_id)
         return {"ok": True}
     except RemnawaveError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Remnawave error: {exc.detail}",
+            detail="Remnawave request failed",
         ) from exc
 
 
-@router.post("/users/{uuid}/disable")
+@router.post("/users/{user_id}/disable")
 async def disable_user(
-    uuid: str,
+    user_id: int,
     _admin: CurrentAdmin,
     service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
 ) -> dict:
     """Disable a user."""
     try:
-        await service.disable_user(uuid)
+        await service.disable_user(user_id)
         return {"ok": True}
     except RemnawaveError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Remnawave error: {exc.detail}",
+            detail="Remnawave request failed",
         ) from exc
 
 
-@router.post("/users/{uuid}/reset-traffic")
+@router.post("/users/{user_id}/reset-traffic")
 async def reset_traffic(
-    uuid: str,
+    user_id: int,
     _admin: CurrentAdmin,
     service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
 ) -> dict:
     """Reset traffic counters for a user."""
     try:
-        await service.reset_user_traffic(uuid)
+        await service.reset_user_traffic(user_id)
         return {"ok": True}
     except RemnawaveError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Remnawave error: {exc.detail}",
+            detail="Remnawave request failed",
         ) from exc
 
 
-@router.post("/users/{uuid}/revoke")
+@router.post("/users/{user_id}/revoke")
 async def revoke_subscription(
-    uuid: str,
+    user_id: int,
     _admin: CurrentAdmin,
     service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
 ) -> dict:
     """Revoke subscription link for a user."""
     try:
-        await service.revoke_user_subscription(uuid)
+        await service.revoke_user_subscription(user_id)
         return {"ok": True}
     except RemnawaveError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Remnawave error: {exc.detail}",
+            detail="Remnawave request failed",
         ) from exc
 
 
-@router.delete("/users/{uuid}")
+@router.delete("/users/{user_id}")
 async def delete_user(
-    uuid: str,
+    user_id: int,
     _admin: CurrentAdmin,
     service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
 ) -> dict:
     """Permanently delete a user."""
     try:
-        await service.delete_user(uuid)
+        await service.delete_user(user_id)
         return {"ok": True}
     except RemnawaveError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"Remnawave error: {exc.detail}",
+            detail="Remnawave request failed",
         ) from exc

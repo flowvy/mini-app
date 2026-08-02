@@ -36,6 +36,11 @@ class Subscription(Base):
         index=True,
     )
     remnawave_uuid: Mapped[uuid.UUID | None] = mapped_column(unique=True)
+    remnawave_user_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        unique=True,
+        index=True,
+    )
     status: Mapped[SubscriptionStatus] = mapped_column(
         default=SubscriptionStatus.ACTIVE,
     )

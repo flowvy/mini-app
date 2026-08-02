@@ -37,6 +37,9 @@ packages = ["src/flowvy"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "integration: requires disposable PostgreSQL and/or Redis services",
+]
 
 [tool.ruff]
 target-version = "py312"

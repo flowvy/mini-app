@@ -18,17 +18,6 @@ logger = logging.getLogger(__name__)
 
 EventHandler = Callable[[WebhookPayload], Awaitable[None]]
 
-USER_INVALIDATION_EVENTS = frozenset(
-    {
-        "user.modified",
-        "user.deleted",
-        "user.traffic_reset",
-        "user.revoked",
-        "user.enabled",
-        "user.disabled",
-    }
-)
-
 
 class WebhookHandlerService:
     """Verifies, persists, and dispatches Remnawave webhook events."""
@@ -48,19 +37,24 @@ class WebhookHandlerService:
         ).hexdigest()
         return hmac.compare_digest(expected, signature)
 
-    async def handle_event(self, payload: WebhookPayload) -> None:
-        """Persist event and dispatch to registered handlers."""
-        await self._repo.save_event(
+    async def handle_event(self, payload: WebhookPayload, delivery_key: str) -> bool:
+        """Persist and dispatch a delivery once, returning whether it was new."""
+        recorded = await self._repo.record_once(
+            delivery_key=delivery_key,
             scope=payload.scope,
             event=payload.event,
             timestamp=payload.timestamp,
-            data=payload.data,
         )
+        if not recorded:
+            logger.info("Duplicate webhook ignored: %s", payload.event)
+            return False
+
         logger.info("Webhook event saved: %s", payload.event)
 
         handlers = self._handlers.get(payload.scope, [])
         for handler in handlers:
             await handler(payload)
+        return True
 
     def _build_registry(self) -> dict[str, list[EventHandler]]:
         """Build scope → handlers mapping."""
@@ -71,15 +65,14 @@ class WebhookHandlerService:
         }
 
     async def _on_user_event(self, payload: WebhookPayload) -> None:
-        """Invalidate dashboard cache on user-mutating events."""
-        if payload.event in USER_INVALIDATION_EVENTS:
-            deleted = await self._redis.delete(DASHBOARD_CACHE_KEY)
-            if deleted:
-                logger.info(
-                    "Cache invalidated: %s (trigger: %s)",
-                    DASHBOARD_CACHE_KEY,
-                    payload.event,
-                )
+        """Invalidate dashboard cache on every user or HWID event."""
+        deleted = await self._redis.delete(DASHBOARD_CACHE_KEY)
+        if deleted:
+            logger.info(
+                "Cache invalidated: %s (trigger: %s)",
+                DASHBOARD_CACHE_KEY,
+                payload.event,
+            )
 
     async def _on_node_event(self, payload: WebhookPayload) -> None:
         """Invalidate pulse cache on any node event."""

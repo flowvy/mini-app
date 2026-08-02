@@ -84,25 +84,25 @@ async def debug_search_users(
         raise _502(exc) from exc
 
 
-@router.get("/users/{uuid}", response_model=AdminUserResponse)
+@router.get("/users/{user_id}", response_model=AdminUserResponse)
 async def debug_admin_user(
-    uuid: str,
+    user_id: int,
     request: Request,
     service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
 ) -> AdminUserResponse:
     """Fetch single admin user without Telegram auth. DEBUG mode only."""
     check_debug(request)
     try:
-        return await service.get_user(uuid)
+        return await service.get_user(user_id)
     except RemnawaveError as exc:
         if exc.status == 404:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found") from exc
         raise _502(exc) from exc
 
 
-@router.post("/users/{uuid}/{action}")
+@router.post("/users/{user_id}/{action}")
 async def debug_user_action(
-    uuid: str,
+    user_id: int,
     action: str,
     request: Request,
     service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
@@ -119,22 +119,22 @@ async def debug_user_action(
     if not handler:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Unknown action: {action}")
     try:
-        await handler(uuid)
+        await handler(user_id)
         return {"ok": True}
     except RemnawaveError as exc:
         raise _502(exc, "error") from exc
 
 
-@router.delete("/users/{uuid}")
+@router.delete("/users/{user_id}")
 async def debug_delete_user(
-    uuid: str,
+    user_id: int,
     request: Request,
     service: FromDishka[AdminUsersService] = None,  # type: ignore[assignment]
 ) -> dict:
     """Delete user without Telegram auth. DEBUG mode only."""
     check_debug(request)
     try:
-        await service.delete_user(uuid)
+        await service.delete_user(user_id)
         return {"ok": True}
     except RemnawaveError as exc:
         raise _502(exc, "error") from exc
