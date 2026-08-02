@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flowvy Verify"
+  short_description: "Run change-aware completion checks"
+  default_prompt: "Use $flowvy-verify to run the checks required by the current diff."

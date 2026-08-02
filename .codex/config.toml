@@ -1,0 +1,4 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+# Flowvy keeps runtime choices user-controlled. Models, reasoning effort, sandbox,
+# approvals, and subagent thread limits inherit the active Codex defaults.

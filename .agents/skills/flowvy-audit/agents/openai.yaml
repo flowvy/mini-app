@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flowvy Audit"
+  short_description: "Deep repository handoff and risk audit"
+  default_prompt: "Use $flowvy-audit to perform a read-only handoff audit of this repository."

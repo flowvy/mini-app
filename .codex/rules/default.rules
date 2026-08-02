@@ -1,0 +1,58 @@
+# Flowvy repository guardrails. These rules only govern commands that request
+# execution outside the active sandbox; AGENTS.md and CI remain the main policy.
+
+prefix_rule(
+    pattern = ["git", "reset", "--hard"],
+    decision = "forbidden",
+    justification = "Preserve uncommitted work; inspect the diff and restore only explicitly named files.",
+    match = ["git reset --hard", "git reset --hard HEAD~1"],
+    not_match = ["git reset --soft HEAD~1", "git status"],
+)
+
+prefix_rule(
+    pattern = ["git", "clean"],
+    decision = "prompt",
+    justification = "Cleaning can permanently delete untracked project files; review the exact targets first.",
+    match = ["git clean -fd", "git clean -fdx"],
+    not_match = ["git status", "git diff"],
+)
+
+prefix_rule(
+    pattern = ["git", "push"],
+    decision = "prompt",
+    justification = "Publishing repository changes requires explicit user intent.",
+    match = ["git push", "git push origin codex/example", "git push --force-with-lease"],
+    not_match = ["git status", "git log -1"],
+)
+
+prefix_rule(
+    pattern = ["docker", "compose", "down"],
+    decision = "prompt",
+    justification = "Stopping the stack may disrupt local work; volume deletion must never be implicit.",
+    match = ["docker compose down", "docker compose down -v"],
+    not_match = ["docker compose ps", "docker compose stop"],
+)
+
+prefix_rule(
+    pattern = ["uv", "run", "alembic", "downgrade"],
+    decision = "forbidden",
+    justification = "Run downgrades only against an explicitly disposable database through the migration verification workflow.",
+    match = ["uv run alembic downgrade base", "uv run alembic downgrade -1"],
+    not_match = ["uv run alembic upgrade head", "uv run alembic check"],
+)
+
+prefix_rule(
+    pattern = ["uv", "run", "--frozen", "alembic", "downgrade"],
+    decision = "forbidden",
+    justification = "Use scripts/verify-migrations.ps1 so downgrades run only on its disposable database.",
+    match = ["uv run --frozen alembic downgrade base", "uv run --frozen alembic downgrade -1"],
+    not_match = ["uv run --frozen alembic upgrade head", "uv run --frozen alembic check"],
+)
+
+prefix_rule(
+    pattern = ["alembic", "downgrade"],
+    decision = "forbidden",
+    justification = "Use scripts/verify-migrations.ps1 so downgrades run only on its disposable database.",
+    match = ["alembic downgrade base", "alembic downgrade -1"],
+    not_match = ["alembic upgrade head", "alembic check"],
+)

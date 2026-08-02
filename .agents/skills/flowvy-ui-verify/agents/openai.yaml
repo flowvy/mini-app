@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flowvy UI Verify"
+  short_description: "Validate Flowvy UI behavior and visuals"
+  default_prompt: "Use $flowvy-ui-verify to validate the affected routes, states, and viewports."

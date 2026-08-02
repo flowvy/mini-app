@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flowvy Integration"
+  short_description: "Review external contracts and boundaries"
+  default_prompt: "Use $flowvy-integration to verify this provider boundary against its primary contract."

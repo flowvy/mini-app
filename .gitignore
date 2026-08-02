@@ -36,12 +36,11 @@ frontend/dist/
 *.swp
 *.swo
 
-# Claude Code
-.claude/settings.local.json
-
-# Playwright MCP
-.playwright-mcp/
-*.png
+# Codex and verification artifacts
+.artifacts/
+frontend/test-results/
+frontend/playwright-report/
+frontend/coverage/
 
 # Prototypes
 users-cards-prototype.jsx
