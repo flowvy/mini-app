@@ -89,9 +89,11 @@ export const BeszelConfig: FC<BeszelConfigProps> = ({ settings, onBack }) => {
 						onChange={(value) => {
 							setUrl(value);
 							setSaved(false);
+							testMutation.reset();
 						}}
 						placeholder={t("settings.beszel.urlPlaceholder")}
 						mono
+						type="url"
 					/>
 				</FormRow>
 				<FormRowSeparator />
@@ -115,7 +117,7 @@ export const BeszelConfig: FC<BeszelConfigProps> = ({ settings, onBack }) => {
 						{connectionText}
 					</span>
 					<ActionBtn
-						onClick={() => testMutation.mutate()}
+						onClick={() => testMutation.mutate({ url })}
 						loading={testMutation.isPending}
 						variant="action"
 						size="sm"

@@ -46,3 +46,12 @@ export interface KumaTestResult {
 }
 
 export type BeszelTestResult = KumaTestResult;
+
+export interface KumaTestInput {
+	url: string;
+	slug: string;
+}
+
+export interface BeszelTestInput {
+	url: string;
+}

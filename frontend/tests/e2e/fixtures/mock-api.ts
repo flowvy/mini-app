@@ -130,6 +130,7 @@ export interface MockApi {
 	requestFailures: string[];
 	calls: string[];
 	mock: (method: string, path: string | RegExp, reply: MockReply | MockReply[]) => void;
+	seedSettings: (patch: Record<string, unknown>) => void;
 }
 
 interface MockState {
@@ -198,11 +199,11 @@ async function handleApi(
 		await reply(route, { body: state.settings });
 		return;
 	}
-	if (method === "GET" && path === "/api/debug/admin/settings/kuma/test") {
+	if (method === "POST" && path === "/api/debug/admin/settings/kuma/test") {
 		await reply(route, { body: { ok: true, error: null } });
 		return;
 	}
-	if (method === "GET" && path === "/api/debug/admin/settings/beszel/test") {
+	if (method === "POST" && path === "/api/debug/admin/settings/beszel/test") {
 		await reply(route, { body: { ok: true, error: null } });
 		return;
 	}
@@ -280,6 +281,9 @@ export const test = base.extend<{ mockApi: MockApi }>({
 					path,
 					replies: Array.isArray(response) ? [...response] : [response],
 				});
+			},
+			seedSettings(patch) {
+				state.settings = { ...state.settings, ...clone(patch) };
 			},
 		};
 

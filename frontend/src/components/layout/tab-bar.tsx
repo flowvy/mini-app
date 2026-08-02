@@ -10,7 +10,6 @@ import {
 	Smartphone,
 	Users,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMode } from "../../contexts/mode-context.tsx";
 import { hapticImpact } from "../../lib/haptics.ts";
@@ -52,32 +51,10 @@ export function TabBar({ compact }: TabBarProps) {
 
 	const isActiveTab = (tabTo: string) =>
 		tabTo === "/" ? location.pathname === "/" : location.pathname.startsWith(tabTo);
-	const activeIndex = tabs.findIndex((tab) => isActiveTab(tab.to));
-	const pillStyle =
-		activeIndex >= 0
-			? {
-					width: `calc((100% - 4px) / ${tabs.length})`,
-					transform: `translateX(${activeIndex * 100}%)`,
-				}
-			: { opacity: 0 };
-
-	const [bouncingIndex, setBouncingIndex] = useState<number | null>(null);
-
-	const handleClick = useCallback((index: number) => {
-		hapticImpact("light");
-		setBouncingIndex(index);
-	}, []);
-
-	useEffect(() => {
-		if (bouncingIndex === null) return;
-		const timer = setTimeout(() => setBouncingIndex(null), 400);
-		return () => clearTimeout(timer);
-	}, [bouncingIndex]);
 
 	return (
 		<nav className={`${styles.tabBar} ${compact ? styles.compact : ""}`}>
-			<div className={styles.pill} style={pillStyle} />
-			{tabs.map((tab, index) => {
+			{tabs.map((tab) => {
 				const Icon = tab.icon;
 				const isActive = isActiveTab(tab.to);
 				return (
@@ -86,9 +63,9 @@ export function TabBar({ compact }: TabBarProps) {
 						to={tab.to}
 						activeOptions={{ exact: tab.to === "/" }}
 						className={`${styles.tab} ${isActive ? styles.selected : ""}`}
-						onClick={() => handleClick(index)}
+						onClick={() => hapticImpact("light")}
 					>
-						<span className={`${styles.icon} ${bouncingIndex === index ? styles.bouncing : ""}`}>
+						<span className={styles.icon}>
 							<Icon size={26} />
 						</span>
 						<span className={styles.label}>{t(tab.label)}</span>

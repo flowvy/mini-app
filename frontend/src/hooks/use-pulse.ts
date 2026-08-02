@@ -8,6 +8,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiGet } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";
+import { isMockAuth } from "../lib/runtime.ts";
 import type { PulseData } from "../types/pulse.ts";
 
 interface UsePulseResult {
@@ -16,8 +17,6 @@ interface UsePulseResult {
 	error: Error | null;
 	refetch: () => void;
 }
-
-const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
 
 function fetchPulse(): Promise<PulseData> {
 	if (isMockAuth) {

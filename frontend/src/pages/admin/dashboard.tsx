@@ -1,5 +1,6 @@
 import { type FC, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LoadErrorState } from "../../components/ui/load-error-state.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { SegmentedControl } from "../../components/ui/segmented-control.tsx";
 import { useDashboard } from "../../hooks/use-dashboard.ts";
@@ -10,14 +11,14 @@ import styles from "./dashboard.module.css";
 
 export const AdminDashboard: FC = () => {
 	const { t } = useTranslation();
-	const { data, isPending, error } = useDashboard();
+	const { data, isPending, error, refetch } = useDashboard();
 	const [tab, setTab] = useState<"vpn" | "bot">("vpn");
 	const handleSwipeLeft = useCallback(() => setTab("bot"), []);
 	const handleSwipeRight = useCallback(() => setTab("vpn"), []);
 	const swipe = useSwipe({ onSwipeLeft: handleSwipeLeft, onSwipeRight: handleSwipeRight });
 
 	if (isPending) return <PageLoading />;
-	if (error || !data) return <div className={styles.error}>{t("admin.dashboard.error")}</div>;
+	if (error || !data) return <LoadErrorState onRetry={refetch} />;
 
 	const tabOptions = [
 		{ key: "vpn", label: t("admin.dashboard.tab.vpn") },
@@ -30,8 +31,14 @@ export const AdminDashboard: FC = () => {
 				options={tabOptions}
 				value={tab}
 				onChange={(k) => setTab(k as "vpn" | "bot")}
+				ariaLabel={t("admin.dashboard.viewLabel")}
 			/>
-			<div onTouchStart={swipe.onTouchStart} onTouchEnd={swipe.onTouchEnd}>
+			<div
+				key={tab}
+				className={styles.tabContent}
+				onTouchStart={swipe.onTouchStart}
+				onTouchEnd={swipe.onTouchEnd}
+			>
 				{tab === "vpn" ? <VpnContent data={data} t={t} /> : <BotContent data={data} t={t} />}
 			</div>
 		</div>

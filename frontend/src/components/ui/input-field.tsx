@@ -2,6 +2,7 @@
  * Text input — matches Desktop fv-input from global.css.
  */
 import { type FC, useState } from "react";
+import { dismissKeyboardOnEnter } from "../../lib/keyboard.ts";
 import styles from "./input-field.module.css";
 
 interface InputFieldProps {
@@ -19,8 +20,10 @@ export const InputField: FC<InputFieldProps> = ({ value, onChange, placeholder, 
 			type="text"
 			value={value}
 			onChange={(e) => onChange(e.target.value)}
+			onKeyDown={dismissKeyboardOnEnter}
 			placeholder={placeholder}
 			disabled={disabled}
+			enterKeyHint="done"
 			onFocus={() => setFocused(true)}
 			onBlur={() => setFocused(false)}
 			className={`${styles.input} ${focused ? styles.focused : ""}`}

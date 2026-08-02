@@ -103,9 +103,11 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 						onChange={(v) => {
 							setUrl(v);
 							setSaved(false);
+							testMutation.reset();
 						}}
 						placeholder={t("settings.kuma.urlPlaceholder")}
 						mono
+						type="url"
 					/>
 				</FormRow>
 				<FormRowSeparator />
@@ -115,6 +117,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 						onChange={(v) => {
 							setSlug(v);
 							setSaved(false);
+							testMutation.reset();
 						}}
 						placeholder={t("settings.kuma.slugPlaceholder")}
 						mono
@@ -126,7 +129,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 						{connText}
 					</span>
 					<ActionBtn
-						onClick={() => testMutation.mutate()}
+						onClick={() => testMutation.mutate({ url, slug })}
 						loading={testMutation.isPending}
 						variant="action"
 						size="sm"

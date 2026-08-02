@@ -98,10 +98,18 @@ class ProviderSettingsService:
     async def test_kuma(self) -> KumaTestResponse:
         """Test connection to Uptime Kuma status page."""
         row = await self._repo.get()
-        if not row.kuma_url or not row.kuma_slug:
+        return await self.test_kuma_candidate(row.kuma_url, row.kuma_slug)
+
+    async def test_kuma_candidate(
+        self,
+        url: str | None,
+        slug: str | None,
+    ) -> KumaTestResponse:
+        """Test an unsaved Kuma target without changing provider settings."""
+        if not url or not slug:
             return KumaTestResponse(ok=False, error="URL and slug are required")
         try:
-            await self._kuma.get_status_page(row.kuma_url, row.kuma_slug)
+            await self._kuma.get_status_page(url, slug)
             return KumaTestResponse(ok=True)
         except KumaError as exc:
             return KumaTestResponse(ok=False, error=exc.detail)
@@ -109,10 +117,14 @@ class ProviderSettingsService:
     async def test_beszel(self) -> BeszelTestResponse:
         """Test authentication and read access to the saved Beszel Hub."""
         row = await self._repo.get()
-        if not row.beszel_url:
+        return await self.test_beszel_candidate(row.beszel_url)
+
+    async def test_beszel_candidate(self, url: str | None) -> BeszelTestResponse:
+        """Test an unsaved Beszel target without changing provider settings."""
+        if not url:
             return BeszelTestResponse(ok=False, error="URL is required")
         try:
-            await self._beszel.test_connection(row.beszel_url)
+            await self._beszel.test_connection(url)
             return BeszelTestResponse(ok=True)
         except BeszelError as exc:
             return BeszelTestResponse(ok=False, error=exc.detail)

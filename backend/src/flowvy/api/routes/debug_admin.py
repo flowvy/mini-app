@@ -9,7 +9,9 @@ from flowvy.api.routes.admin.settings import ALLOWED_MIME, MAX_FILE_SIZE
 from flowvy.api.routes.debug import check_debug
 from flowvy.schemas.admin_users import AdminUserResponse, AdminUsersResponse
 from flowvy.schemas.provider_settings import (
+    BeszelTestRequest,
     BeszelTestResponse,
+    KumaTestRequest,
     KumaTestResponse,
     ProviderSettingsPatch,
     ProviderSettingsResponse,
@@ -183,6 +185,28 @@ async def debug_test_beszel(
     """Test Beszel connection without Telegram auth. DEBUG mode only."""
     check_debug(request)
     return await service.test_beszel()
+
+
+@router.post("/settings/kuma/test", response_model=KumaTestResponse)
+async def debug_test_kuma_candidate(
+    candidate: KumaTestRequest,
+    request: Request,
+    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
+) -> KumaTestResponse:
+    """Test an unsaved Kuma target without Telegram auth or persistence."""
+    check_debug(request)
+    return await service.test_kuma_candidate(candidate.url, candidate.slug)
+
+
+@router.post("/settings/beszel/test", response_model=BeszelTestResponse)
+async def debug_test_beszel_candidate(
+    candidate: BeszelTestRequest,
+    request: Request,
+    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
+) -> BeszelTestResponse:
+    """Test an unsaved Beszel target without Telegram auth or persistence."""
+    check_debug(request)
+    return await service.test_beszel_candidate(candidate.url)
 
 
 @router.post(

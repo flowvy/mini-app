@@ -96,15 +96,53 @@ class WelcomeMediaUploadResponse(BaseModel):
     media_type: str
 
 
+class KumaTestRequest(BaseModel):
+    """Candidate Kuma target tested without persisting it."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    url: str | None = Field(default=None, max_length=512)
+    slug: str | None = Field(default=None, max_length=255)
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, value: str | None) -> str | None:
+        if value is None or not value.strip():
+            return None
+        return normalize_kuma_base_url(value)
+
+    @field_validator("slug")
+    @classmethod
+    def validate_slug(cls, value: str | None) -> str | None:
+        if value is None or not value.strip():
+            return None
+        return normalize_kuma_slug(value)
+
+
+class BeszelTestRequest(BaseModel):
+    """Candidate Beszel target tested without persisting it."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    url: str | None = Field(default=None, max_length=512)
+
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, value: str | None) -> str | None:
+        if value is None or not value.strip():
+            return None
+        return normalize_beszel_base_url(value)
+
+
 class KumaTestResponse(BaseModel):
-    """GET /api/admin/settings/kuma/test response."""
+    """Kuma connection-test response."""
 
     ok: bool
     error: str | None = None
 
 
 class BeszelTestResponse(BaseModel):
-    """GET /api/admin/settings/beszel/test response."""
+    """Beszel connection-test response."""
 
     ok: bool
     error: str | None = None

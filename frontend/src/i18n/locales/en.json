@@ -2,6 +2,11 @@
 	"common": {
 		"notAuthenticated": "Not authenticated",
 		"retry": "Retry",
+		"loadError": {
+			"title": "Unable to load data",
+			"description": "Something went wrong. Please try again.",
+			"retry": "Retry"
+		},
 		"back": "Back",
 		"accessDenied": {
 			"title": "Access denied",
@@ -42,7 +47,6 @@
 		}
 	},
 	"home": {
-		"error": "Failed to load subscription",
 		"noSubscription": "No active subscription",
 		"heroCard": {
 			"expiresLabel": "Expires",
@@ -83,7 +87,6 @@
 		}
 	},
 	"devices": {
-		"error": "Failed to load devices",
 		"empty": {
 			"ariaLabel": "No devices",
 			"title": "No devices",
@@ -115,11 +118,6 @@
 		}
 	},
 	"pulse": {
-		"error": {
-			"title": "Unable to load status",
-			"desc": "Status page is temporarily unavailable. Please try again.",
-			"retry": "Retry"
-		},
 		"noIncidents": "No active incidents",
 		"incidents": {
 			"title": "Active incidents"
@@ -137,7 +135,6 @@
 	},
 	"settings": {
 		"title": "Settings",
-		"error": "Failed to load settings",
 		"saveError": "Could not save changes. Try again.",
 		"integrations": "Integrations",
 		"pulseProvider": "Pulse source",
@@ -237,7 +234,7 @@
 	},
 	"admin": {
 		"dashboard": {
-			"error": "Failed to load dashboard",
+			"viewLabel": "Dashboard view",
 			"tab": {
 				"vpn": "VPN",
 				"bot": "Bot"
@@ -309,7 +306,6 @@
 			"comingSoon": "Coming soon"
 		},
 		"users": {
-			"error": "Failed to load users",
 			"searchPlaceholder": "Search by name, ID or tag",
 			"searchLabel": "Search users",
 			"listLabel": "Users list",

@@ -13,6 +13,7 @@ export const queryClient = new QueryClient({
 });
 
 export const queryKeys = {
+	currentUser: ["auth", "me"] as const,
 	subscription: ["subscription"] as const,
 	devices: ["devices"] as const,
 	nodes: ["nodes"] as const,

@@ -49,7 +49,7 @@ test("subscription loading, active, absent, and provider error states render saf
 	await expect(page.getByText("No active subscription")).toBeVisible();
 
 	await page.reload();
-	await expect(page.getByText("Failed to load subscription")).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Unable to load data" })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -127,7 +127,7 @@ test("Pulse renders partial, down, maintenance, incidents, failure, and retry", 
 	await page.reload();
 	await expect(page.getByText("Scheduled maintenance")).toBeVisible();
 	await page.reload();
-	await expect(page.getByText("Unable to load status")).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Unable to load data" })).toBeVisible();
 	await page.getByRole("button", { name: "Retry" }).click();
 	await expect(page.getByText("All systems operational")).toBeVisible();
 	await assertNoHorizontalOverflow(page);
@@ -142,7 +142,22 @@ test("malformed Pulse success response becomes a recoverable error state", async
 		contentType: "text/plain",
 	});
 	await page.goto("/pulse");
-	await expect(page.getByText("Unable to load status")).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Unable to load data" })).toBeVisible();
+});
+
+test("page data failures share one retryable error state", async ({ page, mockApi }) => {
+	const failure = { status: 502, body: { detail: "Provider unavailable" } };
+	mockApi.mock("GET", "/api/me/devices", failure);
+	mockApi.mock("GET", "/api/debug/admin/users/all", failure);
+	mockApi.mock("GET", "/api/debug/admin/settings", failure);
+
+	for (const path of ["/devices", "/admin/users", "/admin/settings"] as const) {
+		await page.goto(path);
+		const errorState = page.getByRole("alert");
+		await expect(errorState.getByRole("heading", { name: "Unable to load data" })).toBeVisible();
+		await expect(errorState).toContainText("Something went wrong. Please try again.");
+		await expect(errorState.getByRole("button", { name: "Retry" })).toBeVisible();
+	}
 });
 
 test("dashboard supports full, unavailable, and backend error states", async ({
@@ -185,7 +200,7 @@ test("dashboard supports full, unavailable, and backend error states", async ({
 	await page.reload();
 	await expect(page.getByText("Remnawave unavailable")).toBeVisible();
 	await page.reload();
-	await expect(page.getByText("Failed to load dashboard")).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Unable to load data" })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -234,7 +249,7 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 		status: 500,
 		body: { detail: "Save failed" },
 	});
-	mockApi.mock("GET", "/api/debug/admin/settings/kuma/test", {
+	mockApi.mock("POST", "/api/debug/admin/settings/kuma/test", {
 		status: 502,
 		body: { detail: "Test failed" },
 	});
@@ -295,6 +310,90 @@ test("settings select Beszel and verify its server-side read-only connection", a
 	await assertNoHorizontalOverflow(page);
 });
 
+test("Beszel tests the URL currently entered without saving it", async ({ page, mockApi }) => {
+	mockApi.mock("GET", "/api/debug/admin/settings", {
+		body: { ...mockData.settings, pulseProvider: "disabled", beszelUrl: null },
+	});
+	await page.goto("/admin/settings/beszel");
+	const url = "https://draft-beszel.example.test";
+	await page.getByPlaceholder("https://monitor.example.com").fill(url);
+	const requestPromise = page.waitForRequest(
+		(request) =>
+			request.method() === "POST" &&
+			new URL(request.url()).pathname === "/api/debug/admin/settings/beszel/test",
+	);
+	await page.getByRole("button", { name: "Test" }).click();
+	const request = await requestPromise;
+	expect(request.postDataJSON()).toEqual({ url });
+	await expect(page.getByText("Connected", { exact: true })).toBeVisible();
+	expect(mockApi.calls).not.toContain("PATCH /api/debug/admin/settings");
+});
+
+test("enabling a configured Beszel source exposes Pulse without reloading", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.seedSettings({ pulseProvider: "disabled", beszelUrl: null });
+	await page.goto("/admin/settings");
+	await page.evaluate(() => {
+		(window as typeof window & { __flowvyDocumentMarker?: string }).__flowvyDocumentMarker =
+			"same-document";
+	});
+
+	const provider = page.getByRole("group", { name: "Pulse source" });
+	await provider.getByRole("button", { name: "Beszel", exact: true }).click();
+	await page.getByPlaceholder("https://monitor.example.com").fill("https://beszel.example.test");
+	await page.getByRole("button", { name: "Save" }).click();
+	await page.getByRole("button", { name: "Back" }).click();
+	await provider.getByRole("button", { name: "Beszel", exact: true }).click();
+	await expect(page.getByText("Active", { exact: true })).toBeVisible();
+
+	await page.getByRole("button", { name: "User mode" }).click();
+	await expect(page.getByRole("link", { name: "Pulse" })).toBeVisible();
+	await page.getByRole("link", { name: "Pulse" }).click();
+	await expect(page.getByText("All systems operational")).toBeVisible();
+	await expect
+		.poll(() =>
+			page.evaluate(
+				() =>
+					(window as typeof window & { __flowvyDocumentMarker?: string }).__flowvyDocumentMarker,
+			),
+		)
+		.toBe("same-document");
+});
+
+test("unconfigured Pulse source opens setup without an invalid save", async ({ page, mockApi }) => {
+	mockApi.mock("GET", "/api/debug/admin/settings", {
+		body: {
+			...mockData.settings,
+			pulseProvider: "disabled",
+			kumaUrl: null,
+			kumaSlug: null,
+			beszelUrl: null,
+		},
+	});
+	mockApi.mock("PATCH", "/api/debug/admin/settings", {
+		status: 422,
+		body: { detail: "Beszel URL is required when Pulse uses Beszel" },
+	});
+
+	await page.goto("/admin/settings");
+	const provider = page.getByRole("group", { name: "Pulse source" });
+	await expect(provider.getByRole("button", { name: "Off" })).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
+	for (const label of ["Off", "Kuma", "Beszel"]) {
+		const bounds = await provider.getByRole("button", { name: label, exact: true }).boundingBox();
+		expect(bounds?.width ?? 0).toBeGreaterThan(60);
+	}
+
+	await provider.getByRole("button", { name: "Beszel", exact: true }).click();
+	await expect(page).toHaveURL(/\/admin\/settings\/beszel$/);
+	await expect(page.getByRole("heading", { name: "Beszel" })).toBeVisible();
+	await expect(page.getByText("Could not save changes. Try again.")).toHaveCount(0);
+});
+
 test("Beszel settings show missing credentials and a recoverable test failure", async ({
 	page,
 	mockApi,
@@ -302,7 +401,7 @@ test("Beszel settings show missing credentials and a recoverable test failure", 
 	mockApi.mock("GET", "/api/debug/admin/settings", {
 		body: { ...mockData.settings, beszelCredentialsConfigured: false },
 	});
-	mockApi.mock("GET", "/api/debug/admin/settings/beszel/test", {
+	mockApi.mock("POST", "/api/debug/admin/settings/beszel/test", {
 		status: 502,
 		body: { detail: "Provider unavailable" },
 	});

@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from "react";
+import { dismissKeyboardOnEnter } from "../../lib/keyboard.ts";
 import styles from "./form-section.module.css";
 
 interface FormSectionHeaderProps {
@@ -69,6 +70,7 @@ interface FormInlineInputProps {
 	placeholder?: string;
 	mono?: boolean;
 	disabled?: boolean;
+	type?: "text" | "url";
 }
 
 export const FormInlineInput: FC<FormInlineInputProps> = ({
@@ -77,13 +79,20 @@ export const FormInlineInput: FC<FormInlineInputProps> = ({
 	placeholder,
 	mono,
 	disabled,
+	type = "text",
 }) => (
 	<input
-		type="text"
+		type={type}
 		value={value}
 		onChange={(e) => onChange(e.target.value)}
+		onKeyDown={dismissKeyboardOnEnter}
 		placeholder={placeholder}
 		disabled={disabled}
+		enterKeyHint="done"
+		inputMode={type === "url" ? "url" : "text"}
+		autoCapitalize={type === "url" || mono ? "none" : undefined}
+		autoCorrect={type === "url" || mono ? "off" : undefined}
+		spellCheck={type === "url" || mono ? false : undefined}
 		className={`${styles.inlineInput} ${mono ? styles.mono : ""}`}
 	/>
 );

@@ -5,6 +5,7 @@ import { type FC, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import { apiUploadFile } from "../../lib/api.ts";
+import { isMockAuth } from "../../lib/runtime.ts";
 import ss from "../../pages/admin/settings.module.css";
 import type { AdminSettings, WelcomeMediaUpload } from "../../types/admin-settings.ts";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
@@ -20,7 +21,6 @@ import {
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { WelcomeMediaRow } from "./welcome-media-row.tsx";
 
-const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
 const prefix = isMockAuth ? "/debug/admin/settings" : "/admin/settings";
 
 interface WelcomeConfigProps {

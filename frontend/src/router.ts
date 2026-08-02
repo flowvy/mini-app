@@ -120,7 +120,6 @@ export const router = createRouter({
 	defaultPreload: "intent",
 	scrollRestoration: true,
 	scrollToTopSelectors: ['[data-scroll-restoration-id="main-content"]'],
-	defaultViewTransition: true,
 });
 
 declare module "@tanstack/react-router" {

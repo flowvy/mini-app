@@ -7,10 +7,10 @@ import {
 	FormRow,
 	FormRowSeparator,
 	FormSectionCard,
-	FormSectionFooter,
 	FormSectionHeader,
 } from "../../components/ui/form-section.tsx";
 import { InlineFeedback } from "../../components/ui/inline-feedback.tsx";
+import { LoadErrorState } from "../../components/ui/load-error-state.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { SegmentedControl } from "../../components/ui/segmented-control.tsx";
 import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
@@ -51,7 +51,7 @@ const SettingsToolRow: FC<SettingsToolRowProps> = ({
 export const AdminSettings: FC = () => {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
-	const { settings, isPending, error } = useAdminSettings();
+	const { settings, isPending, error, refetch } = useAdminSettings();
 	const updateMutation = useUpdateSettings();
 
 	if (isPending || (!settings && !error)) {
@@ -59,20 +59,25 @@ export const AdminSettings: FC = () => {
 	}
 
 	if (error || !settings) {
-		return (
-			<div className={styles.page}>
-				<p style={{ color: "var(--v2-text-negative)", fontSize: 12 }}>{t("settings.error")}</p>
-			</div>
-		);
+		return <LoadErrorState onRetry={refetch} />;
 	}
-
-	const handleProviderChange = (provider: string) => {
-		updateMutation.reset();
-		updateMutation.mutate({ pulseProvider: provider as PulseProvider });
-	};
 
 	const kumaConfigured = Boolean(settings.kumaUrl && settings.kumaSlug);
 	const beszelConfigured = Boolean(settings.beszelUrl && settings.beszelCredentialsConfigured);
+	const handleProviderChange = (provider: string) => {
+		const nextProvider = provider as PulseProvider;
+		if (nextProvider === settings.pulseProvider) return;
+		updateMutation.reset();
+		if (nextProvider === "kuma" && !kumaConfigured) {
+			void navigate({ to: "/admin/settings/kuma" });
+			return;
+		}
+		if (nextProvider === "beszel" && !beszelConfigured) {
+			void navigate({ to: "/admin/settings/beszel" });
+			return;
+		}
+		updateMutation.mutate({ pulseProvider: nextProvider });
+	};
 	const providerOptions = [
 		{ key: "disabled", label: t("settings.providerDisabled") },
 		{ key: "kuma", label: t("settings.providerKuma") },
@@ -84,13 +89,19 @@ export const AdminSettings: FC = () => {
 			{updateMutation.isError && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
 			<FormSectionHeader>{t("settings.integrations")}</FormSectionHeader>
 			<FormSectionCard>
-				<FormRow label={t("settings.pulseProvider")}>
+				<div className={styles.providerRow}>
+					<div className={styles.providerHeading}>
+						<span className={styles.providerLabel}>{t("settings.pulseProvider")}</span>
+						<span className={styles.providerDescription}>{t("settings.integrationsHint")}</span>
+					</div>
 					<SegmentedControl
 						options={providerOptions}
 						value={settings.pulseProvider}
 						onChange={handleProviderChange}
+						ariaLabel={t("settings.pulseProvider")}
+						disabled={updateMutation.isPending}
 					/>
-				</FormRow>
+				</div>
 				<FormRowSeparator />
 				<SettingsToolRow
 					label={t("settings.uptimeKuma")}
@@ -120,7 +131,6 @@ export const AdminSettings: FC = () => {
 					onClick={() => navigate({ to: "/admin/settings/beszel" })}
 				/>
 			</FormSectionCard>
-			<FormSectionFooter>{t("settings.integrationsHint")}</FormSectionFooter>
 
 			<FormSectionHeader>{t("settings.brandingSection")}</FormSectionHeader>
 			<FormSectionCard>

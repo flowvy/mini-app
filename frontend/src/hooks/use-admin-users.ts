@@ -5,9 +5,9 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiDelete, apiGet, apiPost } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";
+import { isMockAuth } from "../lib/runtime.ts";
 import type { AdminUser, AdminUsersResponse } from "../types/admin-users.ts";
 
-const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
 const prefix = isMockAuth ? "/debug/admin/users" : "/admin/users";
 
 const PAGE_SIZE = 25;
@@ -28,13 +28,13 @@ export function useAdminUsers() {
 }
 
 export function useAdminUser(id: string) {
-	const { data, isPending, error } = useQuery<AdminUser>({
+	const { data, isPending, error, refetch } = useQuery<AdminUser>({
 		queryKey: queryKeys.adminUser(id),
 		queryFn: () => apiGet<AdminUser>(`${prefix}/${id}`),
 		staleTime: 0,
 	});
 
-	return { data: data ?? undefined, isPending, error };
+	return { data: data ?? undefined, isPending, error, refetch };
 }
 
 export function useSearchUser(query: string) {

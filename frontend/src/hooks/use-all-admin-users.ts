@@ -6,9 +6,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";
+import { isMockAuth } from "../lib/runtime.ts";
 import type { AdminUsersResponse } from "../types/admin-users.ts";
 
-const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
 const prefix = isMockAuth ? "/debug/admin/users" : "/admin/users";
 
 export function useAllAdminUsers() {

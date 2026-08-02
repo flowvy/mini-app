@@ -1,8 +1,8 @@
-import { AlertTriangle } from "lucide-react";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import { MonitorGroup } from "../components/pulse/monitor-group.tsx";
 import { StatusBanner } from "../components/pulse/status-banner.tsx";
+import { LoadErrorState } from "../components/ui/load-error-state.tsx";
 import { PageLoading } from "../components/ui/page-loading.tsx";
 import { usePulse } from "../hooks/use-pulse.ts";
 import styles from "./pulse.module.css";
@@ -16,18 +16,7 @@ export const Pulse: FC = () => {
 	}
 
 	if (error || !pulse) {
-		return (
-			<div className={styles.page}>
-				<div className={styles.errorState}>
-					<AlertTriangle size={32} />
-					<span className={styles.errorTitle}>{t("pulse.error.title")}</span>
-					<span className={styles.errorDesc}>{t("pulse.error.desc")}</span>
-					<button type="button" className={styles.retryBtn} onClick={refetch}>
-						{t("pulse.error.retry")}
-					</button>
-				</div>
-			</div>
-		);
+		return <LoadErrorState onRetry={refetch} />;
 	}
 
 	return (

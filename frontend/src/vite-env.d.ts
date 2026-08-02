@@ -12,6 +12,7 @@ interface ImportMeta {
 interface TelegramWebApp {
 	ready(): void;
 	expand(): void;
+	hideKeyboard?(): void;
 	colorScheme: "light" | "dark";
 }
 

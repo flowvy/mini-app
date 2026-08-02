@@ -11,22 +11,30 @@ export interface SegmentedControlProps {
 	options: SegmentedControlOption[];
 	value: string;
 	onChange: (key: string) => void;
+	ariaLabel?: string;
+	disabled?: boolean;
 }
 
-export function SegmentedControl({ options, value, onChange }: SegmentedControlProps) {
+export function SegmentedControl({
+	options,
+	value,
+	onChange,
+	ariaLabel,
+	disabled = false,
+}: SegmentedControlProps) {
 	const activeIndex = options.findIndex((o) => o.key === value);
 
 	const handleSwipeLeft = useCallback(() => {
-		if (activeIndex < options.length - 1) {
+		if (!disabled && activeIndex < options.length - 1) {
 			onChange(options[activeIndex + 1].key);
 		}
-	}, [activeIndex, options, onChange]);
+	}, [activeIndex, disabled, options, onChange]);
 
 	const handleSwipeRight = useCallback(() => {
-		if (activeIndex > 0) {
+		if (!disabled && activeIndex > 0) {
 			onChange(options[activeIndex - 1].key);
 		}
-	}, [activeIndex, options, onChange]);
+	}, [activeIndex, disabled, options, onChange]);
 
 	const { onTouchStart, onTouchEnd } = useSwipe({
 		onSwipeLeft: handleSwipeLeft,
@@ -34,24 +42,24 @@ export function SegmentedControl({ options, value, onChange }: SegmentedControlP
 	});
 
 	return (
-		<div className={styles.root} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-			<div
-				className={styles.pill}
-				style={{
-					width: `calc((100% - 6px) / ${options.length})`,
-					transform: `translateX(${activeIndex * 100}%)`,
-				}}
-			/>
+		<fieldset
+			className={styles.root}
+			aria-label={ariaLabel}
+			onTouchStart={onTouchStart}
+			onTouchEnd={onTouchEnd}
+		>
 			{options.map((opt) => (
 				<button
 					key={opt.key}
 					type="button"
 					className={`${styles.btn} ${value === opt.key ? styles.active : ""}`}
 					onClick={() => onChange(opt.key)}
+					aria-pressed={value === opt.key}
+					disabled={disabled}
 				>
 					{opt.label}
 				</button>
 			))}
-		</div>
+		</fieldset>
 	);
 }

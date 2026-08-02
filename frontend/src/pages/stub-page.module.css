@@ -3,7 +3,6 @@
 	flex-direction: column;
 	flex: 1;
 	padding: 16px;
-	animation: fvFadeIn var(--duration-base) ease-out;
 }
 
 .stubBody {

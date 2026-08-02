@@ -8,15 +8,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiDelete, apiGet } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";
+import { isMockAuth } from "../lib/runtime.ts";
 import type { DevicesResponse } from "../types/devices.ts";
 
 interface UseDevicesResult {
 	devices: DevicesResponse | null;
 	isPending: boolean;
 	error: Error | null;
+	refetch: () => void;
 }
 
-const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
 const debugTelegramId = import.meta.env.VITE_DEBUG_TELEGRAM_ID;
 
 const debugEmpty = import.meta.env.VITE_DEBUG_DEVICES_EMPTY === "true";
@@ -32,7 +33,7 @@ function fetchDevices(): Promise<DevicesResponse> {
 }
 
 export function useDevices(): UseDevicesResult {
-	const { data, isPending, error } = useQuery({
+	const { data, isPending, error, refetch } = useQuery({
 		queryKey: queryKeys.devices,
 		queryFn: fetchDevices,
 		staleTime: 0,
@@ -43,6 +44,9 @@ export function useDevices(): UseDevicesResult {
 		devices: data ?? null,
 		isPending,
 		error: error ?? null,
+		refetch: () => {
+			void refetch();
+		},
 	};
 }
 

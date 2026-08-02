@@ -19,7 +19,9 @@ from flowvy.media_upload import (
     validate_media_size,
 )
 from flowvy.schemas.provider_settings import (
+    BeszelTestRequest,
     BeszelTestResponse,
+    KumaTestRequest,
     KumaTestResponse,
     ProviderSettingsPatch,
     ProviderSettingsResponse,
@@ -83,6 +85,26 @@ async def test_beszel(
 ) -> BeszelTestResponse:
     """Test Beszel authentication and systems read access."""
     return await service.test_beszel()
+
+
+@router.post("/settings/kuma/test", response_model=KumaTestResponse)
+async def test_kuma_candidate(
+    candidate: KumaTestRequest,
+    _admin: CurrentAdmin,
+    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
+) -> KumaTestResponse:
+    """Test an unsaved Kuma URL and slug without changing settings."""
+    return await service.test_kuma_candidate(candidate.url, candidate.slug)
+
+
+@router.post("/settings/beszel/test", response_model=BeszelTestResponse)
+async def test_beszel_candidate(
+    candidate: BeszelTestRequest,
+    _admin: CurrentAdmin,
+    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
+) -> BeszelTestResponse:
+    """Test an unsaved Beszel URL without changing settings."""
+    return await service.test_beszel_candidate(candidate.url)
 
 
 @router.post(

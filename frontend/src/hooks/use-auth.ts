@@ -2,8 +2,10 @@
  * Authentication hook — fetches the current user from backend.
  * Set VITE_MOCK_AUTH=true to use a mock admin user for local UI testing.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "../lib/api.ts";
+import { queryKeys } from "../lib/query.ts";
+import { isMockAuth } from "../lib/runtime.ts";
 
 export interface FeaturesData {
 	pulse: boolean;
@@ -41,69 +43,55 @@ const MOCK_USER: UserResponse = {
 	branding: { appName: null, logoUrl: null },
 };
 
-const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
-
 function getMockUser(): UserResponse {
 	const role = window.localStorage.getItem("flowvy:mock-role") === "user" ? "user" : "admin";
 	return { ...MOCK_USER, role };
 }
 
-export function useAuth(): AuthState & { retry: () => void } {
-	const [user, setUser] = useState<UserResponse | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	const fetchUser = useCallback(async () => {
-		if (isMockAuth) {
-			setIsLoading(true);
-			setError(null);
-			if (window.localStorage.getItem("flowvy:mock-auth") === "unauthenticated") {
-				setUser(null);
-				setError("Not authenticated");
-				setIsLoading(false);
-				return;
-			}
-			const mockUser = getMockUser();
-			try {
-				const settings = await apiGet<{
-					pulseProvider: "disabled" | "kuma" | "beszel";
-					appName: string | null;
-					logoUrl: string | null;
-				}>("/debug/admin/settings");
-				setUser({
-					...mockUser,
-					features: { pulse: settings.pulseProvider !== "disabled" },
-					branding: { appName: settings.appName ?? null, logoUrl: settings.logoUrl ?? null },
-				});
-			} catch {
-				setUser(mockUser);
-			}
-			setIsLoading(false);
-			return;
+const fetchUser = async (): Promise<UserResponse> => {
+	if (isMockAuth) {
+		if (window.localStorage.getItem("flowvy:mock-auth") === "unauthenticated") {
+			throw new Error("Not authenticated");
 		}
-		setIsLoading(true);
-		setError(null);
+		const mockUser = getMockUser();
 		try {
-			const data = await apiGet<UserResponse>("/me");
-			setUser(data);
-		} catch (err) {
-			const message = err instanceof Error ? err.message : "Unknown error";
-			setError(message);
-			setUser(null);
-		} finally {
-			setIsLoading(false);
+			const settings = await apiGet<{
+				pulseProvider: "disabled" | "kuma" | "beszel";
+				appName: string | null;
+				logoUrl: string | null;
+			}>("/debug/admin/settings");
+			return {
+				...mockUser,
+				features: { pulse: settings.pulseProvider !== "disabled" },
+				branding: { appName: settings.appName ?? null, logoUrl: settings.logoUrl ?? null },
+			};
+		} catch {
+			return mockUser;
 		}
-	}, []);
+	}
+	return apiGet<UserResponse>("/me");
+};
 
-	useEffect(() => {
-		void fetchUser();
-	}, [fetchUser]);
+export function useAuth(): AuthState & { retry: () => void } {
+	const { data, isPending, error, refetch } = useQuery({
+		queryKey: queryKeys.currentUser,
+		queryFn: fetchUser,
+		retry: false,
+		staleTime: 60_000,
+	});
+	const blockingError = !data && error;
 
 	return {
-		user,
-		isLoading,
-		error,
-		isAuthenticated: user !== null,
-		retry: fetchUser,
+		user: data ?? null,
+		isLoading: isPending,
+		error: blockingError
+			? blockingError instanceof Error
+				? blockingError.message
+				: "Unknown error"
+			: null,
+		isAuthenticated: data !== undefined,
+		retry: () => {
+			void refetch();
+		},
 	};
 }

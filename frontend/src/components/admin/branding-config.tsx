@@ -100,6 +100,7 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings, onBack }) =>
 						}}
 						placeholder={t("settings.branding.logoUrlPlaceholder")}
 						mono
+						type="url"
 					/>
 				</FormRow>
 			</FormSectionCard>

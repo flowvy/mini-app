@@ -6,16 +6,19 @@
 	gap: 12px;
 	padding: 16px;
 	padding-bottom: 96px;
-	animation: fvFadeIn var(--duration-base) ease-out;
 }
 
-.error {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	flex: 1;
-	color: var(--v2-text-negative);
-	font-size: 13px;
+.tabContent {
+	animation: tabContentReveal 120ms ease-out;
+}
+
+@keyframes tabContentReveal {
+	from {
+		opacity: 0.55;
+	}
+	to {
+		opacity: 1;
+	}
 }
 
 /* ── Row ── */

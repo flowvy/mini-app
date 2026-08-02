@@ -87,6 +87,15 @@ select {
 	color: inherit;
 }
 
+/* iOS/WKWebView zooms focused controls whose rendered text is below 16px.
+   Keep native pinch-to-zoom available and prevent only the focus intervention. */
+input[type],
+input:not([type]),
+textarea:not([data-allow-focus-zoom]),
+select:not([data-allow-focus-zoom]) {
+	font-size: max(16px, 1em);
+}
+
 a {
 	color: inherit;
 	text-decoration: none;

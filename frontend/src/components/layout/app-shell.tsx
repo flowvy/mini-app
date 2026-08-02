@@ -32,7 +32,9 @@ export function AppShell() {
 						</Link>
 					</section>
 				) : (
-					<Outlet />
+					<div key={location.pathname} className={styles.routeView}>
+						<Outlet />
+					</div>
 				)}
 			</main>
 			<TabBar compact={compact} />

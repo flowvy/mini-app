@@ -4,7 +4,9 @@ import { type FC, useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FILTER_KEYS, FilterChips, type FilterKey } from "../../components/admin/filter-chips.tsx";
 import { VirtualizedUserList } from "../../components/admin/virtualized-user-list.tsx";
+import { LoadErrorState } from "../../components/ui/load-error-state.tsx";
 import { useAllAdminUsers } from "../../hooks/use-all-admin-users.ts";
+import { dismissKeyboardOnEnter } from "../../lib/keyboard.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
 import { UsersListSkeleton } from "./users-skeleton.tsx";
 import styles from "./users.module.css";
@@ -33,7 +35,7 @@ function onlineTs(user: AdminUser): number {
 export const AdminUsers: FC = () => {
 	const navigate = useNavigate();
 	const { t } = useTranslation();
-	const { data, isPending, error } = useAllAdminUsers();
+	const { data, isPending, error, refetch } = useAllAdminUsers();
 	const [searchInput, setSearchInput] = useState("");
 	const [filter, setFilter] = useState<FilterKey>("ALL");
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -88,13 +90,7 @@ export const AdminUsers: FC = () => {
 	if (isPending) return <UsersListSkeleton />;
 
 	if (error) {
-		return (
-			<div className={styles.page}>
-				<div className={styles.empty}>
-					<span className={styles.emptyTitle}>{t("admin.users.error")}</span>
-				</div>
-			</div>
-		);
+		return <LoadErrorState onRetry={refetch} />;
 	}
 
 	return (
@@ -106,7 +102,10 @@ export const AdminUsers: FC = () => {
 						type="text"
 						value={searchInput}
 						onChange={(e) => setSearchInput(e.target.value)}
+						onKeyDown={dismissKeyboardOnEnter}
 						placeholder={t("admin.users.searchPlaceholder")}
+						enterKeyHint="search"
+						inputMode="search"
 						className={styles.searchInput}
 						aria-label={t("admin.users.searchLabel")}
 					/>

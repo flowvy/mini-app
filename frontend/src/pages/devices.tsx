@@ -1,6 +1,7 @@
 import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DeviceRow } from "../components/devices/device-row.tsx";
+import { LoadErrorState } from "../components/ui/load-error-state.tsx";
 import { PageLoading } from "../components/ui/page-loading.tsx";
 import { useDeleteAllDevices, useDeleteDevice, useDevices } from "../hooks/use-devices.ts";
 import { hapticNotification } from "../lib/haptics.ts";
@@ -8,7 +9,7 @@ import styles from "./devices.module.css";
 
 export const Devices: FC = () => {
 	const { t } = useTranslation();
-	const { devices: data, isPending, error } = useDevices();
+	const { devices: data, isPending, error, refetch } = useDevices();
 	const deleteDevice = useDeleteDevice();
 	const deleteAll = useDeleteAllDevices();
 	const [confirmHwid, setConfirmHwid] = useState<string | null>(null);
@@ -20,11 +21,7 @@ export const Devices: FC = () => {
 	}
 
 	if (error) {
-		return (
-			<div className={styles.empty}>
-				<span className={styles.emptyTitle}>{t("devices.error")}</span>
-			</div>
-		);
+		return <LoadErrorState onRetry={refetch} />;
 	}
 
 	const devices = data?.devices ?? [];

@@ -5,7 +5,6 @@
 	flex-direction: column;
 	padding: 16px;
 	padding-bottom: 96px;
-	animation: var(--fv-anim-fade-in) 0.15s ease-out;
 }
 
 /* Search + chips block — scrolls with content, NOT sticky */
@@ -70,7 +69,6 @@
 	padding: 16px;
 	padding-bottom: 96px;
 	gap: 16px;
-	animation: var(--fv-anim-fade-in) 0.15s ease-out;
 }
 
 .detailHeader {

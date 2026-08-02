@@ -3,7 +3,6 @@
 .page {
 	padding: 16px;
 	padding-bottom: 96px;
-	animation: var(--fv-anim-fade-in) 0.15s ease-out;
 }
 
 /* ── Headers ── */
@@ -44,6 +43,29 @@
 	font-weight: 700;
 	color: var(--v2-text-primary);
 	margin: 0;
+}
+
+.providerRow {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 11px 14px 12px;
+}
+
+.providerHeading {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.providerLabel {
+	font-size: 13px;
+	color: var(--v2-text-primary);
+}
+
+.providerDescription {
+	font-size: 10.5px;
+	color: var(--v2-text-secondary);
 }
 
 /* ── Tool row (drill-down) ── */

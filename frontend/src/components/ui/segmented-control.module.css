@@ -3,6 +3,9 @@
 .root {
 	position: relative;
 	display: flex;
+	width: 100%;
+	min-inline-size: 0;
+	margin: 0;
 	background: var(--v2-bg-primary);
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-md);
@@ -10,22 +13,11 @@
 	-webkit-tap-highlight-color: transparent;
 }
 
-.pill {
-	position: absolute;
-	top: 3px;
-	bottom: 3px;
-	left: 3px;
-	border-radius: var(--radius-sm);
-	background: var(--v2-bg-positive-tertiary);
-	transition: transform var(--spring-duration) var(--spring-snappy);
-	will-change: transform;
-	pointer-events: none;
-}
-
 .btn {
 	flex: 1;
+	min-width: 0;
 	position: relative;
-	z-index: 1;
+	isolation: isolate;
 	padding: 5px 0;
 	border-radius: var(--radius-sm);
 	border: none;
@@ -38,9 +30,34 @@
 	letter-spacing: 0.06em;
 	cursor: pointer;
 	-webkit-tap-highlight-color: transparent;
-	transition: color var(--duration-base) ease;
+	transition: color 140ms ease-out, transform 120ms ease-out;
+}
+
+.btn::before {
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: var(--radius-sm);
+	background: var(--v2-bg-positive-tertiary);
+	content: "";
+	opacity: 0;
+	transform: scale(0.92);
+	transition: opacity 120ms ease-out, transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.btn:active:not(:disabled) {
+	transform: scale(0.98);
+}
+
+.btn:disabled {
+	cursor: wait;
 }
 
 .active {
 	color: var(--v2-text-positive);
+}
+
+.active::before {
+	opacity: 1;
+	transform: scale(1);
 }

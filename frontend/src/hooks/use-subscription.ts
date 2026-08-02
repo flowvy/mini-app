@@ -8,15 +8,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";
+import { isMockAuth } from "../lib/runtime.ts";
 import type { SubscriptionData } from "../types/subscription.ts";
 
 interface UseSubscriptionResult {
 	subscription: SubscriptionData | null;
 	isPending: boolean;
 	error: Error | null;
+	refetch: () => void;
 }
 
-const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
 const debugTelegramId = import.meta.env.VITE_DEBUG_TELEGRAM_ID;
 
 function fetchSubscription(): Promise<SubscriptionData> {
@@ -27,7 +28,7 @@ function fetchSubscription(): Promise<SubscriptionData> {
 }
 
 export function useSubscription(): UseSubscriptionResult {
-	const { data, isPending, error } = useQuery({
+	const { data, isPending, error, refetch } = useQuery({
 		queryKey: queryKeys.subscription,
 		queryFn: fetchSubscription,
 		staleTime: 0,
@@ -38,5 +39,8 @@ export function useSubscription(): UseSubscriptionResult {
 		subscription: data ?? null,
 		isPending,
 		error: error ?? null,
+		refetch: () => {
+			void refetch();
+		},
 	};
 }

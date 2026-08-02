@@ -403,7 +403,6 @@
 
 /* ── Animation name vars (CSS Modules scoping workaround) ── */
 :root {
-	--fv-anim-fade-in: fvFadeIn;
 	--fv-anim-slide-up: fvSlideUp;
 	--fv-anim-slide-down: fvSlideDown;
 	--fv-anim-modal-in: fvModalIn;
@@ -425,15 +424,6 @@
 }
 
 /* ── Animations ── */
-@keyframes fvFadeIn {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-
 @keyframes fvSlideUp {
 	from {
 		opacity: 0;

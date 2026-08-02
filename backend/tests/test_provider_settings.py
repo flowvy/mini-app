@@ -9,7 +9,11 @@ from unittest.mock import AsyncMock
 import pytest
 from pydantic import ValidationError
 
-from flowvy.schemas.provider_settings import ProviderSettingsPatch
+from flowvy.schemas.provider_settings import (
+    BeszelTestRequest,
+    KumaTestRequest,
+    ProviderSettingsPatch,
+)
 from flowvy.services.beszel import BeszelError
 from flowvy.services.kuma import KumaError
 from flowvy.services.provider_settings import ProviderSettingsError, ProviderSettingsService
@@ -153,6 +157,23 @@ async def test_connection_test_returns_only_safe_client_error() -> None:
 
 
 @pytest.mark.asyncio
+async def test_kuma_candidate_test_uses_unsaved_target_without_persistence() -> None:
+    service, kuma, _beszel, redis = _service(_row())
+    kuma.get_status_page = AsyncMock(return_value=object())
+    candidate = KumaTestRequest(url="https://draft.example.test", slug="flowvy")
+
+    result = await service.test_kuma_candidate(candidate.url, candidate.slug)
+
+    assert result.ok is True
+    kuma.get_status_page.assert_awaited_once_with(
+        "https://draft.example.test",
+        "flowvy",
+    )
+    service._repo.update_partial.assert_not_awaited()
+    redis.delete.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_enabling_beszel_requires_url_and_server_credentials() -> None:
     service, _kuma, beszel, _redis = _service(_row())
 
@@ -198,6 +219,20 @@ async def test_beszel_connection_test_returns_only_safe_error() -> None:
 
     assert result.ok is False
     assert result.error == "Beszel authentication failed"
+
+
+@pytest.mark.asyncio
+async def test_beszel_candidate_test_uses_unsaved_target_without_persistence() -> None:
+    service, _kuma, beszel, redis = _service(_row())
+    beszel.test_connection = AsyncMock(return_value=None)
+    candidate = BeszelTestRequest(url="https://draft.example.test")
+
+    result = await service.test_beszel_candidate(candidate.url)
+
+    assert result.ok is True
+    beszel.test_connection.assert_awaited_once_with("https://draft.example.test")
+    service._repo.update_partial.assert_not_awaited()
+    redis.delete.assert_not_awaited()
 
 
 @pytest.mark.asyncio

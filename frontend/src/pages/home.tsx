@@ -2,13 +2,14 @@ import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import { DetailSection } from "../components/home/detail-section.tsx";
 import { HeroCard } from "../components/home/hero-card.tsx";
+import { LoadErrorState } from "../components/ui/load-error-state.tsx";
 import { Skeleton } from "../components/ui/skeleton.tsx";
 import { useSubscription } from "../hooks/use-subscription.ts";
 import { ApiError } from "../lib/api.ts";
 import styles from "./home.module.css";
 
 export const Home: FC = () => {
-	const { subscription, isPending, error } = useSubscription();
+	const { subscription, isPending, error, refetch } = useSubscription();
 	const { t } = useTranslation();
 
 	if (isPending) {
@@ -43,11 +44,7 @@ export const Home: FC = () => {
 	}
 
 	if (error && !(error instanceof ApiError && error.status === 404)) {
-		return (
-			<div className={styles.page}>
-				<p style={{ color: "var(--v2-text-negative)" }}>{t("home.error")}</p>
-			</div>
-		);
+		return <LoadErrorState onRetry={refetch} />;
 	}
 
 	if (!subscription || (error instanceof ApiError && error.status === 404)) {

@@ -116,3 +116,13 @@ export function getRawInitData(): string | undefined {
 		return undefined;
 	}
 }
+
+/** Hide the software keyboard using the native Mini App API with a browser fallback. */
+export function hideVirtualKeyboard(target?: HTMLElement): void {
+	target?.blur();
+	try {
+		window.Telegram?.WebApp.hideKeyboard?.();
+	} catch {
+		/* Older Telegram clients and normal browsers use blur() above. */
+	}
+}
