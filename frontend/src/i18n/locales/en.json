@@ -2,6 +2,12 @@
 	"common": {
 		"notAuthenticated": "Not authenticated",
 		"retry": "Retry",
+		"back": "Back",
+		"accessDenied": {
+			"title": "Access denied",
+			"description": "This section is available to administrators only.",
+			"back": "Back to app"
+		},
 		"appName": "Flowvy",
 		"comingSoon": "Coming soon",
 		"header": {
@@ -88,6 +94,7 @@
 		"cancel": "Cancel",
 		"removeLoading": "...",
 		"remove": "Remove",
+		"removeError": "Could not remove the device. Try again.",
 		"row": {
 			"added": "Added {{date}}",
 			"removeConfirm": "Remove",
@@ -114,6 +121,9 @@
 			"retry": "Retry"
 		},
 		"noIncidents": "No active incidents",
+		"incidents": {
+			"title": "Active incidents"
+		},
 		"banner": {
 			"operational": "All systems operational",
 			"partial": "Partial system outage",
@@ -128,6 +138,7 @@
 	"settings": {
 		"title": "Settings",
 		"error": "Failed to load settings",
+		"saveError": "Could not save changes. Try again.",
 		"integrations": "Integrations",
 		"uptimeKuma": "Uptime Kuma",
 		"integrationsHint": "Status page monitoring for your services.",
@@ -149,6 +160,7 @@
 			"connected": "Connected",
 			"notTested": "Not tested",
 			"test": "Test",
+			"testError": "Connection test failed. Try again.",
 			"discardTitle": "Discard changes?",
 			"discardConfirm": "Discard",
 			"discardCancel": "Keep editing",
@@ -320,6 +332,7 @@
 			"cancelLabel": "Cancel"
 		},
 		"actions": {
+			"error": "The action failed. Try again.",
 			"disable": "Disable",
 			"enable": "Enable",
 			"disableTitle": "Disable user?",

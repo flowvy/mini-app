@@ -45,6 +45,21 @@ export const Pulse: FC = () => {
 					<span className={styles.incidentsEmptyText}>{t("pulse.noIncidents")}</span>
 				</div>
 			)}
+			{pulse.incidents.length > 0 && (
+				<section className={styles.incidents} aria-label={t("pulse.incidents.title")}>
+					<h2>{t("pulse.incidents.title")}</h2>
+					{pulse.incidents.map((incident) => (
+						<article key={`${incident.title}-${incident.createdAt}`} className={styles.incident}>
+							<strong>{incident.title}</strong>
+							<time dateTime={incident.createdAt}>
+								{new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
+									new Date(incident.createdAt),
+								)}
+							</time>
+						</article>
+					))}
+				</section>
+			)}
 		</div>
 	);
 };

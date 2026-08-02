@@ -1,7 +1,7 @@
 {
 	"$schema": "https://biomejs.dev/schemas/1.9.0/schema.json",
 	"files": {
-		"ignore": ["dist/**"]
+		"ignore": ["dist/**", "test-results/**", "playwright-report/**", "coverage/**"]
 	},
 	"organizeImports": {
 		"enabled": true
@@ -25,6 +25,12 @@
 		}
 	},
 	"overrides": [
+		{
+			"include": ["src/components/ui/action-btn.module.css"],
+			"formatter": {
+				"lineEnding": "crlf"
+			}
+		},
 		{
 			"include": ["src/components/pulse/heartbeat-bar.tsx"],
 			"linter": {

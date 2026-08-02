@@ -4,9 +4,11 @@
  */
 import { ArrowLeft } from "lucide-react";
 import { type FC, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { UserAction } from "../../components/admin/admin-user-actions.ts";
 import { AdminUserDetail } from "../../components/admin/admin-user-detail.tsx";
 import { AdminUserHero } from "../../components/admin/admin-user-hero.tsx";
+import { InlineFeedback } from "../../components/ui/inline-feedback.tsx";
 import { StatusBadge } from "../../components/ui/status-badge.tsx";
 import {
 	useDeleteUser,
@@ -24,7 +26,9 @@ interface UserDetailViewProps {
 }
 
 export const UserDetailView: FC<UserDetailViewProps> = ({ user, onBack }) => {
+	const { t } = useTranslation();
 	const [actionLoading, setActionLoading] = useState<UserAction | null>(null);
+	const [actionFailed, setActionFailed] = useState(false);
 	const enableMut = useEnableUser();
 	const disableMut = useDisableUser();
 	const resetMut = useResetTraffic();
@@ -32,17 +36,20 @@ export const UserDetailView: FC<UserDetailViewProps> = ({ user, onBack }) => {
 	const deleteMut = useDeleteUser();
 
 	const handleAction = async (key: UserAction) => {
+		setActionFailed(false);
 		setActionLoading(key);
 		try {
-			if (key === "enable") await enableMut.enable(user.uuid);
-			else if (key === "disable") await disableMut.disable(user.uuid);
-			else if (key === "reset") await resetMut.reset(user.uuid);
-			else if (key === "revoke") await revokeMut.revoke(user.uuid);
+			if (key === "enable") await enableMut.enable(user.id);
+			else if (key === "disable") await disableMut.disable(user.id);
+			else if (key === "reset") await resetMut.reset(user.id);
+			else if (key === "revoke") await revokeMut.revoke(user.id);
 			else if (key === "delete") {
-				await deleteMut.remove(user.uuid);
+				await deleteMut.remove(user.id);
 				onBack();
 				return;
 			}
+		} catch {
+			setActionFailed(true);
 		} finally {
 			setActionLoading(null);
 		}
@@ -50,8 +57,14 @@ export const UserDetailView: FC<UserDetailViewProps> = ({ user, onBack }) => {
 
 	return (
 		<div className={styles.detailPage}>
+			{actionFailed && <InlineFeedback>{t("admin.actions.error")}</InlineFeedback>}
 			<div className={styles.detailHeader}>
-				<button type="button" className={styles.backBtn} onClick={onBack}>
+				<button
+					type="button"
+					className={styles.backBtn}
+					onClick={onBack}
+					aria-label={t("common.back")}
+				>
 					<ArrowLeft size={16} />
 				</button>
 				<h1 className={styles.detailTitle}>{user.username}</h1>

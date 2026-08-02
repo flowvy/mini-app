@@ -86,6 +86,28 @@
 	justify-content: center;
 }
 
+.confirmActions {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex-shrink: 0;
+}
+
+.cancelBtn {
+	height: 28px;
+	padding: 0 7px;
+	border: none;
+	background: transparent;
+	color: var(--v2-text-secondary);
+	font-size: 10.5px;
+	cursor: pointer;
+}
+
+.cancelBtn:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
 .removeConfirmBtn:disabled {
 	opacity: 0.6;
 	cursor: not-allowed;

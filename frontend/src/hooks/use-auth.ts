@@ -43,6 +43,11 @@ const MOCK_USER: UserResponse = {
 
 const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
 
+function getMockUser(): UserResponse {
+	const role = window.localStorage.getItem("flowvy:mock-role") === "user" ? "user" : "admin";
+	return { ...MOCK_USER, role };
+}
+
 export function useAuth(): AuthState & { retry: () => void } {
 	const [user, setUser] = useState<UserResponse | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -50,6 +55,15 @@ export function useAuth(): AuthState & { retry: () => void } {
 
 	const fetchUser = useCallback(async () => {
 		if (isMockAuth) {
+			setIsLoading(true);
+			setError(null);
+			if (window.localStorage.getItem("flowvy:mock-auth") === "unauthenticated") {
+				setUser(null);
+				setError("Not authenticated");
+				setIsLoading(false);
+				return;
+			}
+			const mockUser = getMockUser();
 			try {
 				const settings = await apiGet<{
 					kumaEnabled: boolean;
@@ -57,12 +71,12 @@ export function useAuth(): AuthState & { retry: () => void } {
 					logoUrl: string | null;
 				}>("/debug/admin/settings");
 				setUser({
-					...MOCK_USER,
+					...mockUser,
 					features: { pulse: settings.kumaEnabled },
 					branding: { appName: settings.appName ?? null, logoUrl: settings.logoUrl ?? null },
 				});
 			} catch {
-				setUser(MOCK_USER);
+				setUser(mockUser);
 			}
 			setIsLoading(false);
 			return;

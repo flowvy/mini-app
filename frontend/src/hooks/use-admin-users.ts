@@ -27,10 +27,10 @@ export function useAdminUsers() {
 	});
 }
 
-export function useAdminUser(uuid: string) {
+export function useAdminUser(id: string) {
 	const { data, isPending, error } = useQuery<AdminUser>({
-		queryKey: queryKeys.adminUser(uuid),
-		queryFn: () => apiGet<AdminUser>(`${prefix}/${uuid}`),
+		queryKey: queryKeys.adminUser(id),
+		queryFn: () => apiGet<AdminUser>(`${prefix}/${id}`),
 		staleTime: 0,
 	});
 
@@ -62,7 +62,7 @@ export function useEnableUser() {
 	const mutation = useAdminUserAction("post");
 	return {
 		...mutation,
-		enable: (uuid: string) => mutation.mutateAsync(`${prefix}/${uuid}/enable`),
+		enable: (id: number) => mutation.mutateAsync(`${prefix}/${id}/enable`),
 	};
 }
 
@@ -70,7 +70,7 @@ export function useDisableUser() {
 	const mutation = useAdminUserAction("post");
 	return {
 		...mutation,
-		disable: (uuid: string) => mutation.mutateAsync(`${prefix}/${uuid}/disable`),
+		disable: (id: number) => mutation.mutateAsync(`${prefix}/${id}/disable`),
 	};
 }
 
@@ -78,7 +78,7 @@ export function useResetTraffic() {
 	const mutation = useAdminUserAction("post");
 	return {
 		...mutation,
-		reset: (uuid: string) => mutation.mutateAsync(`${prefix}/${uuid}/reset-traffic`),
+		reset: (id: number) => mutation.mutateAsync(`${prefix}/${id}/reset-traffic`),
 	};
 }
 
@@ -86,7 +86,7 @@ export function useRevokeSubscription() {
 	const mutation = useAdminUserAction("post");
 	return {
 		...mutation,
-		revoke: (uuid: string) => mutation.mutateAsync(`${prefix}/${uuid}/revoke`),
+		revoke: (id: number) => mutation.mutateAsync(`${prefix}/${id}/revoke`),
 	};
 }
 
@@ -94,6 +94,6 @@ export function useDeleteUser() {
 	const mutation = useAdminUserAction("delete");
 	return {
 		...mutation,
-		remove: (uuid: string) => mutation.mutateAsync(`${prefix}/${uuid}`),
+		remove: (id: number) => mutation.mutateAsync(`${prefix}/${id}`),
 	};
 }

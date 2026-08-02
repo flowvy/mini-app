@@ -1,7 +1,7 @@
 import { useBlocker } from "@tanstack/react-router";
 /** Welcome Message sub-screen — text, media file upload, button text, save. */
 import { ArrowLeft } from "lucide-react";
-import { type FC, useEffect, useState } from "react";
+import { type FC, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import { apiUploadFile } from "../../lib/api.ts";
@@ -17,6 +17,7 @@ import {
 	FormSectionHeader,
 	FormTextarea,
 } from "../ui/form-section.tsx";
+import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { WelcomeMediaRow } from "./welcome-media-row.tsx";
 
 const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
@@ -36,6 +37,8 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 	const [mediaType, setMediaType] = useState(settings.welcomeMediaType);
 	const [saved, setSaved] = useState(false);
 	const [uploading, setUploading] = useState(false);
+	const [feedbackError, setFeedbackError] = useState<string | null>(null);
+	const backButtonRef = useRef<HTMLButtonElement>(null);
 
 	const updateMutation = useUpdateSettings();
 
@@ -67,18 +70,24 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 	}, [saved]);
 
 	const handleSave = async () => {
-		await updateMutation.mutateAsync({
-			welcomeText: text || null,
-			welcomeButtonText: buttonText || null,
-			welcomeMediaFileId: mediaFileId,
-			welcomeMediaFileName: mediaFileName,
-			welcomeMediaType: mediaType,
-			welcomeMediaUrl: mediaFileId ? null : undefined,
-		});
-		setSaved(true);
+		setFeedbackError(null);
+		try {
+			await updateMutation.mutateAsync({
+				welcomeText: text || null,
+				welcomeButtonText: buttonText || null,
+				welcomeMediaFileId: mediaFileId,
+				welcomeMediaFileName: mediaFileName,
+				welcomeMediaType: mediaType,
+				welcomeMediaUrl: mediaFileId ? null : undefined,
+			});
+			setSaved(true);
+		} catch {
+			setFeedbackError(t("settings.saveError"));
+		}
 	};
 
 	const handlePickFile = async (file: File) => {
+		setFeedbackError(null);
 		setUploading(true);
 		try {
 			const result = await apiUploadFile<WelcomeMediaUpload>(`${prefix}/welcome-media`, file);
@@ -87,13 +96,14 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 			setMediaType(result.mediaType);
 			setSaved(false);
 		} catch {
-			/* upload failed — state unchanged */
+			setFeedbackError(t("settings.welcome.mediaUploadError"));
 		} finally {
 			setUploading(false);
 		}
 	};
 
 	const handleReset = () => {
+		setFeedbackError(null);
 		setMediaFileId(null);
 		setMediaFileName(null);
 		setMediaType(null);
@@ -102,8 +112,15 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 
 	return (
 		<div className={ss.page}>
+			{feedbackError && <InlineFeedback>{feedbackError}</InlineFeedback>}
 			<div className={ss.subHeader}>
-				<button type="button" className={ss.backBtn} onClick={onBack}>
+				<button
+					ref={backButtonRef}
+					type="button"
+					className={ss.backBtn}
+					onClick={onBack}
+					aria-label={t("common.back")}
+				>
 					<ArrowLeft size={16} />
 				</button>
 				<h1 className={ss.headerTitle}>{t("settings.welcome.title")}</h1>
@@ -160,6 +177,7 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 
 			<ConfirmDialog
 				open={blocker.status === "blocked"}
+				returnFocusRef={backButtonRef}
 				title={t("settings.welcome.discardTitle")}
 				confirmLabel={t("settings.welcome.discardConfirm")}
 				cancelLabel={t("settings.welcome.discardCancel")}

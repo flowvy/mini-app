@@ -1,7 +1,7 @@
 import { useBlocker } from "@tanstack/react-router";
 /** Branding sub-screen — app name, logo URL, save. */
 import { ArrowLeft } from "lucide-react";
-import { type FC, useEffect, useState } from "react";
+import { type FC, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import ss from "../../pages/admin/settings.module.css";
@@ -16,6 +16,7 @@ import {
 	FormSectionFooter,
 	FormSectionHeader,
 } from "../ui/form-section.tsx";
+import { InlineFeedback } from "../ui/inline-feedback.tsx";
 
 interface BrandingConfigProps {
 	settings: AdminSettings;
@@ -27,6 +28,8 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings, onBack }) =>
 	const [appName, setAppName] = useState(settings.appName ?? "");
 	const [logoUrl, setLogoUrl] = useState(settings.logoUrl ?? "");
 	const [saved, setSaved] = useState(false);
+	const [saveFailed, setSaveFailed] = useState(false);
+	const backButtonRef = useRef<HTMLButtonElement>(null);
 
 	const updateMutation = useUpdateSettings();
 
@@ -47,17 +50,29 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings, onBack }) =>
 	}, [saved]);
 
 	const handleSave = async () => {
-		await updateMutation.mutateAsync({
-			appName: appName || null,
-			logoUrl: logoUrl || null,
-		});
-		setSaved(true);
+		setSaveFailed(false);
+		try {
+			await updateMutation.mutateAsync({
+				appName: appName || null,
+				logoUrl: logoUrl || null,
+			});
+			setSaved(true);
+		} catch {
+			setSaveFailed(true);
+		}
 	};
 
 	return (
 		<div className={ss.page}>
+			{saveFailed && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
 			<div className={ss.subHeader}>
-				<button type="button" className={ss.backBtn} onClick={onBack}>
+				<button
+					ref={backButtonRef}
+					type="button"
+					className={ss.backBtn}
+					onClick={onBack}
+					aria-label={t("common.back")}
+				>
 					<ArrowLeft size={16} />
 				</button>
 				<h1 className={ss.headerTitle}>{t("settings.branding.title")}</h1>
@@ -98,6 +113,7 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings, onBack }) =>
 
 			<ConfirmDialog
 				open={blocker.status === "blocked"}
+				returnFocusRef={backButtonRef}
 				title={t("settings.branding.discardTitle")}
 				confirmLabel={t("settings.branding.discardConfirm")}
 				cancelLabel={t("settings.branding.discardCancel")}

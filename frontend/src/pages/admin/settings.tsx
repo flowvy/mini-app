@@ -10,6 +10,7 @@ import {
 	FormSectionFooter,
 	FormSectionHeader,
 } from "../../components/ui/form-section.tsx";
+import { InlineFeedback } from "../../components/ui/inline-feedback.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { Toggle } from "../../components/ui/toggle.tsx";
 import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
@@ -65,6 +66,7 @@ export const AdminSettings: FC = () => {
 	}
 
 	const handleToggleKuma = (enabled: boolean) => {
+		updateMutation.reset();
 		updateMutation.mutate({ kumaEnabled: enabled });
 	};
 
@@ -72,6 +74,7 @@ export const AdminSettings: FC = () => {
 
 	return (
 		<div className={styles.page}>
+			{updateMutation.isError && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
 			<FormSectionHeader>{t("settings.integrations")}</FormSectionHeader>
 			<FormSectionCard>
 				<FormRow label={t("settings.uptimeKuma")}>

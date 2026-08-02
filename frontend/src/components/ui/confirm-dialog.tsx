@@ -3,7 +3,7 @@
  * Header with title + close button, body, footer with action buttons.
  */
 import { X } from "lucide-react";
-import { type FC, type ReactNode, useRef } from "react";
+import { type FC, type ReactNode, type RefObject, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { hapticImpact, hapticNotification } from "../../lib/haptics.ts";
 import { ActionBtn } from "./action-btn.tsx";
@@ -18,6 +18,7 @@ interface ConfirmDialogProps {
 	confirmVariant?: "confirm" | "danger";
 	onConfirm: () => void;
 	onCancel: () => void;
+	returnFocusRef?: RefObject<HTMLElement | null>;
 }
 
 export const ConfirmDialog: FC<ConfirmDialogProps> = ({
@@ -29,9 +30,38 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 	confirmVariant = "confirm",
 	onConfirm,
 	onCancel,
+	returnFocusRef,
 }) => {
 	const { t } = useTranslation();
 	const overlayRef = useRef<HTMLDivElement>(null);
+	const modalRef = useRef<HTMLDialogElement>(null);
+	const closeRef = useRef<HTMLButtonElement>(null);
+	const fallbackFocusRef = useRef<HTMLElement | null>(null);
+
+	useEffect(() => {
+		if (!open) return;
+		fallbackFocusRef.current =
+			document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		closeRef.current?.focus();
+	}, [open]);
+
+	const restoreTriggerFocus = () => {
+		const target = returnFocusRef?.current ?? fallbackFocusRef.current;
+		window.setTimeout(() => {
+			const liveTarget = returnFocusRef?.current ?? target;
+			if (liveTarget?.isConnected) liveTarget.focus();
+		}, 50);
+	};
+
+	const cancel = () => {
+		onCancel();
+		restoreTriggerFocus();
+	};
+
+	const confirm = () => {
+		onConfirm();
+		restoreTriggerFocus();
+	};
 
 	if (!open) return null;
 
@@ -39,20 +69,50 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 		<div
 			ref={overlayRef}
 			className={styles.overlay}
-			onClick={(e) => {
-				if (e.target === overlayRef.current) onCancel();
+			onClick={(event) => {
+				if (event.target === overlayRef.current) cancel();
 			}}
-			onKeyDown={(e) => {
-				if (e.key === "Escape") onCancel();
+			onKeyDown={(event) => {
+				if (event.key === "Escape") {
+					event.preventDefault();
+					cancel();
+				}
+				if (event.key !== "Tab" || !modalRef.current) return;
+				const focusable = Array.from(
+					modalRef.current.querySelectorAll<HTMLElement>(
+						'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+					),
+				);
+				if (focusable.length === 0) return;
+				const first = focusable[0];
+				const last = focusable[focusable.length - 1];
+				if (event.shiftKey && document.activeElement === first) {
+					event.preventDefault();
+					last.focus();
+				} else if (!event.shiftKey && document.activeElement === last) {
+					event.preventDefault();
+					first.focus();
+				}
 			}}
 		>
-			<dialog open className={styles.modal} aria-label={title}>
+			<dialog
+				ref={modalRef}
+				open
+				className={styles.modal}
+				aria-label={title}
+				aria-modal="true"
+				onCancel={(event) => {
+					event.preventDefault();
+					cancel();
+				}}
+			>
 				<div className={styles.header}>
 					<span className={styles.title}>{title}</span>
 					<button
+						ref={closeRef}
 						type="button"
 						className={styles.closeBtn}
-						onClick={onCancel}
+						onClick={cancel}
 						aria-label={t("common.confirmDialog.closeLabel")}
 					>
 						<X size={16} />
@@ -65,7 +125,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 						size="md"
 						onClick={() => {
 							hapticImpact("light");
-							onCancel();
+							cancel();
 						}}
 					>
 						{cancelLabel}
@@ -75,7 +135,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 						size="md"
 						onClick={() => {
 							hapticNotification("warning");
-							onConfirm();
+							confirm();
 						}}
 					>
 						{confirmLabel}

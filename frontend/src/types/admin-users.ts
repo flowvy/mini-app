@@ -12,7 +12,7 @@ export interface AdminUserInternalSquad {
 }
 
 export interface AdminUser {
-	uuid: string;
+	id: number;
 	username: string;
 	status: SubscriptionStatus;
 	tag: string | null;

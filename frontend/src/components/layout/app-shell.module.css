@@ -30,3 +30,34 @@
 	height: 1px;
 	width: 100%;
 }
+
+.denied {
+	max-width: 420px;
+	margin: 48px auto;
+	padding: 24px;
+	text-align: center;
+	color: var(--v2-text-secondary);
+}
+
+.denied h1 {
+	margin: 0 0 8px;
+	font-size: 18px;
+	color: var(--v2-text-primary);
+}
+
+.denied p {
+	margin: 0 0 20px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.deniedLink {
+	display: inline-flex;
+	padding: 10px 16px;
+	border-radius: var(--radius-sm);
+	background: var(--v2-bg-primary-inverted);
+	color: var(--v2-text-primary-inverted);
+	font-size: 13px;
+	font-weight: 600;
+	text-decoration: none;
+}

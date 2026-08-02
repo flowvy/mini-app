@@ -8,16 +8,16 @@ import styles from "./virtualized-user-list.module.css";
 
 interface VirtualizedUserListProps {
 	users: AdminUser[];
-	onUserClick: (uuid: string) => void;
+	onUserClick: (id: number) => void;
 }
 
 interface RowProps {
 	user: AdminUser;
-	onUserClick: (uuid: string) => void;
+	onUserClick: (id: number) => void;
 }
 
 const Row = memo(function Row({ user, onUserClick }: RowProps) {
-	const handle = useCallback(() => onUserClick(user.uuid), [user.uuid, onUserClick]);
+	const handle = useCallback(() => onUserClick(user.id), [user.id, onUserClick]);
 	return (
 		<div className={styles.card}>
 			<UserRow user={user} onClick={handle} />
@@ -51,7 +51,7 @@ export const VirtualizedUserList: FC<VirtualizedUserListProps> = ({ users, onUse
 		useFlushSync: false,
 		scrollMargin,
 		initialOffset: scrollEntry?.scrollY ?? 0,
-		getItemKey: useCallback((index: number) => users[index].uuid, [users]),
+		getItemKey: useCallback((index: number) => users[index].id, [users]),
 	});
 
 	const virtualItems = virtualizer.getVirtualItems();

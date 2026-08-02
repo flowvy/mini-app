@@ -1,4 +1,4 @@
-/** Remnawave system stats (raw dict from API). */
+/** Validated Remnawave system stats projection returned by the BFF. */
 export interface RemnawaveStatusCounts {
 	ACTIVE: number;
 	DISABLED: number;
@@ -27,7 +27,7 @@ export interface BandwidthPeriod {
 	difference: string;
 }
 
-/** Remnawave bandwidth stats (raw dict from API). */
+/** Validated Remnawave bandwidth projection returned by the BFF. */
 export interface RemnawaveBandwidth {
 	bandwidthLastTwoDays: BandwidthPeriod;
 	bandwidthLastSevenDays: BandwidthPeriod;

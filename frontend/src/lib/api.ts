@@ -4,7 +4,7 @@
  */
 import { getRawInitData } from "./telegram.ts";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8001/api";
+const BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 export class ApiError extends Error {
 	constructor(
@@ -13,6 +13,20 @@ export class ApiError extends Error {
 	) {
 		super(message);
 		this.name = "ApiError";
+	}
+}
+
+async function getErrorMessage(response: Response): Promise<string> {
+	const fallback = `Request failed (${response.status})`;
+	const payload = await response.text();
+	if (!payload) return fallback;
+
+	try {
+		const parsed = JSON.parse(payload) as { detail?: unknown };
+		return typeof parsed.detail === "string" && parsed.detail.trim() ? parsed.detail : fallback;
+	} catch {
+		// Never expose an upstream HTML page or another untrusted response body to the UI.
+		return fallback;
 	}
 }
 
@@ -33,11 +47,17 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 	});
 
 	if (!response.ok) {
-		const detail = await response.text();
-		throw new ApiError(response.status, detail);
+		throw new ApiError(response.status, await getErrorMessage(response));
 	}
 
-	return response.json() as Promise<T>;
+	if (response.status === 204) {
+		return undefined as T;
+	}
+	const payload = await response.text();
+	if (!payload) {
+		return undefined as T;
+	}
+	return JSON.parse(payload) as T;
 }
 
 export function apiGet<T>(path: string): Promise<T> {
@@ -70,8 +90,7 @@ export async function apiUploadFile<T>(path: string, file: File): Promise<T> {
 	});
 
 	if (!response.ok) {
-		const detail = await response.text();
-		throw new ApiError(response.status, detail);
+		throw new ApiError(response.status, await getErrorMessage(response));
 	}
 
 	return response.json() as Promise<T>;

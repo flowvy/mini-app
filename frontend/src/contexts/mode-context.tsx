@@ -2,6 +2,7 @@
  * App mode context — switches between user and admin tab sets.
  */
 import { type ReactNode, createContext, useCallback, useContext, useMemo, useState } from "react";
+import { useCurrentUser } from "../components/auth-guard.tsx";
 
 export type AppMode = "user" | "admin";
 
@@ -24,16 +25,18 @@ interface ModeProviderProps {
 	children: ReactNode;
 }
 
-function getInitialMode(): AppMode {
-	return window.location.pathname.startsWith("/admin/") ? "admin" : "user";
-}
-
 export function ModeProvider({ children }: ModeProviderProps) {
-	const [mode, setModeState] = useState<AppMode>(getInitialMode);
+	const user = useCurrentUser();
+	const [mode, setModeState] = useState<AppMode>(() =>
+		user.role === "admin" && window.location.pathname.startsWith("/admin/") ? "admin" : "user",
+	);
 
-	const setMode = useCallback((next: AppMode) => {
-		setModeState(next);
-	}, []);
+	const setMode = useCallback(
+		(next: AppMode) => {
+			setModeState(next === "admin" && user.role !== "admin" ? "user" : next);
+		},
+		[user.role],
+	);
 
 	const value = useMemo(() => ({ mode, setMode }), [mode, setMode]);
 

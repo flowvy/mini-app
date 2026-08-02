@@ -28,6 +28,39 @@
 	color: var(--v2-text-secondary);
 }
 
+.incidents {
+	margin-top: 16px;
+	padding: 12px 14px;
+	background: var(--v2-bg-primary);
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-md);
+}
+
+.incidents h2 {
+	margin: 0 0 10px;
+	font-size: 12px;
+	color: var(--v2-text-secondary);
+}
+
+.incident {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 8px 0;
+	font-size: 12px;
+	color: var(--v2-text-primary);
+}
+
+.incident + .incident {
+	border-top: 1px solid var(--v2-border-tertiary);
+}
+
+.incident time {
+	flex-shrink: 0;
+	color: var(--v2-text-tertiary);
+	font-size: 11px;
+}
+
 /* Error state */
 .errorState {
 	display: flex;

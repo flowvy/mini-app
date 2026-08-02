@@ -4,6 +4,7 @@ import { DetailSection } from "../components/home/detail-section.tsx";
 import { HeroCard } from "../components/home/hero-card.tsx";
 import { Skeleton } from "../components/ui/skeleton.tsx";
 import { useSubscription } from "../hooks/use-subscription.ts";
+import { ApiError } from "../lib/api.ts";
 import styles from "./home.module.css";
 
 export const Home: FC = () => {
@@ -41,7 +42,7 @@ export const Home: FC = () => {
 		);
 	}
 
-	if (error) {
+	if (error && !(error instanceof ApiError && error.status === 404)) {
 		return (
 			<div className={styles.page}>
 				<p style={{ color: "var(--v2-text-negative)" }}>{t("home.error")}</p>
@@ -49,7 +50,7 @@ export const Home: FC = () => {
 		);
 	}
 
-	if (!subscription) {
+	if (!subscription || (error instanceof ApiError && error.status === 404)) {
 		return (
 			<div className={styles.page}>
 				<p style={{ color: "var(--v2-text-secondary)" }}>{t("home.noSubscription")}</p>

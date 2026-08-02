@@ -1,0 +1,17 @@
+.message {
+	margin: 12px 0 0;
+	padding: 9px 12px;
+	border-radius: var(--radius-sm);
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.error {
+	border: 1px solid var(--v2-border-negative-secondary);
+	background: var(--v2-bg-negative-secondary);
+	color: var(--v2-text-negative);
+}
+
+.success {
+	color: var(--v2-text-positive);
+}

@@ -10,6 +10,7 @@ interface DeviceRowProps {
 	device: DeviceData;
 	isConfirming: boolean;
 	onConfirm: () => void;
+	onCancel: () => void;
 	onDelete: () => void;
 	isDeleting: boolean;
 }
@@ -31,6 +32,7 @@ export const DeviceRow: FC<DeviceRowProps> = ({
 	device,
 	isConfirming,
 	onConfirm,
+	onCancel,
 	onDelete,
 	isDeleting,
 }) => {
@@ -48,18 +50,28 @@ export const DeviceRow: FC<DeviceRowProps> = ({
 				</span>
 			</div>
 			{isConfirming ? (
-				<button
-					type="button"
-					className={styles.removeConfirmBtn}
-					onClick={onDelete}
-					disabled={isDeleting}
-				>
-					{isDeleting ? (
-						<Loader2 size={12} className={styles.spinner} />
-					) : (
-						t("devices.row.removeConfirm")
-					)}
-				</button>
+				<div className={styles.confirmActions}>
+					<button
+						type="button"
+						className={styles.cancelBtn}
+						onClick={onCancel}
+						disabled={isDeleting}
+					>
+						{t("devices.cancel")}
+					</button>
+					<button
+						type="button"
+						className={styles.removeConfirmBtn}
+						onClick={onDelete}
+						disabled={isDeleting}
+					>
+						{isDeleting ? (
+							<Loader2 size={12} className={styles.spinner} />
+						) : (
+							t("devices.row.removeConfirm")
+						)}
+					</button>
+				</div>
 			) : (
 				<button type="button" className={styles.iconBtn} onClick={onConfirm}>
 					<svg

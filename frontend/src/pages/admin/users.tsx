@@ -74,8 +74,8 @@ export const AdminUsers: FC = () => {
 	}, [allUsers, filter, searchInput]);
 
 	const handleUserClick = useCallback(
-		(uuid: string) => {
-			navigate({ to: "/admin/users/$userId", params: { userId: uuid } });
+		(id: number) => {
+			navigate({ to: "/admin/users/$userId", params: { userId: String(id) } });
 		},
 		[navigate],
 	);

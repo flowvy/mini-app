@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 /**
  * Kuma configuration sub-screen — URL, slug, connection test, save.
  */
-import { type FC, useEffect, useState } from "react";
+import { type FC, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTestKuma, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import ss from "../../pages/admin/settings.module.css";
@@ -19,6 +19,7 @@ import {
 	FormSectionFooter,
 	FormSectionHeader,
 } from "../ui/form-section.tsx";
+import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import styles from "./kuma-config.module.css";
 
 interface KumaConfigProps {
@@ -31,6 +32,8 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 	const [url, setUrl] = useState(settings.kumaUrl ?? "");
 	const [slug, setSlug] = useState(settings.kumaSlug ?? "");
 	const [saved, setSaved] = useState(false);
+	const [saveFailed, setSaveFailed] = useState(false);
+	const backButtonRef = useRef<HTMLButtonElement>(null);
 
 	const updateMutation = useUpdateSettings();
 	const testMutation = useTestKuma();
@@ -52,11 +55,16 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 	}, [saved]);
 
 	const handleSave = async () => {
-		await updateMutation.mutateAsync({
-			kumaUrl: url || null,
-			kumaSlug: slug || null,
-		});
-		setSaved(true);
+		setSaveFailed(false);
+		try {
+			await updateMutation.mutateAsync({
+				kumaUrl: url || null,
+				kumaSlug: slug || null,
+			});
+			setSaved(true);
+		} catch {
+			setSaveFailed(true);
+		}
 	};
 
 	const connStatus = testMutation.data;
@@ -73,8 +81,15 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 
 	return (
 		<div className={ss.page}>
+			{saveFailed && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
 			<div className={ss.subHeader}>
-				<button type="button" className={ss.backBtn} onClick={onBack}>
+				<button
+					ref={backButtonRef}
+					type="button"
+					className={ss.backBtn}
+					onClick={onBack}
+					aria-label={t("common.back")}
+				>
 					<ArrowLeft size={16} />
 				</button>
 				<h1 className={ss.headerTitle}>{t("settings.kuma.title")}</h1>
@@ -121,6 +136,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 				</FormRow>
 			</FormSectionCard>
 			<FormSectionFooter>{t("settings.kuma.connectionHint")}</FormSectionFooter>
+			{testMutation.isError && <InlineFeedback>{t("settings.kuma.testError")}</InlineFeedback>}
 
 			<FormSaveButton
 				dirty={dirty && !saved}
@@ -130,6 +146,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 
 			<ConfirmDialog
 				open={blocker.status === "blocked"}
+				returnFocusRef={backButtonRef}
 				title={t("settings.kuma.discardTitle")}
 				confirmLabel={t("settings.kuma.discardConfirm")}
 				cancelLabel={t("settings.kuma.discardCancel")}

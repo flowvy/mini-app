@@ -10,7 +10,7 @@ import {
 	Trash2,
 	Unlink,
 } from "lucide-react";
-import { type FC, useState } from "react";
+import { type FC, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	formatExpiryCompact,
@@ -57,6 +57,7 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 	const expiryColor = unlExpiry ? undefined : getExpiryColorISO(daysLeft);
 
 	const [confirm, setConfirm] = useState<ActionDef | null>(null);
+	const actionTriggerRef = useRef<HTMLButtonElement>(null);
 	const actions = getActions(user);
 
 	const handleConfirm = () => {
@@ -152,7 +153,10 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 							variant="action"
 							size="md"
 							loading={actionLoading === a.key}
-							onClick={() => setConfirm(a)}
+							onClick={(event) => {
+								actionTriggerRef.current = event.currentTarget;
+								setConfirm(a);
+							}}
 						>
 							{ACTION_ICONS[a.key]} {a.label}
 						</ActionBtn>
@@ -165,7 +169,10 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 							variant="action"
 							size="md"
 							loading={actionLoading === a.key}
-							onClick={() => setConfirm(a)}
+							onClick={(event) => {
+								actionTriggerRef.current = event.currentTarget;
+								setConfirm(a);
+							}}
 						>
 							{ACTION_ICONS[a.key]} {a.label}
 						</ActionBtn>
@@ -175,6 +182,7 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 
 			<ConfirmDialog
 				open={!!confirm}
+				returnFocusRef={actionTriggerRef}
 				title={confirm?.title ?? ""}
 				confirmLabel={confirm?.confirmLabel ?? ""}
 				cancelLabel={t("admin.userHero.cancelLabel")}

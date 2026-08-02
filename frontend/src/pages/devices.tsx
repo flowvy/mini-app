@@ -13,6 +13,7 @@ export const Devices: FC = () => {
 	const deleteAll = useDeleteAllDevices();
 	const [confirmHwid, setConfirmHwid] = useState<string | null>(null);
 	const [confirmAll, setConfirmAll] = useState(false);
+	const [mutationError, setMutationError] = useState(false);
 
 	if (isPending) {
 		return <PageLoading />;
@@ -30,21 +31,34 @@ export const Devices: FC = () => {
 	const limit = data?.limit ?? null;
 
 	const handleDelete = (hwid: string) => {
+		setMutationError(false);
 		deleteDevice.mutate(hwid, {
-			onSuccess: () => hapticNotification("success"),
-			onSettled: () => setConfirmHwid(null),
+			onSuccess: () => {
+				hapticNotification("success");
+				setConfirmHwid(null);
+			},
+			onError: () => setMutationError(true),
 		});
 	};
 
 	const handleDeleteAll = () => {
+		setMutationError(false);
 		deleteAll.mutate(undefined, {
-			onSuccess: () => hapticNotification("success"),
-			onSettled: () => setConfirmAll(false),
+			onSuccess: () => {
+				hapticNotification("success");
+				setConfirmAll(false);
+			},
+			onError: () => setMutationError(true),
 		});
 	};
 
 	return (
 		<div className={styles.page}>
+			{mutationError && (
+				<p className={styles.mutationError} role="alert">
+					{t("devices.removeError")}
+				</p>
+			)}
 			{limit !== null && (
 				<div className={styles.counter}>
 					<span className={styles.counterUsed}>{devices.length}</span>
@@ -60,7 +74,14 @@ export const Devices: FC = () => {
 							<DeviceRow
 								device={device}
 								isConfirming={confirmHwid === device.hwid}
-								onConfirm={() => setConfirmHwid(device.hwid)}
+								onConfirm={() => {
+									setMutationError(false);
+									setConfirmHwid(device.hwid);
+								}}
+								onCancel={() => {
+									setMutationError(false);
+									setConfirmHwid(null);
+								}}
 								onDelete={() => handleDelete(device.hwid)}
 								isDeleting={deleteDevice.isPending && confirmHwid === device.hwid}
 							/>
@@ -97,6 +118,7 @@ export const Devices: FC = () => {
 					className={styles.dangerBtn}
 					onClick={() => {
 						hapticNotification("warning");
+						setMutationError(false);
 						setConfirmAll(true);
 					}}
 				>
@@ -110,7 +132,14 @@ export const Devices: FC = () => {
 						{t("devices.confirmAll", { n: devices.length })}
 					</span>
 					<div className={styles.confirmBarActions}>
-						<button type="button" className={styles.ghostBtn} onClick={() => setConfirmAll(false)}>
+						<button
+							type="button"
+							className={styles.ghostBtn}
+							onClick={() => {
+								setMutationError(false);
+								setConfirmAll(false);
+							}}
+						>
 							{t("devices.cancel")}
 						</button>
 						<button
