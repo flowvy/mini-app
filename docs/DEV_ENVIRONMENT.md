@@ -1,195 +1,235 @@
-# Development Environment
+# Локальная среда Flowvy
 
-## Architecture (Dev)
+Инструкция разделяет безопасную локальную разработку и подключение реальных Telegram/Remnawave/Kuma.
+По умолчанию не используйте реальные внешние системы.
 
-```
-┌──────────────┐     ┌─────────────────┐
-│  Your Phone  │────▶│  ngrok tunnel   │
-│  (Telegram)  │     │  (HTTPS → local)│
-└──────────────┘     └──┬──────────┬───┘
-                        │          │
-                 ┌──────▼───┐ ┌───▼──────────┐
-                 │ Vite dev │ │ FastAPI+Bot  │
-                 │ :5173    │ │ :8001        │
-                 │ (HMR)   │ │ (uvicorn)    │
-                 └──────────┘ └──────┬───────┘
-                                     │
-                              ┌──────▼───────┐
-                              │ Docker       │
-                              │ PostgreSQL   │
-                              │ Redis        │
-                              └──────────────┘
-```
+## Что понадобится
 
-No nginx in dev. No Docker for backend or frontend. Only PostgreSQL and Redis in containers.
+- Python 3.12+ и `uv`;
+- Node.js и `pnpm`;
+- Docker Desktop/Engine с Compose;
+- для реального Telegram Mini App — тестовый bot/account и HTTPS tunnel;
+- Chromium и WebKit для browser test suite.
 
-## Prerequisites
+Проверка инструментов:
 
-- Python 3.12+ with uv: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- Node.js 22+ with pnpm: `npm install -g pnpm`
-- Docker + Docker Compose (for PostgreSQL, Redis)
-- ngrok account (free tier) with auth token
-- Telegram account in **test environment** (see below)
-- Playwright for visual testing: `npx playwright install chromium`
-
-## Initial Setup
-
-```bash
-# 1. Clone and enter
-git clone <repo> flowvy && cd flowvy
-
-# 2. Start DB and cache
-docker compose -f docker-compose.dev.yml up -d
-
-# 3. Backend setup
-cd backend
-uv sync                          # install Python deps
-cp .env.example .env             # fill in BOT_TOKEN, DB credentials
-uv run alembic upgrade head      # apply migrations
-uv run python -m flowvy          # start backend on :8001
-
-# 4. Frontend setup (new terminal)
-cd frontend
-pnpm install
-cp .env.example .env             # set VITE_API_URL
-pnpm dev                         # Vite dev server on :5173
-
-# 5. ngrok tunnel (new terminal)
-ngrok http 5173                  # tunnel to frontend
-# Copy the HTTPS URL (e.g. https://abc123.ngrok-free.app)
-
-# 6. Set Mini App URL in BotFather
-# Message @BotFather on TEST environment → /setmenubutton → paste ngrok URL
+```powershell
+python --version
+uv --version
+node --version
+pnpm --version
+docker version
+docker compose version
 ```
 
-## docker-compose.dev.yml
+Для первичной установки locked dependencies из корня используйте:
 
-Only infrastructure services. Backend and frontend run natively for hot reload.
-
-```yaml
-services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: flowvy
-      POSTGRES_USER: flowvy
-      POSTGRES_PASSWORD: flowvy_dev
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-
-volumes:
-  pgdata:
+```powershell
+.\scripts\bootstrap.ps1
+# либо сразу установить Chromium и WebKit
+.\scripts\bootstrap.ps1 -InstallBrowsers
 ```
 
-## Telegram Test Environment
+## Инфраструктура
 
-The test environment allows HTTP URLs for Mini Apps (production requires HTTPS).
+Из корня репозитория:
 
-**iOS**: Settings → tap 10 times fast → Accounts → Login to another account → Test
-**Desktop**: Side menu → hold Shift+Alt → right-click "Add Account" → Test Server
-**macOS**: Settings icon → tap 10 times → hold Cmd → click "Add Account"
-
-Create a new account in test env, then create a new bot via @BotFather in test env.
-
-## ngrok Setup
-
-```bash
-# One-time auth
-ngrok config add-authtoken <your-token>
-
-# For frontend (Mini App)
-ngrok http 5173
-
-# For backend webhook (separate terminal if needed)
-ngrok http 8000
+```powershell
+docker compose -f docker-compose.dev.yml up -d postgres redis
+docker compose -f docker-compose.dev.yml ps
 ```
 
-With ngrok free tier you get a random URL that changes on restart. Paid tier gives a static domain.
+Compose публикует PostgreSQL 16 на `localhost:5432` и Redis 7 на `localhost:6379`. Backend и frontend
+в Compose не входят. Named volume `pgdata` сохраняет dev data между перезапусками.
 
-After starting ngrok, update:
-1. BotFather: /setmenubutton → new ngrok URL (frontend)
-2. Bot webhook: backend sets this automatically on startup using env var `WEBHOOK_URL`
+При первом создании volume PostgreSQL выполняет `backend/scripts/init-test-db.sql`: создаёт отдельные
+database/user `test` для pytest. Если volume существовал раньше, init script повторно автоматически
+не запускается. Не удаляйте volume ради тестов без явного согласия владельца данных.
 
-## Playwright Visual Testing
+## Backend
 
-Claude Code uses Playwright MCP server (`@playwright/mcp`) in **vision mode** to visually verify frontend changes. The server is configured in `.mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": ["@playwright/mcp@latest", "--caps", "vision", "--viewport-size", "430x932"]
-    }
-  }
-}
+```powershell
+Set-Location backend
+uv sync --frozen
+Copy-Item .env.example .env
 ```
 
-Vision mode gives Claude real screenshots + coordinate-based clicks (not just accessibility tree). Viewport 430x932 matches a typical mobile device for Mini App testing.
+Минимальная безопасная локальная конфигурация:
 
-**Two modes of interaction:**
-- `browser_snapshot` — returns accessibility tree with element refs (e5, e12...). Use refs with `browser_click`, `browser_type` to interact. Fast, deterministic.
-- `browser_take_screenshot` — returns actual rendered image. Use for visual verification of layout, colors, fonts. Cannot interact based on screenshot alone.
-
-**Typical workflow:**
-```
-1. browser_navigate → open page
-2. browser_take_screenshot (fullPage: true) → verify layout visually
-3. browser_snapshot → get refs for interactive elements
-4. browser_click ref / browser_type ref → interact
-5. browser_take_screenshot → verify state changed correctly
-```
-
-**What Claude checks visually:**
-- Labels and text match design/prototype exactly
-- Colors use correct `var(--v2-*)` tokens (positive=green, negative=red, secondary=gray)
-- Content fills viewport width (no max-width constraints on mobile)
-- Dark theme renders correctly (backgrounds, borders, text contrast)
-- Interactive states work (toggle on/off, button loading, save confirmation)
-- Conditional UI (elements appear/disappear based on state)
-
-## Environment Variables
-
-### Backend (.env)
-```
-BOT_TOKEN=<from BotFather>
-WEBHOOK_URL=<ngrok backend URL>/webhook
-DATABASE_URL=postgresql+asyncpg://flowvy:flowvy@localhost:5432/flowvy
+```dotenv
+BOT_TOKEN=000000:TEST
+WEBHOOK_URL=
+TELEGRAM_WEBHOOK_SECRET=
+WEBAPP_URL=http://localhost:5173
+ADMIN_TELEGRAM_IDS=
+DATABASE_URL=postgresql+asyncpg://flowvy:flowvy_dev@localhost:5432/flowvy
 REDIS_URL=redis://localhost:6379/0
-REMNAWAVE_URL=<your Remnawave panel URL, e.g. https://panel.example.com>
-REMNAWAVE_API_TOKEN=<generate in Remnawave: Settings → API Tokens>
-DEBUG=true
+REMNAWAVE_URL=
+REMNAWAVE_API_TOKEN=
+REMNAWAVE_WEBHOOK_SECRET=
+DEBUG=false
 ```
 
-### Frontend (.env)
+`.env.example` безопасен для локального копирования: внешние URL пустые. Непустой `REMNAWAVE_URL`
+заставляет backend проверить panel при startup и завершиться, если она недоступна. `000000:TEST` —
+только очевидный fake. Пустой token разрешает health/UI-каркас, но Telegram-auth при нём закрыт.
+
+Примените migrations и запустите API:
+
+```powershell
+uv run alembic upgrade head
+uv run python -m flowvy
 ```
-VITE_API_URL=http://localhost:8001/api
-VITE_BOT_USERNAME=<your test bot username>
+
+Backend слушает `http://localhost:8001`; базовая проверка:
+
+```powershell
+Invoke-RestMethod http://localhost:8001/api/health
+```
+
+Alembic загружает только `DATABASE_URL` через отдельный `MigrationSettings`: process environment
+имеет приоритет над `backend/.env`, затем используется local default. Остальные application secrets
+не валидируются миграционным процессом. Перед любой ручной миграцией всё равно подтвердите целевую БД.
+
+## Frontend
+
+В отдельном терминале:
+
+```powershell
+Set-Location frontend
+pnpm install --frozen-lockfile
+Copy-Item .env.example .env
+pnpm dev
+```
+
+Рекомендуемый локальный `.env`:
+
+```dotenv
+VITE_API_URL=/api
+VITE_BOT_USERNAME=
 VITE_MOCK_AUTH=true
-VITE_DEBUG_TELEGRAM_ID=<your Telegram ID from Remnawave panel>
+VITE_DEBUG_TELEGRAM_ID=
+VITE_DEBUG_DEVICES_EMPTY=
 ```
 
-## Debug Mode (without Telegram)
+Vite слушает только `http://127.0.0.1:5173` и проксирует `/api` и `/webhook` на backend. Same-origin
+`VITE_API_URL=/api` одинаково работает с localhost, preview и Tunnel.
 
-When `VITE_MOCK_AUTH=true`, the app bypasses Telegram authentication with a mock admin user. To see **real Remnawave data** without running inside Telegram:
+### Что даёт mock auth
 
-1. Set `VITE_DEBUG_TELEGRAM_ID` in `frontend/.env` to a Telegram ID that exists in your Remnawave panel
-2. Ensure `DEBUG=true` in `backend/.env`
-3. The frontend will call `GET /api/debug/subscription/{telegramId}` instead of the auth-protected endpoint
+`VITE_MOCK_AUTH=true` создаёт локального mock admin и переводит hooks на `/api/debug/...` там, где
+такой путь реализован. Для этого backend должен иметь `DEBUG=true`. Это позволяет проверять shell,
+навигацию и часть настроек без Telegram, но не создаёт фиктивные Remnawave/Kuma ответы:
 
-This debug endpoint is disabled when `DEBUG=false` and returns 404. Never expose it in production.
+- Home/Devices с `VITE_DEBUG_TELEGRAM_ID` обращаются к настоящему настроенному Remnawave;
+- без ID часть запросов возвращается к auth-protected API;
+- dashboard/users/Pulse также требуют provider data или явных network mocks.
 
-If `VITE_DEBUG_TELEGRAM_ID` is not set, the hook falls back to the regular `GET /api/me/subscription` (requires Telegram initData).
+Поэтому воспроизводимые UI-тесты должны перехватывать API либо поднимать fake services, а не
+использовать реальную панель. Никогда не публикуйте frontend с `VITE_MOCK_AUTH=true` и backend с
+`DEBUG=true`.
 
-## Hot Reload
+## Управляемый запуск
 
-- **Frontend**: Vite HMR — save file → see changes instantly in Telegram WebView (pull down to refresh if needed)
-- **Backend**: uvicorn `--reload` flag — save file → server restarts automatically
-- **No rebuild needed** for either during development
+После создания и проверки `backend/.env` из корня можно запустить весь dev-контур:
+
+```powershell
+.\scripts\dev-up.ps1
+```
+
+Script устанавливает dependencies, поднимает PostgreSQL/Redis, явно привязывает backend и Alembic к
+Compose URL (даже если в системном окружении уже есть другой `DATABASE_URL`), применяет migrations,
+запускает backend/frontend скрытыми процессами и ждёт `http://127.0.0.1:8001/api/ready` и Vite. PID и
+logs хранятся в `.artifacts/dev`; повторный запуск блокируется, а занятые `8001`/`5173` не
+перехватываются. После уже выполненного bootstrap можно добавить `-SkipInstall`.
+
+По умолчанию script обнуляет Telegram token/webhook только для запускаемых процессов, чтобы локальный
+старт не перенастроил реального бота. Для осознанного теста Telegram после настройки HTTPS URL и
+`TELEGRAM_WEBHOOK_SECRET` используйте `dev-up.ps1 -EnableTelegram`.
+
+Остановка выполняется через `.\scripts\dev-down.ps1`: script завершает только записанные им process
+trees, останавливает Compose services и сохраняет volumes.
+
+## Проверки
+
+Backend, из `backend/`:
+
+```powershell
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest -x -v
+```
+
+Полный pytest требует `test` PostgreSQL. Redis и внешние API должны подменяться там, где тест
+проверяет изолированную логику. Если инфраструктуры нет, запустите только явно database-free tests и
+сообщите, что полный suite не проверен.
+
+Frontend, из `frontend/`:
+
+```powershell
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm test:e2e
+pnpm test:e2e:all
+pnpm test:e2e:live  # только после dev-up и проверки реального target
+```
+
+Текущий baseline содержит unit tests для formatter/API decisions и Playwright state matrix для
+критических user/admin routes на полностью mocked API. По умолчанию `test:e2e` запускает основной
+Chromium viewport; `test:e2e:all` добавляет small mobile, WebKit/iPhone и desktop. Матрица включает
+light/dark, role/loading/error/malformed/mutation, keyboard, axe, overflow и visual evidence.
+`test:e2e:live` использует настоящий BFF/provider только read-only. Точные правила находятся в
+`frontend/tests/e2e/AGENTS.md`.
+
+Change-aware gate из корня:
+
+```powershell
+.\scripts\verify.ps1 -Scope Changed
+.\scripts\verify.ps1 -Scope Full   # требует Docker и установленных browser binaries
+```
+
+`Full` добавляет migrations, полный pytest, Remnawave snapshot/client check и UI smoke. GitHub
+Actions выполняет тот же минимальный backend/frontend контур на pull request и push в `main`.
+
+## Cloudflare Tunnel и реальный Telegram test flow
+
+Обычный Vite dev server не публикуйте. Для временного UI/API smoke при уже запущенном backend с
+`DEBUG=false`:
+
+```powershell
+.\scripts\tunnel-up.ps1 -ConfirmPublic
+# если локальный WARP не позволяет открыть собственный trycloudflare URL:
+.\scripts\tunnel-up.ps1 -ConfirmPublic -SkipLocalReachability
+.\scripts\tunnel-down.ps1
+```
+
+Script создаёт отдельную production-сборку с `VITE_API_URL=/api`, `VITE_MOCK_AUTH=false`, preview на
+`:4173`, проверяет отсутствие debug route и сохраняет только собственные PID. Quick Tunnel имеет
+динамический URL и подходит только для короткого smoke. Полная синтетическая проверка одной командой:
+
+```powershell
+.\scripts\verify-tunnel.ps1
+```
+
+Для Telegram webhook используйте отдельного test bot и named Tunnel со стабильным HTTPS URL:
+
+1. заранее задайте `WEBAPP_URL=https://<test-host>`, `WEBHOOK_URL=https://<test-host>/webhook`;
+2. сгенерируйте случайный `TELEGRAM_WEBHOOK_SECRET` допустимого формата;
+3. оставьте `DEBUG=false`, включите Cloudflare Access там, где это совместимо с Telegram callbacks;
+4. перезапустите backend и проверяйте только test account/provider data.
+
+Не записывайте token, initData, secret или приватный tunnel config в Git, logs, screenshots и планы.
+Repository scripts не останавливают и не перенастраивают существующую службу Cloudflare.
+
+## Остановка
+
+Остановите процессы backend/frontend обычным `Ctrl+C`, затем из корня:
+
+```powershell
+docker compose -f docker-compose.dev.yml stop postgres redis
+```
+
+Команда сохраняет volume. Удаление volume необратимо удаляет локальную dev/test БД и не относится к
+обычной остановке.

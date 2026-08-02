@@ -1,509 +1,185 @@
-# Flowvy Architecture
+# Архитектура Flowvy
 
-## Overview
+Документ описывает устойчивые границы текущего кода. Точный статус реализации и известные риски —
+в [`PROJECT_STATE.md`](PROJECT_STATE.md); локальный запуск — в
+[`DEV_ENVIRONMENT.md`](DEV_ENVIRONMENT.md).
 
-```
-┌─────────────┐     ┌──────────────┐     ┌───────────────────┐
-│  Telegram    │────▶│  ngrok (dev) │────▶│  Vite :5173       │
-│  Mini App    │     │  nginx (prod)│     │  React 19 + TS    │
-└─────────────┘     └──────┬───────┘     │  TanStack Query   │
-                           │             │  TanStack Router   │
-┌─────────────┐     ┌──────▼───────┐     └────────┬──────────┘
-│  Telegram    │────▶│  FastAPI     │              │
-│  Bot API     │     │  :8001       │◀─────────────┘
-└─────────────┘     │  (webhook +  │     /api/* requests
-                    │   REST API)  │
-                    └──────┬───────┘
-                           │
-              ┌────────────┼────────────┐
-              │            │            │
-       ┌──────▼──────┐ ┌──▼───┐ ┌─────▼──────┐
-       │ PostgreSQL  │ │Redis │ │ Remnawave  │
-       │ (users,     │ │(cache│ │ API        │
-       │  sessions)  │ │ FSM) │ │ (VPN panel)│
-       └─────────────┘ └──────┘ └────────────┘
-```
+## Общая схема
 
-## Monorepo Structure
-
-```
-flowvy/
-├── CLAUDE.md
-├── docker-compose.dev.yml        # PostgreSQL + Redis only
-├── .claude/
-│   ├── settings.json
-│   ├── skills/{backend,frontend,integrations}/SKILL.md
-│   └── commands/{plan,verify}.md
-├── docs/
-│   ├── ARCHITECTURE.md           # this file
-│   ├── DEV_ENVIRONMENT.md        # local dev setup
-│   ├── FIRST_TASK.md             # Claude Code onboarding
-│   └── api-remnawave.json        # full Remnawave OpenAPI spec (reference)
-├── backend/
-│   ├── pyproject.toml
-│   ├── alembic.ini
-│   ├── migrations/
-│   └── src/flowvy/
-│       ├── __main__.py           # uvicorn entrypoint
-│       ├── config.py             # pydantic-settings
-│       ├── di.py                 # Dishka providers
-│       ├── bot/
-│       │   ├── factory.py        # create_bot(), create_dispatcher()
-│       │   └── handlers/         # /start, admin commands
-│       ├── api/
-│       │   ├── factory.py        # create_app(), webhook route, lifespan, metrics task
-│       │   ├── deps.py           # get_current_init_data() + last_seen tracking
-│       │   ├── middleware.py     # MetricsMiddleware (request counters)
-│       │   └── routes/
-│       │       ├── health.py     # GET /api/health
-│       │       ├── users.py      # GET /api/me
-│       │       ├── subscription.py  # GET /api/me/subscription
-│       │       ├── devices.py    # GET/DELETE /api/me/devices
-│       │       ├── nodes.py      # GET /api/nodes
-│       │       ├── pulse.py      # GET /api/pulse (Uptime Kuma status)
-│       │       ├── webhooks.py   # POST /api/webhooks/remnawave (HMAC auth)
-│       │       └── admin/        # /api/admin/*
-│       │           ├── deps.py      # get_current_admin, CurrentAdmin
-│       │           ├── dashboard.py  # GET /api/admin/dashboard
-│       │           ├── settings.py  # GET/PATCH /api/admin/settings, kuma test
-│       │           └── users.py     # GET /api/admin/users, users/all, search, actions
-│       ├── services/
-│       │   ├── user.py
-│       │   ├── remnawave.py      # RemnawaveClient (+get_metadata, +system stats)
-│       │   ├── kuma.py           # UptimeKumaClient (public status page API)
-│       │   ├── subscription.py   # SubscriptionService (BFF + DB upsert)
-│       │   ├── admin_users.py     # AdminUsersService (list, search, actions, squad resolution)
-│       │   ├── devices.py        # DevicesService (BFF, DB read + Remnawave)
-│       │   ├── pulse.py          # PulseService (Kuma aggregation + Redis cache)
-│       │   ├── provider_settings.py  # ProviderSettingsService (CRUD + kuma test)
-│       │   ├── bot_stats.py      # BotStatsService (psutil, DB counts, Redis)
-│       │   ├── dashboard.py      # DashboardService (aggregates both providers)
-│       │   ├── metrics_collector.py  # background task (flush last_seen, record snapshots)
-│       │   ├── cache.py          # Redis cache helpers
-│       │   └── webhook_handler.py  # WebhookHandlerService (verify, persist, dispatch)
-│       ├── repositories/
-│       │   ├── base.py           # generic CRUD
-│       │   ├── user.py
-│       │   ├── subscription.py   # upsert_from_remnawave
-│       │   ├── provider_settings.py  # singleton get/update
-│       │   ├── invite.py
-│       │   └── webhook_event.py  # WebhookEventRepository (save)
-│       ├── models/               # SQLAlchemy ORM
-│       │   ├── base.py, user.py, subscription.py, invite.py
-│       │   ├── bot_metrics.py    # BotMetricsHistory (periodic snapshots)
-│       │   ├── provider_settings.py  # singleton runtime config
-│       │   └── webhook_event.py  # WebhookEvent (Remnawave webhook log)
-│       └── schemas/              # Pydantic v2
-│           ├── user.py           # UserResponse + FeaturesResponse
-│           ├── devices.py        # DeviceResponse, DevicesResponse
-│           ├── subscription.py   # SubscriptionResponse
-│           ├── pulse.py          # PulseResponse, PulseGroup, PulseMonitor
-│           ├── provider_settings.py  # ProviderSettingsResponse/Patch
-│           ├── admin_users.py    # AdminUserResponse, AdminUsersResponse
-│           ├── dashboard.py      # DashboardResponse, BotStatsResponse
-│           ├── remnawave.py      # response models from Remnawave
-│           └── webhooks.py       # WebhookPayload
-├── frontend/
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── biome.json
-│   └── src/
-│       ├── main.tsx
-│       ├── app.tsx               # AuthGuard → ModeProvider → RouterProvider
-│       ├── router.ts             # TanStack Router, 8 routes
-│       ├── styles/
-│       │   ├── tokens.css        # Flowvy design tokens (--v2-*)
-│       │   └── global.css
-│       ├── lib/
-│       │   ├── api.ts            # fetch wrapper, Authorization: tma header
-│       │   ├── telegram.ts       # @telegram-apps/sdk-react init
-│       │   ├── query.ts          # QueryClient config, query keys
-│       │   └── format.ts         # formatTraffic, getDaysLeft, etc.
-│       ├── hooks/
-│       │   ├── use-auth.ts
-│       │   ├── use-subscription.ts  # TanStack Query → /api/me/subscription
-│       │   ├── use-devices.ts       # TanStack Query → /api/me/devices
-│       │   ├── use-nodes.ts         # TanStack Query → /api/nodes
-│       │   ├── use-pulse.ts         # TanStack Query → /api/pulse
-│       │   ├── use-admin-settings.ts # TanStack Query → /api/admin/settings
-│       │   ├── use-admin-users.ts   # TanStack Query → /api/admin/users (detail, search, mutations)
-│       │   └── use-all-admin-users.ts # TanStack Query → /api/admin/users/all (full list, 30s staleTime)
-│       ├── contexts/
-│       │   └── mode-context.tsx  # user/admin mode switch
-│       ├── components/
-│       │   ├── ui/               # StatusBadge, icons, Toggle, InputField, ActionBtn, ConfirmDialog
-│       │   ├── home/             # HeroCard, DetailSections
-│       │   ├── devices/          # DeviceRow, PlatformIcon
-│       │   ├── pulse/            # StatusBanner, HeartbeatBar, MonitorRow, MonitorGroup
-│       │   ├── admin/            # KumaConfig, UserRow, FilterChips, VirtualizedUserList
-│       │   └── layout/           # AppShell, Header, TabBar
-│       ├── pages/
-│       │   ├── home.tsx, pulse.tsx, devices.tsx, support.tsx
-│       │   └── admin/
-│       └── types/
-│           ├── subscription.ts
-│           ├── devices.ts
-│           ├── pulse.ts
-│           ├── admin-settings.ts
-│           └── admin-users.ts
+```text
+Telegram Mini App / Browser
+            |
+            | HTTPS / Authorization: tma <initData>
+            v
+React + TanStack Router/Query (:5173 в dev)
+            |
+            | /api/*
+            v
+FastAPI BFF + aiogram webhook (:8001)
+       |             |              |
+       v             v              v
+ PostgreSQL        Redis        External HTTP
+ local state    cache/metrics   Remnawave, Kuma,
+                                Telegram Bot API
 ```
 
-## Remnawave Integration
+Frontend не обращается к Remnawave, Kuma, PostgreSQL или Redis напрямую. FastAPI формирует ответы
+под конкретные экраны, проверяет Telegram identity и скрывает особенности внешних API.
 
-### Connection
+## Доверенные границы
 
-Configured via environment variables:
-```
-REMNAWAVE_URL=https://panel.example.com
-REMNAWAVE_API_TOKEN=<api-token>
-```
+1. **Telegram Mini App input** — недоверенный до проверки подписи и `auth_date` по bot token.
+2. **Frontend role/mode** — только отображение. Решение о доступе всегда принимает backend.
+3. **Remnawave/Kuma/webhooks** — внешние данные: нужны timeout, schema validation, безопасная ошибка,
+   проверка подписи и защита от повторов там, где есть side effect.
+4. **PostgreSQL** — локальная долговременная запись. Изменяется приложением и Alembic migrations.
+5. **Redis** — временные cache/metrics/activity данные; потеря Redis не должна менять права доступа.
+6. **Debug routes** — намеренно обходят Telegram auth и допустимы только на изолированном localhost.
 
-Validated on backend startup: `GET /api/auth/status`. If Remnawave is unreachable — backend refuses to start.
+## Backend
 
-### User Mapping
+### Сборка приложения и lifecycle
 
-Telegram user → Remnawave user:
-1. initData provides `telegram_id`
-2. Backend calls `GET /api/users/by-telegram-id/{telegramId}`
-3. Response is an **array** — we take `response[0]`
-4. If empty array — user has no Remnawave account ("No active subscription")
-5. `remnawave_uuid` saved in our DB for subsequent calls
+`flowvy.api.factory:create_app` создаёт FastAPI, Dishka container, middleware и routers. Lifespan:
 
-**Constraint**: one telegram_id = one Remnawave user. Enforced by provider when creating users.
+- создаёт bot/dispatcher и регистрирует Telegram webhook, если задан `BOT_TOKEN`;
+- проверяет доступность Remnawave при непустом `REMNAWAVE_URL`;
+- запускает периодический сбор метрик через Redis и PostgreSQL;
+- при остановке завершает задачу и закрывает bot/container.
 
-### Local DB Sync (Subscription Upsert)
+Точка входа `python -m flowvy` запускает Uvicorn на `0.0.0.0:8001`; reload зависит от `DEBUG`.
 
-When `SubscriptionService.get_for_user()` fetches data from Remnawave, it upserts into our `subscriptions` table:
-- `remnawave_uuid`, `status`, `device_limit`, `expires_at`
-- Keyed by `user_id` (telegram_id) + `remnawave_uuid`
+### Слои
 
-This enables `DevicesService` to read `remnawave_uuid` and `device_limit` from local DB without an extra Remnawave call. If the user visits Devices before Home (subscription not yet cached), DevicesService falls back to `get_user_by_telegram_id`, saves, then proceeds.
+- `api/routes/` — HTTP input/output, зависимости аутентификации и перевод известных ошибок в HTTP.
+- `services/` — orchestration и BFF-агрегация для экранов.
+- `repositories/` — повторяемая работа с локальными SQLAlchemy models.
+- `schemas/` — Pydantic contracts backend/frontend и адаптация внешних ответов.
+- `models/` — локальная схема PostgreSQL.
+- `di.py`, `di_bff.py`, `di_dashboard.py`, `di_webhooks.py`, `di_bot.py` — Dishka wiring.
 
-**Scope change**: `SubscriptionService` and `DevicesService` are REQUEST-scoped (need DB session). `RemnawaveClient` stays APP-scoped.
+APP scope используется для Settings, engine/session factory, Redis, shared httpx client, Remnawave,
+Kuma и bot. SQLAlchemy session и большинство BFF services имеют REQUEST scope; provider commits или
+rollbacks транзакцию после обработки запроса.
 
-### Caching Strategy
+### HTTP-потоки
 
-**Per-user data (subscription, devices)** — NO cache. Every request goes directly to Remnawave. 50-100ms latency is acceptable for a dashboard. User always sees current state.
+Пользовательские маршруты:
 
-**Global data (nodes, system stats)** — Redis cache:
-- Nodes: 30 second TTL
-- Pulse (Kuma status): 60 second TTL (key `pulse:data`)
-- External squads: 300 second TTL (key `external_squads`)
-- Dashboard Remnawave stats: 30 second TTL (key `dashboard:remnawave`)
-- Bot request counters: `bot:requests:total`, `bot:requests:{YYYY-MM-DD}` (no TTL, cumulative)
-- Bot last seen: `bot:last_seen` hash (flushed to DB every N minutes)
-- Webhook events from Remnawave (`node.connection_lost`) invalidate cache immediately
+- `GET /api/me` — проверка initData, создание/обновление локального пользователя, feature flags и
+  branding.
+- `GET /api/me/subscription` — Remnawave user/subscription и upsert локальной subscription.
+- `GET/DELETE /api/me/devices...` — свежее сопоставление Telegram user с числовым Remnawave user ID,
+  optional legacy UUID и HWID devices.
+- `GET /api/pulse` — агрегированный public status page Kuma, если функция включена.
 
-**Remnawave unavailable** — frontend shows maintenance screen for users, error details for admins. No stale data served.
+Admin routes под `/api/admin` повторно получают текущего локального пользователя и проверяют его
+роль. Они отдают dashboard, полный/постраничный список пользователей, detail/actions и provider,
+branding/welcome settings. Admin Broadcast API в текущем коде отсутствует.
 
-**Manual refresh** — button sends `?force=true`, backend bypasses cache.
+Служебные маршруты:
 
-### Webhooks
+- `GET /api/health` — liveness процесса без обращения к зависимостям.
+- `GET /api/ready` — readiness PostgreSQL и Redis с коротким timeout и безопасным `503`.
+- `POST /api/webhooks/remnawave` — HMAC-проверка, сохранение события и cache invalidation.
+- `POST /webhook` — передача Telegram update в aiogram dispatcher.
+- `/api/debug/*` и `/api/debug/admin/*` — локальные auth-bypass версии части потоков; каждый handler
+  вызывает debug guard.
 
-Remnawave sends event webhooks to `POST /api/webhooks/remnawave`. Auth via HMAC-SHA256 signature (no JWT).
+### Authentication и authorization
 
-**Config**: `REMNAWAVE_WEBHOOK_SECRET` env var → `Settings.remnawave_webhook_secret`. If not set — endpoint returns 404.
+Frontend отправляет raw Telegram init data как `Authorization: tma <value>`. Backend использует
+aiogram validation с `BOT_TOKEN`, проверяет TTL и наличие пользователя. После успешной проверки
+время активности записывается в Redis hash.
 
-**Verification**: `X-Remnawave-Signature` header contains HMAC-SHA256 of the raw body using the shared secret. Compared with `hmac.compare_digest()`.
+При `GET /api/me` локальный user создаётся или синхронизируется. Admin role определяется списком
+`ADMIN_TELEGRAM_IDS` из environment и записывается в PostgreSQL. Admin dependency доверяет только
+текущей локальной записи, не client mode. Незакрытые auth-риски перечислены в `PROJECT_STATE.md`.
 
-**Payload**: `{ scope, event, timestamp, data }` — persisted to `webhook_events` table for audit/replay.
+### Данные и кэш
 
-**Event flow**:
-```
-Remnawave → POST /api/webhooks/remnawave
-  → verify HMAC signature
-  → parse WebhookPayload
-  → save to webhook_events (DB)
-  → dispatch to handlers by scope
-```
+PostgreSQL хранит пользователей, подписки, invites, singleton provider settings, историю bot metrics
+и принятые Remnawave webhook events. Alembic migrations образуют одну цепочку от начальной схемы до
+удаления устаревших quick-link columns.
 
-**Handler registry**: `WebhookHandlerService` maps scope → handler list. MVP handlers:
-- `user.*` / `user_hwid_devices.*` — invalidate `dashboard:remnawave` cache on mutating events (modified, deleted, traffic_reset, revoked, enabled, disabled)
-- `node.*` — invalidate `pulse:data` cache on any node event
+Redis используется для:
 
-Cache keys imported from `DashboardService.CACHE_KEY` and `PulseService.CACHE_KEY` — single source of truth.
+- `dashboard:remnawave` — Remnawave dashboard, TTL 30 секунд;
+- `pulse:data` — Kuma aggregation, TTL 60 секунд;
+- `external_squads` — имена squads, TTL 300 секунд;
+- request counters и `bot:last_seen` до периодической записи activity в PostgreSQL;
+- Telegram media `file_id` cache в message sender.
 
-**Scopes/events**: user, node, user_hwid_devices, service, crm. Full list in `skills/integrations/SKILL.md`.
+Subscription и devices для отдельного пользователя читаются из Remnawave без общего response cache;
+локальная subscription хранит числовой provider ID, optional legacy UUID, status, expiry и device
+limit для последующих запросов.
 
-### Endpoints Used (22 for MVP)
+## Внешние интеграции
 
-See `skills/integrations/SKILL.md` for full API reference.
+### Remnawave
 
-## BFF Pattern (Backend-for-Frontend)
+`RemnawaveClient` — async wrapper поверх shared `httpx.AsyncClient` с timeout 10 секунд. Он скрывает
+`response` envelope и преобразует часть ответов в Pydantic schemas. Поддерживаются lookup
+пользователя, subscription info, HWID devices, admin user actions, metadata, external squads и
+dashboard statistics.
 
-Our FastAPI does NOT proxy Remnawave 1:1. It aggregates data per screen.
+Для version-sensitive операций client один раз читает metadata и поддерживает две ветки: 2.x с
+legacy user UUID/lookup endpoints и 3.0/3.1 с числовым `userId` и filtered user stream. BFF/admin
+использует числовой ID независимо от upstream generation; неизвестный major закрывается ошибкой.
 
-| Mini App Screen | Our Endpoint | Remnawave Calls |
-|----------------|-------------|-----------------|
-| Home | `GET /api/me/subscription` | `by-telegram-id` → `sub/{shortUuid}/info` + DB upsert |
-| Devices | `GET /api/me/devices` | DB read → `hwid/devices/{userUuid}` (fallback: `by-telegram-id` + DB upsert) |
-| Pulse | `GET /api/pulse` | Kuma: `status-page/{slug}` + `heartbeat/{slug}` (cached 60s) |
-| Admin Dashboard | `GET /api/admin/dashboard` | `system/stats` + `system/stats/bandwidth` (cached 30s) + bot metrics (DB + Redis) |
-| Admin Users | `GET /api/admin/users/all` | `users?size=500&start=N` paged until total reached + `external-squads` (cached). Full list cached in TanStack Query (30s staleTime); filtering, search and sort happen client-side with virtualized rendering. |
-| Admin Users (legacy paged) | `GET /api/admin/users?size=&start=` | `users?size=N&start=N` + `external-squads` (cached). Kept for compatibility, not used by the Mini App list screen. |
-| Admin Users Search | `GET /api/admin/users/search?q=` | `by-username`, `by-telegram-id`, or `by-email` + `external-squads` (cached). Kept for compatibility — the Mini App now filters the cached `/all` response instead. |
-| Admin User Actions | `POST /api/admin/users/{uuid}/{action}` | `users/{uuid}/actions/{action}` |
-| Admin User Delete | `DELETE /api/admin/users/{uuid}` | `DELETE users/{uuid}` |
-| Admin Settings | `GET/PATCH /api/admin/settings` | `system/metadata` (version) |
+`docs/api-remnawave.json` — reference snapshot, а не гарантированно актуальный контракт. Любое
+изменение интеграции требует сверки с primary source/фактической версией панели и contract tests.
 
-One screen = one HTTP request to our backend. Backend does the aggregation.
+### Uptime Kuma
 
-## Provider Settings
+URL и public status-page slug хранятся в `provider_settings` и меняются через admin settings. Pulse
+service получает public status/heartbeat data, группирует результат и кэширует его в Redis. При
+выключенной функции `/api/pulse` возвращает `404`.
 
-Singleton table `provider_settings` (id=1) stores runtime-configurable settings:
-- `kuma_enabled`, `kuma_url`, `kuma_slug` — Uptime Kuma integration
-- `support_url`, `renew_url` — user-facing links (injected into subscription response at route level)
+### Webhooks и Telegram bot
 
-### Admin Routes
+Remnawave webhook доступен только при непустом shared secret. Валидное событие сохраняется в
+PostgreSQL и инвалидирует dashboard/Pulse cache по scope/event. Freshness и deduplication пока не
+реализованы.
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/api/admin/settings` | Read settings + Remnawave version |
-| PATCH | `/api/admin/settings` | Partial update (toggles auto-save, sub-screen save) |
-| GET | `/api/admin/settings/kuma/test` | Test Kuma connection |
+Aiogram dispatcher содержит `/start` flow и отправку welcome template/media. Telegram webhook живёт
+в том же FastAPI process; отдельного worker сейчас нет.
 
-Admin auth: `get_current_admin` dependency validates Telegram initData + checks `user.role == ADMIN`.
+## Frontend
 
-### Admin User Actions
+`App` собирает `QueryClientProvider`, `AuthGuard`, `ModeProvider` и TanStack `RouterProvider`.
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| POST | `/api/admin/users/{uuid}/enable` | Enable user |
-| POST | `/api/admin/users/{uuid}/disable` | Disable user |
-| POST | `/api/admin/users/{uuid}/reset-traffic` | Reset traffic counters |
-| POST | `/api/admin/users/{uuid}/revoke` | Revoke subscription link |
-| DELETE | `/api/admin/users/{uuid}` | Permanently delete user |
+- `lib/api.ts` добавляет Telegram init data и является общим fetch wrapper.
+- `hooks/` описывают query/mutation lifecycles и переключаются на debug endpoints в mock mode.
+- `contexts/mode-context.tsx` хранит user/admin presentation mode; начальное значение выводится из
+  URL.
+- `components/` содержит feature и reusable UI; страницы остаются composition boundary.
+- `styles/tokens.css`, CSS Modules и Telegram theme/safe-area интеграция задают внешний вид.
+- `i18n/locales/en.json` — единственный текущий locale resource.
 
-All routes proxy to Remnawave `users/{uuid}/actions/*` endpoints. Admin auth required.
+Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Admin URL: `/admin/dashboard`,
+`/admin/users`, `/admin/users/$userId`, `/admin/broadcast`, `/admin/settings` и отдельные Kuma,
+branding, welcome subroutes. Support и Broadcast пока заглушки.
 
-### External Squads Resolution
+## Автоматизация разработки
 
-`AdminUsersService` resolves `externalSquadUuid` → squad name via `GET /api/external-squads`.
-Result cached in Redis (key `external_squads`, 5 minute TTL). The resolved name is returned as
-`externalSquadName` in `AdminUserResponse`.
+`scripts/bootstrap.ps1` устанавливает locked Python/Node dependencies. `dev-up.ps1` и
+`dev-down.ps1` управляют локальными процессами и Compose services с PID/log artifacts под
+`.artifacts/`. `scripts/verify.ps1` выбирает backend, frontend, docs и UI gates по diff либо запускает
+полный контур; специализированные scripts проверяют Alembic, Remnawave snapshot/client tests и
+локальные Markdown links.
 
-### Feature Flags
+Frontend имеет Vitest unit seed и Playwright mock state matrix. Browser suite запускает только Vite,
+перехватывает каждый `/api/*` request и проверяет critical user/admin routes, роли, ошибки, mutations,
+accessibility и visual evidence без Telegram, backend, PostgreSQL, Redis, Remnawave или Kuma.
+Отдельный live-smoke читает настроенный provider через уже запущенный локальный BFF и не входит в CI.
 
-`GET /api/me` returns `features: { pulse: bool }` read from `provider_settings.kuma_enabled`.
-Frontend TabBar conditionally renders the Pulse tab based on `user.features.pulse`.
+GitHub Actions повторяет locked install, backend lint/tests/migrations с disposable PostgreSQL/Redis
+и frontend lint/typecheck/unit/build/Chromium smoke. CI не выполняет deployment.
 
-## Admin Dashboard
+## Runtime и deployment
 
-`GET /api/admin/dashboard` aggregates two metric providers into one response:
-
-### Remnawave Stats (proxied raw)
-
-- `GET /api/system/stats` → CPU, memory, uptime, user status counts, online stats, nodes
-- `GET /api/system/stats/bandwidth` → bandwidth by period (2 days, 7 days, 30 days, calendar month, year)
-- Both cached in Redis (key `dashboard:remnawave`, TTL 30s)
-- Returns raw `dict` — no Pydantic models, structure may change upstream
-
-### Bot Stats (own metrics)
-
-**System**: `psutil` CPU cores, memory, app uptime, version.
-**Users**: DB counts — total, new today, new this week, active 1h, active 24h.
-**Requests**: Redis counters — `bot:requests:total`, `bot:requests:{YYYY-MM-DD}`.
-
-### Bot Metrics Collection
-
-**Request counting** — `MetricsMiddleware` runs on every HTTP request:
-- `INCR bot:requests:total`
-- `INCR bot:requests:{YYYY-MM-DD}`
-
-**User activity tracking** — `get_current_init_data` auth dependency:
-- After successful HMAC validation: `HSET bot:last_seen {telegram_id} {unix_ts}`
-- No DB writes in the request path
-
-**Background task** — `run_metrics_collector` (started in lifespan):
-- Interval: `METRICS_SNAPSHOT_INTERVAL_SECONDS` (default 600s / 10 min)
-- Flushes `bot:last_seen` Redis hash → `users.last_active_at` (batch UPDATE)
-- Inserts snapshot row into `bot_metrics_history` (cumulative `api_requests_count`)
-- Uses APP-scope dependencies: `Redis`, `async_sessionmaker`
-- Graceful shutdown via `task.cancel()`
-
-### DI Providers
-
-`DashboardProvider` (in `di_dashboard.py`):
-- `BotStatsService` — REQUEST scope (needs AsyncSession + Redis)
-- `DashboardService` — REQUEST scope (needs RemnawaveClient + BotStatsService + Redis)
-
-### Dashboard Frontend
-
-Page: `pages/admin/dashboard.tsx` with segmented control (VPN | Bot tabs).
-
-**VPN tab**: KPI grid (Users, Nodes, Today bandwidth, Lifetime) → Users by status (color dots) → Online stats → Bandwidth periods (current + prev + diff ↑↓) → System (CPU, Memory, Uptime).
-
-**Bot tab**: KPI grid (Users, Active 24h, Requests today, Uptime) → User registrations → Activity (1h, 24h) → Requests → System (CPU, Memory, Uptime, Version).
-
-Components: `SegmentedControl` (reusable UI), `DashboardKpiGrid` (2×2 cards), `DashboardBandwidthRow` (label + current/prev/diff).
-
-Hook: `useDashboard()` — `queryKey: adminDashboard`, `staleTime: 30s`.
-
-## TanStack Query (Frontend)
-
-### Request Deduplication
-
-Multiple components using the same `queryKey` share one request. If Home and a modal both need subscription data — only one fetch happens.
-
-### Query Keys
-
-All keys centralized in `lib/query.ts`:
-```typescript
-export const queryKeys = {
-  subscription: ['subscription'] as const,
-  devices: ['devices'] as const,
-  nodes: ['nodes'] as const,
-  pulse: ['pulse'] as const,
-  adminDashboard: ['admin', 'dashboard'] as const,
-  adminUsers: ['admin', 'users', 'list'] as const,
-  adminUsersAll: ['admin', 'users', 'all'] as const,
-  adminUser: (uuid: string) => ['admin', 'users', 'detail', uuid] as const,
-  adminUsersSearch: (q: string) => ['admin', 'users', 'search', q] as const,
-  adminSettings: ['admin', 'settings'] as const,
-};
-```
-
-### Freshness
-
-| Data | staleTime | gcTime | Why |
-|------|-----------|--------|-----|
-| Subscription | 0 | 5 min | Always refetch on mount |
-| Devices | 0 | 5 min | Always refetch on mount |
-| Nodes | 30s | 5 min | Shared, changes slowly |
-| Pulse | 60s | 5 min | Kuma status, matches backend cache TTL |
-| Admin dashboard | 30s | 5 min | Matches backend cache TTL |
-| Admin users (all) | 30s | 5 min | Full list loaded once, filtered client-side; 30s balances freshness vs. list/detail/back navigation |
-
-### Invalidation After Mutations
-
-```typescript
-// After deleting a device:
-queryClient.invalidateQueries({ queryKey: queryKeys.devices });
-queryClient.invalidateQueries({ queryKey: queryKeys.subscription }); // device count changed
-```
-
-### v5 API Notes
-
-- `gcTime` (not `cacheTime`)
-- `isPending` (not `isLoading`)
-- No `onError`/`onSuccess` in useQuery — use `useEffect`
-- Single object parameter: `useQuery({ queryKey, queryFn })`
-
-## Internationalization (i18n)
-
-### Setup
-
-- **Library**: `i18next` + `react-i18next` + `i18next-resources-to-backend`
-- **Init**: `frontend/src/i18n/index.ts` — configures i18next with lazy-loaded locale via dynamic `import()`
-- **Locale files**: `frontend/src/i18n/locales/en.json` — nested JSON, all keys
-- **Suspense**: `main.tsx` wraps `<App />` in `<Suspense>` so locale loads before render
-- **Chunk splitting**: Vite `manualChunks` splits i18next into a separate vendor chunk; locale JSON is a separate async chunk
-
-### Key Structure
-
-Dot-separated, grouped by domain:
-
-| Domain | Scope |
-|--------|-------|
-| `common.*` | Shared UI: auth guard, header, tab bar, confirm dialog, status badges |
-| `home.*` | Home page: hero card, detail section, subscription states |
-| `devices.*` | Devices page, device row, platform icons |
-| `pulse.*` | Pulse/status page, status banner, monitor rows |
-| `settings.*` | Admin settings, Kuma config, branding, welcome sub-screens |
-| `admin.*` | Admin pages: users list, user detail/hero, user actions |
-| `format.*` | Format helpers: traffic units, time expressions, strategy labels |
-
-### Usage Patterns
-
-**React components** — `useTranslation` hook:
-```typescript
-import { useTranslation } from 'react-i18next';
-
-function MyComponent() {
-  const { t } = useTranslation();
-  return <span>{t('domain.key')}</span>;
-}
-```
-
-**Non-React files** (lib/format.ts, action definitions) — direct `i18n.t()`:
-```typescript
-import i18n from '../i18n';
-
-function formatSomething(): string {
-  return i18n.t('format.someKey', { n: 42 });
-}
-```
-
-**Interpolation** — double braces in JSON, object param in code:
-```typescript
-// en.json: "greeting": "Hello, {{name}}!"
-t('greeting', { name: 'World' })
-```
-
-**Static config objects** (PAGE_META, tab definitions, status labels) — store i18n keys as strings, resolve with `t()` at render time:
-```typescript
-const TABS = [{ label: 'common.tab.home', icon: Home }];
-// In JSX: {t(tab.label)}
-```
-
-## Authentication Flow (Mini App)
-
-1. Mini App opens → Telegram injects `initData`
-2. Frontend sends `Authorization: tma <initData>` header
-3. Backend validates HMAC via `aiogram.utils.web_app.safe_parse_webapp_init_data()`
-4. Checks `auth_date` freshness (TTL configurable, default 24h)
-5. Extracts `telegram_id` → `get_or_create` user in DB
-6. Returns `UserResponse` with role
-
-## aiogram + FastAPI Webhook
-
-```python
-@app.post("/webhook")
-async def webhook(request: Request) -> Response:
-    result = await dp.feed_webhook_update(bot=bot, update=await request.json())
-    if result:
-        return Response(content=result.model_dump_json(), media_type="application/json")
-    return Response(status_code=200)
-```
-
-Lifespan: `bot.set_webhook()` + `dp.emit_startup()` on start, `dp.emit_shutdown()` + `bot.session.close()` on shutdown.
-
-## Dependency Injection (Dishka)
-
-- `APP` scope: Settings, AsyncEngine, Redis, httpx.AsyncClient, RemnawaveClient, UptimeKumaClient
-- `REQUEST` scope: AsyncSession, repositories, services (incl. PulseService, BotStatsService, DashboardService)
-
-## Mini App Modes
-
-- **User mode**: Home, Pulse, Devices, Support (4 tabs)
-- **Admin mode**: Dashboard, Users, Broadcast, Settings (4 tabs)
-- Toggle in header, visible only for `role=ADMIN`
-- Mode switch navigates to first tab of new mode
-- `ModeProvider` initializes from `window.location.pathname` (if `/admin/*` → admin mode)
-
-## Navigation Patterns
-
-### Page Header
-
-The global `Header` component uses `PAGE_META` — a map of `pathname → { title, icon }` — to display the current page name with an icon. Pages **not** in `PAGE_META` show the AppLogo + appName fallback.
-
-**Home (`/`) and Dashboard (`/admin/dashboard`)**: not in `PAGE_META`. The global Header shows AppLogo + appName (branded or "Flowvy").
-
-**All other pages**: registered in `PAGE_META`. The global Header shows their icon + title. Pages do **not** render a duplicate internal title header.
-
-Examples: Pulse, Devices, Support, Users, Broadcast, Settings.
-
-**Drill-down sub-screens** use `useState<View>` without changing the pathname, so they inherit the parent page's icon + title from `PAGE_META`. Sub-screens render their own contextual header (back button + sub-screen title) inside the page component — this is not a duplicate of the global header.
-
-Examples: Settings → Kuma Config, Users → User Detail.
-
-```
-Home / Dashboard:         Simple page:              Drill-down sub-screen:
-┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
-│ [logo] Flowvy [T]│      │ [icon] Pulse  [T]│      │ [icon] Users  [T]│
-├──────────────────┤      ├──────────────────┤      ├──────────────────┤
-│                  │      │                  │      │ [←] @username ●  │
-│ ...page content  │      │ ...page content  │      │                  │
-└──────────────────┘      └──────────────────┘      └──────────────────┘
-[T] = admin toggle (admins only)
-```
+В dev PostgreSQL/Redis работают в Compose, а backend/frontend — локальными процессами с reload/HMR.
+Vite проксирует `/api` и `/webhook` на `:8001`. Production image, reverse proxy, TLS, secret
+management, observability, backup/restore и deployment pipeline в репозитории пока не определены;
+имеющийся GitHub workflow является только validation CI.
