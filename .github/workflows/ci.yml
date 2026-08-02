@@ -1,0 +1,118 @@
+---
+name: CI
+
+"on":
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: flowvy
+          POSTGRES_USER: flowvy
+          POSTGRES_PASSWORD: flowvy_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U flowvy -d flowvy"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      BOT_TOKEN: 000000:TEST
+      DATABASE_URL: postgresql+asyncpg://flowvy:flowvy_dev@localhost:5432/flowvy
+      REDIS_URL: redis://localhost:6379/0
+      DEBUG: "false"
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v9
+        with:
+          enable-cache: true
+          python-version: "3.12"
+      - name: Install locked dependencies
+        run: uv sync --locked
+      - name: Create disposable test database
+        working-directory: .
+        run: |
+          docker exec "${{ job.services.postgres.id }}" \
+            psql -U flowvy -d postgres \
+            -c "CREATE USER test WITH PASSWORD 'test';"
+          docker exec "${{ job.services.postgres.id }}" \
+            psql -U flowvy -d postgres \
+            -c "CREATE DATABASE test OWNER test;"
+      - name: Ruff format
+        run: uv run --frozen ruff format --check .
+      - name: Ruff lint
+        run: uv run --frozen ruff check .
+      - name: Verify migrations
+        run: |
+          test "$(uv run --frozen alembic heads | grep -c '(head)')" -eq 1
+          uv run --frozen alembic upgrade head
+          uv run --frozen alembic check
+      - name: Test
+        run: uv run --frozen pytest -q
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test
+      - name: Build
+        run: pnpm build
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: UI smoke
+        run: pnpm test:e2e
+      - name: Upload browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-artifacts
+          path: |
+            frontend/test-results
+            frontend/playwright-report
+          if-no-files-found: ignore

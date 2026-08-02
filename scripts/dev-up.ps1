@@ -1,0 +1,128 @@
+[CmdletBinding()]
+param(
+    [switch]$SkipInstall,
+    [switch]$EnableTelegram
+)
+
+$ErrorActionPreference = "Stop"
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$backendDir = Join-Path $repoRoot "backend"
+$frontendDir = Join-Path $repoRoot "frontend"
+$artifactDir = Join-Path $repoRoot ".artifacts\dev"
+$processFile = Join-Path $artifactDir "processes.json"
+
+if (-not (Get-Command "docker" -ErrorAction SilentlyContinue)) {
+    throw "Docker with Compose is required for the local PostgreSQL and Redis services."
+}
+
+if (-not (Test-Path (Join-Path $backendDir ".env"))) {
+    throw "backend/.env is missing. Copy backend/.env.example and provide local-only values first."
+}
+
+if (Test-Path $processFile) {
+    throw "A Flowvy dev process file already exists at $processFile. Run scripts/dev-down.ps1 first."
+}
+
+foreach ($port in 8001, 5173) {
+    $listener = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue
+    if ($listener) {
+        throw "Port $port is already in use. Stop the existing process instead of starting a stale Flowvy server."
+    }
+}
+
+if (-not $SkipInstall) {
+    & (Join-Path $PSScriptRoot "bootstrap.ps1")
+}
+
+$devEnvironment = @{
+    DATABASE_URL = "postgresql+asyncpg://flowvy:flowvy_dev@127.0.0.1:5432/flowvy"
+    REDIS_URL = "redis://127.0.0.1:6379/0"
+}
+if (-not $EnableTelegram) {
+    $devEnvironment.BOT_TOKEN = ""
+    $devEnvironment.WEBHOOK_URL = ""
+    $devEnvironment.TELEGRAM_WEBHOOK_SECRET = ""
+}
+
+$savedEnvironment = @{}
+foreach ($name in $devEnvironment.Keys) {
+    $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
+    [Environment]::SetEnvironmentVariable($name, $devEnvironment[$name], "Process")
+}
+
+try {
+    docker compose -f (Join-Path $repoRoot "docker-compose.dev.yml") up -d --wait postgres redis
+    if ($LASTEXITCODE -ne 0) { throw "Development PostgreSQL/Redis startup failed." }
+
+    Push-Location $backendDir
+    try {
+        uv run --frozen alembic upgrade head
+        if ($LASTEXITCODE -ne 0) { throw "Development database migration failed." }
+    }
+    finally {
+        Pop-Location
+    }
+
+    New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
+
+    $uvPath = (Get-Command "uv").Source
+    $pnpmPath = (Get-Command "pnpm.cmd" -ErrorAction SilentlyContinue).Source
+    if (-not $pnpmPath) { $pnpmPath = (Get-Command "pnpm").Source }
+
+    $backendProcess = Start-Process -FilePath $uvPath `
+        -ArgumentList @("run", "--frozen", "python", "-m", "flowvy") `
+        -WorkingDirectory $backendDir `
+        -RedirectStandardOutput (Join-Path $artifactDir "backend.stdout.log") `
+        -RedirectStandardError (Join-Path $artifactDir "backend.stderr.log") `
+        -WindowStyle Hidden `
+        -PassThru
+
+    $frontendProcess = Start-Process -FilePath $pnpmPath `
+        -ArgumentList @("dev", "--host", "127.0.0.1", "--strictPort") `
+        -WorkingDirectory $frontendDir `
+        -RedirectStandardOutput (Join-Path $artifactDir "frontend.stdout.log") `
+        -RedirectStandardError (Join-Path $artifactDir "frontend.stderr.log") `
+        -WindowStyle Hidden `
+        -PassThru
+
+    @{
+        backend = $backendProcess.Id
+        frontend = $frontendProcess.Id
+        startedAt = (Get-Date).ToString("o")
+    } | ConvertTo-Json | Set-Content -LiteralPath $processFile -Encoding utf8
+
+    function Wait-Ready {
+        param(
+            [Parameter(Mandatory)][string]$Name,
+            [Parameter(Mandatory)][string]$Uri
+        )
+
+        for ($attempt = 0; $attempt -lt 60; $attempt++) {
+            try {
+                $response = Invoke-WebRequest -Uri $Uri -UseBasicParsing -TimeoutSec 2
+                if ($response.StatusCode -eq 200) { return }
+            }
+            catch {
+                Start-Sleep -Milliseconds 500
+            }
+        }
+        throw "$Name did not become ready at $Uri. See $artifactDir."
+    }
+
+    try {
+        Wait-Ready -Name "Backend" -Uri "http://127.0.0.1:8001/api/ready"
+        Wait-Ready -Name "Frontend" -Uri "http://127.0.0.1:5173"
+    }
+    catch {
+        & (Join-Path $PSScriptRoot "dev-down.ps1")
+        throw
+    }
+
+    Write-Host "Flowvy is ready: frontend http://127.0.0.1:5173, backend http://127.0.0.1:8001"
+    Write-Host "Logs and process ids: $artifactDir"
+}
+finally {
+    foreach ($name in $savedEnvironment.Keys) {
+        [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name], "Process")
+    }
+}
