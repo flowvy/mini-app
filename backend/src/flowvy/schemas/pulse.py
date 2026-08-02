@@ -1,4 +1,4 @@
-"""Schemas for Pulse (Uptime Kuma status page) API."""
+"""Provider-neutral schemas for the Pulse status page API."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from pydantic.alias_generators import to_camel
 
 
 class PulseHeartbeat(BaseModel):
-    """Single heartbeat entry from Kuma."""
+    """Single normalized provider availability sample."""
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
@@ -22,7 +22,7 @@ class PulseMonitor(BaseModel):
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    id: int
+    id: int | str
     name: str
     status: Literal["up", "down", "pending", "maintenance"]
     uptime_24h: float

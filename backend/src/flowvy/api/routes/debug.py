@@ -129,11 +129,12 @@ async def debug_pulse(
 ) -> PulseResponse:
     """Fetch pulse data without Telegram auth. DEBUG mode only."""
     check_debug(request)
+    from flowvy.services.beszel import BeszelError
     from flowvy.services.kuma import KumaError
 
     try:
         result = await service.get_pulse()
-    except KumaError as exc:
+    except (KumaError, BeszelError) as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Status page unavailable: {exc.detail}",

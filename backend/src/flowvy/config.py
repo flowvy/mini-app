@@ -5,9 +5,10 @@ from __future__ import annotations
 import re
 from typing import Annotated
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+from flowvy.beszel_target import normalize_beszel_base_url
 from flowvy.kuma_target import normalize_kuma_base_url
 
 
@@ -51,6 +52,14 @@ class Settings(BaseSettings):
         ge=1024,
         le=10_485_760,
     )
+    beszel_email: str = ""
+    beszel_password: SecretStr = SecretStr("")
+    beszel_allowed_private_origins: Annotated[list[str], NoDecode] = []
+    beszel_max_response_bytes: int = Field(
+        default=1_048_576,
+        ge=1024,
+        le=10_485_760,
+    )
     debug: bool = False
     admin_telegram_ids: Annotated[list[int], NoDecode] = []
 
@@ -81,6 +90,22 @@ class Settings(BaseSettings):
     def validate_kuma_private_origins(cls, values: list[str]) -> list[str]:
         """Fail startup on malformed private-origin exceptions."""
         return list(dict.fromkeys(normalize_kuma_base_url(value) for value in values))
+
+    @field_validator("beszel_allowed_private_origins", mode="before")
+    @classmethod
+    def parse_beszel_private_origins(cls, value: object) -> list[str]:
+        """Parse exact, operator-approved private Beszel origins."""
+        if isinstance(value, str):
+            if not value.strip():
+                return []
+            return [part.strip() for part in value.split(",")]
+        return value  # type: ignore[return-value]
+
+    @field_validator("beszel_allowed_private_origins")
+    @classmethod
+    def validate_beszel_private_origins(cls, values: list[str]) -> list[str]:
+        """Fail startup on malformed private-origin exceptions."""
+        return list(dict.fromkeys(normalize_beszel_base_url(value) for value in values))
 
     @field_validator("telegram_webhook_secret")
     @classmethod

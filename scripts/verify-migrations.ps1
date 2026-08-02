@@ -137,6 +137,34 @@ SELECT
             throw "Previous-head migration did not prove webhook hardening and Remnawave identity preservation: $proof"
         }
 
+        uv run --frozen alembic downgrade i9j0k1l2m3n4
+        if ($LASTEXITCODE -ne 0) { throw "Could not return to the Beszel migration predecessor." }
+
+        docker exec $containerId psql -U flowvy -d $databaseName -v ON_ERROR_STOP=1 `
+            -c "UPDATE provider_settings SET kuma_enabled = true WHERE id = 1;"
+        if ($LASTEXITCODE -ne 0) { throw "Could not seed the legacy Kuma-enabled setting." }
+
+        uv run --frozen alembic upgrade head
+        if ($LASTEXITCODE -ne 0) { throw "Beszel previous-head-to-head upgrade failed." }
+
+        $beszelUpgradeProof = docker exec $containerId psql -U flowvy -d $databaseName -tA -v ON_ERROR_STOP=1 `
+            -c "SELECT pulse_provider = 'kuma' AND beszel_url IS NULL FROM provider_settings WHERE id = 1;"
+        if ($LASTEXITCODE -ne 0 -or $beszelUpgradeProof.Trim() -ne "t") {
+            throw "Beszel migration did not preserve the enabled Kuma provider: $beszelUpgradeProof"
+        }
+
+        uv run --frozen alembic downgrade i9j0k1l2m3n4
+        if ($LASTEXITCODE -ne 0) { throw "Beszel downgrade to its predecessor failed." }
+
+        $beszelDowngradeProof = docker exec $containerId psql -U flowvy -d $databaseName -tA -v ON_ERROR_STOP=1 `
+            -c "SELECT kuma_enabled FROM provider_settings WHERE id = 1;"
+        if ($LASTEXITCODE -ne 0 -or $beszelDowngradeProof.Trim() -ne "t") {
+            throw "Beszel downgrade did not restore the legacy Kuma flag: $beszelDowngradeProof"
+        }
+
+        uv run --frozen alembic upgrade head
+        if ($LASTEXITCODE -ne 0) { throw "Beszel re-upgrade failed." }
+
         uv run --frozen alembic downgrade base
         if ($LASTEXITCODE -ne 0) { throw "Alembic second downgrade-to-base failed." }
 
@@ -166,4 +194,4 @@ finally {
     }
 }
 
-Write-Host "Alembic passed one-head, previous-head data upgrades, webhook hardening, Remnawave identity preservation, downgrade/re-upgrade, and drift checks."
+Write-Host "Alembic passed one-head, previous-head data upgrades, Kuma/Beszel setting preservation, webhook hardening, Remnawave identity preservation, downgrade/re-upgrade, and drift checks."

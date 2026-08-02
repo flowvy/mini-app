@@ -9,6 +9,7 @@ from flowvy.api.routes.admin.settings import ALLOWED_MIME, MAX_FILE_SIZE
 from flowvy.api.routes.debug import check_debug
 from flowvy.schemas.admin_users import AdminUserResponse, AdminUsersResponse
 from flowvy.schemas.provider_settings import (
+    BeszelTestResponse,
     KumaTestResponse,
     ProviderSettingsPatch,
     ProviderSettingsResponse,
@@ -16,7 +17,7 @@ from flowvy.schemas.provider_settings import (
 )
 from flowvy.services.admin_users import AdminUsersService
 from flowvy.services.dashboard import DashboardService
-from flowvy.services.provider_settings import ProviderSettingsService
+from flowvy.services.provider_settings import ProviderSettingsError, ProviderSettingsService
 from flowvy.services.remnawave import RemnawaveError
 
 router = APIRouter(
@@ -158,7 +159,10 @@ async def debug_patch_admin_settings(
 ) -> ProviderSettingsResponse:
     """Update admin settings without Telegram auth. DEBUG mode only."""
     check_debug(request)
-    return await service.update(patch)
+    try:
+        return await service.update(patch)
+    except ProviderSettingsError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
 
 
 @router.get("/settings/kuma/test", response_model=KumaTestResponse)
@@ -169,6 +173,16 @@ async def debug_test_kuma(
     """Test Kuma connection without Telegram auth. DEBUG mode only."""
     check_debug(request)
     return await service.test_kuma()
+
+
+@router.get("/settings/beszel/test", response_model=BeszelTestResponse)
+async def debug_test_beszel(
+    request: Request,
+    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
+) -> BeszelTestResponse:
+    """Test Beszel connection without Telegram auth. DEBUG mode only."""
+    check_debug(request)
+    return await service.test_beszel()
 
 
 @router.post(

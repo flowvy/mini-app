@@ -10,6 +10,7 @@ import pytest
 from pydantic import ValidationError
 
 from flowvy.schemas.provider_settings import ProviderSettingsPatch
+from flowvy.services.beszel import BeszelError
 from flowvy.services.kuma import KumaError
 from flowvy.services.provider_settings import ProviderSettingsError, ProviderSettingsService
 from flowvy.services.pulse import CACHE_KEY
@@ -17,9 +18,10 @@ from flowvy.services.pulse import CACHE_KEY
 
 def _row(**overrides: object) -> SimpleNamespace:
     values: dict[str, object] = {
-        "kuma_enabled": False,
+        "pulse_provider": "disabled",
         "kuma_url": None,
         "kuma_slug": None,
+        "beszel_url": None,
         "app_name": None,
         "logo_url": None,
         "welcome_text": None,
@@ -34,16 +36,20 @@ def _row(**overrides: object) -> SimpleNamespace:
     return SimpleNamespace(**values)
 
 
-def _service(row: SimpleNamespace) -> tuple[ProviderSettingsService, AsyncMock, AsyncMock]:
+def _service(
+    row: SimpleNamespace,
+) -> tuple[ProviderSettingsService, AsyncMock, AsyncMock, AsyncMock]:
     repo = AsyncMock()
     repo.get = AsyncMock(return_value=row)
     repo.update_partial = AsyncMock(return_value=row)
     remnawave = AsyncMock()
     remnawave.get_metadata = AsyncMock(return_value={"version": "2.7.4"})
     kuma = AsyncMock()
+    beszel = AsyncMock()
+    beszel.credentials_configured = True
     redis = AsyncMock()
     redis.delete = AsyncMock(return_value=1)
-    return ProviderSettingsService(repo, remnawave, kuma, redis), kuma, redis
+    return ProviderSettingsService(repo, remnawave, kuma, beszel, redis), kuma, beszel, redis
 
 
 @pytest.mark.parametrize(
@@ -54,6 +60,8 @@ def _service(row: SimpleNamespace) -> tuple[ProviderSettingsService, AsyncMock, 
         ("kuma_url", "https://status.example.test/path"),
         ("kuma_slug", "../admin"),
         ("kuma_slug", "bad/slash"),
+        ("beszel_url", "https://user@monitor.example.test"),
+        ("beszel_url", "https://monitor.example.test/api"),
     ],
 )
 def test_patch_rejects_unsafe_kuma_syntax(field: str, value: str) -> None:
@@ -69,20 +77,20 @@ def test_patch_rejects_unsafe_kuma_syntax(field: str, value: str) -> None:
 
 @pytest.mark.asyncio
 async def test_enabling_kuma_requires_complete_saved_target() -> None:
-    service, _kuma, _redis = _service(_row())
+    service, _kuma, _beszel, _redis = _service(_row())
 
     with pytest.raises(ProviderSettingsError, match="URL and slug"):
-        await service.update(ProviderSettingsPatch(kuma_enabled=True))
+        await service.update(ProviderSettingsPatch(pulse_provider="kuma"))
 
 
 @pytest.mark.asyncio
 async def test_kuma_change_invalidates_pulse_cache() -> None:
     row = _row(
-        kuma_enabled=True,
+        pulse_provider="kuma",
         kuma_url="https://status.example.test",
         kuma_slug="flowvy",
     )
-    service, _kuma, redis = _service(row)
+    service, _kuma, _beszel, redis = _service(row)
 
     await service.update(ProviderSettingsPatch(kuma_slug="flowvy-new"))
 
@@ -92,24 +100,24 @@ async def test_kuma_change_invalidates_pulse_cache() -> None:
 @pytest.mark.asyncio
 async def test_enabled_target_is_validated_before_persistence() -> None:
     row = _row(
-        kuma_enabled=False,
+        pulse_provider="disabled",
         kuma_url="http://public.example.test",
         kuma_slug="flowvy",
     )
-    service, kuma, _redis = _service(row)
+    service, kuma, _beszel, _redis = _service(row)
     kuma.validate_target = AsyncMock(
         side_effect=KumaError("Kuma target is invalid or not allowed")
     )
 
     with pytest.raises(ProviderSettingsError, match="invalid or not allowed"):
-        await service.update(ProviderSettingsPatch(kuma_enabled=True))
+        await service.update(ProviderSettingsPatch(pulse_provider="kuma"))
 
     service._repo.update_partial.assert_not_awaited()
 
 
 @pytest.mark.asyncio
 async def test_unrelated_change_does_not_invalidate_pulse_cache() -> None:
-    service, _kuma, redis = _service(_row())
+    service, _kuma, _beszel, redis = _service(_row())
 
     await service.update(ProviderSettingsPatch(app_name="Flowvy"))
 
@@ -119,11 +127,11 @@ async def test_unrelated_change_does_not_invalidate_pulse_cache() -> None:
 @pytest.mark.asyncio
 async def test_connection_test_uses_injected_safe_client() -> None:
     row = _row(
-        kuma_enabled=True,
+        pulse_provider="kuma",
         kuma_url="https://status.example.test",
         kuma_slug="flowvy",
     )
-    service, kuma, _redis = _service(row)
+    service, kuma, _beszel, _redis = _service(row)
     kuma.get_status_page = AsyncMock(return_value=object())
 
     result = await service.test_kuma()
@@ -135,10 +143,71 @@ async def test_connection_test_uses_injected_safe_client() -> None:
 @pytest.mark.asyncio
 async def test_connection_test_returns_only_safe_client_error() -> None:
     row = _row(kuma_url="https://status.example.test", kuma_slug="flowvy")
-    service, kuma, _redis = _service(row)
+    service, kuma, _beszel, _redis = _service(row)
     kuma.get_status_page = AsyncMock(side_effect=KumaError("Kuma connection failed"))
 
     result = await service.test_kuma()
 
     assert result.ok is False
     assert result.error == "Kuma connection failed"
+
+
+@pytest.mark.asyncio
+async def test_enabling_beszel_requires_url_and_server_credentials() -> None:
+    service, _kuma, beszel, _redis = _service(_row())
+
+    with pytest.raises(ProviderSettingsError, match="Beszel URL"):
+        await service.update(ProviderSettingsPatch(pulse_provider="beszel"))
+
+    service._repo.get.return_value = _row(beszel_url="https://monitor.example.test")
+    beszel.credentials_configured = False
+    with pytest.raises(ProviderSettingsError, match="credentials"):
+        await service.update(ProviderSettingsPatch(pulse_provider="beszel"))
+
+
+@pytest.mark.asyncio
+async def test_enabling_beszel_validates_target_before_persistence() -> None:
+    row = _row(beszel_url="https://monitor.example.test")
+    service, _kuma, beszel, _redis = _service(row)
+    beszel.validate_target = AsyncMock(
+        side_effect=BeszelError("Beszel target is invalid or not allowed")
+    )
+
+    with pytest.raises(ProviderSettingsError, match="invalid or not allowed"):
+        await service.update(ProviderSettingsPatch(pulse_provider="beszel"))
+
+    service._repo.update_partial.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_beszel_change_invalidates_pulse_cache() -> None:
+    service, _kuma, _beszel, redis = _service(_row())
+
+    await service.update(ProviderSettingsPatch(beszel_url="https://monitor.example.test"))
+
+    redis.delete.assert_awaited_once_with(CACHE_KEY)
+
+
+@pytest.mark.asyncio
+async def test_beszel_connection_test_returns_only_safe_error() -> None:
+    row = _row(beszel_url="https://monitor.example.test")
+    service, _kuma, beszel, _redis = _service(row)
+    beszel.test_connection = AsyncMock(side_effect=BeszelError("Beszel authentication failed"))
+
+    result = await service.test_beszel()
+
+    assert result.ok is False
+    assert result.error == "Beszel authentication failed"
+
+
+@pytest.mark.asyncio
+async def test_settings_response_exposes_only_credential_presence() -> None:
+    service, _kuma, beszel, _redis = _service(_row(beszel_url="https://monitor.example.test"))
+    beszel.credentials_configured = True
+
+    result = await service.get()
+    payload = result.model_dump()
+
+    assert payload["beszel_credentials_configured"] is True
+    assert "beszel_email" not in payload
+    assert "beszel_password" not in payload

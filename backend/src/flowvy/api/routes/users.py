@@ -43,7 +43,7 @@ async def get_me(
         ) from exc
     ps = await ps_repo.get()
     response = UserResponse.model_validate(user)
-    response.features = FeaturesResponse(pulse=ps.kuma_enabled)
+    response.features = FeaturesResponse(pulse=ps.pulse_provider != "disabled")
     response.branding = BrandingResponse(
         app_name=ps.app_name,
         logo_url=ps.logo_url,

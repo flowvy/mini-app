@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -9,6 +10,7 @@ import pytest
 from fastapi import HTTPException
 
 from flowvy.api.routes.pulse import get_pulse
+from flowvy.schemas.beszel import BeszelSnapshot
 from flowvy.schemas.kuma import KumaHeartbeatPage, KumaStatusPage
 from flowvy.services.kuma import KumaError
 from flowvy.services.pulse import CACHE_KEY, PulseService
@@ -60,16 +62,18 @@ def _service(
     repo = AsyncMock()
     repo.get = AsyncMock(
         return_value=SimpleNamespace(
-            kuma_enabled=True,
+            pulse_provider="kuma",
             kuma_url="https://status.example.test",
             kuma_slug="flowvy",
+            beszel_url=None,
         )
     )
+    beszel = AsyncMock()
     redis = AsyncMock()
     redis.get = AsyncMock(return_value=None)
     redis.set = AsyncMock()
     redis.delete = AsyncMock()
-    return PulseService(kuma, repo, redis), kuma, redis
+    return PulseService(kuma, beszel, repo, redis), kuma, redis
 
 
 @pytest.mark.parametrize(
@@ -127,9 +131,10 @@ async def test_malformed_cache_is_evicted_and_refetched() -> None:
 async def test_disabled_pulse_avoids_cache_and_kuma() -> None:
     service, kuma, redis = _service(_status_page(), _heartbeats(1, 1))
     service._ps_repo.get.return_value = SimpleNamespace(
-        kuma_enabled=False,
+        pulse_provider="disabled",
         kuma_url=None,
         kuma_slug=None,
+        beszel_url=None,
     )
 
     assert await service.get_pulse() is None
@@ -152,3 +157,97 @@ async def test_public_route_does_not_leak_kuma_error_detail() -> None:
 
     assert exc_info.value.status_code == 502
     assert exc_info.value.detail == "Status page unavailable"
+
+
+@pytest.mark.asyncio
+async def test_beszel_is_dispatched_and_mapped_without_calling_kuma() -> None:
+    now = datetime(2026, 8, 2, 12, tzinfo=UTC)
+    system_id = "abcde12345abcde"
+    snapshot = BeszelSnapshot.model_validate(
+        {
+            "captured_at": now,
+            "systems": [
+                {
+                    "id": system_id,
+                    "name": "Gateway",
+                    "status": "up",
+                    "created": now - timedelta(days=3),
+                }
+            ],
+            "minute_stats": [
+                {"system": system_id, "created": now - timedelta(minutes=i, seconds=30)}
+                for i in range(40)
+            ],
+            "daily_stats": [
+                {"system": system_id, "created": now - timedelta(minutes=20 * i + 1)}
+                for i in range(72)
+            ],
+        }
+    )
+    kuma = AsyncMock()
+    beszel = AsyncMock()
+    beszel.get_snapshot = AsyncMock(return_value=snapshot)
+    repo = AsyncMock()
+    repo.get = AsyncMock(
+        return_value=SimpleNamespace(
+            pulse_provider="beszel",
+            kuma_url=None,
+            kuma_slug=None,
+            beszel_url="https://monitor.example.test",
+        )
+    )
+    redis = AsyncMock()
+    redis.get = AsyncMock(return_value=None)
+    service = PulseService(kuma, beszel, repo, redis)
+
+    result = await service.get_pulse()
+
+    assert result is not None
+    assert result.overall_status == "operational"
+    assert result.groups[0].monitors[0].id == system_id
+    assert result.groups[0].monitors[0].uptime_24h == 1.0
+    assert len(result.groups[0].monitors[0].heartbeats) == 40
+    beszel.get_snapshot.assert_awaited_once_with("https://monitor.example.test")
+    kuma.get_status_page.assert_not_awaited()
+
+
+def test_beszel_gaps_and_current_status_are_fail_safe() -> None:
+    now = datetime(2026, 8, 2, 12, tzinfo=UTC)
+    up_id = "abcde12345abcde"
+    down_id = "fghij67890fghij"
+    snapshot = BeszelSnapshot.model_validate(
+        {
+            "captured_at": now,
+            "systems": [
+                {
+                    "id": up_id,
+                    "name": "API",
+                    "status": "up",
+                    "created": now - timedelta(days=2),
+                },
+                {
+                    "id": down_id,
+                    "name": "Worker",
+                    "status": "down",
+                    "created": now - timedelta(days=2),
+                },
+            ],
+            "minute_stats": [],
+            "daily_stats": [
+                {
+                    "system": down_id,
+                    "created": now - timedelta(hours=24) + timedelta(minutes=20 * i + 1),
+                }
+                for i in range(36)
+            ],
+        }
+    )
+    service, _kuma, _redis = _service(_status_page(), _heartbeats(1, 1))
+
+    result = service._aggregate_beszel(snapshot)
+
+    assert result.overall_status == "partial"
+    up, down = result.groups[0].monitors
+    assert up.heartbeats[-1].status == 1
+    assert down.heartbeats[-1].status == 0
+    assert down.uptime_24h == 0.5

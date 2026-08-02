@@ -7,7 +7,8 @@ Tests use pytest/pytest-asyncio. Follow `backend/AGENTS.md`.
   each test. Keep tests isolated and independent of ordering.
 - Never point a fixture at the development or production database. Do not remove volumes or data to
   make a test pass.
-- Mock Telegram, Remnawave, Kuma, Redis behavior, time, and network failures at clear boundaries.
+- Mock Telegram, Remnawave, Kuma, Beszel, Redis behavior, time, and network failures at clear
+  boundaries.
   No test may require a live external account or secret.
 - Prefer behavior assertions over implementation details. Cover success, absence, permission
   failure, malformed input, upstream error, and timeout for changed boundaries.

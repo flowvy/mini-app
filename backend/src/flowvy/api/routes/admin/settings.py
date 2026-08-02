@@ -19,6 +19,7 @@ from flowvy.media_upload import (
     validate_media_size,
 )
 from flowvy.schemas.provider_settings import (
+    BeszelTestResponse,
     KumaTestResponse,
     ProviderSettingsPatch,
     ProviderSettingsResponse,
@@ -73,6 +74,15 @@ async def test_kuma(
 ) -> KumaTestResponse:
     """Test Uptime Kuma connection using saved URL and slug."""
     return await service.test_kuma()
+
+
+@router.get("/settings/beszel/test", response_model=BeszelTestResponse)
+async def test_beszel(
+    _admin: CurrentAdmin,
+    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
+) -> BeszelTestResponse:
+    """Test Beszel authentication and systems read access."""
+    return await service.test_beszel()
 
 
 @router.post(
