@@ -53,6 +53,16 @@ Source-of-truth order:
 - Review the final diff for accidental generated files, secrets, debug shortcuts, stale docs, and
   unrelated user changes.
 
+## Git workflow
+
+- Use only the long-lived `dev` and `main` branches unless the user explicitly changes this policy.
+  Do not create task, feature, agent, or Codex branches for ordinary development.
+- Commit and push ongoing development to `dev`. Never push unfinished development directly to
+  `main`.
+- Treat `main` as the release branch. A release moves the approved `dev` state to `main` only after
+  fresh full verification and the required build, then creates and pushes the agreed version tag.
+- Do not invent a release version or tag. Obtain it from the user or the active release plan.
+
 ## Commands
 
 From the repository root, prefer the checked-in PowerShell workflows:
