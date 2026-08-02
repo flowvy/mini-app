@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from aiogram.exceptions import TelegramForbiddenError
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.types import FSInputFile
 
 from flowvy.bot.templates import ASSETS_DIR
@@ -104,6 +104,31 @@ async def test_send_error_returns_none(sender: MessageSender, bot: AsyncMock) ->
     )
     result = await sender.send(chat_id=123, text="Hello")
     assert result is None
+
+
+async def test_invalid_media_falls_back_to_text(
+    sender: MessageSender,
+    bot: AsyncMock,
+) -> None:
+    """A rejected media attachment must not suppress the welcome message."""
+    bot.send_animation.side_effect = TelegramBadRequest(
+        method=MagicMock(),
+        message="Bad Request: DOCUMENT_INVALID",
+    )
+
+    result = await sender.send(
+        chat_id=123,
+        text="Welcome",
+        media_url="https://example.com/invalid.mp4",
+        media_type="animation",
+        buttons=[InlineButton(text="Open", web_app_url="https://app.example.com")],
+    )
+
+    assert result is not None
+    bot.send_message.assert_awaited_once()
+    fallback = bot.send_message.call_args.kwargs
+    assert fallback["text"] == "Welcome"
+    assert fallback["reply_markup"].inline_keyboard[0][0].web_app is not None
 
 
 async def test_send_welcome_with_webapp(sender: MessageSender, bot: AsyncMock) -> None:

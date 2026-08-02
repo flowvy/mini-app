@@ -8,7 +8,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from aiogram import Bot
-from aiogram.exceptions import TelegramAPIError
+from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
 from aiogram.types import (
     FSInputFile,
     InlineKeyboardButton,
@@ -89,8 +89,26 @@ class MessageSender:
                 text=text,
                 reply_markup=reply_markup,
             )
+        except TelegramBadRequest as exc:
+            if media is not None and media_type in {"animation", "photo"}:
+                logger.warning(
+                    "Telegram rejected %s media; retrying without media: %s",
+                    media_type,
+                    exc,
+                )
+                try:
+                    return await self._bot.send_message(
+                        chat_id=chat_id,
+                        text=text,
+                        reply_markup=reply_markup,
+                    )
+                except TelegramAPIError:
+                    logger.exception("Failed to send Telegram media fallback")
+                    return None
+            logger.warning("Telegram rejected outgoing message: %s", exc)
+            return None
         except TelegramAPIError:
-            logger.exception("Failed to send message to chat_id=%d", chat_id)
+            logger.exception("Failed to send Telegram message")
             return None
 
     async def send_welcome(

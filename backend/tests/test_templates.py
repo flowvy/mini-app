@@ -46,6 +46,7 @@ def test_defaults_has_welcome() -> None:
     tmpl = DEFAULTS["welcome"]
     assert isinstance(tmpl, MessageTemplate)
     assert "Welcome" in tmpl.text
+    assert '<tg-emoji emoji-id="5262526163959453517">☺</tg-emoji>' in tmpl.text
     assert tmpl.media_path == ASSETS_DIR / "main_card.mp4"
     assert tmpl.media_type == "animation"
     assert tmpl.button_text is not None
