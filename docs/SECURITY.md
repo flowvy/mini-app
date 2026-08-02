@@ -23,8 +23,8 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
 - Provider UUID из локальной БД — cache связи, не вечное доказательство ownership.
 - Redis не является источником ролей. Его сбой не должен разрешать доступ и по возможности не должен
   ломать уже проверенный read request.
-- Remnawave/Kuma/webhook payloads — недоверенный внешний ввод: schema, size, timeout, SSRF, replay,
-  retention и safe logging проверяются явно.
+- Ответы Remnawave/Kuma/Beszel и webhook payloads — недоверенный внешний ввод: schema, size,
+  timeout, SSRF, replay, retention и safe logging проверяются явно.
 
 ## Обязательные инварианты
 
@@ -36,8 +36,11 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
   обязательного предварительного `/api/me`.
 - Device mutation заново сопоставляет authenticated Telegram user и provider user/устройство.
 - Telegram и Remnawave webhooks проверяют secret/signature, freshness и replay/idempotency.
-- Kuma URL не даёт доступ к loopback, link-local, metadata и внутренним сетям. Redirects и DNS
-  rebinding учитываются в выбранной защите.
+- Kuma/Beszel URL не дают доступ к loopback, link-local, metadata и внутренним сетям. Redirects и
+  DNS rebinding учитываются в выбранной защите; private origin допускается только точным
+  operator-controlled allow-list entry.
+- Beszel credential хранится только в server environment; frontend/БД получают лишь URL и признак
+  наличия credential. Интеграция использует отдельного пользователя с ролью `readonly`.
 - Upload ограничивается при streaming, до полного чтения в память; type/size проверяются server-side.
 - Unknown provider status/enum обрабатывается безопасно, а не считается активным.
 - Все внешние calls имеют finite timeout, bounded concurrency и безопасное error mapping.

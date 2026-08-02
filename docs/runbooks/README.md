@@ -12,7 +12,7 @@ runbooks отсутствуют**. Не превращайте предполо�
 - PostgreSQL backup + проверенный restore;
 - Redis loss/degraded mode;
 - Telegram webhook rotation/outage;
-- Remnawave/Kuma outage и credential rotation;
+- Remnawave/Kuma/Beszel outage и credential rotation;
 - suspected token leak/user-impacting security incident;
 - queue/broadcast stop и повтор без дубликатов, если Broadcast будет реализован.
 

@@ -1,11 +1,11 @@
 ---
 name: flowvy-integration
-description: Research, change, or review a Flowvy Telegram, Remnawave, or Uptime Kuma integration using the locked local version, primary official contracts, security checks, and deterministic contract tests.
+description: Research, change, or review a Flowvy Telegram, Remnawave, Uptime Kuma, or Beszel integration using the locked local version, primary official contracts, security checks, and deterministic contract tests.
 ---
 
 # Work on a Flowvy integration
 
-Handle one boundary per run: Telegram Mini App/Bot API, Remnawave, or Uptime Kuma.
+Handle one boundary per run: Telegram Mini App/Bot API, Remnawave, Uptime Kuma, or Beszel.
 
 ## Establish the contract
 

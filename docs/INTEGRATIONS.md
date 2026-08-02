@@ -136,12 +136,17 @@ success/auth/freshness/schema/size/replay, concurrent deduplication, retention, 
 migration, client transport/envelope/version/pagination/identity, email array и dashboard projections
 покрыты локально.
 
-## Uptime Kuma
+## Pulse: Uptime Kuma или Beszel
 
-Kuma включается runtime-настройкой в singleton `provider_settings`; там же хранятся URL и public
-status-page slug. Admin API читает/изменяет настройки и имеет connection test. Pulse service получает
-public status page/heartbeat data, агрегирует groups/monitors/incidents и кэширует результат в Redis
-на 60 секунд.
+Singleton `provider_settings` хранит выбранный `pulse_provider`: `disabled`, `kuma` или `beszel`.
+Там же лежат public Kuma URL/slug и Beszel Hub URL. Admin API меняет источник, открывает отдельные
+экраны настройки и выполняет connection test. Pulse service нормализует выбранный источник в один
+стабильный `/api/pulse` contract и кэширует результат в Redis на 60 секунд. Смена источника или его
+URL/slug сразу удаляет старый cache.
+
+### Uptime Kuma
+
+Flowvy получает public status page/heartbeat data и агрегирует groups/monitors/incidents.
 
 Environment secret для Kuma сейчас не используется: интеграция рассчитана на public status page.
 Public target обязан быть origin-only HTTPS URL без credentials/path/query/fragment, slug — одним
@@ -155,8 +160,7 @@ upstream body/URL не попадает в публичную ошибку.
 `scheme://host:port`; wildcard/CIDR не поддерживаются. Исключение применяется к origin целиком, но
 link-local, multicast и unspecified адреса запрещены всегда. `KUMA_MAX_RESPONSE_BYTES` по умолчанию
 равен 1 MiB. При включении Pulse target проходит раннюю DNS/policy validation, а при каждом test/Pulse
-request проверяется заново. Admin connection test использует тот же безопасный client; изменение
-Kuma URL/slug/enabled сразу удаляет старый Pulse cache.
+request проверяется заново. Admin connection test использует тот же безопасный client.
 
 Parser валидирует используемый response contract. Kuma 2.x `incidents` и поддерживаемый 1.x
 `incident: object | null` нормализуются в один список. Итоговый статус теперь различает all-down,
@@ -185,6 +189,56 @@ Primary evidence, проверено 2026-08-02; реальная версия �
 private allow-list, pinned Host/SNI, redirect, timeout/connect, non-2xx без утечки тела, size limit,
 malformed/schema drift, Kuma 1.x/2.x incidents, cache eviction и Pulse statuses. В локальной БД Kuma
 выключена, URL/slug отсутствуют, поэтому live target contract пока объективно не проверен.
+
+### Beszel
+
+Flowvy зафиксирован на официальном Beszel `v0.18.7`, exact commit
+`6e3fd90834309213aca32f2ff5fb0b027661c39a`. Beszel предупреждает, что API может меняться даже в
+minor releases, поэтому смена версии требует повторной сверки contract и fixtures.
+
+Hub URL хранится в `provider_settings`, но `BESZEL_EMAIL` и `BESZEL_PASSWORD` читаются только из
+server environment. Admin/frontend получают лишь `beszelCredentialsConfigured`; credential, auth
+token и raw provider body не записываются в БД, Redis или response. Для Flowvy следует создать
+отдельного пользователя Beszel с ролью `readonly` и выдать ему только нужные systems.
+
+Read-only flow использует PocketBase API:
+
+- `POST /api/collections/users/auth-with-password` с `identity`/`password` получает auth token;
+- `GET /api/collections/systems/records` читает `id`, `name`, `status`, `created`;
+- `GET /api/collections/system_stats/records` читает только `system` и `created`, отдельно для
+  native `1m` и `20m` samples.
+
+Статусы `up`, `down`, `paused`, `pending` становятся соответственно `up`, `down`, `maintenance`,
+`pending`. Для каждого system Pulse строит 40 минут истории из минутных samples; до времени создания
+system ячейки считаются pending, отсутствие ожидаемого sample — down, последняя ячейка сверяется с
+current status. Uptime за 24 часа считается по native 20-minute samples и creation-aware
+denominator. Beszel не предоставляет совместимый incident contract, поэтому `incidents` остаётся
+пустым, а systems входят в одну группу `Systems`.
+
+Beszel использует ту же transport-защиту, что Kuma: origin-only URL, HTTPS для public target,
+повторная проверка всех A/AAAA адресов, DNS pinning с исходными Host/SNI, redirects/proxy off,
+streaming body limit и безопасные ошибки. Docker/LAN origin разрешается только точным значением в
+`BESZEL_ALLOWED_PRIVATE_ORIGINS`; wildcard/CIDR нет. `BESZEL_MAX_RESPONSE_BYTES` по умолчанию 1 MiB.
+Количество systems, records и страниц ограничено до загрузки полного ответа.
+
+Primary evidence, проверено 2026-08-02:
+
+- [Beszel REST API](https://beszel.dev/guide/rest-api) описывает PocketBase API, auth и предупреждает
+  о возможных изменениях API в minor releases.
+- [Beszel user accounts](https://beszel.dev/guide/user-accounts) описывает роли и доступ к systems.
+- [PocketBase auth-with-password](https://pocketbase.io/docs/api-records/#auth-with-password)
+  фиксирует auth endpoint, request fields и raw `Authorization` token.
+- [Beszel v0.18.7 types](https://github.com/henrygd/beszel/blob/v0.18.7/internal/site/src/types.d.ts)
+  фиксируют system statuses и `system_stats` resolutions.
+- [Beszel v0.18.7 collection rules](https://github.com/henrygd/beszel/blob/v0.18.7/internal/hub/collections.go)
+  разрешают read-only пользователю чтение назначенных systems/stats и запрещают запись.
+- [Beszel v0.18.7 record retention](https://github.com/henrygd/beszel/blob/v0.18.7/internal/records/records.go)
+  подтверждает агрегацию и 24-часовое хранение `20m` records.
+
+Детерминированный suite покрывает auth success/failure, отсутствие credential до network call,
+status/schema drift, pagination bounds, malformed data, timeout, redirect, non-2xx, oversized body,
+SSRF/mixed DNS, DNS pinning, provider selection/cache и Pulse history/status mapping. Локальный `.env`
+не содержит Beszel Hub URL/credential, поэтому live read-only contract ещё не проверен.
 
 ## Правила изменения контракта
 

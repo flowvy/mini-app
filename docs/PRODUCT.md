@@ -18,7 +18,7 @@ Flowvy даёт VPN-подписчику компактный кабинет в�
 1. Открыть Mini App из Telegram и пройти проверку `initData`.
 2. Увидеть статус, срок, трафик, лимит устройств и connection link активной подписки.
 3. Посмотреть HWID-устройства и удалить одно либо все устройства.
-4. Посмотреть Pulse status, если администратор включил Uptime Kuma.
+4. Посмотреть Pulse status, если администратор выбрал Uptime Kuma или Beszel.
 
 Маршрут Support существует, но пока показывает `Coming soon`. Покупка, продление, оплата,
 самостоятельное создание Remnawave user и полноценный support flow не реализованы.
@@ -30,7 +30,8 @@ Flowvy даёт VPN-подписчику компактный кабинет в�
 - видеть VPN/bot dashboard;
 - загружать, фильтровать и открывать Remnawave users;
 - enable/disable/reset traffic/revoke/delete выбранного provider user;
-- настраивать Kuma, название/логотип и welcome template/media.
+- выбирать и настраивать источник Pulse — Kuma или Beszel — а также название/логотип и welcome
+  template/media.
 
 Broadcast пока является заглушкой. Invite model/repository существуют, но invite-only product flow
 не подключён. Аудит опасных admin actions отсутствует.

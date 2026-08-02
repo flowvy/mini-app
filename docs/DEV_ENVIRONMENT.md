@@ -1,7 +1,7 @@
 # Локальная среда Flowvy
 
-Инструкция разделяет безопасную локальную разработку и подключение реальных Telegram/Remnawave/Kuma.
-По умолчанию не используйте реальные внешние системы.
+Инструкция разделяет безопасную локальную разработку и подключение реальных
+Telegram/Remnawave/Kuma/Beszel. По умолчанию не используйте реальные внешние системы.
 
 ## Что понадобится
 
@@ -67,6 +67,9 @@ REDIS_URL=redis://localhost:6379/0
 REMNAWAVE_URL=
 REMNAWAVE_API_TOKEN=
 REMNAWAVE_WEBHOOK_SECRET=
+BESZEL_EMAIL=
+BESZEL_PASSWORD=
+BESZEL_ALLOWED_PRIVATE_ORIGINS=
 DEBUG=false
 ```
 
@@ -119,7 +122,7 @@ Vite слушает только `http://127.0.0.1:5173` и проксирует
 
 `VITE_MOCK_AUTH=true` создаёт локального mock admin и переводит hooks на `/api/debug/...` там, где
 такой путь реализован. Для этого backend должен иметь `DEBUG=true`. Это позволяет проверять shell,
-навигацию и часть настроек без Telegram, но не создаёт фиктивные Remnawave/Kuma ответы:
+навигацию и часть настроек без Telegram, но не создаёт фиктивные Remnawave/Kuma/Beszel ответы:
 
 - Home/Devices с `VITE_DEBUG_TELEGRAM_ID` обращаются к настоящему настроенному Remnawave;
 - без ID часть запросов возвращается к auth-protected API;

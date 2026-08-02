@@ -29,7 +29,7 @@ stdout/stderr находятся в `.artifacts/dev`. `dev-down` останав�
 - `GET /api/health` подтверждает только liveness FastAPI и не обращается к зависимостям.
 - `GET /api/ready` параллельно проверяет `SELECT 1` в PostgreSQL и Redis `PING` с двухсекундными
   timeout. Возвращает только `ok/error` по компонентам, без внутренних адресов/ошибок. `dev-up`
-  ждёт именно этот route; Remnawave/Kuma намеренно не входят в базовую readiness приложения.
+  ждёт именно этот route; Remnawave/Kuma/Beszel намеренно не входят в базовую readiness приложения.
 - `docker compose -f docker-compose.dev.yml ps` показывает dev infrastructure.
 - `.artifacts/dev/backend.stderr.log` и соседние logs — первая локальная диагностика, но в них не
   должны попадать secrets/payloads.
@@ -40,8 +40,9 @@ stdout/stderr находятся в `.artifacts/dev`. `dev-down` останав�
 Alembic загружает отдельный `MigrationSettings`, содержащий только `DATABASE_URL`, с тем же
 приоритетом process environment → `backend/.env` → local default. Он не валидирует и не выводит
 остальные application secrets. Перед ручной командой всё равно подтвердите точную target database. Локальный
-`verify-migrations.ps1` создаёт случайную disposable БД, проверяет upgrade/downgrade/re-upgrade и
-drift, затем удаляет её; CI делает zero-to-head на ephemeral PostgreSQL.
+`verify-migrations.ps1` создаёт случайную disposable БД, проверяет upgrade/downgrade/re-upgrade,
+сохранение legacy Kuma-enabled настройки при переходе к Pulse provider selector и drift, затем
+удаляет её; CI делает zero-to-head на ephemeral PostgreSQL.
 
 ## Временный Cloudflare Tunnel
 
@@ -85,7 +86,7 @@ coverage и `.artifacts` игнорируются Git. CI не собирает 
 - structured log redaction, tracing и retention;
 - PostgreSQL/Redis backup, проверенный restore, disaster recovery и rollback;
 - migration rollout/compatibility strategy;
-- capacity/rate/timeout budgets и provider outage policy;
+- capacity/rate/timeout budgets и Remnawave/Kuma/Beszel outage policy;
 - реальные incident runbooks и ownership/on-call.
 
 До появления этих элементов production start/deploy должен считаться заблокированным. Будущие

@@ -19,19 +19,19 @@ FastAPI BFF + aiogram webhook (:8001)
        |             |              |
        v             v              v
  PostgreSQL        Redis        External HTTP
- local state    cache/metrics   Remnawave, Kuma,
+ local state    cache/metrics   Remnawave, Kuma/Beszel,
                                 Telegram Bot API
 ```
 
-Frontend не обращается к Remnawave, Kuma, PostgreSQL или Redis напрямую. FastAPI формирует ответы
-под конкретные экраны, проверяет Telegram identity и скрывает особенности внешних API.
+Frontend не обращается к Remnawave, Kuma, Beszel, PostgreSQL или Redis напрямую. FastAPI формирует
+ответы под конкретные экраны, проверяет Telegram identity и скрывает особенности внешних API.
 
 ## Доверенные границы
 
 1. **Telegram Mini App input** — недоверенный до проверки подписи и `auth_date` по bot token.
 2. **Frontend role/mode** — только отображение. Решение о доступе всегда принимает backend.
-3. **Remnawave/Kuma/webhooks** — внешние данные: нужны timeout, schema validation, безопасная ошибка,
-   проверка подписи и защита от повторов там, где есть side effect.
+3. **Remnawave/Kuma/Beszel и webhooks** — внешние данные: нужны timeout, schema validation,
+   безопасная ошибка, проверка подписи и защита от повторов там, где есть side effect.
 4. **PostgreSQL** — локальная долговременная запись. Изменяется приложением и Alembic migrations.
 5. **Redis** — временные cache/metrics/activity данные; потеря Redis не должна менять права доступа.
 6. **Debug routes** — намеренно обходят Telegram auth и допустимы только на изолированном localhost.
@@ -59,8 +59,8 @@ Frontend не обращается к Remnawave, Kuma, PostgreSQL или Redis �
 - `di.py`, `di_bff.py`, `di_dashboard.py`, `di_webhooks.py`, `di_bot.py` — Dishka wiring.
 
 APP scope используется для Settings, engine/session factory, Redis, shared httpx client, Remnawave,
-Kuma и bot. SQLAlchemy session и большинство BFF services имеют REQUEST scope; provider commits или
-rollbacks транзакцию после обработки запроса.
+Kuma, отдельного proxy-free Beszel client и bot. SQLAlchemy session и большинство BFF services имеют
+REQUEST scope; provider commits или rollbacks транзакцию после обработки запроса.
 
 ### HTTP-потоки
 
@@ -71,7 +71,7 @@ rollbacks транзакцию после обработки запроса.
 - `GET /api/me/subscription` — Remnawave user/subscription и upsert локальной subscription.
 - `GET/DELETE /api/me/devices...` — свежее сопоставление Telegram user с числовым Remnawave user ID,
   optional legacy UUID и HWID devices.
-- `GET /api/pulse` — агрегированный public status page Kuma, если функция включена.
+- `GET /api/pulse` — нормализованный статус выбранного Kuma/Beszel provider, если Pulse включён.
 
 Admin routes под `/api/admin` повторно получают текущего локального пользователя и проверяют его
 роль. Они отдают dashboard, полный/постраничный список пользователей, detail/actions и provider,
@@ -105,7 +105,7 @@ PostgreSQL хранит пользователей, подписки, invites, s
 Redis используется для:
 
 - `dashboard:remnawave` — Remnawave dashboard, TTL 30 секунд;
-- `pulse:data` — Kuma aggregation, TTL 60 секунд;
+- `pulse:data` — provider-neutral Pulse aggregation, TTL 60 секунд;
 - `external_squads` — имена squads, TTL 300 секунд;
 - request counters и `bot:last_seen` до периодической записи activity в PostgreSQL;
 - Telegram media `file_id` cache в message sender.
@@ -130,17 +130,24 @@ legacy user UUID/lookup endpoints и 3.0/3.1 с числовым `userId` и fil
 `docs/api-remnawave.json` — reference snapshot, а не гарантированно актуальный контракт. Любое
 изменение интеграции требует сверки с primary source/фактической версией панели и contract tests.
 
-### Uptime Kuma
+### Pulse providers
 
-URL и public status-page slug хранятся в `provider_settings` и меняются через admin settings. Pulse
-service получает public status/heartbeat data, группирует результат и кэширует его в Redis. При
-выключенной функции `/api/pulse` возвращает `404`.
+`provider_settings.pulse_provider` выбирает `disabled`, `kuma` или `beszel`. Kuma URL/public
+status-page slug и Beszel Hub URL меняются через admin settings. Pulse service получает данные
+выбранного client, переводит их в общий groups/monitors/heartbeats/incidents contract и кэширует в
+Redis. При выключенной или неполной настройке `/api/pulse` возвращает `404`.
+
+Kuma использует публичный status-page contract. Beszel авторизуется серверными
+`BESZEL_EMAIL`/`BESZEL_PASSWORD`, читает назначенные systems и `1m`/`20m` system stats; секреты не
+входят в settings API или БД. Оба client используют origin-only policy, DNS validation/pinning,
+redirect/proxy запрет, ограниченное тело и безопасное error mapping. Private Docker/LAN origins
+требуют отдельного точного allow-list для каждого provider.
 
 ### Webhooks и Telegram bot
 
 Remnawave webhook доступен только при непустом shared secret. Валидное событие сохраняется в
-PostgreSQL и инвалидирует dashboard/Pulse cache по scope/event. Freshness и deduplication пока не
-реализованы.
+PostgreSQL и инвалидирует dashboard/Pulse cache по scope/event. Signature, freshness, replay,
+idempotency, payload size и retention проверяются до/после сохранения в соответствующей границе.
 
 Aiogram dispatcher содержит `/start` flow и отправку welcome template/media. Telegram webhook живёт
 в том же FastAPI process; отдельного worker сейчас нет.
@@ -159,7 +166,7 @@ Aiogram dispatcher содержит `/start` flow и отправку welcome te
 
 Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Admin URL: `/admin/dashboard`,
 `/admin/users`, `/admin/users/$userId`, `/admin/broadcast`, `/admin/settings` и отдельные Kuma,
-branding, welcome subroutes. Support и Broadcast пока заглушки.
+Beszel, branding, welcome subroutes. Support и Broadcast пока заглушки.
 
 ## Автоматизация разработки
 
@@ -171,7 +178,7 @@ branding, welcome subroutes. Support и Broadcast пока заглушки.
 
 Frontend имеет Vitest unit seed и Playwright mock state matrix. Browser suite запускает только Vite,
 перехватывает каждый `/api/*` request и проверяет critical user/admin routes, роли, ошибки, mutations,
-accessibility и visual evidence без Telegram, backend, PostgreSQL, Redis, Remnawave или Kuma.
+accessibility и visual evidence без Telegram, backend, PostgreSQL, Redis, Remnawave, Kuma или Beszel.
 Отдельный live-smoke читает настроенный provider через уже запущенный локальный BFF и не входит в CI.
 
 GitHub Actions повторяет locked install, backend lint/tests/migrations с disposable PostgreSQL/Redis

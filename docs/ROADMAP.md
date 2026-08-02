@@ -25,7 +25,7 @@ security review ещё не выполнен.
 - закрыто: немедленный отзыв admin, `is_active`, свежая ownership-проверка device mutations;
 - закрыто: Telegram webhook secret/config/header;
 - закрыто: Remnawave webhook freshness/replay/idempotency;
-- закрыто: Kuma SSRF, streaming upload, safe provider errors и contract tests;
+- закрыто: Kuma/Beszel SSRF, streaming upload, safe provider errors и contract tests;
 - осталось: независимый review и production-конфигурация/наблюдаемость.
 
 Критерий выхода: P0 из `PROJECT_STATE.md` закрыты кодом и свежими tests, независимый review не находит
@@ -37,7 +37,8 @@ auth bypass или публичный destructive debug path.
 - закрыто локально: webhook timezone/data retention, metrics middleware/collector и readiness;
 - закрыто: legacy reference Remnawave 2.7.4, установленная dev-панель 2.8.1 и exact official
   2.8.1/3.0.0/3.1.0 contracts; version-aware client сохраняет 2.x/3.x compatibility, numeric identity
-  и safe unknown-major behavior; Kuma 1.x/2.x parser contracts закрыты, live Kuma ждёт URL/slug;
+  и safe unknown-major behavior; Kuma 1.x/2.x и Beszel v0.18.7 contracts закрыты, live providers
+  ждут URL/credential;
 - bounded concurrency/timeouts/degraded behavior для Redis/providers.
 
 Критерий выхода: full local gate и CI воспроизводят schema/contracts без реальных providers.
@@ -49,7 +50,7 @@ auth bypass или публичный destructive debug path.
 - закрыто: light/dark, small mobile, Telegram-like, WebKit, desktop, keyboard/dialog focus,
   accessibility и reviewed visual evidence;
 - осталось: component tests критических controls и реальный offline/browser-network pass;
-- integrated suite с ephemeral FastAPI/PostgreSQL/Redis и fake Remnawave/Kuma.
+- integrated suite с ephemeral FastAPI/PostgreSQL/Redis и fake Remnawave/Kuma/Beszel.
 
 Критерий выхода: каждое заявленное пользовательское действие имеет deterministic success/failure
 evidence, а UI smoke перестаёт быть только happy-path seed.

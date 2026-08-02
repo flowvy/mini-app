@@ -40,7 +40,8 @@ uv run python -m flowvy
 
 Перед запуском проверьте `backend/.env`. Для изолированного localhost без реальных интеграций задайте
 очевидно фиктивный `BOT_TOKEN=000000:TEST`, оставьте пустыми `WEBHOOK_URL`, `REMNAWAVE_URL`,
-`REMNAWAVE_API_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` и оставьте `DEBUG=false`. Пустой token допустим
+`REMNAWAVE_API_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `BESZEL_EMAIL`, `BESZEL_PASSWORD` и оставьте
+`DEBUG=false`. Пустой token допустим
 только для health/UI-каркаса без Telegram-auth; защищённые запросы при нём возвращают отказ.
 Debug включайте лишь на изолированном localhost и никогда не совмещайте с Tunnel.
 
@@ -57,7 +58,7 @@ Frontend доступен на `http://localhost:5173`, API — на `http://loc
 `http://localhost:8001/api/health`, readiness PostgreSQL/Redis — `http://localhost:8001/api/ready`.
 Для локального каркаса интерфейса установите
 `VITE_MOCK_AUTH=true`. Экраны с реальными данными всё равно требуют настроенного backend либо
-детерминированных mock-ответов; mock auth сам по себе не имитирует Remnawave и Kuma.
+детерминированных mock-ответов; mock auth сам по себе не имитирует Remnawave, Kuma и Beszel.
 
 Полная инструкция, включая Telegram tunnel и ограничения debug-режима:
 [`docs/DEV_ENVIRONMENT.md`](docs/DEV_ENVIRONMENT.md).

@@ -10,7 +10,8 @@ task-specific reasoning in `plans/active/`, and current facts in `docs/PROJECT_S
 
 Flowvy is a Telegram Mini App and bot for VPN subscription management. The React frontend talks
 only to the FastAPI BFF. FastAPI owns Telegram authentication, local PostgreSQL data, Redis-backed
-metrics/cache, and calls Remnawave and Uptime Kuma. Treat the project as an unfinished MVP, not a
+metrics/cache, and calls Remnawave plus the selected Uptime Kuma or Beszel Pulse provider. Treat the
+project as an unfinished MVP, not a
 production-ready service.
 
 Source-of-truth order:
@@ -34,8 +35,9 @@ Source-of-truth order:
 
 - Never read, print, commit, or copy secrets from `.env`, Telegram init data, API tokens, webhook
   bodies, database dumps, or browser storage. Examples must contain obvious placeholders.
-- Do not contact a real Telegram bot, Remnawave panel, Kuma instance, or production-like database
-  unless the user explicitly authorizes that exact target. Prefer fakes and request mocking.
+- Do not contact a real Telegram bot, Remnawave panel, Kuma/Beszel instance, or production-like
+  database unless the user explicitly authorizes that exact target. Prefer fakes and request
+  mocking.
 - Do not execute destructive Git, database, user, device, broadcast, or provider operations merely
   to verify a change. Keep test data disposable and scoped to the test database.
 - `DEBUG=true` exposes unauthenticated helper routes. Never present that mode on a public interface.

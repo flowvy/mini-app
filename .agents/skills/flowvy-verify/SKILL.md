@@ -22,7 +22,7 @@ Never infer success from an earlier run or from code inspection alone.
 - Frontend logic: Biome, TypeScript, targeted Vitest, and production build.
 - UI, CSS, routes, Telegram adapter, or client state: frontend gate plus Playwright mock smoke at the relevant mobile viewport; inspect artifacts.
 - API shape: backend and frontend gates plus fixture/contract consistency.
-- Telegram, Remnawave, or Kuma: relevant contract tests and `flowvy-integration` evidence.
+- Telegram, Remnawave, Kuma, or Beszel: relevant contract tests and `flowvy-integration` evidence.
 
 Use `scripts/verify.ps1 -Scope Changed` while iterating and `scripts/verify.ps1 -Scope Full` before a final handoff when the environment supports it.
 

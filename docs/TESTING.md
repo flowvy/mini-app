@@ -1,7 +1,7 @@
 # Проверка Flowvy
 
-Цель проверок — воспроизводимо доказать изменённое поведение без реальных Telegram, Remnawave, Kuma
-и пользовательских данных. Последние фактические результаты находятся в
+Цель проверок — воспроизводимо доказать изменённое поведение без реальных Telegram, Remnawave,
+Kuma, Beszel и пользовательских данных. Последние фактические результаты находятся в
 [`PROJECT_STATE.md`](PROJECT_STATE.md); здесь описан устойчивый процесс.
 
 ## Основная команда
@@ -34,9 +34,11 @@ uv run --frozen pytest -q
 
 `tests/conftest.py` автоматически маркирует тесты с fixtures `engine` или `session` как
 `integration`. Они используют отдельную PostgreSQL database/user `test:test`; SQLite не является
-заменой. Remnawave, Kuma, Telegram, clock и transport должны быть fake/mock.
+заменой. Remnawave, Kuma, Beszel, Telegram, clock и transport должны быть fake/mock.
 
-Kuma tests подменяют resolver и HTTPX transport, проверяя pinned IP/Host/SNI без сети. Media tests
+Kuma/Beszel tests подменяют resolver и HTTPX transport, проверяя pinned IP/Host/SNI без сети.
+Beszel fixtures фиксируют v0.18.7 auth/systems/system_stats contracts, pagination limits,
+credential isolation и 1m/20m Pulse mapping. Media tests
 сканируют ложный declared size и действительно читают aiogram `InputFile` chunks. Remnawave tests
 используют locked 2.8.1/3.0.0/3.1.0 response fixtures: проверяют выбор route/body, metadata version,
 cursor stream, UUID-less 3.x user, `204`, ownership и safe future-major failure. Они отдельно
@@ -48,7 +50,8 @@ cursor stream, UUID-less 3.x user, `204`, ownership и safe future-major failure
 проверяет один head, zero-to-head, downgrade-to-base, previous-head upgrade с legacy data, повторный
 upgrade и `alembic check`, затем удаляет БД в `finally`. Fixture отдельно доказывает webhook
 delivery-key backfill, удаление legacy raw payload, timezone conversion, создание уникального
-числового Remnawave identity и сохранность старого nullable UUID.
+числового Remnawave identity, сохранность старого nullable UUID и перенос старого `kuma_enabled` в
+новый Pulse provider selector с обратимым downgrade.
 
 ## Frontend unit
 
@@ -77,7 +80,8 @@ pnpm test:e2e:live  # существующие dev-up frontend/backend и реа
 Обычный Playwright suite запускает только Vite с `VITE_MOCK_AUTH=true`; stateful fixture перехватывает
 каждый `/api/*` request. Неизвестный запрос, `console.error`, `pageerror` или network failure валит
 тест. Матрица покрывает auth/role, loading/empty/error/malformed/retry, device mutation, Pulse,
-dashboard/users/settings, keyboard focus, light-mode axe, overflow и визуальные evidence screenshots.
+dashboard/users/settings, выбор Kuma/Beszel, credential-state без секретов, keyboard focus,
+light-mode axe, overflow и визуальные evidence screenshots.
 
 `test:e2e:live` намеренно исключён из обычного/CI suite. Сначала запустите `scripts/dev-up.ps1`,
 проверьте redacted target и только затем выполняйте его: сценарий читает Home, Devices, admin

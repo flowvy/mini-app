@@ -11,11 +11,8 @@
   общий i18n instance.
 - Dynamic locale selection, plural audit и fallback tests для нескольких языков не реализованы.
 
-Последняя проверка 2026-08-01 нашла четыре user-visible hardcoded fallback в admin subroutes:
+Последняя проверка 2026-08-02 нашла один user-visible hardcoded fallback в admin subroutes:
 
-- `pages/admin/settings-branding.tsx` — `Error`;
-- `pages/admin/settings-welcome.tsx` — `Error`;
-- `pages/admin/settings-kuma.tsx` — `Error`;
 - `pages/admin/user-detail-page.tsx` — `User not found`.
 
 Это известный P2-долг: при следующем изменении этих экранов добавить осмысленные keys/error states, а
