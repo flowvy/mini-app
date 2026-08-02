@@ -56,7 +56,7 @@
   Remnawave snapshot/client tests, безопасного Quick Tunnel и проверки документации.
 - GitHub Actions CI с PostgreSQL/Redis, Ruff, Alembic, pytest, Biome/TypeScript/Vitest/build и
   Playwright Chromium smoke.
-- Два Vitest unit файла (9 тестов), детерминированная Playwright state matrix на четырёх
+- Три Vitest unit файла (10 тестов), детерминированная Playwright state matrix на четырёх
   browser/viewport проектах и отдельный read-only live-smoke.
 
 ## Что не завершено или не доказано
@@ -75,8 +75,10 @@
   Он оставлен как legacy envelope fixture. Контракты 2.8.1, 3.0.0 и 3.1.0 сверены с official exact
   tags и release/API diff; установленная dev-панель 2.8.1 проверена read-only. Живой 3.x target пока
   не проверен, потому что локальная панель ещё не обновлена.
-- Реальный Remnawave проверен read-only. Telegram test bot не запускался. Kuma URL/slug и Beszel
-  Hub/credential в локальной конфигурации отсутствуют, поэтому эти live-контуры пока не доказаны.
+- Реальный Remnawave проверен read-only. Beszel сохранён и включён в локальном dev;
+  signed public `GET /api/pulse` вернул `200`, `operational`, 1 group и 7 monitors.
+  Kuma live target пока не настроен. Telegram dev bot открывает Mini App; ручная
+  проверка последнего no-reload/keyboard UX остаётся за владельцем.
 
 ## Известные приоритетные проблемы
 
@@ -115,7 +117,7 @@
 - `/api/health` остаётся liveness, `/api/ready` проверяет PostgreSQL/Redis; dev-up ждёт readiness.
 
 Основная route/UI error, mutation и permission матрица закрыта. Остаются удалённый CI, live
-Kuma/Beszel и отдельный Telegram test-bot flow после получения их конфигурации.
+Kuma и полный Telegram test-bot flow.
 
 ### P2 — поддерживаемость
 
@@ -131,11 +133,11 @@ P0 команды запускались 2026-08-01. Backend P1 этапы и Re
 
 | Область | Команда | Результат |
 |---|---|---|
-| Backend collection | full pytest run | 253 теста выполнено |
+| Backend collection | full pytest run | 256 тестов выполнено |
 | Backend lock/lint/format | `uv lock --check`; Ruff checks | пройдено, 118 Python файлов formatted |
-| Backend полный suite | `uv run --frozen pytest -q` | 253 passed; только pytest-asyncio/Python 3.14 deprecation warnings |
+| Backend полный suite | `uv run --frozen pytest -q` | 256 passed; warnings скрыты только в финальном orchestration output |
 | Remnawave webhook focused | route/service + PostgreSQL tests | 29 service-free и 3 repository tests passed; concurrent duplicate принят один раз |
-| Kuma/Beszel/Pulse focused | target/client/provider/Pulse tests | 89 passed; DNS pinning, auth/contracts, pagination bounds, cache, history и status matrix |
+| Kuma/Beszel/Pulse focused | target/client/provider/Pulse tests | draft test без persistence добавлен; DNS pinning, auth/contracts, pagination bounds, cache, history и status matrix входят в full suite |
 | Media upload focused | bounded stream/provider tests | 11 passed; no second full buffer, pre-send rejection и safe errors |
 | Provider/dashboard focused | client/routes/cache tests | 23 passed; email array, envelope, safe errors и allow-list projection |
 | Metrics/readiness focused | middleware/collector/health tests | 13 passed; включая реальные Docker PostgreSQL/Redis и app lifespan |
@@ -146,15 +148,15 @@ P0 команды запускались 2026-08-01. Backend P1 этапы и Re
 | PowerShell/tool policy | parser + `codex execpolicy check` | все scripts parsed; forbid/prompt/safe rule cases совпали с ожиданием |
 | Codex fresh session | `codex exec --ephemeral --strict-config ...` | config принят; корневой `AGENTS.md`, четыре repo skills и custom role `repo_mapper` обнаружены |
 | Change-aware gate | `scripts/verify.ps1 -Scope Changed -SkipE2E` | backend fast, frontend install/lint/type/unit/build и docs passed; E2E подтверждён отдельно |
-| Полный локальный gate | `scripts/verify.ps1 -Scope Full` + fresh backend rerun | migrations, 253 pytest, 31 Remnawave contract, frontend build/unit, 16 Chromium browser и docs passed |
-| Frontend lint/typecheck | `pnpm lint`; `pnpm typecheck` | пройдено, 142 linted files |
-| Frontend unit | `pnpm test` | 2 files, 9 tests passed |
+| Полный локальный gate | `scripts/verify.ps1 -Scope Full` | migrations, 256 pytest, 31 Remnawave contract, frontend build/unit, 26 Chromium browser и docs passed |
+| Frontend lint/typecheck | `pnpm lint`; `pnpm typecheck` | пройдено, 149 linted files |
+| Frontend unit | `pnpm test` | 3 files, 10 tests passed |
 | Frontend build | `pnpm build` | пройдено |
-| Browser smoke | `pnpm test:e2e` | 16 mobile Chromium tests; state matrix, console/network/axe guards |
-| Browser all projects | `pnpm test:e2e:all` | 64/64 passed: 430x932, 320x568, iPhone 13/WebKit, 1280x900 |
+| Browser smoke | `pnpm test:e2e` | 26 mobile Chromium tests; no-reload Pulse, native keyboard dismissal, motion/Reduce Motion, iOS focus zoom, console/network/axe guards |
+| Browser all projects | `pnpm test:e2e:all` | 104/104 passed: 430x932, 320x568, iPhone 13/WebKit, 1280x900 |
 | Live browser smoke | `pnpm test:e2e:live` | Home/Devices/admin dashboard/users/settings прошли через реальный локальный BFF и Remnawave 2.8.1 |
-| Visual UI | Playwright evidence + manual review | Beszel light/dark на mobile/desktop просмотрен; контраст footer исправлен, overflow/cropping не найден, dialog focus проверен |
-| Public Tunnel smoke | `scripts/verify-tunnel.ps1` | root/health `200`, auth `401`, debug/webhook `404`, `/src` отдаёт только built HTML; owned processes stopped |
+| Visual UI | Playwright evidence + manual review | Pulse source, Beszel и единая load error state просмотрены в light/dark; overflow/cropping не найден, dialog focus проверен |
+| Public Tunnel smoke | signed requests + built asset check | root/health `200`, новый JS с `hideKeyboard`/auth query, Beszel Pulse `200 operational` (7 monitors), debug API отсутствует в bundle |
 | GitHub CI | `.github/workflows/ci.yml` | локально не выполнялся и ещё не подтверждён remote run |
 
 ## Разрешённая очистка прежнего worktree
@@ -164,8 +166,8 @@ P0 команды запускались 2026-08-01. Backend P1 этапы и Re
 
 ## Следующее действие
 
-Получить Beszel Hub origin и credential отдельного пользователя с ролью `readonly`, добавить их в
-локальный server environment и выполнить read-only live smoke. После обновления dev-панели повторить
-тот же smoke на Remnawave 3.x; отдельно нужны Kuma public URL/slug, Telegram test-bot конфигурация и
-первый подтверждённый удалённый CI run. Затем выбирать следующий продуктовый поток: Support или
-безопасный Broadcast.
+Ручную в Telegram Mini App проверить: выключение/включение Pulse сразу меняет таб-бар,
+а Enter скрывает клавиатуру во всех однострочных полях. После обновления dev-панели
+повторить read-only smoke на Remnawave 3.x; отдельно нужны Kuma public URL/slug и первый
+подтверждённый удалённый CI run. Затем выбирать следующий продуктовый поток: Support или безопасный
+Broadcast.

@@ -11,6 +11,9 @@
 `ADMIN_TELEGRAM_IDS`, `INIT_DATA_TTL`.
 Frontend получает raw init data через Telegram Apps SDK и отправляет
 `Authorization: tma <raw_init_data>`.
+Однострочные поля используют standard `enterkeyhint` и при Enter вызывают
+`Telegram.WebApp.hideKeyboard()` с DOM `blur()` fallback. IME composition не прерывается,
+а `textarea` сохраняет обычный перенос строки.
 
 Backend отказывает при пустом token, проверяет signature, TTL, слишком будущий `auth_date`, user и
 active-state. Admin дополнительно требует текущий allow-list и сохранённую роль. Сбой Redis activity
@@ -27,8 +30,12 @@ multipart file как spooled upload; Flowvy до обращения к Bot API 
 Регистрация передаёт `secret_token`, а `POST /webhook` до разбора JSON сравнивает
 `X-Telegram-Bot-Api-Secret-Token`. Без настроенного webhook route не регистрируется.
 
-Primary evidence, проверено 2026-08-01:
+Primary evidence, проверено 2026-08-02:
 
+- [Telegram Mini Apps API](https://core.telegram.org/bots/webapps): `hideKeyboard()` доступен
+  с Bot API 9.1 и скрывает активную экранную клавиатуру.
+- [HTML `enterkeyhint`](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/enterkeyhint):
+  `done` обозначает завершение ввода/закрытие IME, `search` — поиск.
 - [Telegram Bot API — setWebhook](https://core.telegram.org/bots/api#setwebhook): `secret_token`
   имеет длину 1–256 и алфавит `A-Z a-z 0-9 _ -`; Telegram присылает его в одноимённом secret header.
 - [aiogram 3.26 — setWebhook](https://docs.aiogram.dev/en/v3.26.0/api/methods/set_webhook.html):
@@ -144,6 +151,10 @@ Singleton `provider_settings` хранит выбранный `pulse_provider`: 
 стабильный `/api/pulse` contract и кэширует результат в Redis на 60 секунд. Смена источника или его
 URL/slug сразу удаляет старый cache.
 
+`POST /api/admin/settings/{kuma|beszel}/test` проверяет URL/slug из текущего несохранённого черновика:
+request проходит те же normalizer и transport policy, но не меняет `provider_settings` и не трогает
+Pulse cache. Legacy `GET` test routes продолжают проверять уже сохранённую конфигурацию.
+
 ### Uptime Kuma
 
 Flowvy получает public status page/heartbeat data и агрегирует groups/monitors/incidents.
@@ -237,8 +248,11 @@ Primary evidence, проверено 2026-08-02:
 
 Детерминированный suite покрывает auth success/failure, отсутствие credential до network call,
 status/schema drift, pagination bounds, malformed data, timeout, redirect, non-2xx, oversized body,
-SSRF/mixed DNS, DNS pinning, provider selection/cache и Pulse history/status mapping. Локальный `.env`
-не содержит Beszel Hub URL/credential, поэтому live read-only contract ещё не проверен.
+SSRF/mixed DNS, DNS pinning, draft test без persistence, provider selection/cache и Pulse
+history/status mapping. Draft read-only test с локальными server credentials прошёл
+2026-08-02 через public dev BFF без сохранения. После ручной активации Beszel
+публичный `GET /api/pulse` вернул `200`, `operational`, 1 group и 7 monitors;
+Hub URL и credentials в артефакты/логи не выводились.
 
 ## Правила изменения контракта
 

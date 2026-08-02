@@ -158,6 +158,13 @@ Aiogram dispatcher содержит `/start` flow и отправку welcome te
 
 - `lib/api.ts` добавляет Telegram init data и является общим fetch wrapper.
 - `hooks/` описывают query/mutation lifecycles и переключаются на debug endpoints в mock mode.
+- `/me`, admin settings и Pulse живут в едином TanStack Query cache. Успешная settings mutation
+  сразу обновляет settings/user cache, заново проверяет `/me` и сбрасывает
+  старый Pulse response при смене provider-конфигурации.
+  Решение следует official TanStack Query v5 guidance для
+  [mutation response updates](https://tanstack.com/query/latest/docs/framework/react/guides/updates-from-mutation-responses)
+  и [related-query invalidation](https://tanstack.com/query/latest/docs/framework/react/guides/invalidations-from-mutations),
+  проверено 2026-08-02.
 - `contexts/mode-context.tsx` хранит user/admin presentation mode; начальное значение выводится из
   URL.
 - `components/` содержит feature и reusable UI; страницы остаются composition boundary.
