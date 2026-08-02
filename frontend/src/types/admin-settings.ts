@@ -1,7 +1,11 @@
+export type PulseProvider = "disabled" | "kuma" | "beszel";
+
 export interface AdminSettings {
-	kumaEnabled: boolean;
+	pulseProvider: PulseProvider;
 	kumaUrl: string | null;
 	kumaSlug: string | null;
+	beszelUrl: string | null;
+	beszelCredentialsConfigured: boolean;
 	appName: string | null;
 	logoUrl: string | null;
 	welcomeText: string | null;
@@ -16,9 +20,10 @@ export interface AdminSettings {
 }
 
 export interface AdminSettingsPatch {
-	kumaEnabled?: boolean;
+	pulseProvider?: PulseProvider;
 	kumaUrl?: string | null;
 	kumaSlug?: string | null;
+	beszelUrl?: string | null;
 	appName?: string | null;
 	logoUrl?: string | null;
 	welcomeText?: string | null;
@@ -39,3 +44,5 @@ export interface KumaTestResult {
 	ok: boolean;
 	error: string | null;
 }
+
+export type BeszelTestResult = KumaTestResult;

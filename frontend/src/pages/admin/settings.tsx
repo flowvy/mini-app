@@ -12,8 +12,9 @@ import {
 } from "../../components/ui/form-section.tsx";
 import { InlineFeedback } from "../../components/ui/inline-feedback.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
-import { Toggle } from "../../components/ui/toggle.tsx";
+import { SegmentedControl } from "../../components/ui/segmented-control.tsx";
 import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
+import type { PulseProvider } from "../../types/admin-settings.ts";
 import styles from "./settings.module.css";
 
 interface SettingsToolRowProps {
@@ -65,37 +66,59 @@ export const AdminSettings: FC = () => {
 		);
 	}
 
-	const handleToggleKuma = (enabled: boolean) => {
+	const handleProviderChange = (provider: string) => {
 		updateMutation.reset();
-		updateMutation.mutate({ kumaEnabled: enabled });
+		updateMutation.mutate({ pulseProvider: provider as PulseProvider });
 	};
 
-	const kumaConfigured = settings.kumaUrl && settings.kumaSlug;
+	const kumaConfigured = Boolean(settings.kumaUrl && settings.kumaSlug);
+	const beszelConfigured = Boolean(settings.beszelUrl && settings.beszelCredentialsConfigured);
+	const providerOptions = [
+		{ key: "disabled", label: t("settings.providerDisabled") },
+		{ key: "kuma", label: t("settings.providerKuma") },
+		{ key: "beszel", label: t("settings.providerBeszel") },
+	];
 
 	return (
 		<div className={styles.page}>
 			{updateMutation.isError && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
 			<FormSectionHeader>{t("settings.integrations")}</FormSectionHeader>
 			<FormSectionCard>
-				<FormRow label={t("settings.uptimeKuma")}>
-					<Toggle
-						checked={settings.kumaEnabled}
-						onChange={handleToggleKuma}
-						disabled={updateMutation.isPending}
+				<FormRow label={t("settings.pulseProvider")}>
+					<SegmentedControl
+						options={providerOptions}
+						value={settings.pulseProvider}
+						onChange={handleProviderChange}
 					/>
 				</FormRow>
-				{settings.kumaEnabled && (
-					<>
-						<FormRowSeparator />
-						<SettingsToolRow
-							label={t("settings.configure")}
-							desc={t("settings.configureDesc")}
-							value={kumaConfigured ? t("settings.configured") : undefined}
-							valuePositive={!!kumaConfigured}
-							onClick={() => navigate({ to: "/admin/settings/kuma" })}
-						/>
-					</>
-				)}
+				<FormRowSeparator />
+				<SettingsToolRow
+					label={t("settings.uptimeKuma")}
+					desc={t("settings.kuma.configureDesc")}
+					value={
+						settings.pulseProvider === "kuma"
+							? t("settings.active")
+							: kumaConfigured
+								? t("settings.configured")
+								: undefined
+					}
+					valuePositive={kumaConfigured}
+					onClick={() => navigate({ to: "/admin/settings/kuma" })}
+				/>
+				<FormRowSeparator />
+				<SettingsToolRow
+					label={t("settings.beszel.title")}
+					desc={t("settings.beszel.configureDesc")}
+					value={
+						settings.pulseProvider === "beszel"
+							? t("settings.active")
+							: beszelConfigured
+								? t("settings.configured")
+								: undefined
+					}
+					valuePositive={beszelConfigured}
+					onClick={() => navigate({ to: "/admin/settings/beszel" })}
+				/>
 			</FormSectionCard>
 			<FormSectionFooter>{t("settings.integrationsHint")}</FormSectionFooter>
 

@@ -5,7 +5,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiGet, apiPatch } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";
-import type { AdminSettings, AdminSettingsPatch, KumaTestResult } from "../types/admin-settings.ts";
+import type {
+	AdminSettings,
+	AdminSettingsPatch,
+	BeszelTestResult,
+	KumaTestResult,
+} from "../types/admin-settings.ts";
 
 const isMockAuth = import.meta.env.VITE_MOCK_AUTH === "true";
 const prefix = isMockAuth ? "/debug/admin/settings" : "/admin/settings";
@@ -33,5 +38,11 @@ export function useUpdateSettings() {
 export function useTestKuma() {
 	return useMutation<KumaTestResult, Error, void>({
 		mutationFn: () => apiGet<KumaTestResult>(`${prefix}/kuma/test`),
+	});
+}
+
+export function useTestBeszel() {
+	return useMutation<BeszelTestResult, Error, void>({
+		mutationFn: () => apiGet<BeszelTestResult>(`${prefix}/beszel/test`),
 	});
 }

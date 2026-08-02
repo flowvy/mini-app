@@ -1,11 +1,9 @@
+/** Beszel configuration sub-screen — origin, credential state, test, save. */
 import { useBlocker } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-/**
- * Kuma configuration sub-screen — URL, slug, connection test, save.
- */
 import { type FC, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useTestKuma, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
+import { useTestBeszel, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import ss from "../../pages/admin/settings.module.css";
 import type { AdminSettings } from "../../types/admin-settings.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
@@ -22,62 +20,50 @@ import {
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import styles from "./provider-config.module.css";
 
-interface KumaConfigProps {
+interface BeszelConfigProps {
 	settings: AdminSettings;
 	onBack: () => void;
 }
 
-export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
+export const BeszelConfig: FC<BeszelConfigProps> = ({ settings, onBack }) => {
 	const { t } = useTranslation();
-	const [url, setUrl] = useState(settings.kumaUrl ?? "");
-	const [slug, setSlug] = useState(settings.kumaSlug ?? "");
+	const [url, setUrl] = useState(settings.beszelUrl ?? "");
 	const [saved, setSaved] = useState(false);
 	const [saveFailed, setSaveFailed] = useState(false);
 	const backButtonRef = useRef<HTMLButtonElement>(null);
-
 	const updateMutation = useUpdateSettings();
-	const testMutation = useTestKuma();
-
-	const initUrl = settings.kumaUrl ?? "";
-	const initSlug = settings.kumaSlug ?? "";
-	const dirty = url !== initUrl || slug !== initSlug;
-
-	const blocker = useBlocker({
-		shouldBlockFn: () => dirty,
-		withResolver: true,
-	});
+	const testMutation = useTestBeszel();
+	const initialUrl = settings.beszelUrl ?? "";
+	const dirty = url !== initialUrl;
+	const blocker = useBlocker({ shouldBlockFn: () => dirty, withResolver: true });
 
 	useEffect(() => {
-		if (saved) {
-			const timer = setTimeout(() => setSaved(false), 2000);
-			return () => clearTimeout(timer);
-		}
+		if (!saved) return;
+		const timer = setTimeout(() => setSaved(false), 2000);
+		return () => clearTimeout(timer);
 	}, [saved]);
 
 	const handleSave = async () => {
 		setSaveFailed(false);
 		try {
-			await updateMutation.mutateAsync({
-				kumaUrl: url || null,
-				kumaSlug: slug || null,
-			});
+			await updateMutation.mutateAsync({ beszelUrl: url || null });
 			setSaved(true);
 		} catch {
 			setSaveFailed(true);
 		}
 	};
 
-	const connStatus = testMutation.data;
-	const connColor = connStatus?.ok
+	const connection = testMutation.data;
+	const connectionColor = connection?.ok
 		? "var(--v2-text-positive)"
-		: connStatus?.error
+		: connection?.error
 			? "var(--v2-text-negative)"
 			: "var(--v2-text-secondary)";
-	const connText = connStatus?.ok
-		? t("settings.kuma.connected")
-		: connStatus?.error
-			? connStatus.error
-			: t("settings.kuma.notTested");
+	const connectionText = connection?.ok
+		? t("settings.beszel.connected")
+		: connection?.error
+			? connection.error
+			: t("settings.beszel.notTested");
 
 	return (
 		<div className={ss.page}>
@@ -92,38 +78,41 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 				>
 					<ArrowLeft size={16} />
 				</button>
-				<h1 className={ss.headerTitle}>{t("settings.kuma.title")}</h1>
+				<h1 className={ss.headerTitle}>{t("settings.beszel.title")}</h1>
 			</div>
 
-			<FormSectionHeader>{t("settings.kuma.connectionSection")}</FormSectionHeader>
+			<FormSectionHeader>{t("settings.beszel.connectionSection")}</FormSectionHeader>
 			<FormSectionCard>
-				<FormRow label={t("settings.kuma.urlLabel")}>
+				<FormRow label={t("settings.beszel.urlLabel")}>
 					<FormInlineInput
 						value={url}
-						onChange={(v) => {
-							setUrl(v);
+						onChange={(value) => {
+							setUrl(value);
 							setSaved(false);
 						}}
-						placeholder={t("settings.kuma.urlPlaceholder")}
+						placeholder={t("settings.beszel.urlPlaceholder")}
 						mono
 					/>
 				</FormRow>
 				<FormRowSeparator />
-				<FormRow label={t("settings.kuma.slugLabel")}>
-					<FormInlineInput
-						value={slug}
-						onChange={(v) => {
-							setSlug(v);
-							setSaved(false);
+				<FormRow label={t("settings.beszel.credentialsLabel")}>
+					<span
+						className={styles.statusText}
+						style={{
+							color: settings.beszelCredentialsConfigured
+								? "var(--v2-text-positive)"
+								: "var(--v2-text-negative)",
 						}}
-						placeholder={t("settings.kuma.slugPlaceholder")}
-						mono
-					/>
+					>
+						{settings.beszelCredentialsConfigured
+							? t("settings.beszel.credentialsConfigured")
+							: t("settings.beszel.credentialsMissing")}
+					</span>
 				</FormRow>
 				<FormRowSeparator />
-				<FormRow label={t("settings.kuma.statusLabel")}>
-					<span className={styles.statusText} style={{ color: connColor }}>
-						{connText}
+				<FormRow label={t("settings.beszel.statusLabel")}>
+					<span className={styles.statusText} style={{ color: connectionColor }}>
+						{connectionText}
 					</span>
 					<ActionBtn
 						onClick={() => testMutation.mutate()}
@@ -131,12 +120,12 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 						variant="action"
 						size="sm"
 					>
-						{t("settings.kuma.test")}
+						{t("settings.beszel.test")}
 					</ActionBtn>
 				</FormRow>
 			</FormSectionCard>
-			<FormSectionFooter>{t("settings.kuma.connectionHint")}</FormSectionFooter>
-			{testMutation.isError && <InlineFeedback>{t("settings.kuma.testError")}</InlineFeedback>}
+			<FormSectionFooter>{t("settings.beszel.connectionHint")}</FormSectionFooter>
+			{testMutation.isError && <InlineFeedback>{t("settings.beszel.testError")}</InlineFeedback>}
 
 			<FormSaveButton
 				dirty={dirty && !saved}
@@ -147,13 +136,13 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 			<ConfirmDialog
 				open={blocker.status === "blocked"}
 				returnFocusRef={backButtonRef}
-				title={t("settings.kuma.discardTitle")}
-				confirmLabel={t("settings.kuma.discardConfirm")}
-				cancelLabel={t("settings.kuma.discardCancel")}
+				title={t("settings.beszel.discardTitle")}
+				confirmLabel={t("settings.beszel.discardConfirm")}
+				cancelLabel={t("settings.beszel.discardCancel")}
 				onConfirm={() => blocker.proceed?.()}
 				onCancel={() => blocker.reset?.()}
 			>
-				<p>{t("settings.kuma.discardBody")}</p>
+				<p>{t("settings.beszel.discardBody")}</p>
 			</ConfirmDialog>
 		</div>
 	);

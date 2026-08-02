@@ -2,9 +2,11 @@ import { type Page, type Route, test as base, expect } from "@playwright/test";
 
 export const mockData = {
 	settings: {
-		kumaEnabled: true,
+		pulseProvider: "kuma",
 		kumaUrl: "https://status.example.test",
 		kumaSlug: "flowvy",
+		beszelUrl: "https://monitor.example.test",
+		beszelCredentialsConfigured: true,
 		appName: "Flowvy",
 		logoUrl: null,
 		welcomeText: "Welcome to Flowvy",
@@ -197,6 +199,10 @@ async function handleApi(
 		return;
 	}
 	if (method === "GET" && path === "/api/debug/admin/settings/kuma/test") {
+		await reply(route, { body: { ok: true, error: null } });
+		return;
+	}
+	if (method === "GET" && path === "/api/debug/admin/settings/beszel/test") {
 		await reply(route, { body: { ok: true, error: null } });
 		return;
 	}

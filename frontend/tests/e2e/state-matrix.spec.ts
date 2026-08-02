@@ -240,7 +240,7 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 	});
 
 	await page.goto("/admin/settings");
-	await page.getByRole("button", { name: "Configure" }).click();
+	await page.getByRole("button", { name: /^Uptime Kuma Public status page/ }).click();
 	await page.getByPlaceholder("https://status.example.com").fill("https://new-status.example.test");
 	const backButton = page.getByRole("button", { name: "Back" });
 	await backButton.click();
@@ -279,13 +279,55 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 	await assertNoHorizontalOverflow(page);
 });
 
+test("settings select Beszel and verify its server-side read-only connection", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.goto("/admin/settings");
+	await expect(page.getByText("Pulse source")).toBeVisible();
+	await page.getByRole("button", { name: "Beszel", exact: true }).click();
+	await expect(page.getByText("Active", { exact: true })).toBeVisible();
+
+	await page.getByRole("button", { name: /^Beszel Hub and read-only access/ }).click();
+	await expect(page.getByText("Configured on server")).toBeVisible();
+	await page.getByRole("button", { name: "Test" }).click();
+	await expect(page.getByText("Connected", { exact: true })).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+});
+
+test("Beszel settings show missing credentials and a recoverable test failure", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.mock("GET", "/api/debug/admin/settings", {
+		body: { ...mockData.settings, beszelCredentialsConfigured: false },
+	});
+	mockApi.mock("GET", "/api/debug/admin/settings/beszel/test", {
+		status: 502,
+		body: { detail: "Provider unavailable" },
+	});
+
+	await page.goto("/admin/settings/beszel");
+	await expect(page.getByText("Missing on server")).toBeVisible();
+	await page.getByRole("button", { name: "Test" }).click();
+	await expect(page.getByRole("alert")).toContainText("Connection test failed");
+	await assertNoHorizontalOverflow(page);
+});
+
 test("key interactive screens have no serious accessibility violations in light mode", async ({
 	page,
 	mockApi: _mock,
 }) => {
 	await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
-	for (const path of ["/", "/devices", "/pulse", "/admin/settings"] as const) {
+	for (const path of [
+		"/",
+		"/devices",
+		"/pulse",
+		"/admin/settings",
+		"/admin/settings/beszel",
+	] as const) {
 		await page.goto(path);
+		await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
 		const result = await new AxeBuilder({ page }).analyze();
 		const serious = result.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),

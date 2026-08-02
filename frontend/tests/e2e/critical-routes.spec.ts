@@ -35,6 +35,10 @@ test("admin routes render deterministic success and placeholder states", async (
 	await expect(page.getByText("Integrations")).toBeVisible();
 	await expect(page.getByText("Remnawave")).toBeVisible();
 
+	await page.goto("/admin/settings/beszel");
+	await expect(page.getByRole("heading", { name: "Beszel" })).toBeVisible();
+	await expect(page.getByText("Configured on server")).toBeVisible();
+
 	await page.goto("/admin/broadcast");
 	await expect(page.getByText("Coming soon")).toBeVisible();
 	await assertNoHorizontalOverflow(page);

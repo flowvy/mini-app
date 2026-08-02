@@ -66,13 +66,13 @@ export function useAuth(): AuthState & { retry: () => void } {
 			const mockUser = getMockUser();
 			try {
 				const settings = await apiGet<{
-					kumaEnabled: boolean;
+					pulseProvider: "disabled" | "kuma" | "beszel";
 					appName: string | null;
 					logoUrl: string | null;
 				}>("/debug/admin/settings");
 				setUser({
 					...mockUser,
-					features: { pulse: settings.kumaEnabled },
+					features: { pulse: settings.pulseProvider !== "disabled" },
 					branding: { appName: settings.appName ?? null, logoUrl: settings.logoUrl ?? null },
 				});
 			} catch {

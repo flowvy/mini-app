@@ -8,7 +8,8 @@ Applies to `frontend/`. Follow the repository root and `tests/e2e/AGENTS.md` whe
   CSS Modules, and Flowvy design tokens in `src/styles/tokens.css`.
 - `lib/api.ts` is the HTTP boundary and attaches Telegram init data. Hooks own query/mutation state;
   pages compose feature and UI components; `router.ts` is the route source of truth.
-- The frontend is a client of the FastAPI BFF. It must not call Remnawave, Kuma, PostgreSQL, or Redis.
+- The frontend is a client of the FastAPI BFF. It must not call Remnawave, Kuma, Beszel, PostgreSQL,
+  or Redis.
 
 ## Implementation rules
 

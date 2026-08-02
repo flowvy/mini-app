@@ -4,7 +4,7 @@ export interface PulseHeartbeat {
 }
 
 export interface PulseMonitor {
-	id: number;
+	id: number | string;
 	name: string;
 	status: "up" | "down" | "pending" | "maintenance";
 	uptime24H: number;

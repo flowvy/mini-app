@@ -7,6 +7,7 @@ const screens = [
 	{ name: "admin-users", path: "/admin/users", marker: "alice" },
 	{ name: "admin-user-detail", path: "/admin/users/1", marker: "alice" },
 	{ name: "admin-settings", path: "/admin/settings", marker: "Integrations" },
+	{ name: "admin-settings-beszel", path: "/admin/settings/beszel", marker: "Beszel" },
 ] as const;
 
 test("capture deterministic visual evidence for key screens", async ({
@@ -19,6 +20,25 @@ test("capture deterministic visual evidence for key screens", async ({
 		await assertNoHorizontalOverflow(page);
 		await page.screenshot({
 			path: testInfo.outputPath(`${screen.name}.png`),
+			animations: "disabled",
+		});
+	}
+});
+
+test("capture Beszel settings in light and dark themes", async ({
+	page,
+	mockApi: _mock,
+}, testInfo) => {
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/admin/settings/beszel");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await expect(page.getByRole("heading", { name: "Beszel" })).toBeVisible();
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`admin-settings-beszel-${colorScheme}.png`),
 			animations: "disabled",
 		});
 	}

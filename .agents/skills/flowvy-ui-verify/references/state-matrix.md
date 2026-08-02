@@ -7,7 +7,7 @@ Use this inventory to select cases; not every change requires every cell, but ev
 | Area | Routes |
 | --- | --- |
 | User | `/`, `/devices`, `/pulse`, `/support` |
-| Admin | `/admin/dashboard`, `/admin/users`, `/admin/users/:id`, `/admin/broadcast`, `/admin/settings`, `/admin/settings/kuma`, `/admin/settings/branding`, `/admin/settings/welcome` |
+| Admin | `/admin/dashboard`, `/admin/users`, `/admin/users/:id`, `/admin/broadcast`, `/admin/settings`, `/admin/settings/kuma`, `/admin/settings/beszel`, `/admin/settings/branding`, `/admin/settings/welcome` |
 
 ## Identities and navigation
 
@@ -21,10 +21,10 @@ Use this inventory to select cases; not every change requires every cell, but ev
 | --- | --- |
 | Subscription | active, limited, expired, unlimited traffic/expiry/devices, none, very long identifiers |
 | Devices | empty, one, several, limit reached, remove cancel/success/failure, remove-all cancel/success/failure |
-| Pulse | operational, partial, down, maintenance, incidents, disabled, Kuma timeout/schema error |
+| Pulse | operational, partial, down, maintenance, incidents, disabled, Kuma/Beszel timeout/schema error |
 | Dashboard | full data, Remnawave unavailable, zero metrics, large values, backend error |
 | Users | 0, 1, and large virtualized list; search; every status filter; no results; detail missing |
-| Settings | unconfigured/configured, dirty/save/failure, Kuma test pass/fail, upload/reset pass/fail, discard dialog |
+| Settings | unconfigured/configured, source selection, dirty/save/failure, Kuma/Beszel test pass/fail, server credential presence without secret values, upload/reset pass/fail, discard dialog |
 
 For applicable requests also cover loading, `401`, `403`, `404`, `500`, timeout/offline, malformed JSON/schema, mutation `200`/`204`, and mutation failure.
 

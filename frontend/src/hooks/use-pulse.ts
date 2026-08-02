@@ -1,6 +1,6 @@
 /**
  * Pulse data hook backed by TanStack Query.
- * Fetches from GET /api/pulse (Uptime Kuma via BFF).
+ * Fetches normalized Kuma or Beszel status from GET /api/pulse via the BFF.
  *
  * Debug mode: when VITE_MOCK_AUTH=true, fetches from
  * GET /api/debug/pulse instead.
