@@ -13,6 +13,12 @@ venv/
 # Ruff
 .ruff_cache/
 
+# Python tooling
+.mypy_cache/
+.hypothesis/
+.tox/
+.nox/
+
 # Pytest
 .pytest_cache/
 htmlcov/
@@ -21,14 +27,42 @@ htmlcov/
 # Node
 node_modules/
 frontend/dist/
+.pnpm-store/
+.vite/
+*.tsbuildinfo
 
 # Env
 .env
 .env.*
 !.env.example
+.envrc
+*.local
 
-# TypeScript
-*.tsbuildinfo
+# Credentials and local authentication state
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+.cloudflared/
+credentials*.json
+service-account*.json
+**/playwright/.auth/
+**/*auth-state*.json
+**/*storage-state*.json
+
+# Logs, process state, dumps, and local databases
+*.log
+*.log.*
+*.pid
+*.tmp
+*.temp
+*.bak
+*.dump
+*.sqlite
+*.sqlite3
+docker-compose.override.yml
 
 # IDE
 .vscode/
@@ -41,6 +75,8 @@ frontend/dist/
 frontend/test-results/
 frontend/playwright-report/
 frontend/coverage/
+coverage/
+lcov.info
 
 # Prototypes
 users-cards-prototype.jsx
