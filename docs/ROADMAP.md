@@ -57,9 +57,14 @@ evidence, а UI smoke перестаёт быть только happy-path seed.
 
 ## 4. Завершить продуктовые потоки
 
-После стабилизации предыдущих этапов принять отдельные решения по Support/renewal, Broadcast и
-Invite-only flow. Для Broadcast нужны аудит, preview, recipient scope, rate limits, retry/idempotency и
-safe cancellation. Не подключать незавершённые модели только ради видимости прогресса.
+Invite-only flow и профили начального Remnawave-доступа закрыты локально 2026-08-02: открытый/закрытый
+режим, явный onboarding в боте и Mini App, постоянный код каждого пользователя, Telegram share/deep
+link, direct referral count, local-only grant, срок/трафик/устройства/status/tag/description/squads
+и deterministic UI/backend tests.
+
+Осталось принять отдельные решения по Support/renewal и Broadcast. Для Broadcast нужны аудит,
+preview, recipient scope, rate limits, retry/idempotency и safe cancellation. Не подключать
+незавершённые модели только ради видимости прогресса.
 
 ## 5. Production readiness
 

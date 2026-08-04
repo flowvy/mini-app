@@ -8,7 +8,7 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
 ## Чувствительные данные
 
 - Telegram bot token, raw `initData`, webhook secrets и provider API tokens;
-- Telegram IDs/usernames, Remnawave UUID, email, connection/subscription URLs;
+- Telegram IDs/usernames, Remnawave UUID, email, connection/subscription URLs и invite codes;
 - HWID, webhook payloads, admin actions, media `file_id` и runtime logs.
 
 Не выводите их в terminal/tool output, Git, планы, screenshots, test artifacts или публичные ошибки.
@@ -16,8 +16,10 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
 
 ## Trust model
 
-- Frontend и Telegram-supplied fields недоверенные. Backend обязан проверять signature, TTL, текущего
-  user, active state и актуальные права; current-code gaps перечислены в `PROJECT_STATE.md`.
+- Frontend и Telegram-supplied fields недоверенные. Backend обязан проверять raw Mini App `initData`,
+  signature, TTL, текущего user, active state и актуальные права; `initDataUnsafe`, URL query и
+  client launch params не являются доказательством identity или referral attribution. Current-code
+  gaps перечислены в `PROJECT_STATE.md`.
 - Admin mode/route не даёт полномочий. Каждая admin operation авторизуется server-side непосредственно
   перед side effect.
 - Provider UUID из локальной БД — cache связи, не вечное доказательство ownership.
@@ -28,8 +30,8 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
 
 ## Обязательные инварианты
 
-- Пустой или отсутствующий `BOT_TOKEN`/webhook secret останавливает защищённый flow; никакой пустой
-  ключ не используется для HMAC.
+- Пустой `BOT_TOKEN` останавливает Telegram-auth. Если задан `WEBHOOK_URL`, непустой валидный webhook
+  secret обязателен; polling-режим не притворяется webhook и не использует пустой ключ для HMAC.
 - `DEBUG=false` — безопасный default. Debug routers не регистрируются либо недостижимы вне явно
   изолированного localhost, даже при ошибке environment.
 - Admin dependency проверяет текущий список разрешённых ID/роль и `is_active`; отзыв применяется без
@@ -44,6 +46,17 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
 - Upload ограничивается при streaming, до полного чтения в память; type/size проверяются server-side.
 - Unknown provider status/enum обрабатывается безопасно, а не считается активным.
 - Все внешние calls имеют finite timeout, bounded concurrency и безопасное error mapping.
+- Invite code создаётся CSPRNG и принадлежит зарегистрированному пользователю. Это публичный
+  многоразовый referral identifier, а не credential: он хранится в БД и может показываться владельцу,
+  но никогда не заменяет проверку Telegram initData/update.
+- Автоматическое применение invite разрешено только из `WebAppInitData.start_param`, полученного
+  после HMAC-проверки raw `initData`; endpoint не принимает launch code в request body. Main Mini
+  App referral URL выдаётся только после Bot API `getMe.has_main_web_app=true`. Ошибка проверки или
+  ненастроенная capability закрывает share flow без fallback на другой тип Telegram-ссылки.
+- Отсутствующий/выключенный code и code неактивного владельца дают один ответ, чтобы API не раскрывал
+  состояние аккаунта. Попытки ограничены Redis; сбой лимитера закрывает новую регистрацию.
+- Регистрация сериализуется PostgreSQL advisory lock по Telegram ID. Remnawave grant берётся из
+  общей server-side policy, а неизвестный результат provider timeout сначала reconciled exact lookup.
 
 ## Локальная разработка
 

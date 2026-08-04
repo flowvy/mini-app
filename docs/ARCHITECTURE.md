@@ -15,7 +15,7 @@ React + TanStack Router/Query (:5173 в dev)
             |
             | /api/*
             v
-FastAPI BFF + aiogram webhook (:8001)
+FastAPI BFF + aiogram webhook/polling (:8001)
        |             |              |
        v             v              v
  PostgreSQL        Redis        External HTTP
@@ -42,7 +42,8 @@ Frontend не обращается к Remnawave, Kuma, Beszel, PostgreSQL или
 
 `flowvy.api.factory:create_app` создаёт FastAPI, Dishka container, middleware и routers. Lifespan:
 
-- создаёт bot/dispatcher и регистрирует Telegram webhook, если задан `BOT_TOKEN`;
+- создаёт bot/dispatcher; при полном webhook-конфиге регистрирует callback, иначе для локальной
+  разработки удаляет устаревший webhook и запускает long polling;
 - проверяет доступность Remnawave при непустом `REMNAWAVE_URL`;
 - запускает периодический сбор метрик через Redis и PostgreSQL;
 - при остановке завершает задачу и закрывает bot/container.
@@ -66,8 +67,13 @@ REQUEST scope; provider commits или rollbacks транзакцию после
 
 Пользовательские маршруты:
 
-- `GET /api/me` — проверка initData, создание/обновление локального пользователя, feature flags и
-  branding.
+- `GET /api/me` — проверка initData и чтение существующего пользователя; exact provider-only
+  Remnawave match импортирует локально без изменения provider, а полностью неизвестного пользователя
+  не создаёт и возвращает стабильный `registration_required`/`invite_required` code.
+- `GET /api/onboarding`, `POST /api/onboarding/register|redeem|redeem-launch` — явная открытая
+  регистрация, ручной invite code либо Main Mini App invite из проверенного Telegram
+  `initData.start_param`. Launch-mutation не принимает code в body. `GET /api/me/invite` отдаёт
+  собственный код, счётчик и referral URL только при подтверждённой capability бота.
 - `GET /api/me/subscription` — Remnawave user/subscription и upsert локальной subscription.
 - `GET/DELETE /api/me/devices...` — свежее сопоставление Telegram user с числовым Remnawave user ID,
   optional legacy UUID и HWID devices.
@@ -75,7 +81,8 @@ REQUEST scope; provider commits или rollbacks транзакцию после
 
 Admin routes под `/api/admin` повторно получают текущего локального пользователя и проверяют его
 роль. Они отдают dashboard, полный/постраничный список пользователей, detail/actions и provider,
-branding/welcome settings. Admin Broadcast API в текущем коде отсутствует.
+branding/welcome settings. `/api/admin/registration` управляет режимом, access profiles и live squad
+options. Admin Broadcast API в текущем коде отсутствует.
 
 Служебные маршруты:
 
@@ -92,15 +99,33 @@ Frontend отправляет raw Telegram init data как `Authorization: tma 
 aiogram validation с `BOT_TOKEN`, проверяет TTL и наличие пользователя. После успешной проверки
 время активности записывается в Redis hash.
 
-При `GET /api/me` локальный user создаётся или синхронизируется. Admin role определяется списком
-`ADMIN_TELEGRAM_IDS` из environment и записывается в PostgreSQL. Admin dependency доверяет только
-текущей локальной записи, не client mode. Незакрытые auth-риски перечислены в `PROJECT_STATE.md`.
+При Telegram-enabled startup backend вызывает Bot API `getMe` и кэширует только username и
+`has_main_web_app`. Ссылка приглашения имеет единственный формат Main Mini App
+`t.me/<bot>?startapp=ref_<code>` и выдаётся только при `has_main_web_app=true`. Client launch
+parameter и `initDataUnsafe` не участвуют в attribution: auto-redeem извлекает код только из уже
+HMAC-проверенного raw `initData`. Если capability нельзя подтвердить, система не подменяет этот
+flow bot- или Direct Mini App-ссылкой.
+
+При `GET /api/me` локальная запись синхронизируется, если уже существует. После local miss выполняется
+exact Remnawave lookup по Telegram ID: provider-only user импортируется в local user/invite/subscription
+без referral attribution, default profile и provider mutation. Provider miss продолжает обычный
+onboarding, а lookup error fail closed возвращает временную недоступность. Второе исключение — первый
+bootstrap identity из `ADMIN_TELEGRAM_IDS`, чтобы владелец не заблокировал сам себя invite-only
+режимом. Обычная регистрация полностью нового пользователя всегда является отдельной mutation. Admin
+dependency доверяет только текущему backend allow-list и локальной записи, не client mode.
+
+Invite redemption ограничивается по Telegram ID через Redis и fail-closed при его недоступности.
+В PostgreSQL берётся transaction-scoped advisory lock на Telegram ID: повторный запрос одной identity
+не создаёт дубль, а один пользовательский код может зарегистрировать разных людей. Если provisioning Remnawave успел выполниться перед
+timeout, повторный exact lookup завершает локальную запись без создания дубля.
 
 ### Данные и кэш
 
-PostgreSQL хранит пользователей, подписки, invites, singleton provider settings, историю bot metrics
-и принятые Remnawave webhook events. Alembic migrations образуют одну цепочку от начальной схемы до
-удаления устаревших quick-link columns.
+PostgreSQL хранит пользователей, подписки, access profiles, один публичный invite code на пользователя,
+прямую attribution в `users.invited_by_id`, singleton provider settings, историю bot metrics и
+принятые Remnawave webhook events. Код не является authentication credential; доступ задаёт общий
+registration profile. Код хранится в БД, потому что владелец может посмотреть и переслать его снова.
+Alembic migrations образуют одну линейную цепочку.
 
 Redis используется для:
 
@@ -108,6 +133,7 @@ Redis используется для:
 - `pulse:data` — provider-neutral Pulse aggregation, TTL 60 секунд;
 - `external_squads` — имена squads, TTL 300 секунд;
 - request counters и `bot:last_seen` до периодической записи activity в PostgreSQL;
+- часовое окно попыток invite redemption;
 - Telegram media `file_id` cache в message sender.
 
 Subscription и devices для отдельного пользователя читаются из Remnawave без общего response cache;
@@ -149,8 +175,11 @@ Remnawave webhook доступен только при непустом shared s
 PostgreSQL и инвалидирует dashboard/Pulse cache по scope/event. Signature, freshness, replay,
 idempotency, payload size и retention проверяются до/после сохранения в соответствующей границе.
 
-Aiogram dispatcher содержит `/start` flow и отправку welcome template/media. Telegram webhook живёт
-в том же FastAPI process; отдельного worker сейчас нет.
+Aiogram dispatcher содержит обычный `/start` flow, ручной ввод invite code и отправку welcome
+template/media. `/start` не является referral transport и не разбирает `ref_` payload: приглашение
+в Main Mini App приходит по HTTPS вместе с подписанным initData. В production Telegram webhook
+живёт в том же FastAPI process; при пустом `WEBHOOK_URL` dev-процесс использует polling. Отдельного
+worker сейчас нет.
 
 ## Frontend
 
@@ -171,9 +200,14 @@ Aiogram dispatcher содержит `/start` flow и отправку welcome te
 - `styles/tokens.css`, CSS Modules и Telegram theme/safe-area интеграция задают внешний вид.
 - `i18n/locales/en.json` — единственный текущий locale resource.
 
+До появления local user `AuthGuard` показывает отдельный onboarding без app navigation. Успешная
+mutation сразу кладёт полученного user в общий TanStack Query cache, поэтому вход не требует reload.
+Для launch invite frontend получает от backend только boolean о наличии корректного signed
+`start_param` и вызывает no-body mutation; сам код из URL/SDK frontend не читает и не пересылает.
+
 Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Admin URL: `/admin/dashboard`,
 `/admin/users`, `/admin/users/$userId`, `/admin/broadcast`, `/admin/settings` и отдельные Kuma,
-Beszel, branding, welcome subroutes. Support и Broadcast пока заглушки.
+Beszel, branding, welcome и registration/access subroutes. Support и Broadcast пока заглушки.
 
 ## Автоматизация разработки
 

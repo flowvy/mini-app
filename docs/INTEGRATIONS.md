@@ -11,6 +11,30 @@
 `ADMIN_TELEGRAM_IDS`, `INIT_DATA_TTL`.
 Frontend получает raw init data через Telegram Apps SDK и отправляет
 `Authorization: tma <raw_init_data>`.
+Flowvy использует один Telegram product contract — Main Mini App. Она должна быть включена у
+целевого бота через `@BotFather` → `/mybots` → bot → **Bot Settings** → **Configure Mini App** →
+**Enable Mini App** и указывать на постоянный публичный HTTPS URL. При startup backend
+вызывает официальный `getMe`; для timeout/network/Telegram 5xx разрешён один ограниченный повтор,
+но auth и остальные Bot API errors закрываются сразу. Только `has_main_web_app=true` и корректный bot username разрешают
+выдать ссылку `t.me/<bot>?startapp=ref_<compact-code>`. Проверенный статус и ссылка приходят в
+`GET /api/me/invite`; frontend не угадывает username, `short_name` или тип Telegram-ссылки. Если
+capability не подтверждена, share link не публикуется, но personal code остаётся доступен для
+копирования и ручного ввода.
+
+В локальном named-Tunnel режиме `scripts/dev-up.ps1 -EnableTelegram -NamedTunnelUrl
+'https://<test-host>'` задаёт этот exact origin только запускаемому backend как `WEBAPP_URL` и
+поднимает repo-owned safe preview на `127.0.0.1:80`. Cloudflare route и BotFather state остаются
+внешней явной конфигурацией; script их не создаёт и не изменяет.
+
+При открытии Main Mini App Telegram помещает payload в signed raw `initData` как `start_param` и
+дублирует его в client GET parameter `tgWebAppStartParam`. Flowvy не доверяет client-копии: `GET
+/api/onboarding` сообщает только наличие валидного server-side payload, а `POST
+/api/onboarding/redeem-launch` не принимает code в body и извлекает его из уже проверенного
+`WebAppInitData.start_param`. Ручной ввод остаётся отдельным `POST /api/onboarding/redeem`. После
+успеха frontend обновляет Query cache без reload. Кнопка отправки оборачивает подтверждённую Main
+Mini App URL в официальный `t.me/share/url`; форматированный code остаётся в тексте для ручного
+ввода. Bot `?start=` не используется как referral transport и обычный `/start` не разбирает
+реферальный payload.
 Однострочные поля используют standard `enterkeyhint` и при Enter вызывают
 `Telegram.WebApp.hideKeyboard()` с DOM `blur()` fallback. IME composition не прерывается,
 а `textarea` сохраняет обычный перенос строки.
@@ -28,10 +52,39 @@ multipart file как spooled upload; Flowvy до обращения к Bot API 
 
 Если задан `WEBHOOK_URL`, конфигурация атомарно требует bot token и секрет формата Telegram.
 Регистрация передаёт `secret_token`, а `POST /webhook` до разбора JSON сравнивает
-`X-Telegram-Bot-Api-Secret-Token`. Без настроенного webhook route не регистрируется.
+`X-Telegram-Bot-Api-Secret-Token`. Без `WEBHOOK_URL` route не регистрируется: локальный dev с
+непустым `BOT_TOKEN` удаляет прежний webhook и получает updates через long polling. Production
+должен использовать webhook; polling предназначен для одного локального процесса test bot.
 
-Primary evidence, проверено 2026-08-02:
+Telegram хранит ещё не полученные updates до 24 часов, поэтому после сетевого разрыва несколько
+отдельных `/start` могут прийти одним batch и выполняться параллельно. Flowvy объединяет такие
+одновременные попытки одной Telegram identity через Redis lease: атомарный `SET NX EX 120`,
+случайный token и token-checked Lua finish. После стабильного ответа остаётся cooldown 5 секунд;
+после временной ошибки lease удаляется, чтобы следующий осознанный retry не блокировался. При сбое
+Redis бот fail closed возвращает временную ошибку. Это дополняет уникальный Telegram `update_id`:
+два сообщения пользователя являются двумя корректными updates, а не повторной доставкой одного.
 
+Primary evidence, проверено 2026-08-04:
+
+- [Telegram Main Mini App](https://core.telegram.org/bots/webapps#launching-the-main-mini-app): её
+  настраивают через `@BotFather` (`/mybots` → bot → Bot Settings → Configure Mini App → Enable Mini
+  App); `t.me/<bot>?startapp=<parameter>` открывает приложение и передаёт parameter как
+  `start_param`/`tgWebAppStartParam`.
+- [Telegram deep-link client contract](https://core.telegram.org/api/links#main-mini-app-links): при
+  отсутствии Main Mini App клиент обязан обработать `?startapp` как обычную username-ссылку;
+  Direct Mini App является отдельным contract с обязательным `/<short_name>`.
+- [Telegram Mini App init data validation](https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app):
+  raw `initData` проверяется на backend; `initDataUnsafe` и client launch params нельзя использовать
+  как доказательство identity или invite attribution.
+- [Telegram Bot API `User`](https://core.telegram.org/bots/api#user): `has_main_web_app` возвращается
+  методом `getMe` и является проверяемой capability. Locked aiogram 3.26.0 содержит это поле, а
+  `WebAppInitData.start_param`; locked Telegram Apps SDK 3.11.8 остаётся только transport raw
+  `initData`, не источником решения.
+- [Telegram bot deep linking](https://core.telegram.org/api/links#bot-links): `?start=` открывает
+  bot chat и лишь после отдельного нажатия Start вызывает `/start <parameter>`, поэтому не является
+  one-tap Main Mini App flow Flowvy.
+- [Telegram share links](https://core.telegram.org/api/links#share-links): `t.me/share/url` открывает
+  выбор чата и принимает URL плюс редактируемый текст.
 - [Telegram Mini Apps API](https://core.telegram.org/bots/webapps): `hideKeyboard()` доступен
   с Bot API 9.1 и скрывает активную экранную клавиатуру.
 - [HTML `enterkeyhint`](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/enterkeyhint):
@@ -45,6 +98,13 @@ Primary evidence, проверено 2026-08-02:
   [sendAnimation](https://core.telegram.org/bots/api#sendanimation), проверено 2026-08-02:
   multipart `InputFile`, текущий photo limit 10 MB и animation limit 50 MB. Flowvy намеренно
   применяет меньший общий предел 10 MiB.
+- [Telegram Bot API — Getting updates](https://core.telegram.org/bots/api#getting-updates),
+  проверено 2026-08-04: incoming updates хранятся до 24 часов, `update_id` уникален, а `getUpdates`
+  возвращает массив накопленных updates.
+- [Redis `SET`](https://redis.io/docs/latest/commands/set/) и
+  [официальный lock pattern](https://redis.io/docs/latest/develop/clients/patterns/distributed-locks/),
+  проверено 2026-08-04: `NX` атомарно запрещает второй claim, TTL обеспечивает recovery, а
+  случайный token с compare-and-delete Lua не позволяет старому обработчику снять чужой lease.
 
 ## Remnawave
 
@@ -142,6 +202,50 @@ Email и dashboard contract дополнительно сверены 2026-08-02
 success/auth/freshness/schema/size/replay, concurrent deduplication, retention, previous-head
 migration, client transport/envelope/version/pagination/identity, email array и dashboard projections
 покрыты локально.
+
+### Регистрация и начальный Remnawave-доступ
+
+Flowvy создаёт provider user только когда оператор назначил общий registration access profile.
+Без профиля создаётся только локальный Telegram user. Для каждого нового provider user используется
+детерминированный уникальный username `tg_<telegram_id>`, а protocol credentials, short UUID и
+subscription identity генерирует сама Remnawave; Flowvy их не переиспользует между пользователями.
+
+До применения open/invite policy local miss проверяется exact read-only lookup по `telegramId`.
+Существующий provider-only user импортируется в локальные user/invite/subscription без attribution и
+без применения default profile: его status, expiry, limits, tag и squads в Remnawave не изменяются.
+Provider miss означает действительно нового пользователя; transport, contract или ambiguity error
+fail closed возвращает временную недоступность и не запускает invite redemption/create-user.
+Exact read-only lookup повторяется не более одного раза с задержкой 200 мс только когда client явно
+классифицировал timeout, connection failure либо upstream HTTP `502/503/504` как transient.
+Auth/permission, ambiguity и malformed/schema errors автоматически не повторяются. Create-user
+по-прежнему не retry-ится: после неопределённого результата разрешён только read-only reconciliation.
+
+Create-user body зафиксирован по official exact tags
+[2.8.1](https://github.com/remnawave/backend/blob/2.8.1/libs/contract/commands/users/create-user.command.ts),
+[3.0.0](https://github.com/remnawave/backend/blob/3.0.0/libs/contract/commands/users/create-user.command.ts)
+и [3.1.0](https://github.com/remnawave/backend/blob/3.1.0/libs/contract/commands/users/create-user.command.ts).
+Во всех трёх используемая Flowvy часть стабильна: обязательны `username` и `expireAt`; поддерживаются
+`status`, `trafficLimitBytes`, `trafficLimitStrategy`, `description`, uppercase `tag` до 16 символов,
+`telegramId`, `hwidDeviceLimit`, `activeInternalSquads` и `externalSquadUuid`. `0` traffic означает
+безлимит. Lifetime — продуктовая абстракция Flowvy, которая отправляет `2099-12-31T23:59:59Z`, потому
+что upstream всё равно требует `expireAt`.
+
+Перед сохранением профиля squad UUID сверяются с live allow-listed ответами
+`GET /api/internal-squads` и `GET /api/external-squads`. При регистрации сначала выполняется exact
+lookup по Telegram ID. Единственный найденный provider user принимается как уже созданный результат
+предыдущей попытки; неоднозначный ответ client отклоняет. Ошибка/timeout create не приводит к слепому
+повтору: для `502/504` выполняется reconciliation lookup, после чего локальная subscription
+записывается только для подтверждённого provider user.
+
+User tag для access profile не вводится произвольно: BFF читает provider-owned список через
+`GET /api/users/tags`, возвращает frontend только нормализованные строки и перед сохранением повторно
+проверяет изменённый tag по live allow-list. Контракт `response.tags: string[]` зафиксирован по
+official exact tags
+[2.8.1](https://github.com/remnawave/backend/blob/2.8.1/libs/contract/commands/users/tags/get-all-tags.command.ts),
+[3.0.0](https://github.com/remnawave/backend/blob/3.0.0/libs/contract/commands/users/tags/get-users-tags.command.ts)
+и [3.1.0](https://github.com/remnawave/backend/blob/3.1.0/libs/contract/commands/users/tags/get-users-tags.command.ts),
+проверено 2026-08-02. Ошибка каталога блокирует только новый/изменённый tag; profile без tag или с
+неизменённым уже сохранённым tag не получает лишнюю зависимость от provider availability.
 
 ## Pulse: Uptime Kuma или Beszel
 

@@ -109,7 +109,6 @@ pnpm dev
 
 ```dotenv
 VITE_API_URL=/api
-VITE_BOT_USERNAME=
 VITE_MOCK_AUTH=true
 VITE_DEBUG_TELEGRAM_ID=
 VITE_DEBUG_DEVICES_EMPTY=
@@ -117,6 +116,16 @@ VITE_DEBUG_DEVICES_EMPTY=
 
 Vite слушает только `http://127.0.0.1:5173` и проксирует `/api` и `/webhook` на backend. Same-origin
 `VITE_API_URL=/api` одинаково работает с localhost, preview и Tunnel.
+Bot username и тип Mini App не являются frontend configuration. При Telegram-enabled startup
+backend читает их через Bot API `getMe` и публикует referral URL только при
+`has_main_web_app=true`. Flowvy использует Main Mini App link `t.me/<bot>?startapp=ref_…`; Direct
+Mini App и bot `?start=` для referral не поддерживаются.
+
+До live referral-теста откройте `@BotFather` → `/mybots` → точный test bot → **Bot Settings** →
+**Configure Mini App** → **Enable Mini App** и задайте постоянный публичный HTTPS URL текущего
+dev-контура. Menu Button или inline `web_app` button не заменяют эту настройку. Quick Tunnel годится
+для краткой ручной проверки страницы, но его случайный hostname меняется после перезапуска и поэтому
+не подходит как сохранённый Main Mini App URL.
 
 ### Что даёт mock auth
 
@@ -147,11 +156,27 @@ logs хранятся в `.artifacts/dev`; повторный запуск бл�
 перехватываются. После уже выполненного bootstrap можно добавить `-SkipInstall`.
 
 По умолчанию script обнуляет Telegram token/webhook только для запускаемых процессов, чтобы локальный
-старт не перенастроил реального бота. Для осознанного теста Telegram после настройки HTTPS URL и
-`TELEGRAM_WEBHOOK_SECRET` используйте `dev-up.ps1 -EnableTelegram`.
+старт не перенастроил реального бота. Для осознанного теста test bot используйте
+`dev-up.ps1 -EnableTelegram`: при пустом `WEBHOOK_URL` backend удалит прежний webhook и включит
+long polling, а при полном HTTPS webhook-конфиге зарегистрирует callback. Для кнопки Mini App в
+обоих случаях нужен публичный HTTPS `WEBAPP_URL`; для Main Mini App он должен совпадать с
+постоянным URL, сохранённым в BotFather. Не запускайте второй polling-процесс этого бота.
+
+Если named Tunnel уже создан и его published application route направлен на
+`http://localhost:80`, весь Telegram dev-контур запускается одной командой:
+
+```powershell
+.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+    -NamedTunnelUrl 'https://<test-host>'
+```
+
+`NamedTunnelUrl` принимает только чистый HTTPS origin, передаёт его backend как process-level
+`WEBAPP_URL`, собирает frontend без mock/debug flags и поднимает отдельный preview на
+`127.0.0.1:80`. Значение не записывается в `.env`. Script проверяет local debug route, public root и
+`/api/health`, но не создаёт DNS/route, не запускает и не перенастраивает системный `cloudflared`.
 
 Остановка выполняется через `.\scripts\dev-down.ps1`: script завершает только записанные им process
-trees, останавливает Compose services и сохраняет volumes.
+trees, включая repo-owned public preview, останавливает Compose services и сохраняет volumes.
 
 ## Проверки
 
@@ -216,12 +241,32 @@ Script создаёт отдельную production-сборку с `VITE_API_UR
 .\scripts\verify-tunnel.ps1
 ```
 
-Для Telegram webhook используйте отдельного test bot и named Tunnel со стабильным HTTPS URL:
+Для уже настроенного named Tunnel безопасный origin на локальном порту `80` можно поднять отдельно:
 
-1. заранее задайте `WEBAPP_URL=https://<test-host>`, `WEBHOOK_URL=https://<test-host>/webhook`;
+```powershell
+.\scripts\tunnel-up.ps1 -ConfirmPublic `
+    -NamedTunnelUrl 'https://<test-host>'
+.\scripts\tunnel-down.ps1
+```
+
+В Cloudflare published application route должен заранее существовать exact hostname с service
+`http://localhost:80`. В named mode script задаёт Vite только exact разрешённый hostname, проверяет
+public root и `/api/health` и не создаёт второй connector. Для обычного рабочего цикла предпочтите
+единый `dev-up -EnableTelegram -NamedTunnelUrl ...`, чтобы backend получил тот же `WEBAPP_URL`.
+
+Для Telegram webhook используйте отдельного test bot и тот же стабильный HTTPS URL:
+
+1. задайте `WEBHOOK_URL=https://<test-host>/webhook` в local-only backend environment;
 2. сгенерируйте случайный `TELEGRAM_WEBHOOK_SECRET` допустимого формата;
 3. оставьте `DEBUG=false`, включите Cloudflare Access там, где это совместимо с Telegram callbacks;
-4. перезапустите backend и проверяйте только test account/provider data.
+4. запустите `dev-up -EnableTelegram -NamedTunnelUrl 'https://<test-host>'` и проверяйте только test
+   account/provider data.
+
+Без `WEBHOOK_URL` этот же запуск использует long polling; публичный hostname всё равно нужен Main
+Mini App. Published application routes описаны в
+[Cloudflare Tunnel routing](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/routing-to-tunnel/),
+а exact host allow-list — в [Vite server options](https://vite.dev/config/server-options#server-allowedhosts)
+(проверено 2026-08-04). Не задавайте Vite `allowedHosts: true`.
 
 Не записывайте token, initData, secret или приватный tunnel config в Git, logs, screenshots и планы.
 Repository scripts не останавливают и не перенастраивают существующую службу Cloudflare.
