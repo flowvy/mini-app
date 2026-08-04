@@ -109,6 +109,7 @@ class BffServiceProvider(Provider):
         self,
         remnawave: RemnawaveClient,
         redis: Redis,
+        user_repo: UserRepository,
     ) -> AdminUsersService:
         """Create admin users service."""
-        return AdminUsersService(remnawave, redis)
+        return AdminUsersService(remnawave, redis, user_repo)

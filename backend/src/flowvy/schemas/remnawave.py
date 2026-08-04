@@ -1,10 +1,34 @@
-"""Pydantic models for Remnawave API responses."""
+"""Pydantic models for Remnawave API requests and responses."""
 
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic.alias_generators import to_camel
+
+
+class RemnawaveCreateUserRequest(BaseModel):
+    """Safe create-user subset shared by Remnawave 2.8 and 3.0/3.1."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    username: str
+    status: str = "ACTIVE"
+    traffic_limit_bytes: int = 0
+    traffic_limit_strategy: str = "NO_RESET"
+    expire_at: datetime
+    description: str | None = None
+    tag: str | None = None
+    telegram_id: int
+    hwid_device_limit: int | None = None
+    active_internal_squads: list[uuid.UUID] = Field(default_factory=list)
+    external_squad_uuid: uuid.UUID | None = None
+
+    def to_provider_payload(self) -> dict[str, object]:
+        """Serialize exactly the supported provider request fields."""
+        return self.model_dump(by_alias=True, exclude_none=True, mode="json")
 
 
 class RemnawaveUserTraffic(BaseModel):

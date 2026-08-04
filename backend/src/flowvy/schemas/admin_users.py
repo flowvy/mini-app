@@ -59,6 +59,7 @@ class AdminUserResponse(BaseModel):
     subscription_url: str
     active_internal_squads: list[AdminUserInternalSquadResponse] = []
     external_squad_name: str | None = None
+    invited_count: int = 0
     user_traffic: AdminUserTrafficResponse
 
 

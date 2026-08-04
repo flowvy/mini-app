@@ -207,3 +207,52 @@ async def test_lifespan_registers_same_webhook_secret(
     assert requested_types[0] is Bot
     assert requested_types[1] is Redis
     assert requested_types[2] == async_sessionmaker[AsyncSession]
+
+
+@pytest.mark.asyncio
+async def test_lifespan_polls_locally_when_webhook_is_not_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = Settings(
+        _env_file=None,
+        bot_token="000000:TEST",
+        webhook_url="",
+        telegram_webhook_secret="",
+    )
+    bot = AsyncMock()
+    bot.session.close = AsyncMock()
+    dispatcher = AsyncMock()
+    polling_started = asyncio.Event()
+
+    async def poll(*_args: object, **_kwargs: object) -> None:
+        polling_started.set()
+        await asyncio.Event().wait()
+
+    dispatcher.start_polling.side_effect = poll
+    redis = AsyncMock()
+    session_factory = AsyncMock(spec=async_sessionmaker)
+    container = AsyncMock()
+    container.get = AsyncMock(side_effect=[bot, redis, session_factory])
+    app = FastAPI()
+    app.state.settings = settings
+    app.state.dishka_container = container
+
+    async def collector(*_args: object) -> None:
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr("flowvy.api.factory.create_dispatcher", lambda: dispatcher)
+    monkeypatch.setattr("flowvy.api.factory.setup_dishka_aiogram", lambda **_kwargs: None)
+    monkeypatch.setattr("flowvy.api.factory.run_metrics_collector", collector)
+    monkeypatch.setattr("flowvy.api.factory.run_webhook_retention", collector)
+
+    async with lifespan(app):
+        await asyncio.wait_for(polling_started.wait(), timeout=1)
+        bot.delete_webhook.assert_awaited_once_with(drop_pending_updates=False)
+        dispatcher.start_polling.assert_awaited_once_with(
+            bot,
+            handle_signals=False,
+            close_bot_session=False,
+        )
+        dispatcher.emit_startup.assert_not_awaited()
+
+    bot.session.close.assert_awaited_once()

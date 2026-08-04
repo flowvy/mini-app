@@ -41,6 +41,7 @@ async def _read_limited_body(request: Request, limit: int) -> bytes | None:
 @router.post(
     "/api/webhooks/remnawave",
     status_code=status.HTTP_200_OK,
+    response_model=None,
 )
 async def receive_remnawave_webhook(
     request: Request,

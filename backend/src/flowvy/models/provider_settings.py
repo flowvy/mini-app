@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from sqlalchemy import CheckConstraint, Integer, String, Text
+import uuid
+
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from flowvy.models.base import Base, updated_at
@@ -17,9 +20,19 @@ class ProviderSettings(Base):
             "pulse_provider IN ('disabled', 'kuma', 'beszel')",
             name="ck_provider_settings_pulse_provider",
         ),
+        CheckConstraint(
+            "registration_mode IN ('open', 'invite_only')",
+            name="ck_provider_settings_registration_mode",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    registration_mode: Mapped[str] = mapped_column(String(16), default="open")
+    default_access_profile_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("access_profiles.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     pulse_provider: Mapped[str] = mapped_column(String(16), default="disabled")
     kuma_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     kuma_slug: Mapped[str | None] = mapped_column(String(255), nullable=True)

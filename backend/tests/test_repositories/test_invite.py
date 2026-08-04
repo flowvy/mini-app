@@ -1,4 +1,4 @@
-"""Tests for InviteRepository."""
+"""Tests for reusable user-owned invitation persistence."""
 
 from __future__ import annotations
 
@@ -9,70 +9,30 @@ from flowvy.repositories.user import UserRepository
 
 
 async def _create_user(session: AsyncSession, user_id: int = 300001) -> None:
-    """Helper: insert a user so FK constraints are satisfied."""
-    repo = UserRepository(session)
-    await repo.create(id=user_id, full_name="InviteUser")
+    await UserRepository(session).create(id=user_id, full_name="Invite User")
 
 
-async def test_create_invite(session: AsyncSession) -> None:
-    """Create an invite with a code."""
+async def test_user_owns_one_reusable_code(session: AsyncSession) -> None:
     await _create_user(session)
     repo = InviteRepository(session)
 
-    invite = await repo.create(code="ABC123", created_by_id=300001)
-    assert invite.code == "ABC123"
+    invite = await repo.create(
+        code="FVY23456789ABCDEFGHJKM",
+        created_by_id=300001,
+    )
+
+    assert invite.code == "FVY23456789ABCDEFGHJKM"
+    assert invite.created_by_id == 300001
     assert invite.is_active is True
-    assert invite.used_by_id is None
-    assert invite.id is not None
+    assert (await repo.get_by_owner(300001)).id == invite.id  # type: ignore[union-attr]
+    assert (await repo.get_by_code(invite.code)).id == invite.id  # type: ignore[union-attr]
 
 
-async def test_get_by_code(session: AsyncSession) -> None:
-    """Find invite by code string."""
-    repo = InviteRepository(session)
-    await repo.create(code="FIND_ME")
+async def test_invited_user_is_counted_for_owner(session: AsyncSession) -> None:
+    users = UserRepository(session)
+    await users.create(id=300002, full_name="Owner")
+    await users.create(id=300003, full_name="Invitee", invited_by_id=300002)
+    await users.create(id=300004, full_name="Unrelated")
 
-    found = await repo.get_by_code("FIND_ME")
-    assert found is not None
-    assert found.code == "FIND_ME"
-
-    missing = await repo.get_by_code("NOPE")
-    assert missing is None
-
-
-async def test_get_unused(session: AsyncSession) -> None:
-    """Return only active, unused invites."""
-    await _create_user(session, 300002)
-    repo = InviteRepository(session)
-    await repo.create(code="UNUSED1")
-    await repo.create(code="UNUSED2")
-
-    used = await repo.create(code="USED1")
-    await repo.mark_used(used, user_id=300002)
-
-    unused = await repo.get_unused()
-    codes = [inv.code for inv in unused]
-    assert "UNUSED1" in codes
-    assert "UNUSED2" in codes
-    assert "USED1" not in codes
-
-
-async def test_mark_used(session: AsyncSession) -> None:
-    """Mark an invite as used by a user."""
-    await _create_user(session, 300003)
-    repo = InviteRepository(session)
-    invite = await repo.create(code="USE_ME")
-
-    marked = await repo.mark_used(invite, user_id=300003)
-    assert marked.used_by_id == 300003
-    assert marked.used_at is not None
-    assert marked.is_active is False
-
-
-async def test_delete_invite(session: AsyncSession) -> None:
-    """Delete an invite."""
-    repo = InviteRepository(session)
-    invite = await repo.create(code="DEL_ME")
-    invite_id = invite.id
-
-    await repo.delete(invite)
-    assert await repo.get_by_id(invite_id) is None
+    assert await users.count_invited_by(300002) == 1
+    assert await users.count_invited_by(300004) == 0

@@ -99,3 +99,20 @@ async def test_readiness_route_wiring_with_lifespan(
 
     assert response.status_code == 200
     assert response.json()["status"] == "ready"
+
+
+def test_openapi_schema_includes_registration_routes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Technical Response return types must not break the generated API contract."""
+    from flowvy.api.factory import create_app
+
+    monkeypatch.setenv("BOT_TOKEN", "")
+    monkeypatch.setenv("WEBHOOK_URL", "")
+    schema = create_app().openapi()
+
+    assert "/api/onboarding" in schema["paths"]
+    assert "/api/onboarding/redeem-launch" in schema["paths"]
+    assert "/api/me/invite" in schema["paths"]
+    assert "/api/admin/registration" in schema["paths"]
+    assert "/api/admin/registration/invites" not in schema["paths"]

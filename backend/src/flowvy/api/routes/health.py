@@ -48,7 +48,7 @@ async def _redis_ready(redis: Redis) -> bool:
         return False
 
 
-@router.get("/ready")
+@router.get("/ready", response_model=None)
 async def readiness(
     session: FromDishka[AsyncSession] = None,  # type: ignore[assignment]
     redis: FromDishka[Redis] = None,  # type: ignore[assignment]

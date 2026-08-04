@@ -7,6 +7,7 @@ import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, suppress
 
+import structlog
 from aiogram import Bot
 from dishka import make_async_container
 from dishka.integrations.aiogram import setup_dishka as setup_dishka_aiogram
@@ -18,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from flowvy.api.middleware import MetricsMiddleware
 from flowvy.api.routes.admin.dashboard import router as admin_dashboard_router
+from flowvy.api.routes.admin.registration import router as admin_registration_router
 from flowvy.api.routes.admin.settings import router as admin_settings_router
 from flowvy.api.routes.admin.users import router as admin_users_router
 from flowvy.api.routes.debug import router as debug_router
@@ -25,6 +27,7 @@ from flowvy.api.routes.debug_admin import router as debug_admin_router
 from flowvy.api.routes.devices import router as devices_router
 from flowvy.api.routes.health import router as health_router
 from flowvy.api.routes.pulse import router as pulse_router
+from flowvy.api.routes.registration import router as registration_router
 from flowvy.api.routes.subscription import router as subscription_router
 from flowvy.api.routes.users import router as users_router
 from flowvy.api.routes.webhooks import router as webhooks_router
@@ -46,16 +49,28 @@ from flowvy.di_webhooks import WebhooksProvider
 from flowvy.services.metrics_collector import run_metrics_collector
 from flowvy.services.remnawave import RemnawaveClient
 from flowvy.services.webhook_retention import run_webhook_retention
+from flowvy.telegram_main_app import TelegramMainApp, discover_main_app
+
+logger = structlog.get_logger()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Manage bot lifecycle: set webhook on start, cleanup on stop."""
+    """Manage webhook or local polling bot lifecycle and background workers."""
     settings = app.state.settings
     container = app.state.dishka_container
+    polling_task: asyncio.Task[None] | None = None
+    app.state.telegram_main_app = TelegramMainApp.unavailable()
 
     if settings.bot_token:
         bot = await container.get(Bot)
+        app.state.telegram_main_app = await discover_main_app(bot)
+        if app.state.telegram_main_app.status == "ready":
+            logger.info("telegram_main_app_ready")
+        elif app.state.telegram_main_app.status == "main_app_not_configured":
+            logger.warning("telegram_main_app_not_configured")
+        else:
+            logger.warning("telegram_main_app_capability_unavailable")
         dp = create_dispatcher()
         app.state.bot = bot
         app.state.dp = dp
@@ -65,7 +80,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 settings.webhook_url,
                 secret_token=settings.telegram_webhook_secret,
             )
-        await dp.emit_startup(bot=bot)
+            await dp.emit_startup(bot=bot)
+        else:
+            # Local development has no stable callback URL. Remove a stale
+            # production webhook before polling so Telegram delivers updates here.
+            await bot.delete_webhook(drop_pending_updates=False)
+            polling_task = asyncio.create_task(
+                dp.start_polling(
+                    bot,
+                    handle_signals=False,
+                    close_bot_session=False,
+                ),
+            )
     if settings.remnawave_url:
         remnawave = await container.get(RemnawaveClient)
         if not await remnawave.ping():
@@ -96,8 +122,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             with suppress(asyncio.CancelledError):
                 await task
 
-        if hasattr(app.state, "dp"):
+        if polling_task is not None:
+            polling_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await polling_task
+        elif hasattr(app.state, "dp"):
             await app.state.dp.emit_shutdown(bot=app.state.bot)
+        if hasattr(app.state, "bot"):
             await app.state.bot.session.close()
         await container.close()
 
@@ -107,6 +138,7 @@ def create_app() -> FastAPI:
     settings = Settings()
     app = FastAPI(title="Flowvy", version="0.1.0", lifespan=lifespan)
     app.state.settings = settings
+    app.state.telegram_main_app = TelegramMainApp.unavailable()
 
     if settings.debug:
         app.add_middleware(
@@ -132,10 +164,12 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(users_router)
+    app.include_router(registration_router)
     app.include_router(subscription_router)
     app.include_router(devices_router)
     app.include_router(pulse_router)
     app.include_router(admin_dashboard_router)
+    app.include_router(admin_registration_router)
     app.include_router(admin_settings_router)
     app.include_router(admin_users_router)
     app.include_router(webhooks_router)
@@ -145,7 +179,7 @@ def create_app() -> FastAPI:
 
     if settings.webhook_url:
 
-        @app.post("/webhook")
+        @app.post("/webhook", response_model=None)
         async def telegram_webhook(request: Request) -> Response:
             """Verify and dispatch a Telegram Bot API webhook update."""
             provided = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")

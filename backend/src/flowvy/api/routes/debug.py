@@ -5,11 +5,15 @@ from __future__ import annotations
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, HTTPException, Request, status
 
+from flowvy.api.routes.users import build_user_invite_response
+from flowvy.repositories.user import UserRepository
 from flowvy.schemas.devices import DevicesResponse
 from flowvy.schemas.pulse import PulseResponse
+from flowvy.schemas.registration import UserInviteResponse
 from flowvy.schemas.subscription import SubscriptionResponse
 from flowvy.services.devices import DevicesService
 from flowvy.services.pulse import PulseService
+from flowvy.services.registration import RegistrationIdentity, RegistrationService
 from flowvy.services.remnawave import RemnawaveError
 from flowvy.services.subscription import SubscriptionService
 
@@ -24,6 +28,24 @@ def check_debug(request: Request) -> None:
     """Raise 404 if debug mode is disabled."""
     if not request.app.state.settings.debug:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+
+@router.get("/invite/{telegram_id}", response_model=UserInviteResponse)
+async def debug_invite(
+    telegram_id: int,
+    request: Request,
+    users: FromDishka[UserRepository] = None,  # type: ignore[assignment]
+    registration: FromDishka[RegistrationService] = None,  # type: ignore[assignment]
+) -> UserInviteResponse:
+    """Fetch the local user's personal invitation in DEBUG mode only."""
+    check_debug(request)
+    user = await users.get_by_telegram_id(telegram_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    invite = await registration.get_user_invite(
+        RegistrationIdentity(user.id, user.username, user.full_name),
+    )
+    return build_user_invite_response(invite, request.app.state.telegram_main_app)
 
 
 @router.get("/subscription/{telegram_id}", response_model=SubscriptionResponse)

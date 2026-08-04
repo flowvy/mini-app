@@ -8,7 +8,7 @@ from urllib.parse import parse_qs, urlparse
 import httpx
 import pytest
 
-from flowvy.schemas.remnawave import RemnawaveUserData
+from flowvy.schemas.remnawave import RemnawaveCreateUserRequest, RemnawaveUserData
 from flowvy.services.remnawave import RemnawaveClient, RemnawaveError
 
 FAKE_USER = {
@@ -265,6 +265,119 @@ async def test_3x_stream_lookup_rejects_repeated_cursor() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("version", "response_user"),
+    [("2.8.1", FAKE_USER), ("3.0.0", FAKE_USER_3), ("3.1.0", FAKE_USER_3)],
+)
+async def test_create_user_matches_exact_supported_contracts(
+    version: str,
+    response_user: dict,
+) -> None:
+    http = AsyncMock()
+    http.get = AsyncMock(side_effect=[_metadata(version)])
+    http.post = AsyncMock(return_value=_make_response({"response": response_user}, 201))
+    client = RemnawaveClient("https://panel.example.com", "tok", http)
+    request = RemnawaveCreateUserRequest(
+        username="testuser",
+        status="ACTIVE",
+        traffic_limit_bytes=50_000_000_000,
+        traffic_limit_strategy="MONTH",
+        expire_at="2026-05-01T00:00:00Z",
+        description="Free access",
+        tag="FREE",
+        telegram_id=123456789,
+        hwid_device_limit=3,
+        active_internal_squads=["550e8400-e29b-41d4-a716-446655440010"],
+        external_squad_uuid="550e8400-e29b-41d4-a716-446655440011",
+    )
+
+    user = await client.create_user(request)
+
+    assert user.provider_id == 42
+    assert http.post.await_args.args[0].endswith("/api/users")
+    assert http.post.await_args.kwargs["json"] == {
+        "username": "testuser",
+        "status": "ACTIVE",
+        "trafficLimitBytes": 50_000_000_000,
+        "trafficLimitStrategy": "MONTH",
+        "expireAt": "2026-05-01T00:00:00Z",
+        "description": "Free access",
+        "tag": "FREE",
+        "telegramId": 123456789,
+        "hwidDeviceLimit": 3,
+        "activeInternalSquads": ["550e8400-e29b-41d4-a716-446655440010"],
+        "externalSquadUuid": "550e8400-e29b-41d4-a716-446655440011",
+    }
+
+
+@pytest.mark.asyncio
+async def test_create_user_rejects_mismatched_identity() -> None:
+    wrong = {**FAKE_USER_3, "telegramId": 999}
+    http = AsyncMock()
+    http.get = AsyncMock(side_effect=[_metadata("3.1.0")])
+    http.post = AsyncMock(return_value=_make_response({"response": wrong}, 201))
+    client = RemnawaveClient("https://panel.example.com", "tok", http)
+
+    with pytest.raises(RemnawaveError, match="create-user response"):
+        await client.create_user(
+            RemnawaveCreateUserRequest(
+                username="testuser",
+                expire_at="2026-05-01T00:00:00Z",
+                telegram_id=123456789,
+            )
+        )
+
+
+@pytest.mark.asyncio
+async def test_squad_options_are_allow_listed_and_validated() -> None:
+    valid = {
+        "uuid": "550e8400-e29b-41d4-a716-446655440010",
+        "name": "Default",
+        "privateConfig": "must-not-leak",
+    }
+    client = _make_client(
+        [
+            _make_response({"response": {"internalSquads": [valid]}}),
+            _make_response({"response": {"externalSquads": [valid]}}),
+        ]
+    )
+
+    assert await client.get_internal_squads() == [{"uuid": valid["uuid"], "name": "Default"}]
+    assert await client.get_external_squads() == [{"uuid": valid["uuid"], "name": "Default"}]
+
+
+@pytest.mark.asyncio
+async def test_user_tags_match_the_locked_28_and_3x_contract() -> None:
+    http = AsyncMock()
+    http.get = AsyncMock(
+        return_value=_make_response(
+            {"response": {"tags": ["FREE", "premium", "FREE"]}},
+        )
+    )
+    client = RemnawaveClient("https://panel.example.com", "tok", http)
+
+    assert await client.get_user_tags() == ["FREE", "PREMIUM"]
+    assert http.get.await_args.args[0] == "https://panel.example.com/api/users/tags"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"response": []},
+        {"response": {"tags": "FREE"}},
+        {"response": {"tags": [42]}},
+        {"response": {"tags": ["contains-dash"]}},
+    ],
+)
+async def test_user_tags_reject_schema_drift(payload: dict) -> None:
+    client = _make_client([_make_response(payload)])
+
+    with pytest.raises(RemnawaveError, match="user-tags response"):
+        await client.get_user_tags()
+
+
+@pytest.mark.asyncio
 async def test_unknown_future_api_major_fails_closed() -> None:
     client = _make_client([], version="4.0.0")
 
@@ -297,6 +410,7 @@ async def test_remnawave_error_on_4xx() -> None:
     with pytest.raises(RemnawaveError) as exc_info:
         await client.get_user_by_telegram_id(123)
     assert exc_info.value.status == 401
+    assert exc_info.value.retryable is False
     assert "Unauthorized" not in exc_info.value.detail
 
 
@@ -536,6 +650,7 @@ async def test_transport_timeout_maps_to_safe_error() -> None:
 
     assert exc_info.value.status == 504
     assert exc_info.value.detail == "Provider request timed out"
+    assert exc_info.value.retryable is True
 
 
 @pytest.mark.asyncio

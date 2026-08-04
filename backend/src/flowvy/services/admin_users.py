@@ -8,6 +8,7 @@ import logging
 
 from redis.asyncio import Redis
 
+from flowvy.repositories.user import UserRepository
 from flowvy.schemas.admin_users import (
     AdminUserInternalSquadResponse,
     AdminUserResponse,
@@ -26,9 +27,15 @@ SQUADS_CACHE_TTL = 300
 class AdminUsersService:
     """Aggregates Remnawave user data for the admin panel."""
 
-    def __init__(self, remnawave: RemnawaveClient, redis: Redis) -> None:
+    def __init__(
+        self,
+        remnawave: RemnawaveClient,
+        redis: Redis,
+        users: UserRepository,
+    ) -> None:
         self._remnawave = remnawave
         self._redis = redis
+        self._users = users
 
     async def get_all_users(self) -> AdminUsersResponse:
         """Fetch all users by batching Remnawave API calls."""
@@ -63,7 +70,10 @@ class AdminUsersService:
         """Fetch single user from Remnawave + resolve squad."""
         user = await self._remnawave.get_user_by_id(user_id)
         squad_map = await self._get_external_squads_map()
-        return _map_user_data(user, squad_map)
+        response = _map_user_data(user, squad_map)
+        if user.telegram_id is not None:
+            response.invited_count = await self._users.count_invited_by(user.telegram_id)
+        return response
 
     async def search_user(self, query: str) -> AdminUsersResponse:
         """Search user by query — auto-detects type."""

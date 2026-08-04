@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import uuid
 from urllib.parse import quote, urlencode
 
 import httpx
@@ -11,6 +12,7 @@ from pydantic import ValidationError
 
 from flowvy.schemas.dashboard import RemnawaveBandwidth, RemnawaveStats
 from flowvy.schemas.remnawave import (
+    RemnawaveCreateUserRequest,
     RemnawaveDevice,
     RemnawaveSubInfo,
     RemnawaveSubInfoUser,
@@ -21,9 +23,10 @@ from flowvy.schemas.remnawave import (
 class RemnawaveError(Exception):
     """A safe Remnawave transport or contract failure."""
 
-    def __init__(self, status: int, detail: str) -> None:
+    def __init__(self, status: int, detail: str, *, retryable: bool = False) -> None:
         self.status = status
         self.detail = detail
+        self.retryable = retryable
         super().__init__(f"Remnawave {status}: {detail}")
 
 
@@ -53,6 +56,7 @@ class RemnawaveClient:
             raise RemnawaveError(
                 resp.status_code,
                 f"Provider returned HTTP {resp.status_code}",
+                retryable=resp.status_code in {502, 503, 504},
             )
         try:
             body = resp.json()
@@ -72,9 +76,9 @@ class RemnawaveClient:
                 headers=self._headers(),
             )
         except httpx.TimeoutException as exc:
-            raise RemnawaveError(504, "Provider request timed out") from exc
+            raise RemnawaveError(504, "Provider request timed out", retryable=True) from exc
         except httpx.RequestError as exc:
-            raise RemnawaveError(502, "Provider connection failed") from exc
+            raise RemnawaveError(502, "Provider connection failed", retryable=True) from exc
         return self._unwrap_response(resp)
 
     async def _post(self, path: str, body: dict | None = None) -> dict:
@@ -86,9 +90,9 @@ class RemnawaveClient:
                 json=body or {},
             )
         except httpx.TimeoutException as exc:
-            raise RemnawaveError(504, "Provider request timed out") from exc
+            raise RemnawaveError(504, "Provider request timed out", retryable=True) from exc
         except httpx.RequestError as exc:
-            raise RemnawaveError(502, "Provider connection failed") from exc
+            raise RemnawaveError(502, "Provider connection failed", retryable=True) from exc
         data = self._unwrap_response(resp)
         if not isinstance(data, dict):
             raise RemnawaveError(502, "Provider returned an invalid action response")
@@ -102,9 +106,9 @@ class RemnawaveClient:
                 headers=self._headers(),
             )
         except httpx.TimeoutException as exc:
-            raise RemnawaveError(504, "Provider request timed out") from exc
+            raise RemnawaveError(504, "Provider request timed out", retryable=True) from exc
         except httpx.RequestError as exc:
-            raise RemnawaveError(502, "Provider connection failed") from exc
+            raise RemnawaveError(502, "Provider connection failed", retryable=True) from exc
         if not 200 <= resp.status_code < 300:
             raise RemnawaveError(
                 resp.status_code,
@@ -157,6 +161,41 @@ class RemnawaveClient:
         except (KeyError, TypeError, ValueError, ValidationError) as exc:
             raise RemnawaveError(502, detail) from exc
 
+    @staticmethod
+    def _parse_squad_options(data: object, key: str, detail: str) -> list[dict[str, str]]:
+        """Allow-list UUID/name pairs from a squad collection response."""
+        if not isinstance(data, dict) or not isinstance(data.get(key), list):
+            raise RemnawaveError(502, detail)
+        options: list[dict[str, str]] = []
+        try:
+            for raw in data[key]:
+                if not isinstance(raw, dict):
+                    raise ValueError
+                squad_uuid = str(uuid.UUID(str(raw["uuid"])))
+                name = raw["name"]
+                if not isinstance(name, str) or not name.strip():
+                    raise ValueError
+                options.append({"uuid": squad_uuid, "name": name})
+        except (KeyError, TypeError, ValueError) as exc:
+            raise RemnawaveError(502, detail) from exc
+        return options
+
+    @staticmethod
+    def _parse_user_tags(data: object) -> list[str]:
+        """Validate and normalize the provider-owned user-tag catalogue."""
+        if not isinstance(data, dict) or not isinstance(data.get("tags"), list):
+            raise RemnawaveError(502, "Unexpected user-tags response")
+        tags: list[str] = []
+        for raw in data["tags"]:
+            if not isinstance(raw, str):
+                raise RemnawaveError(502, "Unexpected user-tags response")
+            normalized = raw.strip().upper()
+            if re.fullmatch(r"[A-Z0-9_]{1,16}", normalized) is None:
+                raise RemnawaveError(502, "Unexpected user-tags response")
+            if normalized not in tags:
+                tags.append(normalized)
+        return tags
+
     async def _get_filtered_users_v3(
         self,
         filter_name: str,
@@ -199,6 +238,21 @@ class RemnawaveClient:
         if len(users) > 1:
             raise RemnawaveError(502, "Ambiguous Telegram user mapping")
         return users[0]
+
+    async def create_user(
+        self,
+        request: RemnawaveCreateUserRequest,
+    ) -> RemnawaveUserData:
+        """Create one user using the contract shared by 2.8 and 3.0/3.1."""
+        await self._api_major()
+        data = await self._post("/api/users", request.to_provider_payload())
+        try:
+            user = RemnawaveUserData.from_raw(data)
+        except (KeyError, TypeError, ValueError, ValidationError) as exc:
+            raise RemnawaveError(502, "Unexpected create-user response") from exc
+        if user.telegram_id != request.telegram_id or user.username != request.username:
+            raise RemnawaveError(502, "Unexpected create-user response")
+        return user
 
     async def get_users_by_telegram_id(
         self,
@@ -384,9 +438,25 @@ class RemnawaveClient:
     async def get_external_squads(self) -> list[dict]:
         """Fetch all external squads (``GET /api/external-squads``)."""
         data = await self._get("/api/external-squads")
-        if not isinstance(data, dict) or not isinstance(data.get("externalSquads"), list):
-            raise RemnawaveError(502, "Unexpected external-squads response")
-        return data["externalSquads"]
+        return self._parse_squad_options(
+            data,
+            "externalSquads",
+            "Unexpected external-squads response",
+        )
+
+    async def get_internal_squads(self) -> list[dict[str, str]]:
+        """Fetch allow-listed internal squad choices."""
+        data = await self._get("/api/internal-squads")
+        return self._parse_squad_options(
+            data,
+            "internalSquads",
+            "Unexpected internal-squads response",
+        )
+
+    async def get_user_tags(self) -> list[str]:
+        """Fetch allow-listed user tags (``GET /api/users/tags``)."""
+        data = await self._get("/api/users/tags")
+        return self._parse_user_tags(data)
 
     async def get_subscription_info(
         self,

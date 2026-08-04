@@ -15,9 +15,12 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from flowvy.config import Settings
+from flowvy.repositories.access_profile import AccessProfileRepository
+from flowvy.repositories.invite import InviteRepository
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.user import UserRepository
+from flowvy.services.registration import RegistrationAdminService, RegistrationService
 from flowvy.services.remnawave import RemnawaveClient
 from flowvy.services.user import UserService
 
@@ -73,6 +76,16 @@ class RepositoryProvider(Provider):
         return UserRepository(session)
 
     @provide(scope=Scope.REQUEST)
+    def get_invite_repo(self, session: AsyncSession) -> InviteRepository:
+        """Create invite repository bound to current session."""
+        return InviteRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_access_profile_repo(self, session: AsyncSession) -> AccessProfileRepository:
+        """Create access-profile repository bound to current session."""
+        return AccessProfileRepository(session)
+
+    @provide(scope=Scope.REQUEST)
     def get_subscription_repo(
         self,
         session: AsyncSession,
@@ -100,6 +113,42 @@ class ServiceProvider(Provider):
     ) -> UserService:
         """Create user service with injected repository and settings."""
         return UserService(repo, settings)
+
+    @provide(scope=Scope.REQUEST)
+    def get_registration_service(
+        self,
+        session: AsyncSession,
+        users: UserService,
+        invites: InviteRepository,
+        profiles: AccessProfileRepository,
+        provider_settings: ProviderSettingsRepository,
+        subscriptions: SubscriptionRepository,
+        remnawave: RemnawaveClient,
+        redis: Redis,
+        config: Settings,
+    ) -> RegistrationService:
+        """Create registration orchestrator for bot and BFF requests."""
+        return RegistrationService(
+            session,
+            users,
+            invites,
+            profiles,
+            provider_settings,
+            subscriptions,
+            remnawave,
+            redis,
+            config,
+        )
+
+    @provide(scope=Scope.REQUEST)
+    def get_registration_admin_service(
+        self,
+        profiles: AccessProfileRepository,
+        settings: ProviderSettingsRepository,
+        remnawave: RemnawaveClient,
+    ) -> RegistrationAdminService:
+        """Create admin configuration service for registration."""
+        return RegistrationAdminService(profiles, settings, remnawave)
 
 
 class RedisProvider(Provider):
