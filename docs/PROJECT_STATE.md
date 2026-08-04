@@ -1,7 +1,7 @@
 # Текущее состояние Flowvy
 
 Последняя проверка: **2026-08-04**
-Проверенный кодовый baseline этой серии: **`ef606aa`** (`dev`)
+Проверенный кодовый baseline этой серии: **`dd3b5c8`** (`dev`)
 Стадия: **незавершённый MVP; production readiness не подтверждена**
 
 Этот файл описывает наблюдаемое состояние, а не желаемую функциональность. При расхождении с кодом,
@@ -97,10 +97,11 @@
   browser auth state, logs, dumps, databases, dependencies, builds и verification artifacts не
   попадают в Git; tracked env examples не содержат форматоподобных bot/admin credentials.
 - PowerShell scripts для bootstrap, запуска/остановки, change-aware/full verification, migrations,
-  Remnawave snapshot/client tests, безопасного Quick Tunnel и проверки документации.
+  явного reset только локальных Flowvy PostgreSQL/Redis данных, Remnawave snapshot/client tests,
+  безопасного Quick Tunnel и проверки документации.
 - GitHub Actions CI с PostgreSQL/Redis, Ruff, Alembic, pytest, Biome/TypeScript/Vitest/build и
   Playwright Chromium smoke.
-- Пять Vitest unit файлов (17 тестов), детерминированная Playwright state matrix на четырёх
+- Четыре Vitest unit файла (13 тестов), детерминированная Playwright state matrix на четырёх
   browser/viewport проектах и отдельный read-only live-smoke.
 
 ## Что не завершено или не доказано
@@ -208,13 +209,14 @@ P0 команды запускались 2026-08-01. Backend P1 этапы и Re
 | Remnawave snapshot/client | 41 client tests + live smoke | legacy 2.7.4 snapshot и exact 2.8.1/3.0.0/3.1.0 fixtures, включая user tags; реальная 2.8.1 прочитана без mutations |
 | Docs | `scripts/verify-docs.ps1` | все локальные Markdown links разрешаются |
 | Legacy cleanup | filesystem/text scan | obsolete assistant-specific paths/references не найдены |
-| Public repository scan | Gitleaks 8.30.1 с `--redact=100` | 73 commit истории и будущий public snapshot: 0 findings; filename/URL/email audit содержит только official/document/test examples |
+| Public repository scan | Gitleaks 8.30.1 с `--redact=100` | 79 commit истории и опубликованный public snapshot: 0 findings; filename/URL/email audit содержит только official/document/test examples |
 | PowerShell/tool policy | parser + `codex execpolicy check` | все scripts parsed; forbid/prompt/safe rule cases совпали с ожиданием |
 | Codex fresh session | `codex exec --ephemeral --strict-config ...` | config принят; корневой `AGENTS.md`, четыре repo skills и custom role `repo_mapper` обнаружены |
-| Change-aware gate | `scripts/verify.ps1 -Scope Changed -SkipE2E` | backend fast, frontend install/lint/type/unit/build и docs passed; E2E подтверждён отдельно |
+| Change-aware gate | `scripts/verify.ps1 -Scope Changed -SkipE2E` | 249 service-free backend tests, frontend install/lint/type/unit/build и docs passed; E2E подтверждён отдельно |
 | Полный локальный gate | `PLAYWRIGHT_PORT=5196; scripts/verify.ps1 -Scope Full` | migrations, 298 pytest, 41 Remnawave contract, frontend lint/type/unit/build, 43 Chromium browser и docs passed |
 | Frontend lint/typecheck | `pnpm lint`; `pnpm typecheck` | пройдено, 164 linted files |
-| Frontend unit | `pnpm test` | 5 files, 17 tests passed |
+| Frontend unit | `pnpm test` | 4 files, 13 tests passed |
+| Dev lifecycle tooling | PowerShell parser + destructive guard checks | `dev-reset-data.ps1` parsed; запуск без confirmation и при живом dev закрывается до side effect |
 | Frontend build | `pnpm build` | пройдено |
 | Browser smoke | isolated Playwright mobile project | 43/43; server-confirmed Main Mini App auto-redeem, verified/unavailable referral URL, onboarding/profile/user-owned invite, browser Back, unified Home loading, provider tag failure, keyboard/tab-bar/native picker, semantic section headings, console/network/axe guards |
 | Browser all projects | `PLAYWRIGHT_PORT=5196; pnpm test:e2e:all` | 160/160 behavioral scenarios passed: 430x932, 320x568, iPhone 13/WebKit и 1280x900 |

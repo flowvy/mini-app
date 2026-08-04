@@ -178,6 +178,51 @@ long polling, а при полном HTTPS webhook-конфиге зарегис
 Остановка выполняется через `.\scripts\dev-down.ps1`: script завершает только записанные им process
 trees, включая repo-owned public preview, останавливает Compose services и сохраняет volumes.
 
+## Штатный Flowvy dev-контур
+
+Для этого репозитория постоянный test hostname — `https://dev-app.flowvy.io`. Он не является
+секретом и предназначен только для локального test bot/Mini App. После первичного bootstrap и
+заполнения локального `backend/.env` обычный запуск после перезагрузки выполняется из корня:
+
+```powershell
+.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+    -NamedTunnelUrl 'https://dev-app.flowvy.io'
+```
+
+Перед запуском должны одновременно выполняться условия:
+
+- Docker Desktop и системный `cloudflared` connector запущены;
+- Cloudflare route `dev-app.flowvy.io` направлен на `http://localhost:80`;
+- BotFather Main App test bot указывает на `https://dev-app.flowvy.io`;
+- `backend/.env` содержит только локальные test credentials, `DEBUG=false`, а `WEBHOOK_URL` пуст
+  для long polling;
+- другой polling-процесс того же bot не работает.
+
+Успешный startup означает: local/public root, `/api/health` и `/api/ready` отвечают `200`, public
+debug route отвечает `404`, а backend log содержит `telegram_main_app_ready`. Остановка всегда
+выполняется одной командой:
+
+```powershell
+.\scripts\dev-down.ps1
+```
+
+Если нужен полностью чистый локальный сценарий, сначала остановите dev, затем используйте отдельную
+команду с явным подтверждением:
+
+```powershell
+.\scripts\dev-down.ps1
+.\scripts\dev-reset-data.ps1 -ConfirmDevDataReset
+.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+    -NamedTunnelUrl 'https://dev-app.flowvy.io'
+```
+
+`dev-reset-data.ps1` работает только с Compose service `postgres`, database `flowvy` и Redis DB 0.
+Он отказывается запускаться при живом Flowvy dev/занятых app ports, пересоздаёт только schema
+`public`, применяет migrations до `head` и проверяет отсутствие application rows/Redis keys.
+Отдельная test database и named Docker volume сохраняются; Remnawave и другие внешние системы не
+изменяются. Ключ подтверждения обязателен, потому что восстановление удалённых dev-данных не
+предусмотрено.
+
 ## Проверки
 
 Backend, из `backend/`:

@@ -71,6 +71,19 @@ Frontend доступен на `http://localhost:5173`, API — на `http://loc
 .\scripts\dev-down.ps1
 ```
 
+На машине владельца постоянный Telegram dev-контур использует уже созданный named Tunnel
+`dev-app.flowvy.io`:
+
+```powershell
+.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+    -NamedTunnelUrl 'https://dev-app.flowvy.io'
+```
+
+Команда предполагает, что `backend/.env` содержит локальные test credentials, BotFather Main App
+указывает на тот же URL, а Cloudflare published application route уже направляет hostname на
+`http://localhost:80`. Полный контракт и безопасная очистка dev-данных описаны в
+[`docs/DEV_ENVIRONMENT.md`](docs/DEV_ENVIRONMENT.md#штатный-flowvy-dev-контур).
+
 Первичная установка отдельно доступна через `scripts/bootstrap.ps1`; ключ `-InstallBrowsers`
 добавляет Chromium и WebKit для Playwright.
 

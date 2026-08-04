@@ -74,6 +74,7 @@ From the repository root, prefer the checked-in PowerShell workflows:
 .\scripts\bootstrap.ps1 -InstallBrowsers
 .\scripts\verify.ps1 -Scope Changed     # diff-aware local gate
 .\scripts\verify.ps1 -Scope Full        # services, migrations, contracts, and UI
+.\scripts\dev-reset-data.ps1 -ConfirmDevDataReset # local Flowvy DB + Redis DB 0 only
 .\scripts\dev-up.ps1                    # tracked local processes + PostgreSQL/Redis
 .\scripts\dev-down.ps1                  # stops only tracked processes; preserves volumes
 ```

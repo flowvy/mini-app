@@ -25,6 +25,12 @@ test bot. PID и stdout/stderr находятся в `.artifacts/dev`. `dev-down
 Не удаляйте process file вручную, пока процессы живы. Не используйте `docker compose down -v` как
 обычное исправление: volume содержит локальные данные и удаляется необратимо.
 
+Для явно запрошенного чистого dev-сценария используйте только
+`scripts/dev-reset-data.ps1 -ConfirmDevDataReset` после `dev-down`. Script очищает application schema
+в database `flowvy` и Redis DB 0, повторно применяет migrations и сохраняет test database, Docker
+volume и все внешние provider data. Ручной `DROP DATABASE`, `docker compose down -v` и очистка
+provider не являются частью dev lifecycle.
+
 ## Проверка состояния
 
 - `GET /api/health` подтверждает только liveness FastAPI и не обращается к зависимостям.
@@ -65,6 +71,9 @@ hostname на `http://localhost:80`. Repository поднимает только 
 .\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
     -NamedTunnelUrl 'https://<test-host>'
 ```
+
+Текущий hostname Flowvy на машине владельца — `https://dev-app.flowvy.io`; каноническая команда и
+preflight перечислены в [`DEV_ENVIRONMENT.md`](DEV_ENVIRONMENT.md#штатный-flowvy-dev-контур).
 
 Команда передаёт тот же origin backend как `WEBAPP_URL`, разрешает Vite только этот hostname,
 проверяет public root и `/api/health`. `dev-down` останавливает repo-owned preview, но не системный
