@@ -4,6 +4,7 @@ param()
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $processFile = Join-Path $repoRoot ".artifacts\dev\processes.json"
+$tunnelProcessFile = Join-Path $repoRoot ".artifacts\tunnel\processes.json"
 
 function Stop-ProcessTree {
     param([Parameter(Mandatory)][int]$TargetProcessId)
@@ -25,6 +26,10 @@ if (Test-Path $processFile) {
         if ($targetId -gt 0) { Stop-ProcessTree -TargetProcessId $targetId }
     }
     Remove-Item -LiteralPath $processFile -Force
+}
+
+if (Test-Path $tunnelProcessFile) {
+    & (Join-Path $PSScriptRoot "tunnel-down.ps1")
 }
 
 docker compose -f (Join-Path $repoRoot "docker-compose.dev.yml") stop postgres redis

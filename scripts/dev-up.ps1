@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [switch]$SkipInstall,
-    [switch]$EnableTelegram
+    [switch]$EnableTelegram,
+    [string]$NamedTunnelUrl = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -10,6 +11,27 @@ $backendDir = Join-Path $repoRoot "backend"
 $frontendDir = Join-Path $repoRoot "frontend"
 $artifactDir = Join-Path $repoRoot ".artifacts\dev"
 $processFile = Join-Path $artifactDir "processes.json"
+$namedTunnelMode = -not [string]::IsNullOrWhiteSpace($NamedTunnelUrl)
+
+if ($namedTunnelMode) {
+    try {
+        $namedTunnelUri = [uri]$NamedTunnelUrl
+    }
+    catch {
+        throw "NamedTunnelUrl must be an absolute HTTPS origin."
+    }
+    if (
+        -not $namedTunnelUri.IsAbsoluteUri -or
+        $namedTunnelUri.Scheme -ne "https" -or
+        -not [string]::IsNullOrEmpty($namedTunnelUri.UserInfo) -or
+        -not [string]::IsNullOrEmpty($namedTunnelUri.Query) -or
+        -not [string]::IsNullOrEmpty($namedTunnelUri.Fragment) -or
+        $namedTunnelUri.AbsolutePath -ne "/"
+    ) {
+        throw "NamedTunnelUrl must be an HTTPS origin without credentials, path, query, or fragment."
+    }
+    $NamedTunnelUrl = $namedTunnelUri.GetLeftPart([System.UriPartial]::Authority)
+}
 
 if (-not (Get-Command "docker" -ErrorAction SilentlyContinue)) {
     throw "Docker with Compose is required for the local PostgreSQL and Redis services."
@@ -37,6 +59,9 @@ if (-not $SkipInstall) {
 $devEnvironment = @{
     DATABASE_URL = "postgresql+asyncpg://flowvy:flowvy_dev@127.0.0.1:5432/flowvy"
     REDIS_URL = "redis://127.0.0.1:6379/0"
+}
+if ($namedTunnelMode) {
+    $devEnvironment.WEBAPP_URL = $NamedTunnelUrl
 }
 if (-not $EnableTelegram) {
     $devEnvironment.BOT_TOKEN = ""
@@ -112,6 +137,12 @@ try {
     try {
         Wait-Ready -Name "Backend" -Uri "http://127.0.0.1:8001/api/ready"
         Wait-Ready -Name "Frontend" -Uri "http://127.0.0.1:5173"
+
+        if ($namedTunnelMode) {
+            & (Join-Path $PSScriptRoot "tunnel-up.ps1") `
+                -ConfirmPublic `
+                -NamedTunnelUrl $NamedTunnelUrl
+        }
     }
     catch {
         & (Join-Path $PSScriptRoot "dev-down.ps1")
@@ -119,6 +150,9 @@ try {
     }
 
     Write-Host "Flowvy is ready: frontend http://127.0.0.1:5173, backend http://127.0.0.1:8001"
+    if ($namedTunnelMode) {
+        Write-Host "Named Tunnel Mini App: $NamedTunnelUrl"
+    }
     Write-Host "Logs and process ids: $artifactDir"
 }
 finally {

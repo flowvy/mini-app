@@ -1,13 +1,39 @@
 [CmdletBinding()]
 param(
     [switch]$ConfirmPublic,
-    [switch]$SkipLocalReachability
+    [switch]$SkipLocalReachability,
+    [string]$NamedTunnelUrl = ""
 )
 
 $ErrorActionPreference = "Stop"
 if (-not $ConfirmPublic) {
-    throw "This creates a public temporary URL. Re-run with -ConfirmPublic after confirming test-only data and DEBUG=false."
+    throw "This publishes Flowvy. Re-run with -ConfirmPublic after confirming test-only data and DEBUG=false."
 }
+
+$namedTunnelMode = -not [string]::IsNullOrWhiteSpace($NamedTunnelUrl)
+$namedTunnelUri = $null
+if ($namedTunnelMode) {
+    try {
+        $namedTunnelUri = [uri]$NamedTunnelUrl
+    }
+    catch {
+        throw "NamedTunnelUrl must be an absolute HTTPS origin."
+    }
+    if (
+        -not $namedTunnelUri.IsAbsoluteUri -or
+        $namedTunnelUri.Scheme -ne "https" -or
+        -not [string]::IsNullOrEmpty($namedTunnelUri.UserInfo) -or
+        -not [string]::IsNullOrEmpty($namedTunnelUri.Query) -or
+        -not [string]::IsNullOrEmpty($namedTunnelUri.Fragment) -or
+        $namedTunnelUri.AbsolutePath -ne "/"
+    ) {
+        throw "NamedTunnelUrl must be an HTTPS origin without credentials, path, query, or fragment."
+    }
+    $NamedTunnelUrl = $namedTunnelUri.GetLeftPart([System.UriPartial]::Authority)
+}
+
+$previewPort = if ($namedTunnelMode) { 80 } else { 4173 }
+$previewUri = "http://127.0.0.1:$previewPort"
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $frontendDir = Join-Path $repoRoot "frontend"
@@ -33,11 +59,11 @@ function Stop-StartedProcessTree {
 if (Test-Path $processFile) {
     throw "A Flowvy-owned tunnel is already recorded. Run scripts/tunnel-down.ps1 first."
 }
-if (-not (Get-Command "cloudflared" -ErrorAction SilentlyContinue)) {
+if (-not $namedTunnelMode -and -not (Get-Command "cloudflared" -ErrorAction SilentlyContinue)) {
     throw "cloudflared is required."
 }
-if (Get-NetTCPConnection -State Listen -LocalPort 4173 -ErrorAction SilentlyContinue) {
-    throw "Port 4173 is already in use; refusing to attach a public tunnel to an unknown process."
+if (Get-NetTCPConnection -State Listen -LocalPort $previewPort -ErrorAction SilentlyContinue) {
+    throw "Port $previewPort is already in use; refusing to attach a public tunnel to an unknown process."
 }
 
 try {
@@ -90,22 +116,44 @@ finally {
 
 $pnpmPath = (Get-Command "pnpm.cmd" -ErrorAction SilentlyContinue).Source
 if (-not $pnpmPath) { $pnpmPath = (Get-Command "pnpm").Source }
-$cloudflaredPath = (Get-Command "cloudflared").Source
+$cloudflaredPath = if ($namedTunnelMode) { $null } else { (Get-Command "cloudflared").Source }
 $previewProcess = $null
 $tunnelProcess = $null
+$savedAllowedHosts = [Environment]::GetEnvironmentVariable(
+    "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS",
+    "Process"
+)
 
 try {
-    $previewProcess = Start-Process -FilePath $pnpmPath `
-        -ArgumentList @("preview", "--host", "127.0.0.1", "--strictPort") `
-        -WorkingDirectory $frontendDir `
-        -RedirectStandardOutput $previewOut `
-        -RedirectStandardError $previewErr `
-        -WindowStyle Hidden `
-        -PassThru
+    try {
+        if ($namedTunnelMode) {
+            [Environment]::SetEnvironmentVariable(
+                "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS",
+                $namedTunnelUri.Host,
+                "Process"
+            )
+        }
+        $previewProcess = Start-Process -FilePath $pnpmPath `
+            -ArgumentList @(
+                "preview", "--host", "127.0.0.1", "--port", "$previewPort", "--strictPort"
+            ) `
+            -WorkingDirectory $frontendDir `
+            -RedirectStandardOutput $previewOut `
+            -RedirectStandardError $previewErr `
+            -WindowStyle Hidden `
+            -PassThru
+    }
+    finally {
+        [Environment]::SetEnvironmentVariable(
+            "__VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS",
+            $savedAllowedHosts,
+            "Process"
+        )
+    }
 
     for ($attempt = 0; $attempt -lt 40; $attempt++) {
         try {
-            $preview = Invoke-WebRequest -Uri "http://127.0.0.1:4173" -UseBasicParsing -TimeoutSec 2
+            $preview = Invoke-WebRequest -Uri $previewUri -UseBasicParsing -TimeoutSec 2
             if ($preview.StatusCode -eq 200) { break }
         }
         catch { Start-Sleep -Milliseconds 250 }
@@ -114,78 +162,100 @@ try {
         throw "Frontend preview did not become ready."
     }
 
-    $tunnelProcess = Start-Process -FilePath $cloudflaredPath `
-        -ArgumentList @(
-            "tunnel", "--no-autoupdate", "--metrics", "127.0.0.1:0",
-            "--loglevel", "info", "--url", "http://127.0.0.1:4173",
-            "--http-host-header", "127.0.0.1:4173"
-        ) `
-        -WorkingDirectory $repoRoot `
-        -RedirectStandardOutput $tunnelOut `
-        -RedirectStandardError $tunnelErr `
-        -WindowStyle Hidden `
-        -PassThru
-
-    $publicUrl = $null
-    for ($attempt = 0; $attempt -lt 80; $attempt++) {
-        Start-Sleep -Milliseconds 250
-        $logs = @()
-        if (Test-Path $tunnelOut) { $logs += Get-Content -Raw -LiteralPath $tunnelOut }
-        if (Test-Path $tunnelErr) { $logs += Get-Content -Raw -LiteralPath $tunnelErr }
-        $match = [regex]::Match(($logs -join "`n"), "https://[a-z0-9-]+\.trycloudflare\.com")
-        if ($match.Success) {
-            $publicUrl = $match.Value
-            break
-        }
-        if ($tunnelProcess.HasExited) { throw "cloudflared exited before publishing a URL." }
+    if ($namedTunnelMode) {
+        $publicUrl = $NamedTunnelUrl
     }
-    if (-not $publicUrl) { throw "Timed out waiting for the Cloudflare Quick Tunnel URL." }
+    else {
+        $tunnelProcess = Start-Process -FilePath $cloudflaredPath `
+            -ArgumentList @(
+                "tunnel", "--no-autoupdate", "--metrics", "127.0.0.1:0",
+                "--loglevel", "info", "--url", $previewUri,
+                "--http-host-header", "127.0.0.1:$previewPort"
+            ) `
+            -WorkingDirectory $repoRoot `
+            -RedirectStandardOutput $tunnelOut `
+            -RedirectStandardError $tunnelErr `
+            -WindowStyle Hidden `
+            -PassThru
 
-    $connectionReady = $false
-    for ($attempt = 0; $attempt -lt 80; $attempt++) {
-        Start-Sleep -Milliseconds 250
-        $connectionLogs = Get-Content -Raw -LiteralPath $tunnelErr
-        if ($connectionLogs -match "Registered tunnel connection") {
-            $connectionReady = $true
-            break
-        }
-        if ($tunnelProcess.HasExited) { throw "cloudflared exited before registering a connection." }
-    }
-    if (-not $connectionReady) { throw "cloudflared did not register a tunnel connection." }
-
-    if (-not $SkipLocalReachability) {
-        $publicReady = $false
-        for ($attempt = 0; $attempt -lt 60; $attempt++) {
-            try {
-                $publicResponse = Invoke-WebRequest -Uri $publicUrl -UseBasicParsing -TimeoutSec 3
-                if ($publicResponse.StatusCode -eq 200) {
-                    $publicReady = $true
-                    break
-                }
+        $publicUrl = $null
+        for ($attempt = 0; $attempt -lt 80; $attempt++) {
+            Start-Sleep -Milliseconds 250
+            $logs = @()
+            if (Test-Path $tunnelOut) { $logs += Get-Content -Raw -LiteralPath $tunnelOut }
+            if (Test-Path $tunnelErr) { $logs += Get-Content -Raw -LiteralPath $tunnelErr }
+            $match = [regex]::Match(($logs -join "`n"), "https://[a-z0-9-]+\.trycloudflare\.com")
+            if ($match.Success) {
+                $publicUrl = $match.Value
+                break
             }
-            catch {
-                Start-Sleep -Milliseconds 500
+            if ($tunnelProcess.HasExited) { throw "cloudflared exited before publishing a URL." }
+        }
+        if (-not $publicUrl) { throw "Timed out waiting for the Cloudflare Quick Tunnel URL." }
+
+        $connectionReady = $false
+        for ($attempt = 0; $attempt -lt 80; $attempt++) {
+            Start-Sleep -Milliseconds 250
+            $connectionLogs = Get-Content -Raw -LiteralPath $tunnelErr
+            if ($connectionLogs -match "Registered tunnel connection") {
+                $connectionReady = $true
+                break
             }
             if ($tunnelProcess.HasExited) {
-                throw "cloudflared exited before the public URL was ready."
+                throw "cloudflared exited before registering a connection."
             }
         }
-        if (-not $publicReady) {
-            throw "Public tunnel did not become locally reachable within the timeout."
+        if (-not $connectionReady) { throw "cloudflared did not register a tunnel connection." }
+    }
+
+    if (-not $SkipLocalReachability) {
+        foreach ($publicCheck in $publicUrl, "$publicUrl/api/health") {
+            $publicReady = $false
+            for ($attempt = 0; $attempt -lt 60; $attempt++) {
+                try {
+                    $publicResponse = Invoke-WebRequest `
+                        -Uri $publicCheck `
+                        -UseBasicParsing `
+                        -TimeoutSec 3
+                    if ($publicResponse.StatusCode -eq 200) {
+                        $publicReady = $true
+                        break
+                    }
+                }
+                catch {
+                    Start-Sleep -Milliseconds 500
+                }
+                if ($tunnelProcess -and $tunnelProcess.HasExited) {
+                    throw "cloudflared exited before the public URL was ready."
+                }
+            }
+            if (-not $publicReady) {
+                throw "Public tunnel check did not return 200 for $publicCheck."
+            }
         }
     }
 
-    @{
+    $processState = @{
+        mode = if ($namedTunnelMode) { "named" } else { "quick" }
         preview = $previewProcess.Id
         previewStartedAt = $previewProcess.StartTime.ToString("o")
-        cloudflared = $tunnelProcess.Id
-        cloudflaredStartedAt = $tunnelProcess.StartTime.ToString("o")
         publicUrl = $publicUrl
         startedAt = (Get-Date).ToString("o")
-    } | ConvertTo-Json | Set-Content -LiteralPath $processFile -Encoding utf8
+    }
+    if ($tunnelProcess) {
+        $processState.cloudflared = $tunnelProcess.Id
+        $processState.cloudflaredStartedAt = $tunnelProcess.StartTime.ToString("o")
+    }
+    $processState | ConvertTo-Json | Set-Content -LiteralPath $processFile -Encoding utf8
 
-    Write-Host "Temporary Flowvy tunnel is ready: $publicUrl"
-    Write-Host "Stop only this repo-owned tunnel with scripts/tunnel-down.ps1."
+    if ($namedTunnelMode) {
+        Write-Host "Flowvy named Tunnel origin is ready: $publicUrl -> $previewUri"
+        Write-Host "The system cloudflared service was not changed."
+    }
+    else {
+        Write-Host "Temporary Flowvy tunnel is ready: $publicUrl"
+    }
+    Write-Host "Stop only the repo-owned preview/tunnel process with scripts/tunnel-down.ps1."
 }
 catch {
     if ($tunnelProcess -and -not $tunnelProcess.HasExited) {

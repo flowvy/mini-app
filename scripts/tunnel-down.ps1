@@ -42,14 +42,16 @@ if (-not (Test-Path $processFile)) {
 }
 
 $processes = Get-Content -Raw -LiteralPath $processFile | ConvertFrom-Json
-Stop-OwnedProcessTree `
-    -TargetProcessId ([int]$processes.cloudflared) `
-    -AllowedNames @("cloudflared") `
-    -ExpectedStartTime ([datetime]$processes.cloudflaredStartedAt)
+if ($null -ne $processes.cloudflared) {
+    Stop-OwnedProcessTree `
+        -TargetProcessId ([int]$processes.cloudflared) `
+        -AllowedNames @("cloudflared") `
+        -ExpectedStartTime ([datetime]$processes.cloudflaredStartedAt)
+}
 Stop-OwnedProcessTree `
     -TargetProcessId ([int]$processes.preview) `
     -AllowedNames @("cmd", "pnpm", "node") `
     -ExpectedStartTime ([datetime]$processes.previewStartedAt)
 Remove-Item -LiteralPath $processFile -Force
 
-Write-Host "The Flowvy-owned Quick Tunnel and preview were stopped. Other cloudflared services were untouched."
+Write-Host "The Flowvy-owned public preview and optional Quick Tunnel were stopped. System cloudflared services were untouched."
