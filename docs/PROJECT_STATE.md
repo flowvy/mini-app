@@ -133,7 +133,8 @@
   Flowvy создан отдельный named-Tunnel hostname с route на local port
   `80`: public root/health/readiness и production asset отвечают `200`, debug route — `404`.
   Hostname другого проекта не изменялся; системный connector продолжает работать отдельно от
-  repo-owned safe preview.
+  repo-owned safe preview. Владелец подтвердил live-переход по свежей ссылке новым аккаунтом:
+  referral flow работает штатно.
 
 ## Известные приоритетные проблемы
 
@@ -198,6 +199,7 @@ P0 команды запускались 2026-08-01. Backend P1 этапы и Re
 | Backend lock/lint/format | `uv lock --check`; Ruff checks | пройдено, 130 Python файлов formatted |
 | Backend полный suite | `uv run --frozen pytest -q` | 298 passed; известны только upstream Python 3.16 deprecation warnings pytest-asyncio |
 | Telegram Main Mini App focused | capability/link/bot/auth/health/security tests | 46 passed; bounded transient `getMe`, strict `?startapp=`, signed no-body redeem, malformed payload и отсутствие `/start` fallback покрыты |
+| Telegram Main Mini App live | новый test account и свежая `?startapp=` ссылка | владелец подтвердил корректное открытие и referral flow |
 | Bot `/start` single-flight focused | bot/registration/Remnawave tests | 64 passed; concurrent duplicate, transient retry, non-retryable failure, Redis fail-closed и token-safe finish покрыты |
 | Provider-only import focused | registration/bot/auth/Remnawave tests | 70 passed; direct `/api/me`, referral bypass, no provider mutation и safe `503` покрыты |
 | Remnawave webhook focused | route/service + PostgreSQL tests | 29 service-free и 3 repository tests passed; concurrent duplicate принят один раз |
@@ -227,7 +229,5 @@ P0 команды запускались 2026-08-01. Backend P1 этапы и Re
 
 ## Следующее действие
 
-Открыть свежую `?startapp=` ссылку абсолютно новым Telegram-аккаунтом: Mini App должна
-зарегистрировать пользователя без manual code и применить default access. После этого выбрать
-следующий продуктовый поток: подписки/продление, Support или безопасный Broadcast.
+Выбрать следующий продуктовый поток: подписки/продление, Support или безопасный Broadcast.
 Отдельно остаются live Remnawave 3.x, Kuma и первый подтверждённый удалённый CI run.

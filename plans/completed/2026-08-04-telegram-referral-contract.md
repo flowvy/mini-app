@@ -1,6 +1,6 @@
 # Официальный Telegram referral flow без fallback-эвристик
 
-Status: active
+Status: completed
 Owner: Codex
 Started: 2026-08-04
 Updated: 2026-08-04
@@ -65,7 +65,8 @@ frontend launch parsing, backend onboarding boundary, deterministic tests и д�
   root/health/readiness/production asset `200`, debug route `404`, чужой route не изменён.
 - [x] 2026-08-04 — Main App включена в BotFather на отдельном Flowvy HTTPS hostname; свежий startup
   подтвердил `telegram_main_app_ready` / `has_main_web_app=true`.
-- [ ] 2026-08-04 — провести new-account live handoff по свежей `?startapp=` ссылке.
+- [x] 2026-08-04 — владелец подтвердил new-account live handoff по свежей `?startapp=` ссылке:
+  ссылка открывается и referral flow работает штатно.
 
 ## Surprises & Discoveries
 
@@ -111,5 +112,5 @@ frontend launch parsing, backend onboarding boundary, deterministic tests и д�
 Кодовая часть подтверждена fresh Full gate: Alembic one-head/upgrade/downgrade/drift, 298 backend,
 41 Remnawave contract, frontend lint/type/unit/build, 43 mobile Chromium и docs прошли. Предыдущий
 live failure объяснён официальным Telegram client contract: без Main Mini App `?startapp` становится
-обычной username-ссылкой. Safe origin, отдельный Flowvy hostname и BotFather capability проверены;
-остаётся live handoff новым аккаунтом. Quick Tunnel намеренно не используется как скрытый fallback.
+обычной username-ссылкой. Safe origin, отдельный Flowvy hostname, BotFather capability и live
+handoff новым аккаунтом подтверждены. Quick Tunnel намеренно не используется как скрытый fallback.
