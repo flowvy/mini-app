@@ -218,7 +218,8 @@ debug route отвечает `404`, а backend log содержит `telegram_ma
 
 `dev-reset-data.ps1` работает только с Compose service `postgres`, database `flowvy` и Redis DB 0.
 Он отказывается запускаться при живом Flowvy dev/занятых app ports, пересоздаёт только schema
-`public`, применяет migrations до `head` и проверяет отсутствие application rows/Redis keys.
+`public`, применяет migrations до `head`, возвращает singleton settings к migration defaults и
+проверяет отсутствие user/runtime rows и Redis keys.
 Отдельная test database и named Docker volume сохраняются; Remnawave и другие внешние системы не
 изменяются. Ключ подтверждения обязателен, потому что восстановление удалённых dev-данных не
 предусмотрено.

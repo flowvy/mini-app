@@ -27,9 +27,9 @@ test bot. PID и stdout/stderr находятся в `.artifacts/dev`. `dev-down
 
 Для явно запрошенного чистого dev-сценария используйте только
 `scripts/dev-reset-data.ps1 -ConfirmDevDataReset` после `dev-down`. Script очищает application schema
-в database `flowvy` и Redis DB 0, повторно применяет migrations и сохраняет test database, Docker
-volume и все внешние provider data. Ручной `DROP DATABASE`, `docker compose down -v` и очистка
-provider не являются частью dev lifecycle.
+в database `flowvy` и Redis DB 0, повторно применяет migrations, сбрасывает singleton settings к
+defaults и сохраняет test database, Docker volume и все внешние provider data. Ручной
+`DROP DATABASE`, `docker compose down -v` и очистка provider не являются частью dev lifecycle.
 
 ## Проверка состояния
 

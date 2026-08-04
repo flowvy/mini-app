@@ -81,18 +81,26 @@ SELECT
     (SELECT count(*) FROM subscriptions) +
     (SELECT count(*) FROM invites) +
     (SELECT count(*) FROM access_profiles) +
-    (SELECT count(*) FROM provider_settings) +
     (SELECT count(*) FROM bot_metrics_history) +
-    (SELECT count(*) FROM webhook_events);
+    (SELECT count(*) FROM webhook_events),
+    (SELECT count(*) FROM provider_settings);
 "@
 $rowCountOutput = $rowCountSql | docker compose -f $composeFile exec -T postgres `
     psql -At -v ON_ERROR_STOP=1 -U flowvy -d flowvy
 if ($LASTEXITCODE -ne 0) {
     throw "Could not verify the cleared development database."
 }
-$rowCount = [int](($rowCountOutput | Select-Object -Last 1).Trim())
-if ($rowCount -ne 0) {
-    throw "Development database verification failed: application rows remain."
+$rowCounts = (($rowCountOutput | Select-Object -Last 1).Trim()) -split '\|'
+if ($rowCounts.Count -ne 2) {
+    throw "Development database verification returned an unexpected result."
+}
+$userDataRowCount = [int]$rowCounts[0]
+$settingsRowCount = [int]$rowCounts[1]
+if ($userDataRowCount -ne 0) {
+    throw "Development database verification failed: user or runtime rows remain."
+}
+if ($settingsRowCount -ne 1) {
+    throw "Development database verification failed: settings seed is missing or duplicated."
 }
 
 $redisSizeOutput = docker compose -f $composeFile exec -T redis redis-cli -n 0 DBSIZE
@@ -104,6 +112,6 @@ if ($redisSize -ne 0) {
     throw "Development Redis verification failed: keys remain."
 }
 
-Write-Host "Flowvy development data is empty and migrations are at head."
+Write-Host "Flowvy development data is empty, settings are reset, and migrations are at head."
 Write-Host "The test database and Docker volume were preserved."
 Write-Host "Start the app with scripts/dev-up.ps1."
