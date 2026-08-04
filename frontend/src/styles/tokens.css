@@ -2,6 +2,7 @@
 
 /* ── Typography ── */
 :root {
+	color-scheme: light;
 	--font-sans: "Geist Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
 	--font-mono: "Geist Mono Variable", ui-monospace, "Cascadia Code", "Fira Code", monospace;
 }
@@ -66,7 +67,7 @@
 	--v2-text-secondary: #454545;
 	--v2-text-tertiary: #c7c7c7;
 	--v2-text-primary-inverted: #ffffff;
-	--v2-text-positive: #3ab176;
+	--v2-text-positive: #24784f;
 	--v2-text-negative: #c6352a;
 	--v2-text-warning: #f3ab11;
 	--v2-text-info: #2bbdd3;
@@ -132,6 +133,7 @@
 /* ── System default: dark (before JS sets data-theme) ── */
 @media (prefers-color-scheme: dark) {
 	:root:not([data-theme]) {
+		color-scheme: dark;
 		/* Layer */
 		--v2-floor-0: #171717;
 		--v2-floor-1: #212121;
@@ -223,6 +225,7 @@
 
 /* ── Dark theme (explicit) ── */
 :root[data-theme="dark"] {
+	color-scheme: dark;
 	/* Layer */
 	--v2-floor-0: #171717;
 	--v2-floor-1: #212121;
@@ -313,6 +316,7 @@
 
 /* ── Light theme (explicit) ── */
 :root[data-theme="light"] {
+	color-scheme: light;
 	/* Layer */
 	--v2-floor-0: #f2f2f2;
 	--v2-floor-1: #ffffff;
@@ -338,7 +342,7 @@
 	--v2-text-secondary: #454545;
 	--v2-text-tertiary: #c7c7c7;
 	--v2-text-primary-inverted: #ffffff;
-	--v2-text-positive: #3ab176;
+	--v2-text-positive: #24784f;
 	--v2-text-negative: #c6352a;
 	--v2-text-warning: #f3ab11;
 	--v2-text-info: #2bbdd3;

@@ -33,6 +33,8 @@ const PAGE_META: Record<string, PageMeta> = {
 	"/admin/broadcast": { title: "common.header.broadcast", icon: Megaphone },
 	"/admin/settings": { title: "common.header.settings", icon: Settings },
 	"/admin/settings/kuma": { title: "common.header.settings", icon: Settings },
+	"/admin/settings/beszel": { title: "common.header.settings", icon: Settings },
+	"/admin/settings/access": { title: "common.header.settings", icon: Settings },
 	"/admin/settings/branding": { title: "common.header.settings", icon: Settings },
 	"/admin/settings/welcome": { title: "common.header.settings", icon: Settings },
 };

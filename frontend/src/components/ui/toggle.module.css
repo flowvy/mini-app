@@ -8,7 +8,7 @@
 	cursor: pointer;
 	padding: 0;
 	flex-shrink: 0;
-	transition: all 0.2s;
+	transition: background-color 0.2s, border-color 0.2s, opacity 0.2s;
 	box-sizing: border-box;
 }
 
@@ -26,7 +26,7 @@
 	border-radius: 50%;
 	background: var(--v2-bg-quaternary);
 	transform: translateY(-50%);
-	transition: all 0.2s;
+	transition: left 0.2s, background-color 0.2s;
 	pointer-events: none;
 	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }

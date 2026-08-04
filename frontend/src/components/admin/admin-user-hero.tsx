@@ -29,6 +29,7 @@ import type { AdminUser } from "../../types/admin-users.ts";
 import type { ResetStrategy } from "../../types/subscription.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
+import { StatusBadge } from "../ui/status-badge.tsx";
 import { type ActionDef, type UserAction, getActions } from "./admin-user-actions.ts";
 import styles from "./admin-user-hero.module.css";
 
@@ -70,6 +71,10 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 	return (
 		<>
 			<div className={styles.hero}>
+				<div className={styles.identity}>
+					<strong>{user.username}</strong>
+					<StatusBadge status={user.status} />
+				</div>
 				<div className={styles.heroRow1}>
 					<div className={styles.heroLeft}>
 						{unlTraffic ? (

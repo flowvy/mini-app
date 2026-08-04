@@ -1,6 +1,7 @@
 /* ── Section Header ── */
 
 .header {
+	margin: 0;
 	padding-top: 16px;
 	padding-bottom: 6px;
 	padding-left: 14px;
@@ -71,6 +72,253 @@
 	background: var(--v2-border-tertiary);
 }
 
+/* ── Stacked editor field ── */
+
+.field {
+	display: grid;
+	gap: 6px;
+	min-width: 0;
+}
+
+.fieldLabel {
+	font-size: 10.5px;
+	font-weight: 600;
+	color: var(--v2-text-secondary);
+}
+
+.fieldHint {
+	font-size: 10.5px;
+	font-weight: 400;
+	line-height: 1.45;
+	color: var(--v2-text-secondary);
+}
+
+.inputShell {
+	position: relative;
+	display: block;
+	min-width: 0;
+}
+
+.inputRestingValue {
+	position: absolute;
+	inset: 0;
+	display: none;
+	align-items: center;
+	min-width: 0;
+	padding: 10px 12px;
+	overflow: hidden;
+	color: var(--v2-text-primary);
+	font-family: var(--font-sans);
+	font-size: 13px;
+	font-weight: 400;
+	line-height: 1.25;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	pointer-events: none;
+}
+
+.fieldControl {
+	width: 100%;
+	min-height: 44px;
+	padding: 10px 12px;
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-sm);
+	background: var(--v2-bg-secondary);
+	color: var(--v2-text-primary);
+	font-family: var(--font-sans);
+	font-size: 13px;
+	line-height: 1.25;
+	outline: none;
+	scroll-margin-block: 20px;
+	transition: border-color var(--duration-base) ease, box-shadow var(--duration-base) ease,
+		background-color var(--duration-base) ease;
+}
+
+.fieldControl::placeholder {
+	color: var(--v2-text-secondary);
+	font-family: var(--font-sans);
+	font-size: 13px;
+	opacity: 0.72;
+}
+
+.fieldControl:focus-visible {
+	border-color: var(--v2-border-positive-primary);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--v2-border-positive-primary) 16%, transparent);
+}
+
+.fieldControl:disabled {
+	opacity: 0.55;
+	cursor: default;
+}
+
+.fieldTextarea {
+	min-height: 84px;
+	resize: vertical;
+}
+
+/* The native controls remain the semantic/picker layer. The visible layer is
+   app-owned so Safari cannot substitute its system font or intrinsic width. */
+.selectShell,
+.dateShell {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 7px;
+	min-width: 0;
+	max-width: 100%;
+	color: var(--v2-text-primary);
+	font-family: var(--font-sans);
+	font-size: 13px;
+	line-height: 1.25;
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+	transition: border-color var(--duration-base) ease, box-shadow var(--duration-base) ease,
+		background-color var(--duration-base) ease;
+}
+
+.fieldSelectShell {
+	width: 100%;
+	min-height: 44px;
+	justify-content: space-between;
+	padding: 10px 12px;
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-sm);
+	background: var(--v2-bg-secondary);
+}
+
+.inlineSelectShell {
+	min-height: 36px;
+	max-width: min(190px, 100%);
+	padding-left: 8px;
+}
+
+.selectValue,
+.dateValue {
+	min-width: 0;
+	overflow: hidden;
+	font-family: var(--font-sans);
+	font-size: 13px;
+	line-height: 1.25;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	pointer-events: none;
+}
+
+.selectShell svg,
+.dateShell svg {
+	flex: 0 0 auto;
+	color: var(--v2-icon-secondary);
+	pointer-events: none;
+}
+
+.nativeSelect,
+.nativeDate {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	opacity: 0.001;
+	cursor: pointer;
+}
+
+.nativeSelect {
+	appearance: auto;
+	-webkit-appearance: menulist;
+	color-scheme: light;
+}
+
+.nativeDate {
+	min-width: 0;
+	padding: 0;
+	border: 0;
+	color-scheme: light;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.selectShell:has(.nativeSelect:focus-visible),
+	.dateShell:has(.nativeDate:focus-visible) {
+		border-color: var(--v2-border-positive-primary);
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--v2-border-positive-primary) 16%, transparent);
+	}
+}
+
+.selectShell[data-disabled],
+.dateShell[data-disabled] {
+	opacity: 0.55;
+}
+
+.dateShell {
+	width: min(170px, 100%);
+	min-height: 36px;
+	padding: 8px 10px;
+	border: 0;
+	border-radius: var(--radius-sm);
+	background: var(--v2-bg-tertiary);
+}
+
+.inlineFieldGroup {
+	display: grid;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-sm);
+	background: var(--v2-bg-secondary);
+}
+
+.inlineFieldRow {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+	min-height: 52px;
+	padding: 6px 8px 6px 12px;
+}
+
+.inlineFieldLabel {
+	min-width: 0;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--v2-text-primary);
+}
+
+.inlineFieldValue {
+	display: flex;
+	justify-content: flex-end;
+	min-width: 0;
+}
+
+.inlineFieldGroup > .fieldHint {
+	padding: 0 12px 10px;
+}
+
+:global([data-theme="dark"]) .nativeSelect,
+:global([data-theme="dark"]) .nativeDate {
+	color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+	:global(:root:not([data-theme])) .nativeSelect,
+	:global(:root:not([data-theme])) .nativeDate {
+		color-scheme: dark;
+	}
+}
+
+@media (pointer: coarse) {
+	.fieldControl[data-compact-resting-value]:not(:focus) {
+		color: transparent;
+		-webkit-text-fill-color: transparent;
+	}
+
+	.fieldControl[data-compact-resting-value]:not(:focus) + .inputRestingValue {
+		display: flex;
+	}
+}
+
 /* ── Textarea ── */
 
 .textareaWrap {
@@ -93,6 +341,7 @@
 
 .textarea::placeholder {
 	color: var(--v2-text-tertiary);
+	font-size: 13px;
 }
 
 /* ── Inline Input ── */
@@ -111,6 +360,7 @@
 
 .inlineInput::placeholder {
 	color: var(--v2-text-tertiary);
+	font-size: 13px;
 }
 
 .inlineInput.mono {

@@ -1,0 +1,276 @@
+import AxeBuilder from "@axe-core/playwright";
+import { assertNoHorizontalOverflow, expect, test } from "./fixtures/mock-api.ts";
+
+const registeredUser = {
+	id: 42,
+	username: "new_user",
+	full_name: "New User",
+	role: "user",
+	is_active: true,
+	features: { pulse: true },
+	branding: { appName: "Flowvy", logoUrl: null },
+};
+
+test("invite-only onboarding handles an invalid code and enters the app without reload", async ({
+	page,
+	mockApi,
+}) => {
+	await page.addInitScript(() => localStorage.setItem("flowvy:mock-auth", "onboarding"));
+	mockApi.mock("GET", "/api/me", {
+		status: 403,
+		body: { detail: { code: "invite_required", message: "An invite code is required" } },
+	});
+	mockApi.mock("GET", "/api/onboarding", {
+		body: {
+			state: "invite_required",
+			registrationMode: "invite_only",
+			appName: "Flowvy Test",
+			logoUrl: null,
+			launchInviteAvailable: false,
+		},
+	});
+	mockApi.mock("POST", "/api/onboarding/redeem", [
+		{ status: 400, body: { detail: { code: "invalid_invite", message: "Invite is invalid" } } },
+		{ body: registeredUser },
+	]);
+
+	await page.goto("/");
+	await expect(page.getByRole("heading", { name: "Invitation required" })).toBeVisible();
+	await expect(page.getByText("Flowvy Test")).toBeVisible();
+
+	const code = page.getByLabel("Invite code");
+	await code.fill("FVY-WRONG-CODE");
+	await page.getByRole("button", { name: "Continue" }).click();
+	await expect(page.getByRole("alert")).toContainText("Invite is invalid");
+
+	await code.fill("FVY-TEST-CODE-1");
+	await page.getByRole("button", { name: "Continue" }).click();
+	await expect(page.getByText("Account Info")).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+});
+
+test("invite-only onboarding redeems only the server-validated Main Mini App referral", async ({
+	page,
+	mockApi,
+}) => {
+	let requestBody: string | null | undefined;
+	page.on("request", (request) => {
+		if (new URL(request.url()).pathname === "/api/onboarding/redeem-launch") {
+			requestBody = request.postData();
+		}
+	});
+	await page.addInitScript(() => localStorage.setItem("flowvy:mock-auth", "onboarding"));
+	mockApi.mock("GET", "/api/me", {
+		status: 403,
+		body: { detail: { code: "invite_required", message: "An invite code is required" } },
+	});
+	mockApi.mock("GET", "/api/onboarding", {
+		body: {
+			state: "invite_required",
+			registrationMode: "invite_only",
+			appName: "Flowvy Test",
+			logoUrl: null,
+			launchInviteAvailable: true,
+		},
+	});
+	mockApi.mock("POST", "/api/onboarding/redeem-launch", { body: registeredUser });
+
+	await page.goto("/");
+	await expect(page.getByText("Account Info")).toBeVisible();
+	await expect
+		.poll(
+			() => mockApi.calls.filter((call) => call === "POST /api/onboarding/redeem-launch").length,
+		)
+		.toBe(1);
+	expect(requestBody).toBeNull();
+});
+
+test("open onboarding registers with one explicit action", async ({ page, mockApi }) => {
+	await page.addInitScript(() => localStorage.setItem("flowvy:mock-auth", "onboarding"));
+	mockApi.mock("GET", "/api/me", {
+		status: 403,
+		body: { detail: { code: "registration_required", message: "Registration is required" } },
+	});
+	mockApi.mock("GET", "/api/onboarding", {
+		body: {
+			state: "open",
+			registrationMode: "open",
+			appName: null,
+			logoUrl: null,
+			launchInviteAvailable: false,
+		},
+	});
+	mockApi.mock("POST", "/api/onboarding/register", { body: registeredUser });
+
+	await page.goto("/");
+	await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
+	await page.getByRole("button", { name: "Get started" }).click();
+	await expect(page.getByText("Account Info")).toBeVisible();
+});
+
+test("admin configures registration policy and the global access profile", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.goto("/admin/settings/access");
+	await expect(page.getByText("Service mode")).toBeVisible();
+	await page.getByRole("button", { name: "Invite only" }).click();
+	await expect(page.getByRole("button", { name: "Invite only" })).toHaveAttribute(
+		"aria-pressed",
+		"true",
+	);
+
+	await page.getByRole("button", { name: /Add/ }).click();
+	await expect(page.getByText("Access profiles", { exact: true })).not.toBeVisible();
+	await page.getByRole("button", { name: "No expiry" }).click();
+	await expect(page.getByText(/No expiration.*fully unlimited access/)).toBeVisible();
+	await page.getByRole("button", { name: "Days" }).click();
+	await page.getByPlaceholder("Free 30 days").fill("Weekend trial");
+	await page.getByLabel("Number of days").fill("3");
+	await page.getByLabel("Traffic (GB, 0 = unlimited)").fill("10");
+	await page.getByText("Advanced Remnawave fields").click();
+	await page.getByLabel("Remnawave tag").selectOption("FREE_TRIAL");
+	await page.getByRole("checkbox", { name: "Primary" }).check();
+	await page.getByLabel("External squad").selectOption({ label: "Public" });
+	await page.getByRole("button", { name: "Save" }).click();
+	await expect(page.getByRole("strong").filter({ hasText: "Weekend trial" })).toBeVisible();
+	await page.getByRole("button", { name: "Edit access profile" }).last().click();
+	await page.getByText("Advanced Remnawave fields").click();
+	await expect(page.getByLabel("Remnawave tag")).toHaveValue("FREE_TRIAL");
+	await expect(page.getByRole("checkbox", { name: "Primary" })).toBeChecked();
+	await expect(page.getByLabel("External squad")).toHaveValue(
+		"00000000-0000-4000-8000-000000000021",
+	);
+	await page.getByRole("button", { name: "Close editor" }).click();
+
+	const defaultAccess = page.getByLabel("Default access");
+	await defaultAccess.selectOption({ label: "Weekend trial" });
+	await expect(defaultAccess).toHaveValue("00000000-0000-4000-8000-000000000003");
+	await expect(
+		defaultAccess.locator("..").locator("span", { hasText: "Weekend trial" }),
+	).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+
+	const result = await new AxeBuilder({ page }).analyze();
+	const serious = result.violations.filter((violation) =>
+		["serious", "critical"].includes(violation.impact ?? ""),
+	);
+	expect(serious).toEqual([]);
+});
+
+test("access editor waits for provider choices without changing the Add control geometry", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.mock("GET", "/api/debug/admin/registration/options", {
+		body: {
+			internalSquads: [],
+			externalSquads: [],
+			tags: [],
+		},
+		delayMs: 1_000,
+	});
+
+	await page.goto("/admin/settings/access");
+	const add = page.getByRole("button", { name: "Add" });
+	const before = await add.boundingBox();
+	await expect(add).toBeDisabled();
+	await expect(add).toBeEnabled();
+	const after = await add.boundingBox();
+	expect(after?.width).toBe(before?.width);
+	expect(after?.height).toBe(before?.height);
+	await add.click();
+	await expect(page.getByRole("heading", { name: "New access profile" })).toBeVisible();
+});
+
+test("home keeps the invite card in skeleton state until the page data settles", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.mock("GET", "/api/me/subscription", {
+		status: 404,
+		body: { detail: "No subscription" },
+		delayMs: 350,
+	});
+
+	await page.goto("/");
+	await expect(page.getByLabel("Loading invite")).toBeVisible();
+	await expect(page.getByText("Invite friends", { exact: true })).not.toBeVisible();
+
+	await expect(page.getByText("No active subscription")).toBeVisible();
+	await expect(page.getByText("Invite friends", { exact: true })).toBeVisible();
+});
+
+test("access editor fails safely when Remnawave options are unavailable", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.mock("GET", "/api/debug/admin/registration/options", {
+		status: 502,
+		body: { detail: "Remnawave unavailable" },
+	});
+
+	await page.goto("/admin/settings/access");
+	await page.getByRole("button", { name: /Add/ }).click();
+	await expect(page.getByRole("alert")).toContainText(
+		"Remnawave options are temporarily unavailable",
+	);
+	await page.getByText("Advanced Remnawave fields").click();
+	await expect(page.getByLabel("Remnawave tag")).toBeDisabled();
+	await page.getByPlaceholder("Free 30 days").fill("Local trial");
+	await expect(page.getByRole("button", { name: "Save" })).toBeEnabled();
+	await page.getByRole("button", { name: "Save" }).click();
+	await expect(page.getByRole("strong").filter({ hasText: "Local trial" })).toBeVisible();
+});
+
+test("registered user can copy and share a reusable personal invite", async ({
+	page,
+	mockApi: _mock,
+	browserName,
+}) => {
+	if (browserName === "chromium") {
+		await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+	}
+	await page.goto("/");
+
+	await expect(page.getByText("Invite friends")).toBeVisible();
+	await expect(page.getByText("FVY-2345-6789-ABCD-EFGH-JKMN")).toBeVisible();
+	await expect(page.getByLabel("Registered through your invite")).toContainText("3");
+
+	await page.getByRole("button", { name: /FVY-2345/ }).click();
+	await expect(page.getByText("Copied", { exact: true })).toBeVisible();
+	if (browserName === "chromium") {
+		await expect
+			.poll(() => page.evaluate(() => navigator.clipboard.readText()))
+			.toBe("FVY-2345-6789-ABCD-EFGH-JKMN");
+	}
+
+	const share = page.getByRole("link", { name: "Share in Telegram" });
+	const shareHref = await share.getAttribute("href");
+	expect(shareHref).not.toBeNull();
+	const shareUrl = new URL(shareHref ?? "");
+	const referralUrl = new URL(shareUrl.searchParams.get("url") ?? "");
+	expect(shareUrl.origin).toBe("https://t.me");
+	expect(shareUrl.pathname).toBe("/share/url");
+	expect(referralUrl.searchParams.get("startapp")).toBe("ref_FVY23456789ABCDEFGHJKMN");
+	expect(referralUrl.searchParams.has("start")).toBe(false);
+	expect(shareUrl.searchParams.get("text")).toContain("FVY-2345-6789-ABCD-EFGH-JKMN");
+	await assertNoHorizontalOverflow(page);
+});
+
+test("home does not publish an unverified Telegram referral link", async ({ page, mockApi }) => {
+	mockApi.mock("GET", "/api/me/invite", {
+		body: {
+			code: "FVY-2345-6789-ABCD-EFGH-JKMN",
+			invitedCount: 3,
+			referralUrl: null,
+			referralStatus: "main_app_not_configured",
+		},
+	});
+
+	await page.goto("/");
+	await expect(page.getByText("FVY-2345-6789-ABCD-EFGH-JKMN")).toBeVisible();
+	await expect(page.getByText(/Telegram invite link is not configured yet/)).toBeVisible();
+	await expect(page.getByRole("link", { name: "Share in Telegram" })).toHaveCount(0);
+	await assertNoHorizontalOverflow(page);
+});

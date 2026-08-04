@@ -2,14 +2,12 @@
  * Admin user detail view — drill-down from user list.
  * Shows hero card + detail rows with action buttons.
  */
-import { ArrowLeft } from "lucide-react";
 import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { UserAction } from "../../components/admin/admin-user-actions.ts";
 import { AdminUserDetail } from "../../components/admin/admin-user-detail.tsx";
 import { AdminUserHero } from "../../components/admin/admin-user-hero.tsx";
 import { InlineFeedback } from "../../components/ui/inline-feedback.tsx";
-import { StatusBadge } from "../../components/ui/status-badge.tsx";
 import {
 	useDeleteUser,
 	useDisableUser,
@@ -22,10 +20,10 @@ import styles from "./users.module.css";
 
 interface UserDetailViewProps {
 	user: AdminUser;
-	onBack: () => void;
+	onDeleted: () => void;
 }
 
-export const UserDetailView: FC<UserDetailViewProps> = ({ user, onBack }) => {
+export const UserDetailView: FC<UserDetailViewProps> = ({ user, onDeleted }) => {
 	const { t } = useTranslation();
 	const [actionLoading, setActionLoading] = useState<UserAction | null>(null);
 	const [actionFailed, setActionFailed] = useState(false);
@@ -45,7 +43,7 @@ export const UserDetailView: FC<UserDetailViewProps> = ({ user, onBack }) => {
 			else if (key === "revoke") await revokeMut.revoke(user.id);
 			else if (key === "delete") {
 				await deleteMut.remove(user.id);
-				onBack();
+				onDeleted();
 				return;
 			}
 		} catch {
@@ -58,18 +56,6 @@ export const UserDetailView: FC<UserDetailViewProps> = ({ user, onBack }) => {
 	return (
 		<div className={styles.detailPage}>
 			{actionFailed && <InlineFeedback>{t("admin.actions.error")}</InlineFeedback>}
-			<div className={styles.detailHeader}>
-				<button
-					type="button"
-					className={styles.backBtn}
-					onClick={onBack}
-					aria-label={t("common.back")}
-				>
-					<ArrowLeft size={16} />
-				</button>
-				<h1 className={styles.detailTitle}>{user.username}</h1>
-				<StatusBadge status={user.status} />
-			</div>
 			<AdminUserHero user={user} onAction={handleAction} actionLoading={actionLoading} />
 			<AdminUserDetail user={user} />
 		</div>

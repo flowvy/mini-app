@@ -24,4 +24,9 @@ export const queryKeys = {
 	adminUser: (id: string) => ["admin", "users", "detail", id] as const,
 	adminUsersSearch: (q: string) => ["admin", "users", "search", q] as const,
 	adminSettings: ["admin", "settings"] as const,
+	onboarding: ["onboarding"] as const,
+	registrationSettings: ["admin", "registration", "settings"] as const,
+	accessProfiles: ["admin", "registration", "access-profiles"] as const,
+	registrationOptions: ["admin", "registration", "options"] as const,
+	myInvite: ["registration", "my-invite"] as const,
 };

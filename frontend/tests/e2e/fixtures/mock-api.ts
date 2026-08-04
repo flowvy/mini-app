@@ -85,6 +85,7 @@ export const mockData = {
 		subscriptionUrl: "https://example.test/sub/user-1",
 		activeInternalSquads: [{ name: "Default" }],
 		externalSquadName: null,
+		invitedCount: 3,
 		userTraffic: {
 			usedTrafficBytes: 10 * 1024 ** 3,
 			lifetimeUsedTrafficBytes: 20 * 1024 ** 3,
@@ -107,6 +108,41 @@ export const mockData = {
 			users: { totalUsers: 1, newToday: 1, newThisWeek: 1, active1H: 1, active24H: 1 },
 			requests: { totalRequests: 10, todayRequests: 2 },
 		},
+	},
+	registration: {
+		registrationMode: "open",
+		defaultAccessProfileId: null,
+	},
+	accessProfiles: [
+		{
+			id: "00000000-0000-4000-8000-000000000001",
+			name: "Free 30 days",
+			description: "Default test profile",
+			validityMode: "duration",
+			validityDays: 30,
+			fixedExpireAt: null,
+			trafficLimitBytes: 50 * 1024 ** 3,
+			trafficLimitStrategy: "MONTH",
+			hwidDeviceLimit: 3,
+			tag: "FREE",
+			status: "ACTIVE",
+			internalSquadUuids: ["00000000-0000-4000-8000-000000000011"],
+			externalSquadUuid: null,
+			isActive: true,
+			createdAt: "2026-08-01T00:00:00Z",
+			updatedAt: "2026-08-01T00:00:00Z",
+		},
+	],
+	registrationOptions: {
+		internalSquads: [{ uuid: "00000000-0000-4000-8000-000000000011", name: "Primary" }],
+		externalSquads: [{ uuid: "00000000-0000-4000-8000-000000000021", name: "Public" }],
+		tags: ["FREE", "FREE_TRIAL", "PREMIUM"],
+	},
+	invite: {
+		code: "FVY-2345-6789-ABCD-EFGH-JKMN",
+		invitedCount: 3,
+		referralUrl: "https://t.me/flowvy_testBot?startapp=ref_FVY23456789ABCDEFGHJKMN",
+		referralStatus: "ready",
 	},
 } as const;
 
@@ -136,6 +172,8 @@ export interface MockApi {
 interface MockState {
 	settings: Record<string, unknown>;
 	devices: { devices: Array<Record<string, unknown>>; total: number; limit: number | null };
+	registration: Record<string, unknown>;
+	accessProfiles: Array<Record<string, unknown>>;
 }
 
 function clone<T>(value: T): T {
@@ -213,7 +251,65 @@ async function handleApi(
 		});
 		return;
 	}
-	if (method === "GET" && path === "/api/me/subscription") {
+	if (method === "GET" && path === "/api/debug/admin/registration") {
+		await reply(route, { body: state.registration });
+		return;
+	}
+	if (method === "PATCH" && path === "/api/debug/admin/registration") {
+		state.registration = {
+			...state.registration,
+			...(request.postDataJSON() as Record<string, unknown>),
+		};
+		await reply(route, { body: state.registration });
+		return;
+	}
+	if (method === "GET" && path === "/api/debug/admin/registration/options") {
+		await reply(route, { body: mockData.registrationOptions });
+		return;
+	}
+	if (method === "GET" && path === "/api/debug/admin/registration/access-profiles") {
+		await reply(route, { body: state.accessProfiles });
+		return;
+	}
+	if (method === "POST" && path === "/api/debug/admin/registration/access-profiles") {
+		const input = request.postDataJSON() as Record<string, unknown>;
+		const created = {
+			...input,
+			id: `00000000-0000-4000-8000-${String(state.accessProfiles.length + 2).padStart(12, "0")}`,
+			isActive: true,
+			createdAt: "2026-08-02T00:00:00Z",
+			updatedAt: "2026-08-02T00:00:00Z",
+		};
+		state.accessProfiles.push(created);
+		await reply(route, { status: 201, body: created });
+		return;
+	}
+	const profileMatch = path.match(/^\/api\/debug\/admin\/registration\/access-profiles\/([^/]+)$/);
+	if (profileMatch && method === "PUT") {
+		const input = request.postDataJSON() as Record<string, unknown>;
+		const index = state.accessProfiles.findIndex((profile) => profile.id === profileMatch[1]);
+		state.accessProfiles[index] = {
+			...state.accessProfiles[index],
+			...input,
+			updatedAt: "2026-08-02T00:00:00Z",
+		};
+		await reply(route, { body: state.accessProfiles[index] });
+		return;
+	}
+	if (profileMatch && method === "DELETE") {
+		const profile = state.accessProfiles.find((candidate) => candidate.id === profileMatch[1]);
+		if (profile) profile.isActive = false;
+		await reply(route, { status: 204 });
+		return;
+	}
+	if (method === "GET" && (path === "/api/me/invite" || /^\/api\/debug\/invite\/\d+$/.test(path))) {
+		await reply(route, { body: mockData.invite });
+		return;
+	}
+	if (
+		method === "GET" &&
+		(path === "/api/me/subscription" || /^\/api\/debug\/subscription\/\d+$/.test(path))
+	) {
 		await reply(route, { body: mockData.subscription });
 		return;
 	}
@@ -268,6 +364,8 @@ export const test = base.extend<{ mockApi: MockApi }>({
 		const state: MockState = {
 			settings: clone(mockData.settings),
 			devices: clone(mockData.devices),
+			registration: clone(mockData.registration),
+			accessProfiles: clone(mockData.accessProfiles),
 		};
 		const tracker: MockApi = {
 			unhandled: [],

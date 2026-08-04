@@ -5,6 +5,8 @@
 import { type ReactElement, type ReactNode, createContext, useContext } from "react";
 import { useTranslation } from "react-i18next";
 import { type UserResponse, useAuth } from "../hooks/use-auth.ts";
+import { ApiError } from "../lib/api.ts";
+import { OnboardingScreen } from "./onboarding-screen.tsx";
 import { SpinnerIcon } from "./ui/spinner-icon.tsx";
 
 const UserContext = createContext<UserResponse | null>(null);
@@ -34,10 +36,16 @@ export function AuthGuard({ children }: AuthGuardProps): ReactElement {
 	}
 
 	if (error || !user) {
+		if (error instanceof ApiError && error.code === "invite_required") {
+			return <OnboardingScreen initialState="invite_required" />;
+		}
+		if (error instanceof ApiError && error.code === "registration_required") {
+			return <OnboardingScreen initialState="open" />;
+		}
 		return (
 			<div className="fv-auth-screen">
 				<p style={{ color: "var(--v2-text-danger, #e53935)" }}>
-					{error || t("common.notAuthenticated")}
+					{error?.message || t("common.notAuthenticated")}
 				</p>
 				<button type="button" onClick={retry} className="fv-retry-btn">
 					{t("common.retry")}

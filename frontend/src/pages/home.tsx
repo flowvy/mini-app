@@ -2,6 +2,7 @@ import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import { DetailSection } from "../components/home/detail-section.tsx";
 import { HeroCard } from "../components/home/hero-card.tsx";
+import { InviteCard, InviteCardSkeleton } from "../components/home/invite-card.tsx";
 import { LoadErrorState } from "../components/ui/load-error-state.tsx";
 import { Skeleton } from "../components/ui/skeleton.tsx";
 import { useSubscription } from "../hooks/use-subscription.ts";
@@ -27,6 +28,7 @@ export const Home: FC = () => {
 						<Skeleton height={32} />
 					</div>
 				</div>
+				<InviteCardSkeleton />
 				<div className={styles.skeletonSection}>
 					<div className={styles.skeletonSectionTitle}>
 						<Skeleton width="30%" height={10} radius={3} />
@@ -44,13 +46,19 @@ export const Home: FC = () => {
 	}
 
 	if (error && !(error instanceof ApiError && error.status === 404)) {
-		return <LoadErrorState onRetry={refetch} />;
+		return (
+			<div className={styles.page}>
+				<LoadErrorState onRetry={refetch} />
+				<InviteCard />
+			</div>
+		);
 	}
 
 	if (!subscription || (error instanceof ApiError && error.status === 404)) {
 		return (
 			<div className={styles.page}>
 				<p style={{ color: "var(--v2-text-secondary)" }}>{t("home.noSubscription")}</p>
+				<InviteCard />
 			</div>
 		);
 	}
@@ -58,6 +66,7 @@ export const Home: FC = () => {
 	return (
 		<div className={styles.page}>
 			<HeroCard subscription={subscription} />
+			<InviteCard />
 			<DetailSection subscription={subscription} />
 		</div>
 	);

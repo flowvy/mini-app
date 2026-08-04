@@ -19,6 +19,11 @@
 	-webkit-overflow-scrolling: touch;
 	overscroll-behavior-y: contain;
 	touch-action: pan-y;
+	scroll-padding-block: var(--shell-top) var(--shell-bottom);
+}
+
+.shell[data-keyboard-open="true"] {
+	--shell-bottom: max(16px, var(--tg-viewport-safe-area-inset-bottom, 0px));
 }
 
 /* Ensure scroll container is always scrollable (Telegram Sticky App pattern).

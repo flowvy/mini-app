@@ -63,9 +63,11 @@
 	transition: background var(--duration-base), color var(--duration-base);
 }
 
-.iconBtn:hover {
-	background: var(--v2-bg-secondary);
-	color: var(--v2-text-secondary);
+@media (hover: hover) and (pointer: fine) {
+	.iconBtn:hover {
+		background: var(--v2-bg-secondary);
+		color: var(--v2-text-secondary);
+	}
 }
 
 .removeConfirmBtn {
@@ -80,7 +82,8 @@
 	cursor: pointer;
 	flex-shrink: 0;
 	line-height: 1;
-	transition: all var(--duration-base);
+	transition: color var(--duration-base), background-color var(--duration-base), border-color
+		var(--duration-base), opacity var(--duration-base);
 	display: flex;
 	align-items: center;
 	justify-content: center;

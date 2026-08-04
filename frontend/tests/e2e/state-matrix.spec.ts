@@ -256,9 +256,9 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 
 	await page.goto("/admin/settings");
 	await page.getByRole("button", { name: /^Uptime Kuma Public status page/ }).click();
-	await page.getByPlaceholder("https://status.example.com").fill("https://new-status.example.test");
-	const backButton = page.getByRole("button", { name: "Back" });
-	await backButton.click();
+	const urlInput = page.getByPlaceholder("https://status.example.com");
+	await urlInput.fill("https://new-status.example.test");
+	await page.evaluate(() => window.history.back());
 	const dialog = page.getByRole("dialog", { name: "Discard changes?" });
 	await expect(dialog).toBeVisible();
 	await expect(page.getByRole("button", { name: "Close" })).toBeFocused();
@@ -266,7 +266,7 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 	await expect(page.getByRole("button", { name: "Discard" })).toBeFocused();
 	await page.keyboard.press("Escape");
 	await expect(dialog).toHaveCount(0);
-	await expect(backButton).toBeFocused();
+	await expect(urlInput).toBeFocused();
 
 	await page.getByRole("button", { name: "Test" }).click();
 	await expect(page.getByRole("alert")).toContainText("Connection test failed");
@@ -344,7 +344,8 @@ test("enabling a configured Beszel source exposes Pulse without reloading", asyn
 	await provider.getByRole("button", { name: "Beszel", exact: true }).click();
 	await page.getByPlaceholder("https://monitor.example.com").fill("https://beszel.example.test");
 	await page.getByRole("button", { name: "Save" }).click();
-	await page.getByRole("button", { name: "Back" }).click();
+	await page.goBack();
+	await expect(page).toHaveURL(/\/admin\/settings$/);
 	await provider.getByRole("button", { name: "Beszel", exact: true }).click();
 	await expect(page.getByText("Active", { exact: true })).toBeVisible();
 
@@ -390,7 +391,7 @@ test("unconfigured Pulse source opens setup without an invalid save", async ({ p
 
 	await provider.getByRole("button", { name: "Beszel", exact: true }).click();
 	await expect(page).toHaveURL(/\/admin\/settings\/beszel$/);
-	await expect(page.getByRole("heading", { name: "Beszel" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Connection" })).toBeVisible();
 	await expect(page.getByText("Could not save changes. Try again.")).toHaveCount(0);
 });
 

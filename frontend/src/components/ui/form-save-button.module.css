@@ -26,6 +26,8 @@
 	cursor: default;
 }
 
-.btn:hover:not(:disabled) {
-	opacity: 0.85;
+@media (hover: hover) and (pointer: fine) {
+	.btn:hover:not(:disabled) {
+		opacity: 0.85;
+	}
 }

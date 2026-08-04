@@ -5,6 +5,7 @@ import { createRootRoute, createRoute, createRouter } from "@tanstack/react-rout
 import { AppShell } from "./components/layout/app-shell.tsx";
 import { AdminBroadcast } from "./pages/admin/broadcast.tsx";
 import { AdminDashboard } from "./pages/admin/dashboard.tsx";
+import { AdminAccessSettings } from "./pages/admin/settings-access.tsx";
 import { AdminBeszelConfig } from "./pages/admin/settings-beszel.tsx";
 import { AdminBrandingConfig } from "./pages/admin/settings-branding.tsx";
 import { AdminKumaConfig } from "./pages/admin/settings-kuma.tsx";
@@ -99,6 +100,12 @@ const adminSettingsWelcomeRoute = createRoute({
 	component: AdminWelcomeConfig,
 });
 
+const adminSettingsAccessRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/access",
+	component: AdminAccessSettings,
+});
+
 const routeTree = rootRoute.addChildren([
 	homeRoute,
 	pulseRoute,
@@ -113,6 +120,7 @@ const routeTree = rootRoute.addChildren([
 	adminSettingsBeszelRoute,
 	adminSettingsBrandingRoute,
 	adminSettingsWelcomeRoute,
+	adminSettingsAccessRoute,
 ]);
 
 export const router = createRouter({

@@ -60,11 +60,7 @@
 	background: transparent;
 	color: var(--v2-text-secondary);
 	cursor: pointer;
-	transition: all var(--duration-fast) ease;
-}
-
-.toggleBtn:hover {
-	color: var(--v2-text-positive);
+	transition: color var(--duration-fast) ease, background-color var(--duration-fast) ease;
 }
 
 .activeBtn {
@@ -72,6 +68,12 @@
 	color: var(--v2-static-white);
 }
 
-.activeBtn:hover {
-	color: var(--v2-static-white);
+@media (hover: hover) and (pointer: fine) {
+	.toggleBtn:hover {
+		color: var(--v2-text-positive);
+	}
+
+	.activeBtn:hover {
+		color: var(--v2-static-white);
+	}
 }

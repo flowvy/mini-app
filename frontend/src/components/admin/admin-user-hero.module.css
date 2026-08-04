@@ -10,6 +10,25 @@
 	gap: 12px;
 }
 
+.identity {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--v2-border-tertiary);
+}
+
+.identity strong {
+	min-width: 0;
+	overflow: hidden;
+	color: var(--v2-text-primary);
+	font-size: 14px;
+	font-weight: 700;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 /* Row 1: headline numbers */
 
 .heroRow1 {

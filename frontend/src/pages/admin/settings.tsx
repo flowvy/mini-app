@@ -14,6 +14,7 @@ import { LoadErrorState } from "../../components/ui/load-error-state.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { SegmentedControl } from "../../components/ui/segmented-control.tsx";
 import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
+import { useRegistrationSettings } from "../../hooks/use-registration-admin.ts";
 import type { PulseProvider } from "../../types/admin-settings.ts";
 import styles from "./settings.module.css";
 
@@ -53,6 +54,7 @@ export const AdminSettings: FC = () => {
 	const navigate = useNavigate();
 	const { settings, isPending, error, refetch } = useAdminSettings();
 	const updateMutation = useUpdateSettings();
+	const registration = useRegistrationSettings();
 
 	if (isPending || (!settings && !error)) {
 		return <PageLoading />;
@@ -132,7 +134,7 @@ export const AdminSettings: FC = () => {
 				/>
 			</FormSectionCard>
 
-			<FormSectionHeader>{t("settings.brandingSection")}</FormSectionHeader>
+			<FormSectionHeader>{t("settings.bot.section")}</FormSectionHeader>
 			<FormSectionCard>
 				<SettingsToolRow
 					label={t("settings.brandingRow")}
@@ -140,10 +142,20 @@ export const AdminSettings: FC = () => {
 					value={settings.appName || undefined}
 					onClick={() => navigate({ to: "/admin/settings/branding" })}
 				/>
-			</FormSectionCard>
-
-			<FormSectionHeader>{t("settings.bot.section")}</FormSectionHeader>
-			<FormSectionCard>
+				<FormRowSeparator />
+				<SettingsToolRow
+					label={t("access.settingsRow")}
+					desc={t("access.settingsRowDesc")}
+					value={
+						registration.data?.registrationMode === "invite_only"
+							? t("access.inviteOnly")
+							: registration.data?.registrationMode === "open"
+								? t("access.open")
+								: undefined
+					}
+					onClick={() => navigate({ to: "/admin/settings/access" })}
+				/>
+				<FormRowSeparator />
 				<SettingsToolRow
 					label={t("settings.bot.welcomeRow")}
 					desc={t("settings.bot.welcomeRowDesc")}

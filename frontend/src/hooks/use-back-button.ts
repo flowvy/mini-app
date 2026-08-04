@@ -18,11 +18,18 @@ const TAB_PATHS = new Set([
 	"/admin/settings",
 ]);
 
+export function getBackFallback(pathname: string): string {
+	if (pathname.startsWith("/admin/settings/")) return "/admin/settings";
+	if (pathname.startsWith("/admin/users/")) return "/admin/users";
+	if (pathname.startsWith("/admin")) return "/admin/dashboard";
+	return "/";
+}
+
 export function useBackButton(): void {
 	const location = useLocation();
 	const router = useRouter();
 	const isTabRoute = TAB_PATHS.has(location.pathname);
-	const fallback = location.pathname.startsWith("/admin") ? "/admin/dashboard" : "/";
+	const fallback = getBackFallback(location.pathname);
 
 	useEffect(() => {
 		if (isTabRoute) {

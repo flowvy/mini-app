@@ -1,7 +1,6 @@
 import { useBlocker } from "@tanstack/react-router";
 /** Welcome Message sub-screen — text, media file upload, button text, save. */
-import { ArrowLeft } from "lucide-react";
-import { type FC, useEffect, useRef, useState } from "react";
+import { type FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import { apiUploadFile } from "../../lib/api.ts";
@@ -25,10 +24,9 @@ const prefix = isMockAuth ? "/debug/admin/settings" : "/admin/settings";
 
 interface WelcomeConfigProps {
 	settings: AdminSettings;
-	onBack: () => void;
 }
 
-export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
+export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 	const { t } = useTranslation();
 	const [text, setText] = useState(settings.welcomeText ?? "");
 	const [buttonText, setButtonText] = useState(settings.welcomeButtonText ?? "");
@@ -38,8 +36,6 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 	const [saved, setSaved] = useState(false);
 	const [uploading, setUploading] = useState(false);
 	const [feedbackError, setFeedbackError] = useState<string | null>(null);
-	const backButtonRef = useRef<HTMLButtonElement>(null);
-
 	const updateMutation = useUpdateSettings();
 
 	const initText = settings.welcomeText ?? "";
@@ -113,19 +109,6 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 	return (
 		<div className={ss.page}>
 			{feedbackError && <InlineFeedback>{feedbackError}</InlineFeedback>}
-			<div className={ss.subHeader}>
-				<button
-					ref={backButtonRef}
-					type="button"
-					className={ss.backBtn}
-					onClick={onBack}
-					aria-label={t("common.back")}
-				>
-					<ArrowLeft size={16} />
-				</button>
-				<h1 className={ss.headerTitle}>{t("settings.welcome.title")}</h1>
-			</div>
-
 			<FormSectionHeader>{t("settings.welcome.messageSection")}</FormSectionHeader>
 			<FormSectionCard>
 				<FormTextarea
@@ -177,7 +160,6 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings, onBack }) => {
 
 			<ConfirmDialog
 				open={blocker.status === "blocked"}
-				returnFocusRef={backButtonRef}
 				title={t("settings.welcome.discardTitle")}
 				confirmLabel={t("settings.welcome.discardConfirm")}
 				cancelLabel={t("settings.welcome.discardCancel")}

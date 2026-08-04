@@ -4,6 +4,7 @@
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useBackButton } from "../../hooks/use-back-button.ts";
+import { useKeyboardVisibility } from "../../hooks/use-keyboard-visibility.ts";
 import { useScrollCompact } from "../../hooks/use-scroll-compact.ts";
 import { useCurrentUser } from "../auth-guard.tsx";
 import styles from "./app-shell.module.css";
@@ -17,9 +18,10 @@ export function AppShell() {
 	const user = useCurrentUser();
 	const location = useLocation();
 	const { compact, scrollRef } = useScrollCompact();
+	const keyboardVisible = useKeyboardVisibility();
 	const adminDenied = location.pathname.startsWith("/admin/") && user.role !== "admin";
 	return (
-		<div className={styles.shell}>
+		<div className={styles.shell} data-keyboard-open={keyboardVisible ? "true" : undefined}>
 			<EdgeBlur side="top" />
 			<Header />
 			<main ref={scrollRef} className={styles.content} data-scroll-restoration-id="main-content">
@@ -37,8 +39,8 @@ export function AppShell() {
 					</div>
 				)}
 			</main>
-			<TabBar compact={compact} />
-			<EdgeBlur side="bottom" />
+			<TabBar compact={compact} hidden={keyboardVisible} />
+			<EdgeBlur side="bottom" hidden={keyboardVisible} />
 		</div>
 	);
 }

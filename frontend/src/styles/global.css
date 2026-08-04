@@ -37,6 +37,8 @@ body {
 	font-size: 13px;
 	line-height: 1.4;
 	font-feature-settings: "liga" 1, "calt" 1;
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
@@ -88,12 +90,19 @@ select {
 }
 
 /* iOS/WKWebView zooms focused controls whose rendered text is below 16px.
-   Keep native pinch-to-zoom available and prevent only the focus intervention. */
-input[type],
-input:not([type]),
-textarea:not([data-allow-focus-zoom]),
-select:not([data-allow-focus-zoom]) {
-	font-size: max(16px, 1em);
+   Apply the threshold only to touch UIs so desktop forms keep the app type scale. */
+@media (pointer: coarse) {
+	input[type],
+	input:not([type]),
+	textarea:not([data-allow-focus-zoom]),
+	select:not([data-allow-focus-zoom]) {
+		font-size: max(16px, 1em);
+	}
+}
+
+input::placeholder,
+textarea::placeholder {
+	font-size: 13px;
 }
 
 a {
@@ -116,8 +125,10 @@ a {
 	border-radius: 2px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-	background: var(--v2-border-secondary);
+@media (hover: hover) and (pointer: fine) {
+	::-webkit-scrollbar-thumb:hover {
+		background: var(--v2-border-secondary);
+	}
 }
 
 /* ── Default transitions ── */

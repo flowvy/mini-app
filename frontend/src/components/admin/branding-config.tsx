@@ -1,7 +1,6 @@
 import { useBlocker } from "@tanstack/react-router";
 /** Branding sub-screen — app name, logo URL, save. */
-import { ArrowLeft } from "lucide-react";
-import { type FC, useEffect, useRef, useState } from "react";
+import { type FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import ss from "../../pages/admin/settings.module.css";
@@ -20,17 +19,14 @@ import { InlineFeedback } from "../ui/inline-feedback.tsx";
 
 interface BrandingConfigProps {
 	settings: AdminSettings;
-	onBack: () => void;
 }
 
-export const BrandingConfig: FC<BrandingConfigProps> = ({ settings, onBack }) => {
+export const BrandingConfig: FC<BrandingConfigProps> = ({ settings }) => {
 	const { t } = useTranslation();
 	const [appName, setAppName] = useState(settings.appName ?? "");
 	const [logoUrl, setLogoUrl] = useState(settings.logoUrl ?? "");
 	const [saved, setSaved] = useState(false);
 	const [saveFailed, setSaveFailed] = useState(false);
-	const backButtonRef = useRef<HTMLButtonElement>(null);
-
 	const updateMutation = useUpdateSettings();
 
 	const initAppName = settings.appName ?? "";
@@ -65,19 +61,6 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings, onBack }) =>
 	return (
 		<div className={ss.page}>
 			{saveFailed && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
-			<div className={ss.subHeader}>
-				<button
-					ref={backButtonRef}
-					type="button"
-					className={ss.backBtn}
-					onClick={onBack}
-					aria-label={t("common.back")}
-				>
-					<ArrowLeft size={16} />
-				</button>
-				<h1 className={ss.headerTitle}>{t("settings.branding.title")}</h1>
-			</div>
-
 			<FormSectionHeader>{t("settings.branding.identitySection")}</FormSectionHeader>
 			<FormSectionCard>
 				<FormRow label={t("settings.branding.appNameLabel")}>
@@ -114,7 +97,6 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings, onBack }) =>
 
 			<ConfirmDialog
 				open={blocker.status === "blocked"}
-				returnFocusRef={backButtonRef}
 				title={t("settings.branding.discardTitle")}
 				confirmLabel={t("settings.branding.discardConfirm")}
 				cancelLabel={t("settings.branding.discardCancel")}

@@ -18,33 +18,6 @@
 	color: var(--v2-icon-secondary);
 }
 
-.subHeader {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	margin-bottom: 16px;
-}
-
-.backBtn {
-	padding: 4px;
-	border-radius: var(--radius-sm);
-	color: var(--v2-icon-secondary);
-	display: flex;
-	align-items: center;
-	flex-shrink: 0;
-	background: none;
-	border: none;
-	cursor: pointer;
-	transition: background var(--duration-base) ease;
-}
-
-.headerTitle {
-	font-size: 16px;
-	font-weight: 700;
-	color: var(--v2-text-primary);
-	margin: 0;
-}
-
 .providerRow {
 	display: flex;
 	flex-direction: column;

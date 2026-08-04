@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const port = 5173;
+const port = Number(process.env.PLAYWRIGHT_PORT ?? 5173);
 
 export default defineConfig({
 	testDir: "./tests/e2e",
@@ -22,7 +22,7 @@ export default defineConfig({
 		video: "retain-on-failure",
 	},
 	webServer: {
-		command: "pnpm dev --host 127.0.0.1 --strictPort",
+		command: `pnpm dev --host 127.0.0.1 --port ${port} --strictPort`,
 		url: `http://127.0.0.1:${port}`,
 		reuseExistingServer: false,
 		timeout: 60_000,

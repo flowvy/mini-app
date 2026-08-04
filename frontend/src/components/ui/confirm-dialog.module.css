@@ -50,8 +50,10 @@
 	transition: background var(--duration-base) ease;
 }
 
-.closeBtn:hover {
-	background: var(--v2-bg-primary);
+@media (hover: hover) and (pointer: fine) {
+	.closeBtn:hover {
+		background: var(--v2-bg-primary);
+	}
 }
 
 .body {

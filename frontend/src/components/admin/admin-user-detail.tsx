@@ -49,6 +49,11 @@ export const AdminUserDetail: FC<AdminUserDetailProps> = ({ user }) => {
 
 	return (
 		<div>
+			<FormSectionHeader>{t("admin.userDetail.referrals")}</FormSectionHeader>
+			<FormSectionCard>
+				<Row label={t("admin.userDetail.invitedUsers")} value={String(user.invitedCount)} mono />
+			</FormSectionCard>
+
 			<FormSectionHeader>{t("admin.userDetail.accountInfo")}</FormSectionHeader>
 			<FormSectionCard>
 				<Row label={t("admin.userDetail.created")} value={formatDateISO(user.createdAt)} mono />

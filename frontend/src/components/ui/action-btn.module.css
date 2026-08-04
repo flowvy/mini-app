@@ -9,7 +9,10 @@
 	white-space: nowrap;
 	line-height: 1;
 	cursor: pointer;
-	transition: all var(--duration-base) ease;
+	transition:
+		color var(--duration-base) ease, background-color var(--duration-base) ease,
+		border-color var(--duration-base) ease, opacity var(--duration-base) ease,
+		transform var(--duration-fast) ease;
 	border: 1px solid transparent;
 	background: transparent;
 	font-family: inherit;
@@ -47,11 +50,6 @@
 	font-weight: 500;
 }
 
-.ghost:hover:not(:disabled) {
-	background: var(--v2-bg-positive-quaternary);
-	color: var(--v2-text-positive);
-}
-
 /* ── action ── */
 
 .action {
@@ -59,20 +57,11 @@
 	color: var(--v2-text-secondary);
 }
 
-.action:hover:not(:disabled) {
-	border-color: var(--v2-bg-positive-secondary);
-	color: var(--v2-text-positive);
-}
-
 /* ── confirm ── */
 
 .confirm {
 	background: var(--v2-bg-primary-inverted);
 	color: var(--v2-text-primary-inverted);
-}
-
-.confirm:hover:not(:disabled) {
-	opacity: 0.85;
 }
 
 .confirm:disabled {
@@ -86,10 +75,6 @@
 	color: #fff;
 }
 
-.danger:hover:not(:disabled) {
-	opacity: 0.85;
-}
-
 .danger:disabled {
 	opacity: 0.4;
 }
@@ -101,7 +86,24 @@
 	color: var(--v2-text-negative);
 }
 
-.dangerOutline:hover:not(:disabled) {
-	background: var(--v2-bg-negative-secondary);
-	border-color: var(--v2-border-negative-primary);
+@media (hover: hover) and (pointer: fine) {
+	.ghost:hover:not(:disabled) {
+		background: var(--v2-bg-positive-quaternary);
+		color: var(--v2-text-positive);
+	}
+
+	.action:hover:not(:disabled) {
+		border-color: var(--v2-bg-positive-secondary);
+		color: var(--v2-text-positive);
+	}
+
+	.confirm:hover:not(:disabled),
+	.danger:hover:not(:disabled) {
+		opacity: 0.85;
+	}
+
+	.dangerOutline:hover:not(:disabled) {
+		background: var(--v2-bg-negative-secondary);
+		border-color: var(--v2-border-negative-primary);
+	}
 }

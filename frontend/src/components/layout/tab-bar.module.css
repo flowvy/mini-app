@@ -28,7 +28,14 @@
 	transform: translateZ(0);
 	-webkit-backface-visibility: hidden;
 	backface-visibility: hidden;
-	transition: background-color 160ms ease-out, border-color 160ms ease-out;
+	transition: background-color 160ms ease-out, border-color 160ms ease-out, opacity 100ms ease-out,
+		transform 100ms ease-out;
+}
+
+.keyboardHidden {
+	opacity: 0;
+	transform: translate3d(0, 18px, 0);
+	pointer-events: none;
 }
 
 /* Dark: system preference (before JS sets data-theme) */

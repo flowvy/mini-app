@@ -1,7 +1,6 @@
 /** Beszel configuration sub-screen — origin, credential state, test, save. */
 import { useBlocker } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
-import { type FC, useEffect, useRef, useState } from "react";
+import { type FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTestBeszel, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import ss from "../../pages/admin/settings.module.css";
@@ -22,15 +21,13 @@ import styles from "./provider-config.module.css";
 
 interface BeszelConfigProps {
 	settings: AdminSettings;
-	onBack: () => void;
 }
 
-export const BeszelConfig: FC<BeszelConfigProps> = ({ settings, onBack }) => {
+export const BeszelConfig: FC<BeszelConfigProps> = ({ settings }) => {
 	const { t } = useTranslation();
 	const [url, setUrl] = useState(settings.beszelUrl ?? "");
 	const [saved, setSaved] = useState(false);
 	const [saveFailed, setSaveFailed] = useState(false);
-	const backButtonRef = useRef<HTMLButtonElement>(null);
 	const updateMutation = useUpdateSettings();
 	const testMutation = useTestBeszel();
 	const initialUrl = settings.beszelUrl ?? "";
@@ -68,19 +65,6 @@ export const BeszelConfig: FC<BeszelConfigProps> = ({ settings, onBack }) => {
 	return (
 		<div className={ss.page}>
 			{saveFailed && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
-			<div className={ss.subHeader}>
-				<button
-					ref={backButtonRef}
-					type="button"
-					className={ss.backBtn}
-					onClick={onBack}
-					aria-label={t("common.back")}
-				>
-					<ArrowLeft size={16} />
-				</button>
-				<h1 className={ss.headerTitle}>{t("settings.beszel.title")}</h1>
-			</div>
-
 			<FormSectionHeader>{t("settings.beszel.connectionSection")}</FormSectionHeader>
 			<FormSectionCard>
 				<FormRow label={t("settings.beszel.urlLabel")}>
@@ -137,7 +121,6 @@ export const BeszelConfig: FC<BeszelConfigProps> = ({ settings, onBack }) => {
 
 			<ConfirmDialog
 				open={blocker.status === "blocked"}
-				returnFocusRef={backButtonRef}
 				title={t("settings.beszel.discardTitle")}
 				confirmLabel={t("settings.beszel.discardConfirm")}
 				cancelLabel={t("settings.beszel.discardCancel")}

@@ -49,6 +49,31 @@ describe("API response handling", () => {
 		);
 	});
 
+	it("preserves a machine-readable onboarding error code", async () => {
+		vi.stubGlobal(
+			"fetch",
+			vi.fn().mockResolvedValue(
+				new Response(
+					JSON.stringify({
+						detail: {
+							code: "invite_required",
+							message: "An invite code is required",
+						},
+					}),
+					{ status: 403, headers: { "content-type": "application/json" } },
+				),
+			),
+		);
+
+		await expect(apiGet("/me")).rejects.toEqual(
+			expect.objectContaining<ApiError>({
+				status: 403,
+				code: "invite_required",
+				message: "An invite code is required",
+			}),
+		);
+	});
+
 	it("does not expose an untrusted HTML error body", async () => {
 		vi.stubGlobal(
 			"fetch",

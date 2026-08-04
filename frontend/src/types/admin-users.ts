@@ -27,6 +27,7 @@ export interface AdminUser {
 	subscriptionUrl: string;
 	activeInternalSquads: AdminUserInternalSquad[];
 	externalSquadName: string | null;
+	invitedCount: number;
 	userTraffic: AdminUserTraffic;
 }
 

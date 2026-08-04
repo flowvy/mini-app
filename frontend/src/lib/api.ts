@@ -10,23 +10,40 @@ export class ApiError extends Error {
 	constructor(
 		public readonly status: number,
 		message: string,
+		public readonly code: string | null = null,
 	) {
 		super(message);
 		this.name = "ApiError";
 	}
 }
 
-async function getErrorMessage(response: Response): Promise<string> {
+interface ErrorPayload {
+	message: string;
+	code: string | null;
+}
+
+async function getErrorPayload(response: Response): Promise<ErrorPayload> {
 	const fallback = `Request failed (${response.status})`;
 	const payload = await response.text();
-	if (!payload) return fallback;
+	if (!payload) return { message: fallback, code: null };
 
 	try {
 		const parsed = JSON.parse(payload) as { detail?: unknown };
-		return typeof parsed.detail === "string" && parsed.detail.trim() ? parsed.detail : fallback;
+		if (typeof parsed.detail === "string" && parsed.detail.trim()) {
+			return { message: parsed.detail, code: null };
+		}
+		if (parsed.detail && typeof parsed.detail === "object") {
+			const detail = parsed.detail as { code?: unknown; message?: unknown };
+			return {
+				message:
+					typeof detail.message === "string" && detail.message.trim() ? detail.message : fallback,
+				code: typeof detail.code === "string" && detail.code.trim() ? detail.code : null,
+			};
+		}
+		return { message: fallback, code: null };
 	} catch {
 		// Never expose an upstream HTML page or another untrusted response body to the UI.
-		return fallback;
+		return { message: fallback, code: null };
 	}
 }
 
@@ -47,7 +64,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 	});
 
 	if (!response.ok) {
-		throw new ApiError(response.status, await getErrorMessage(response));
+		const error = await getErrorPayload(response);
+		throw new ApiError(response.status, error.message, error.code);
 	}
 
 	if (response.status === 204) {
@@ -72,6 +90,10 @@ export function apiPatch<T>(path: string, body?: unknown): Promise<T> {
 	return request<T>("PATCH", path, body);
 }
 
+export function apiPut<T>(path: string, body?: unknown): Promise<T> {
+	return request<T>("PUT", path, body);
+}
+
 export function apiDelete<T = void>(path: string): Promise<T> {
 	return request<T>("DELETE", path);
 }
@@ -90,7 +112,8 @@ export async function apiUploadFile<T>(path: string, file: File): Promise<T> {
 	});
 
 	if (!response.ok) {
-		throw new ApiError(response.status, await getErrorMessage(response));
+		const error = await getErrorPayload(response);
+		throw new ApiError(response.status, error.message, error.code);
 	}
 
 	return response.json() as Promise<T>;

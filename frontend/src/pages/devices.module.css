@@ -91,12 +91,15 @@
 	font-size: 12px;
 	font-weight: 600;
 	cursor: pointer;
-	transition: all var(--duration-base);
+	transition: color var(--duration-base), background-color var(--duration-base), border-color
+		var(--duration-base), opacity var(--duration-base);
 	line-height: 1;
 }
 
-.dangerBtn:hover {
-	background: var(--v2-bg-negative-secondary);
+@media (hover: hover) and (pointer: fine) {
+	.dangerBtn:hover {
+		background: var(--v2-bg-negative-secondary);
+	}
 }
 
 /* Confirm bar */
@@ -131,7 +134,8 @@
 	font-size: 11px;
 	font-weight: 500;
 	cursor: pointer;
-	transition: all var(--duration-base);
+	transition: color var(--duration-base), background-color var(--duration-base), opacity
+		var(--duration-base);
 	line-height: 1;
 }
 
@@ -144,7 +148,8 @@
 	font-size: 11px;
 	font-weight: 600;
 	cursor: pointer;
-	transition: all var(--duration-base);
+	transition: color var(--duration-base), background-color var(--duration-base), opacity
+		var(--duration-base);
 	line-height: 1;
 }
 

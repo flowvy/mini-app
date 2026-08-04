@@ -29,7 +29,7 @@ export interface UserResponse {
 interface AuthState {
 	user: UserResponse | null;
 	isLoading: boolean;
-	error: string | null;
+	error: Error | null;
 	isAuthenticated: boolean;
 }
 
@@ -50,6 +50,9 @@ function getMockUser(): UserResponse {
 
 const fetchUser = async (): Promise<UserResponse> => {
 	if (isMockAuth) {
+		if (window.localStorage.getItem("flowvy:mock-auth") === "onboarding") {
+			return apiGet<UserResponse>("/me");
+		}
 		if (window.localStorage.getItem("flowvy:mock-auth") === "unauthenticated") {
 			throw new Error("Not authenticated");
 		}
@@ -84,11 +87,7 @@ export function useAuth(): AuthState & { retry: () => void } {
 	return {
 		user: data ?? null,
 		isLoading: isPending,
-		error: blockingError
-			? blockingError instanceof Error
-				? blockingError.message
-				: "Unknown error"
-			: null,
+		error: blockingError instanceof Error ? blockingError : null,
 		isAuthenticated: data !== undefined,
 		retry: () => {
 			void refetch();

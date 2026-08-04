@@ -189,8 +189,10 @@
 	transition: opacity var(--duration-base);
 }
 
-.actionBtn:hover {
-	opacity: 0.85;
+@media (hover: hover) and (pointer: fine) {
+	.actionBtn:hover {
+		opacity: 0.85;
+	}
 }
 
 .actionIcon {

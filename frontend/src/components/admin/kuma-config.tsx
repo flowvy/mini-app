@@ -1,9 +1,8 @@
 import { useBlocker } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
 /**
  * Kuma configuration sub-screen — URL, slug, connection test, save.
  */
-import { type FC, useEffect, useRef, useState } from "react";
+import { type FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTestKuma, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import ss from "../../pages/admin/settings.module.css";
@@ -24,17 +23,14 @@ import styles from "./provider-config.module.css";
 
 interface KumaConfigProps {
 	settings: AdminSettings;
-	onBack: () => void;
 }
 
-export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
+export const KumaConfig: FC<KumaConfigProps> = ({ settings }) => {
 	const { t } = useTranslation();
 	const [url, setUrl] = useState(settings.kumaUrl ?? "");
 	const [slug, setSlug] = useState(settings.kumaSlug ?? "");
 	const [saved, setSaved] = useState(false);
 	const [saveFailed, setSaveFailed] = useState(false);
-	const backButtonRef = useRef<HTMLButtonElement>(null);
-
 	const updateMutation = useUpdateSettings();
 	const testMutation = useTestKuma();
 
@@ -82,19 +78,6 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 	return (
 		<div className={ss.page}>
 			{saveFailed && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
-			<div className={ss.subHeader}>
-				<button
-					ref={backButtonRef}
-					type="button"
-					className={ss.backBtn}
-					onClick={onBack}
-					aria-label={t("common.back")}
-				>
-					<ArrowLeft size={16} />
-				</button>
-				<h1 className={ss.headerTitle}>{t("settings.kuma.title")}</h1>
-			</div>
-
 			<FormSectionHeader>{t("settings.kuma.connectionSection")}</FormSectionHeader>
 			<FormSectionCard>
 				<FormRow label={t("settings.kuma.urlLabel")}>
@@ -149,7 +132,6 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings, onBack }) => {
 
 			<ConfirmDialog
 				open={blocker.status === "blocked"}
-				returnFocusRef={backButtonRef}
 				title={t("settings.kuma.discardTitle")}
 				confirmLabel={t("settings.kuma.discardConfirm")}
 				cancelLabel={t("settings.kuma.discardCancel")}
