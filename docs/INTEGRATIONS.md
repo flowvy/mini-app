@@ -26,6 +26,16 @@ capability не подтверждена, share link не публикуется
 поднимает repo-owned safe preview на `127.0.0.1:80`. Cloudflare route и BotFather state остаются
 внешней явной конфигурацией; script их не создаёт и не изменяет.
 
+Нативную ширину, позицию и drag-area окна Mini App контролирует клиент Telegram, не frontend.
+Адаптер Flowvy распознаёт официальный platform value `tdesktop` и не отправляет этому клиенту
+`expand()` или `requestFullscreen()`. Если mounted viewport уже сообщает fullscreen, адаптер один
+раз вызывает документированный `exitFullscreen()`, чтобы вернуться в оконную панель. Это узкий
+обход открытого Windows multi-monitor bug Telegram Desktop: приложение не пытается имитировать
+исправление через CSS и не меняет существующее mobile viewport/fullscreen поведение.
+Telegram Desktop 7.0.6 сам задаёт начальный inner size панели `384x694` logical px, но включает
+resize для всех восьми границ. Пользователь может увеличить оконную панель; Mini Apps API не даёт
+Flowvy задать другой стартовый desktop-размер.
+
 При открытии Main Mini App Telegram помещает payload в signed raw `initData` как `start_param` и
 дублирует его в client GET parameter `tgWebAppStartParam`. Flowvy не доверяет client-копии: `GET
 /api/onboarding` сообщает только наличие валидного server-side payload, а `POST
@@ -64,7 +74,7 @@ Telegram хранит ещё не полученные updates до 24 часо�
 Redis бот fail closed возвращает временную ошибку. Это дополняет уникальный Telegram `update_id`:
 два сообщения пользователя являются двумя корректными updates, а не повторной доставкой одного.
 
-Primary evidence, проверено 2026-08-04:
+Primary evidence, проверено 2026-08-04 и 2026-08-08:
 
 - [Telegram Main Mini App](https://core.telegram.org/bots/webapps#launching-the-main-mini-app): её
   настраивают через `@BotFather` (`/mybots` → bot → Bot Settings → Configure Mini App → Enable Mini
@@ -87,6 +97,20 @@ Primary evidence, проверено 2026-08-04:
   выбор чата и принимает URL плюс редактируемый текст.
 - [Telegram Mini Apps API](https://core.telegram.org/bots/webapps): `hideKeyboard()` доступен
   с Bot API 9.1 и скрывает активную экранную клавиатуру.
+- [Telegram Mini Apps API](https://core.telegram.org/bots/webapps): `expand()` изменяет доступную
+  высоту, а `requestFullscreen()` и `exitFullscreen()` являются отдельными Bot API 8.0+ командами;
+  API не определяет управление координатами или drag-area нативного desktop-окна.
+- [Telegram Desktop issue #30963](https://github.com/telegramdesktop/tdesktop/issues/30963),
+  проверено 2026-08-08: открытый Windows multi-monitor bug в fullscreen сохраняет старую точку
+  привязки панели, из-за чего она выходит за правый/нижний край и получает смещённый input.
+- [Telegram Desktop v7.0.6 WebView launch source](https://github.com/telegramdesktop/tdesktop/blob/fccb2672b05f7b788708e39a7b482e50ebdea510/Telegram/SourceFiles/inline_bots/bot_attach_web_view.cpp#L1266-L1287)
+  и [fullscreen event handler](https://github.com/telegramdesktop/tdesktop/blob/fccb2672b05f7b788708e39a7b482e50ebdea510/Telegram/SourceFiles/ui/chat/attach/attach_bot_webview.cpp#L2316-L2335),
+  проверено 2026-08-08: клиент передаёт platform `tdesktop`, обрабатывает request/exit fullscreen и
+  не содержит обработчика `web_app_expand`.
+- [Telegram Desktop v7.0.6 panel size](https://github.com/telegramdesktop/tdesktop/blob/fccb2672b05f7b788708e39a7b482e50ebdea510/Telegram/SourceFiles/payments/ui/payments.style#L143)
+  и [locked `lib_ui` resize implementation](https://github.com/desktop-app/lib_ui/blob/632ae6ac4e1750900bbb2f40241b2e60eea00cef/ui/widgets/separate_panel.cpp#L1350-L1373),
+  проверено 2026-08-08: начальный inner size равен `384x694`, а оконный режим создаёт resize-зоны
+  на четырёх границах и четырёх углах.
 - [HTML `enterkeyhint`](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/enterkeyhint):
   `done` обозначает завершение ввода/закрытие IME, `search` — поиск.
 - [Telegram Bot API — setWebhook](https://core.telegram.org/bots/api#setwebhook): `secret_token`

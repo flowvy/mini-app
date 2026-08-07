@@ -11,17 +11,18 @@ import {
 	themeParams,
 	viewport,
 } from "@telegram-apps/sdk-react";
+import {
+	resolveTelegramViewportStartup,
+	restoreWindowedTelegramDesktopViewport,
+} from "./telegram-viewport.ts";
 
 let initialized = false;
 
-const MOBILE_PLATFORMS = new Set(["android", "android_x", "ios"]);
-
-function isMobilePlatform(): boolean {
+function getPlatform(): string | undefined {
 	try {
-		const lp = retrieveLaunchParams();
-		return MOBILE_PLATFORMS.has(lp.tgWebAppPlatform);
+		return retrieveLaunchParams().tgWebAppPlatform;
 	} catch {
-		return false;
+		return undefined;
 	}
 }
 
@@ -94,15 +95,28 @@ export function initTelegramApp(): void {
 
 	try {
 		if (viewport.mount.isAvailable() && !viewport.isMounting()) {
-			void viewport.mount().then(() => {
-				if (viewport.bindCssVars.isAvailable()) {
-					viewport.bindCssVars();
-				}
-				void viewport.expand();
-				if (isMobilePlatform() && viewport.requestFullscreen.isAvailable()) {
-					void viewport.requestFullscreen();
-				}
-			});
+			void viewport
+				.mount()
+				.then(() => {
+					if (viewport.bindCssVars.isAvailable()) {
+						viewport.bindCssVars();
+					}
+					const platform = getPlatform();
+					const startup = resolveTelegramViewportStartup(platform);
+					restoreWindowedTelegramDesktopViewport({
+						platform,
+						isFullscreen: viewport.isFullscreen(),
+						canExitFullscreen: viewport.exitFullscreen.isAvailable(),
+						exitFullscreen: viewport.exitFullscreen,
+					});
+					if (startup.expand) {
+						void viewport.expand();
+					}
+					if (startup.requestFullscreen && viewport.requestFullscreen.isAvailable()) {
+						void viewport.requestFullscreen();
+					}
+				})
+				.catch(() => undefined);
 		}
 	} catch {
 		/* non-critical */

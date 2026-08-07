@@ -55,6 +55,11 @@
 ### Frontend
 
 - React/TanStack приложение с Telegram SDK, mock-admin режимом и авторизационным guard.
+- Telegram adapter не отправляет viewport/fullscreen startup-команды платформе `tdesktop` и один
+  раз выходит из уже активного fullscreen. Это документированный app-side обход открытого
+  Telegram Desktop Windows multi-monitor bug; нативные координаты и drag-area остаются под
+  контролем Telegram. Владелец подтвердил возврат в управляемую оконную панель; её компактный
+  стартовый размер `384x694` задаёт сам Telegram Desktop, а все границы поддерживают resize.
 - Пользовательские маршруты Home, Devices, Pulse и Support.
 - Admin dashboard, список/карточка пользователя, действия, выбор Pulse source, отдельные
   Kuma/Beszel/branding/welcome/access settings и Broadcast route.
@@ -101,7 +106,7 @@
   безопасного Quick Tunnel и проверки документации.
 - GitHub Actions CI с PostgreSQL/Redis, Ruff, Alembic, pytest, Biome/TypeScript/Vitest/build и
   Playwright Chromium smoke.
-- Четыре Vitest unit файла (13 тестов), детерминированная Playwright state matrix на четырёх
+- Пять Vitest unit файлов (26 тестов), детерминированная Playwright state matrix на четырёх
   browser/viewport проектах и отдельный read-only live-smoke.
 
 ## Что не завершено или не доказано
@@ -113,6 +118,9 @@
   только на уровне перехваченных ошибок, а не реальным отключением браузера.
 - Новый GitHub Actions workflow ещё не выполнялся в удалённом репозитории; его зелёный статус не
   подтверждён этой локальной проверкой.
+- Telegram Desktop 7.0.6 на Windows имеет открытый multi-monitor fullscreen bug `#30963`. Flowvy
+  выходит из fullscreen при старте на `tdesktop`; live recovery подтверждён. Исправить нативное
+  fullscreen-размещение или задать другой стартовый оконный размер через WebApp API невозможно.
 - Repository pytest fixtures создают схему через `Base.metadata.create_all()`, но отдельный migration
   verifier проверяет disposable zero-to-head, downgrade/re-upgrade, один head и model drift. Для
   previous-head дополнительно проверяются webhook payload/backfill/redaction/timezone conversion и
@@ -216,8 +224,9 @@ P0 команды запускались 2026-08-01. Backend P1 этапы и Re
 | Codex fresh session | `codex exec --ephemeral --strict-config ...` | config принят; корневой `AGENTS.md`, четыре repo skills и custom role `repo_mapper` обнаружены |
 | Change-aware gate | `scripts/verify.ps1 -Scope Changed -SkipE2E` | 249 service-free backend tests, frontend install/lint/type/unit/build и docs passed; E2E подтверждён отдельно |
 | Полный локальный gate | `PLAYWRIGHT_PORT=5196; scripts/verify.ps1 -Scope Full` | migrations, 298 pytest, 41 Remnawave contract, frontend lint/type/unit/build, 43 Chromium browser и docs passed |
-| Frontend lint/typecheck | `pnpm lint`; `pnpm typecheck` | пройдено, 164 linted files |
-| Frontend unit | `pnpm test` | 4 files, 13 tests passed |
+| Frontend lint/typecheck | `pnpm lint`; `pnpm typecheck` | пройдено, 166 linted files |
+| Frontend unit | `pnpm test` | 5 files, 26 tests passed |
+| Telegram Desktop viewport fix | 13 policy cases; Playwright mobile + desktop; live TDesktop 7.0.6 | 13/13 unit и 86/86 browser scenarios; light/dark Home evidence просмотрены; оконный recovery подтверждён владельцем |
 | Dev lifecycle tooling | PowerShell parser + destructive guard checks | `dev-reset-data.ps1` parsed; запуск без confirmation и при живом dev закрывается до side effect |
 | Frontend build | `pnpm build` | пройдено |
 | Browser smoke | isolated Playwright mobile project | 43/43; server-confirmed Main Mini App auto-redeem, verified/unavailable referral URL, onboarding/profile/user-owned invite, browser Back, unified Home loading, provider tag failure, keyboard/tab-bar/native picker, semantic section headings, console/network/axe guards |
