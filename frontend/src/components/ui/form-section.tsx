@@ -34,12 +34,19 @@ export const FormSectionCard: FC<{ children: ReactNode }> = ({ children }) => (
 
 interface FormRowProps {
 	label: string;
+	htmlFor?: string;
 	children: ReactNode;
 }
 
-export const FormRow: FC<FormRowProps> = ({ label, children }) => (
+export const FormRow: FC<FormRowProps> = ({ label, htmlFor, children }) => (
 	<div className={styles.row}>
-		<span className={styles.rowLabel}>{label}</span>
+		{htmlFor ? (
+			<label className={styles.rowLabel} htmlFor={htmlFor}>
+				{label}
+			</label>
+		) : (
+			<span className={styles.rowLabel}>{label}</span>
+		)}
 		<div className={styles.rowValue}>{children}</div>
 	</div>
 );
@@ -265,6 +272,7 @@ export const FormTextarea: FC<FormTextareaProps> = ({
 );
 
 interface FormInlineInputProps {
+	id?: string;
 	value: string;
 	onChange: (value: string) => void;
 	placeholder?: string;
@@ -274,6 +282,7 @@ interface FormInlineInputProps {
 }
 
 export const FormInlineInput: FC<FormInlineInputProps> = ({
+	id,
 	value,
 	onChange,
 	placeholder,
@@ -282,6 +291,7 @@ export const FormInlineInput: FC<FormInlineInputProps> = ({
 	type = "text",
 }) => (
 	<input
+		id={id}
 		type={type}
 		value={value}
 		onChange={(e) => onChange(e.target.value)}

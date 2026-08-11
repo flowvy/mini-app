@@ -48,14 +48,14 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 	const dirty = textDirty || mediaDirty;
 
 	const blocker = useBlocker({
-		shouldBlockFn: () => dirty,
+		shouldBlockFn: () => dirty && !saved,
 		withResolver: true,
 	});
 
 	const isDefault = mediaFileId === null && settings.welcomeMediaUrl === null;
 	const displayName = mediaFileId
-		? (mediaFileName ?? "custom")
-		: (settings.welcomeMediaUrl ?? "main_card.mp4");
+		? (mediaFileName ?? t("settings.welcome.mediaCustomName"))
+		: (settings.welcomeMediaUrl ?? t("settings.welcome.mediaDefaultName"));
 	const displayType = mediaType ?? "animation";
 
 	useEffect(() => {

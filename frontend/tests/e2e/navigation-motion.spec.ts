@@ -31,12 +31,12 @@ test("distant navigation selections cross-fade locally instead of travelling", a
 
 	await page.goto("/admin/dashboard");
 	const dashboardView = page.getByRole("group", { name: "Dashboard view" });
-	const vpn = dashboardView.getByRole("button", { name: "VPN" });
-	const bot = dashboardView.getByRole("button", { name: "Bot" });
-	await expect.poll(() => selectedLayerOpacity(vpn)).toBe(1);
-	await bot.click();
-	await expect.poll(() => selectedLayerOpacity(vpn)).toBe(0);
-	await expect.poll(() => selectedLayerOpacity(bot)).toBe(1);
+	const remnawave = dashboardView.getByRole("button", { name: "Remnawave" });
+	const flowvy = dashboardView.getByRole("button", { name: "Flowvy Mini-App" });
+	await expect.poll(() => selectedLayerOpacity(remnawave)).toBe(1);
+	await flowvy.click();
+	await expect.poll(() => selectedLayerOpacity(remnawave)).toBe(0);
+	await expect.poll(() => selectedLayerOpacity(flowvy)).toBe(1);
 });
 
 test("selection motion follows the system Reduce Motion preference", async ({
@@ -45,10 +45,10 @@ test("selection motion follows the system Reduce Motion preference", async ({
 }) => {
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await page.goto("/admin/dashboard");
-	const vpn = page
+	const remnawave = page
 		.getByRole("group", { name: "Dashboard view" })
-		.getByRole("button", { name: "VPN" });
-	expect(await selectedLayerDurationMs(vpn)).toBeLessThan(1);
+		.getByRole("button", { name: "Remnawave" });
+	expect(await selectedLayerDurationMs(remnawave)).toBeLessThan(1);
 });
 
 test("form controls avoid the iOS focus-zoom threshold without disabling user zoom", async ({
@@ -78,7 +78,7 @@ test("access controls keep Flowvy typography with compact placeholders", async (
 	await page.goto("/admin/settings/access");
 	const defaultAccess = page.getByLabel("Default access");
 	const defaultAccessValue = defaultAccess.locator("..").locator("span", {
-		hasText: "No VPN access",
+		hasText: "No proxy access",
 	});
 	await expect(defaultAccessValue).toHaveCSS("font-family", /Geist/);
 	await expect(defaultAccessValue).toHaveCSS("font-size", "13px");

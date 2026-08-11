@@ -1,0 +1,47 @@
+.page {
+	display: flex;
+	min-height: min(520px, 68dvh);
+	padding: 16px;
+	align-items: center;
+	justify-content: center;
+}
+
+.card {
+	display: flex;
+	width: min(100%, 460px);
+	padding: 28px;
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-lg);
+	background: var(--v2-bg-primary);
+	flex-direction: column;
+	align-items: center;
+	gap: 18px;
+	text-align: center;
+}
+
+.icon {
+	color: var(--v2-icon-secondary);
+}
+
+.copy {
+	display: grid;
+	gap: 8px;
+}
+
+.title,
+.description {
+	margin: 0;
+}
+
+.title {
+	font-size: 18px;
+	font-weight: 650;
+	color: var(--v2-text-primary);
+}
+
+.description {
+	font-size: 13px;
+	line-height: 1.55;
+	color: var(--v2-text-secondary);
+	white-space: pre-wrap;
+}

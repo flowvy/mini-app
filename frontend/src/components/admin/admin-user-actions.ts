@@ -18,17 +18,27 @@ export interface ActionDef {
 
 export function getActions(user: AdminUser): ActionDef[] {
 	const isActive = user.status === "ACTIVE";
+	const statusAction: ActionDef[] =
+		user.status === "UNKNOWN"
+			? []
+			: [
+					{
+						key: isActive ? "disable" : "enable",
+						label: isActive ? i18n.t("admin.actions.disable") : i18n.t("admin.actions.enable"),
+						title: isActive
+							? i18n.t("admin.actions.disableTitle")
+							: i18n.t("admin.actions.enableTitle"),
+						desc: isActive
+							? i18n.t("admin.actions.disableDesc", { username: user.username })
+							: i18n.t("admin.actions.enableDesc", { username: user.username }),
+						confirmLabel: isActive
+							? i18n.t("admin.actions.disable")
+							: i18n.t("admin.actions.enable"),
+						danger: isActive,
+					},
+				];
 	return [
-		{
-			key: isActive ? "disable" : "enable",
-			label: isActive ? i18n.t("admin.actions.disable") : i18n.t("admin.actions.enable"),
-			title: isActive ? i18n.t("admin.actions.disableTitle") : i18n.t("admin.actions.enableTitle"),
-			desc: isActive
-				? i18n.t("admin.actions.disableDesc", { username: user.username })
-				: i18n.t("admin.actions.enableDesc", { username: user.username }),
-			confirmLabel: isActive ? i18n.t("admin.actions.disable") : i18n.t("admin.actions.enable"),
-			danger: isActive,
-		},
+		...statusAction,
 		{
 			key: "reset",
 			label: i18n.t("admin.actions.resetTraffic"),

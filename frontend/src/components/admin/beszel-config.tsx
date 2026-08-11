@@ -32,7 +32,7 @@ export const BeszelConfig: FC<BeszelConfigProps> = ({ settings }) => {
 	const testMutation = useTestBeszel();
 	const initialUrl = settings.beszelUrl ?? "";
 	const dirty = url !== initialUrl;
-	const blocker = useBlocker({ shouldBlockFn: () => dirty, withResolver: true });
+	const blocker = useBlocker({ shouldBlockFn: () => dirty && !saved, withResolver: true });
 
 	useEffect(() => {
 		if (!saved) return;
@@ -59,7 +59,7 @@ export const BeszelConfig: FC<BeszelConfigProps> = ({ settings }) => {
 	const connectionText = connection?.ok
 		? t("settings.beszel.connected")
 		: connection?.error
-			? connection.error
+			? t("settings.beszel.testError")
 			: t("settings.beszel.notTested");
 
 	return (

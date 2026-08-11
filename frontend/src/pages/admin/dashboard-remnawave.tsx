@@ -11,7 +11,7 @@ import type { DashboardResponse } from "../../types/dashboard.ts";
 import { Row, StatusRow, formatBwDiffSub } from "./dashboard-rows.tsx";
 import styles from "./dashboard.module.css";
 
-export function VpnContent({
+export function RemnawaveContent({
 	data,
 	t,
 }: { data: DashboardResponse; t: (k: string, o?: Record<string, unknown>) => string }) {
@@ -53,78 +53,103 @@ export function VpnContent({
 		<div>
 			<DashboardKpiGrid items={kpis} />
 
-			<FormSectionHeader>{t("admin.dashboard.vpn.usersByStatus")}</FormSectionHeader>
+			<FormSectionHeader>{t("admin.dashboard.remnawave.usersByStatus")}</FormSectionHeader>
 			<FormSectionCard>
 				<StatusRow
-					label={t("admin.dashboard.vpn.active")}
+					label={t("admin.userStatus.active")}
 					value={rw.users.statusCounts.ACTIVE}
 					dot="var(--v2-text-positive)"
 				/>
 				<FormRowSeparator />
 				<StatusRow
-					label={t("admin.dashboard.vpn.disabled")}
+					label={t("admin.userStatus.disabled")}
 					value={rw.users.statusCounts.DISABLED}
 					dot="var(--v2-text-secondary)"
 				/>
 				<FormRowSeparator />
 				<StatusRow
-					label={t("admin.dashboard.vpn.limited")}
+					label={t("admin.userStatus.limited")}
 					value={rw.users.statusCounts.LIMITED}
 					dot="var(--v2-text-warning)"
 				/>
 				<FormRowSeparator />
 				<StatusRow
-					label={t("admin.dashboard.vpn.expired")}
+					label={t("admin.userStatus.expired")}
 					value={rw.users.statusCounts.EXPIRED}
 					dot="var(--v2-text-negative)"
 				/>
+				{rw.users.statusCounts.UNKNOWN > 0 && (
+					<>
+						<FormRowSeparator />
+						<StatusRow
+							label={t("admin.userStatus.unknown")}
+							value={rw.users.statusCounts.UNKNOWN}
+							dot="var(--v2-text-secondary)"
+						/>
+					</>
+				)}
 			</FormSectionCard>
 
-			<FormSectionHeader>{t("admin.dashboard.vpn.online")}</FormSectionHeader>
+			<FormSectionHeader>{t("admin.dashboard.remnawave.online")}</FormSectionHeader>
 			<FormSectionCard>
 				<Row
-					label={t("admin.dashboard.vpn.now")}
+					label={t("admin.dashboard.remnawave.now")}
 					value={rw.onlineStats.onlineNow}
 					accent="var(--v2-text-positive)"
 				/>
 				<FormRowSeparator />
-				<Row label={t("admin.dashboard.vpn.last24h")} value={rw.onlineStats.lastDay} />
+				<Row label={t("admin.dashboard.remnawave.last24h")} value={rw.onlineStats.lastDay} />
 				<FormRowSeparator />
-				<Row label={t("admin.dashboard.vpn.last7d")} value={rw.onlineStats.lastWeek} />
+				<Row label={t("admin.dashboard.remnawave.last7d")} value={rw.onlineStats.lastWeek} />
 				<FormRowSeparator />
 				<Row
-					label={t("admin.dashboard.vpn.neverConnected")}
+					label={t("admin.dashboard.remnawave.neverConnected")}
 					value={rw.onlineStats.neverOnline}
 					muted
 				/>
 			</FormSectionCard>
 
-			<FormSectionHeader>{t("admin.dashboard.vpn.bandwidth")}</FormSectionHeader>
+			<FormSectionHeader>{t("admin.dashboard.remnawave.bandwidth")}</FormSectionHeader>
 			<FormSectionCard>
-				<DashboardBandwidthRow label="admin.dashboard.vpn.bwToday" {...bw.bandwidthLastTwoDays} />
+				<DashboardBandwidthRow
+					label="admin.dashboard.remnawave.bwToday"
+					{...bw.bandwidthLastTwoDays}
+				/>
 				<FormRowSeparator />
-				<DashboardBandwidthRow label="admin.dashboard.vpn.bw7d" {...bw.bandwidthLastSevenDays} />
+				<DashboardBandwidthRow
+					label="admin.dashboard.remnawave.bw7d"
+					{...bw.bandwidthLastSevenDays}
+				/>
 				<FormRowSeparator />
-				<DashboardBandwidthRow label="admin.dashboard.vpn.bw30d" {...bw.bandwidthLast30Days} />
+				<DashboardBandwidthRow
+					label="admin.dashboard.remnawave.bw30d"
+					{...bw.bandwidthLast30Days}
+				/>
 				<FormRowSeparator />
-				<DashboardBandwidthRow label="admin.dashboard.vpn.bwMonth" {...bw.bandwidthCalendarMonth} />
+				<DashboardBandwidthRow
+					label="admin.dashboard.remnawave.bwMonth"
+					{...bw.bandwidthCalendarMonth}
+				/>
 				<FormRowSeparator />
-				<DashboardBandwidthRow label="admin.dashboard.vpn.bwYear" {...bw.bandwidthCurrentYear} />
+				<DashboardBandwidthRow
+					label="admin.dashboard.remnawave.bwYear"
+					{...bw.bandwidthCurrentYear}
+				/>
 			</FormSectionCard>
 
-			<FormSectionHeader>{t("admin.dashboard.vpn.system")}</FormSectionHeader>
+			<FormSectionHeader>{t("admin.dashboard.remnawave.system")}</FormSectionHeader>
 			<FormSectionCard>
 				<Row
-					label={t("admin.dashboard.vpn.cpu")}
-					value={t("admin.dashboard.vpn.cores", { n: rw.cpu.cores })}
+					label={t("admin.dashboard.remnawave.cpu")}
+					value={t("admin.dashboard.remnawave.cores", { n: rw.cpu.cores })}
 				/>
 				<FormRowSeparator />
 				<Row
-					label={t("admin.dashboard.vpn.memory")}
+					label={t("admin.dashboard.remnawave.memory")}
 					value={formatMemory(rw.memory.used, rw.memory.total)}
 				/>
 				<FormRowSeparator />
-				<Row label={t("admin.dashboard.vpn.uptimeLabel")} value={formatUptime(rw.uptime)} />
+				<Row label={t("admin.dashboard.remnawave.uptimeLabel")} value={formatUptime(rw.uptime)} />
 			</FormSectionCard>
 		</div>
 	);

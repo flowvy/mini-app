@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock
 import pytest
 from pydantic import ValidationError
 
+from flowvy.api.routes.users import build_user_response
 from flowvy.schemas.provider_settings import (
     BeszelTestRequest,
     KumaTestRequest,
@@ -68,7 +69,7 @@ def _service(
         ("beszel_url", "https://monitor.example.test/api"),
     ],
 )
-def test_patch_rejects_unsafe_kuma_syntax(field: str, value: str) -> None:
+def test_patch_rejects_unsafe_provider_url_syntax(field: str, value: str) -> None:
     # Plain HTTP can be syntactically valid for an operator allow-listed private
     # origin; network policy, rather than request parsing, rejects public HTTP.
     if field == "kuma_url" and value == "http://public.example.test":
@@ -126,6 +127,42 @@ async def test_unrelated_change_does_not_invalidate_pulse_cache() -> None:
     await service.update(ProviderSettingsPatch(app_name="Flowvy"))
 
     redis.delete.assert_not_awaited()
+
+
+def test_settings_patch_has_no_external_support_fields() -> None:
+    forbidden = {
+        "support_title",
+        "support_description",
+        "support_url",
+        "support_button_text",
+    }
+
+    assert forbidden.isdisjoint(ProviderSettingsPatch.model_fields)
+
+
+@pytest.mark.asyncio
+async def test_settings_response_has_no_external_support_fields() -> None:
+    service, _kuma, _beszel, _redis = _service(_row())
+
+    payload = (await service.get()).model_dump(by_alias=True)
+
+    assert {"supportTitle", "supportDescription", "supportUrl", "supportButtonText"}.isdisjoint(
+        payload
+    )
+
+
+def test_public_branding_contains_identity_only() -> None:
+    user = SimpleNamespace(
+        id=123,
+        username="alice",
+        full_name="Alice",
+        role="user",
+        is_active=True,
+    )
+
+    payload = build_user_response(user, _row()).model_dump(by_alias=True)
+
+    assert payload["branding"] == {"appName": None, "logoUrl": None}
 
 
 @pytest.mark.asyncio

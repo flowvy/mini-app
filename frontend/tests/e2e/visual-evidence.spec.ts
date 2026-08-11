@@ -4,6 +4,7 @@ const screens = [
 	{ name: "home", path: "/", marker: "Account Info" },
 	{ name: "devices", path: "/devices", marker: "Pixel 8" },
 	{ name: "pulse", path: "/pulse", marker: "All systems operational" },
+	{ name: "admin-dashboard", path: "/admin/dashboard", marker: "Remnawave unavailable" },
 	{ name: "admin-users", path: "/admin/users", marker: "alice" },
 	{ name: "admin-user-detail", path: "/admin/users/1", marker: "alice" },
 	{ name: "admin-settings", path: "/admin/settings", marker: "Integrations" },
@@ -97,6 +98,45 @@ test("capture deterministic visual evidence for key screens", async ({
 	}
 });
 
+test("capture unknown status fallback in light and dark themes", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	mockApi.mock("GET", "/api/me/subscription", {
+		body: { ...mockData.subscription, status: "UNKNOWN" },
+	});
+	mockApi.mock("GET", "/api/debug/admin/users/1", {
+		body: { ...mockData.adminUser, status: "UNKNOWN" },
+	});
+
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await expect(page.getByText("Unknown status", { exact: true })).toBeVisible();
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`home-unknown-status-${colorScheme}.png`),
+			animations: "disabled",
+		});
+
+		await page.goto("/admin/users/1");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await expect(page.getByText("Unknown status", { exact: true })).toBeVisible();
+		await expect(page.getByRole("button", { name: "Enable" })).toHaveCount(0);
+		await expect(page.getByRole("button", { name: "Disable" })).toHaveCount(0);
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`admin-user-unknown-status-${colorScheme}.png`),
+			animations: "disabled",
+		});
+	}
+});
+
 test("capture Beszel settings in light and dark themes", async ({
 	page,
 	mockApi: _mock,
@@ -127,7 +167,10 @@ test("capture the lifetime access editor in light and dark themes", async ({
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
 		await expect(
-			page.getByLabel("Default access").locator("..").locator("span", { hasText: "No VPN access" }),
+			page
+				.getByLabel("Default access")
+				.locator("..")
+				.locator("span", { hasText: "No proxy access" }),
 		).toBeVisible();
 		await page.getByLabel("Default access").focus();
 		await page.screenshot({
@@ -240,6 +283,47 @@ test("capture the shared load error state in light and dark themes", async ({
 		await assertNoHorizontalOverflow(page);
 		await page.screenshot({
 			path: testInfo.outputPath(`load-error-${colorScheme}.png`),
+			animations: "disabled",
+		});
+	}
+});
+
+test("capture the in-app support placeholder in light and dark themes", async ({
+	page,
+	mockApi: _mock,
+}, testInfo) => {
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/support");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
+		await expect(page.getByText("In-app support is coming soon.")).toBeVisible();
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`support-placeholder-${colorScheme}.png`),
+			animations: "disabled",
+		});
+	}
+});
+
+test("capture provider identity settings in light and dark themes", async ({
+	page,
+	mockApi: _mock,
+}, testInfo) => {
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/admin/settings/branding");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await expect(page.getByLabel("App Name")).toBeVisible();
+		await expect(page.getByLabel("Logo URL")).toBeVisible();
+		await expect(page.getByText("Support URL", { exact: true })).toHaveCount(0);
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`admin-identity-${colorScheme}.png`),
 			animations: "disabled",
 		});
 	}

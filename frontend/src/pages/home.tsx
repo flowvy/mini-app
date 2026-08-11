@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { DetailSection } from "../components/home/detail-section.tsx";
 import { HeroCard } from "../components/home/hero-card.tsx";
 import { InviteCard, InviteCardSkeleton } from "../components/home/invite-card.tsx";
-import { LoadErrorState } from "../components/ui/load-error-state.tsx";
+import { ErrorState } from "../components/ui/error-state.tsx";
 import { Skeleton } from "../components/ui/skeleton.tsx";
 import { useSubscription } from "../hooks/use-subscription.ts";
 import { ApiError } from "../lib/api.ts";
@@ -48,7 +48,7 @@ export const Home: FC = () => {
 	if (error && !(error instanceof ApiError && error.status === 404)) {
 		return (
 			<div className={styles.page}>
-				<LoadErrorState onRetry={refetch} />
+				<ErrorState onAction={refetch} />
 				<InviteCard />
 			</div>
 		);

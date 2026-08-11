@@ -1,10 +1,11 @@
 import type { UserResponse } from "../hooks/use-auth.ts";
+import type { ProviderUserStatus } from "./user-status.ts";
+
+export type { ProviderUserStatus } from "./user-status.ts";
 
 export type RegistrationMode = "open" | "invite_only";
 export type ValidityMode = "duration" | "fixed" | "lifetime";
 export type TrafficStrategy = "NO_RESET" | "DAY" | "WEEK" | "MONTH" | "MONTH_ROLLING";
-export type ProviderUserStatus = "ACTIVE" | "DISABLED" | "LIMITED" | "EXPIRED";
-
 export interface OnboardingStatus {
 	state: "registered" | "open" | "invite_required";
 	registrationMode: RegistrationMode;

@@ -23,9 +23,21 @@ const FALLBACK_NAMES: Record<string, string> = {
 	linux: "devices.fallback.linux",
 };
 
+const PLATFORM_LABELS: Record<string, string> = {
+	android: "devices.platform.android",
+	ios: "devices.platform.ios",
+	macos: "devices.platform.macos",
+	windows: "devices.platform.windows",
+	linux: "devices.platform.linux",
+};
+
 function getDeviceName(device: DeviceData, t: (key: string) => string): string {
 	if (device.deviceModel) return device.deviceModel;
 	return t(FALLBACK_NAMES[device.platform?.toLowerCase() ?? ""] ?? "devices.fallback.unknown");
+}
+
+function getPlatformName(platform: string | null, t: (key: string) => string): string {
+	return t(PLATFORM_LABELS[platform?.toLowerCase() ?? ""] ?? "devices.platform.unknown");
 }
 
 export const DeviceRow: FC<DeviceRowProps> = ({
@@ -44,7 +56,9 @@ export const DeviceRow: FC<DeviceRowProps> = ({
 			</div>
 			<div className={styles.info}>
 				<span className={styles.name}>{getDeviceName(device, t)}</span>
-				<span className={styles.meta}>{device.osVersion || device.platform}</span>
+				<span className={styles.meta}>
+					{device.osVersion || getPlatformName(device.platform, t)}
+				</span>
 				<span className={styles.date}>
 					{t("devices.row.added", { date: formatShortDate(device.createdAt) })}
 				</span>

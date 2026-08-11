@@ -14,11 +14,13 @@ test("user routes render deterministic success states", async ({ page, mockApi: 
 
 	await page.goto("/pulse");
 	await expect(page.getByText("All systems operational")).toBeVisible();
-	await expect(page.getByText("VPN API")).toBeVisible();
+	await expect(page.getByText("Proxy API")).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 
 	await page.goto("/support");
-	await expect(page.getByText("Coming soon")).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
+	await expect(page.getByText("In-app support is coming soon.")).toBeVisible();
+	await assertNoHorizontalOverflow(page);
 });
 
 test("admin routes render deterministic success and placeholder states", async ({
@@ -26,6 +28,8 @@ test("admin routes render deterministic success and placeholder states", async (
 	mockApi: _mock,
 }) => {
 	await page.goto("/admin/dashboard");
+	await expect(page.getByRole("button", { name: "Remnawave" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Flowvy Mini-App" })).toBeVisible();
 	await expect(page.getByText("Remnawave unavailable")).toBeVisible();
 
 	await page.goto("/admin/users");
@@ -42,9 +46,11 @@ test("admin routes render deterministic success and placeholder states", async (
 	await expect(page.getByText("Integrations")).toBeVisible();
 	await expect(page.getByText("Remnawave", { exact: true })).toBeVisible();
 	await expect(page.getByText("Registration & Access")).toBeVisible();
-	const botCard = page.getByText("Bot", { exact: true }).locator("xpath=following-sibling::*[1]");
-	await expect(botCard.getByText("Name & Logo", { exact: true })).toBeVisible();
-	await expect(botCard.getByText("Registration & Access", { exact: true })).toBeVisible();
+	const miniAppCard = page
+		.getByText("Flowvy Mini-App", { exact: true })
+		.locator("xpath=following-sibling::*[1]");
+	await expect(miniAppCard.getByText("Identity", { exact: true })).toBeVisible();
+	await expect(miniAppCard.getByText("Registration & Access", { exact: true })).toBeVisible();
 	await expect(page.getByText("Branding", { exact: true })).not.toBeVisible();
 
 	await page.goto("/admin/settings/access");
@@ -86,7 +92,7 @@ test("stable support screen has no serious automated accessibility violations", 
 	mockApi: _mock,
 }) => {
 	await page.goto("/support");
-	await expect(page.getByText("Coming soon")).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
 
 	const result = await new AxeBuilder({ page }).analyze();
 	const serious = result.violations.filter((violation) =>

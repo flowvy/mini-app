@@ -5,11 +5,11 @@ import {
 	FormSectionCard,
 	FormSectionHeader,
 } from "../../components/ui/form-section.tsx";
-import { formatMemory, formatUptime } from "../../lib/format.ts";
+import { formatMemory, formatPositiveNumber, formatUptime } from "../../lib/format.ts";
 import type { DashboardResponse } from "../../types/dashboard.ts";
 import { Row } from "./dashboard-rows.tsx";
 
-export function BotContent({
+export function FlowvyContent({
 	data,
 	t,
 }: { data: DashboardResponse; t: (k: string, o?: Record<string, unknown>) => string }) {
@@ -43,57 +43,60 @@ export function BotContent({
 		<div>
 			<DashboardKpiGrid items={kpis} />
 
-			<FormSectionHeader>{t("admin.dashboard.bot.users")}</FormSectionHeader>
+			<FormSectionHeader>{t("admin.dashboard.flowvy.users")}</FormSectionHeader>
 			<FormSectionCard>
-				<Row label={t("admin.dashboard.bot.total")} value={users.totalUsers} />
+				<Row label={t("admin.dashboard.flowvy.total")} value={users.totalUsers} />
 				<FormRowSeparator />
 				<Row
-					label={t("admin.dashboard.bot.registeredToday")}
-					value={`+${users.newToday}`}
+					label={t("admin.dashboard.flowvy.registeredToday")}
+					value={formatPositiveNumber(users.newToday)}
 					accent="var(--v2-text-positive)"
 				/>
 				<FormRowSeparator />
-				<Row label={t("admin.dashboard.bot.registeredWeek")} value={`+${users.newThisWeek}`} />
+				<Row
+					label={t("admin.dashboard.flowvy.registeredWeek")}
+					value={formatPositiveNumber(users.newThisWeek)}
+				/>
 			</FormSectionCard>
 
-			<FormSectionHeader>{t("admin.dashboard.bot.activity")}</FormSectionHeader>
+			<FormSectionHeader>{t("admin.dashboard.flowvy.activity")}</FormSectionHeader>
 			<FormSectionCard>
-				<Row label={t("admin.dashboard.bot.active1h")} value={users.active1H} />
+				<Row label={t("admin.dashboard.flowvy.active1h")} value={users.active1H} />
 				<FormRowSeparator />
-				<Row label={t("admin.dashboard.bot.active24h")} value={users.active24H} />
+				<Row label={t("admin.dashboard.flowvy.active24h")} value={users.active24H} />
 			</FormSectionCard>
 
-			<FormSectionHeader>{t("admin.dashboard.bot.requests")}</FormSectionHeader>
+			<FormSectionHeader>{t("admin.dashboard.flowvy.requests")}</FormSectionHeader>
 			<FormSectionCard>
 				<Row
-					label={t("admin.dashboard.bot.totalRequests")}
+					label={t("admin.dashboard.flowvy.totalRequests")}
 					value={requests.totalRequests.toLocaleString()}
 				/>
 				<FormRowSeparator />
 				<Row
-					label={t("admin.dashboard.bot.todayRequests")}
+					label={t("admin.dashboard.flowvy.todayRequests")}
 					value={requests.todayRequests.toLocaleString()}
 				/>
 			</FormSectionCard>
 
-			<FormSectionHeader>{t("admin.dashboard.bot.system")}</FormSectionHeader>
+			<FormSectionHeader>{t("admin.dashboard.flowvy.system")}</FormSectionHeader>
 			<FormSectionCard>
 				<Row
-					label={t("admin.dashboard.bot.cpu")}
-					value={t("admin.dashboard.bot.cores", { n: system.cpuCores })}
+					label={t("admin.dashboard.flowvy.cpu")}
+					value={t("admin.dashboard.flowvy.cores", { n: system.cpuCores })}
 				/>
 				<FormRowSeparator />
 				<Row
-					label={t("admin.dashboard.bot.memory")}
+					label={t("admin.dashboard.flowvy.memory")}
 					value={formatMemory(system.memoryUsed, system.memoryTotal)}
 				/>
 				<FormRowSeparator />
 				<Row
-					label={t("admin.dashboard.bot.uptimeLabel")}
+					label={t("admin.dashboard.flowvy.uptimeLabel")}
 					value={formatUptime(system.uptimeSeconds)}
 				/>
 				<FormRowSeparator />
-				<Row label={t("admin.dashboard.bot.versionLabel")} value={system.version} />
+				<Row label={t("admin.dashboard.flowvy.versionLabel")} value={system.version} />
 			</FormSectionCard>
 		</div>
 	);

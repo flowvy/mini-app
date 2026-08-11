@@ -40,7 +40,10 @@ const MOCK_USER: UserResponse = {
 	role: "admin",
 	is_active: true,
 	features: { pulse: true },
-	branding: { appName: null, logoUrl: null },
+	branding: {
+		appName: null,
+		logoUrl: null,
+	},
 };
 
 function getMockUser(): UserResponse {
@@ -66,7 +69,10 @@ const fetchUser = async (): Promise<UserResponse> => {
 			return {
 				...mockUser,
 				features: { pulse: settings.pulseProvider !== "disabled" },
-				branding: { appName: settings.appName ?? null, logoUrl: settings.logoUrl ?? null },
+				branding: {
+					appName: settings.appName ?? null,
+					logoUrl: settings.logoUrl ?? null,
+				},
 			};
 		} catch {
 			return mockUser;

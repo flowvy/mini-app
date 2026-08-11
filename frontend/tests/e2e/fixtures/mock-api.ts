@@ -59,7 +59,7 @@ export const mockData = {
 				monitors: [
 					{
 						id: 1,
-						name: "VPN API",
+						name: "Proxy API",
 						status: "up",
 						uptime24H: 0.9999,
 						heartbeats: [{ status: 1, ping: 42 }],

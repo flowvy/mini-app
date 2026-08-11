@@ -73,7 +73,7 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 			<div className={styles.hero}>
 				<div className={styles.identity}>
 					<strong>{user.username}</strong>
-					<StatusBadge status={user.status} />
+					<StatusBadge status={user.status} context="user" />
 				</div>
 				<div className={styles.heroRow1}>
 					<div className={styles.heroLeft}>
@@ -82,7 +82,9 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 						) : (
 							<>
 								<span className={styles.heroUsed}>{formatTraffic(ut.usedTrafficBytes)}</span>
-								<span className={styles.heroTotal}>/ {formatTraffic(user.trafficLimitBytes)}</span>
+								<span className={styles.heroTotal}>
+									{t("format.ratioSuffix", { total: formatTraffic(user.trafficLimitBytes) })}
+								</span>
 							</>
 						)}
 					</div>

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { AccessProfileEditor } from "../../components/admin/access-profile-editor.tsx";
 import { ActionBtn } from "../../components/ui/action-btn.tsx";
 import { ConfirmDialog } from "../../components/ui/confirm-dialog.tsx";
+import { ErrorState } from "../../components/ui/error-state.tsx";
 import {
 	FormInlineSelect,
 	FormRow,
@@ -14,7 +15,6 @@ import {
 	FormSectionHeader,
 } from "../../components/ui/form-section.tsx";
 import { InlineFeedback } from "../../components/ui/inline-feedback.tsx";
-import { LoadErrorState } from "../../components/ui/load-error-state.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { SegmentedControl } from "../../components/ui/segmented-control.tsx";
 import {
@@ -22,6 +22,7 @@ import {
 	useRegistrationAdmin,
 	useUpdateRegistrationSettings,
 } from "../../hooks/use-registration-admin.ts";
+import { getLocalizedError } from "../../lib/error-copy.ts";
 import type { AccessProfile } from "../../types/registration.ts";
 import styles from "./settings-access.module.css";
 
@@ -63,7 +64,7 @@ export function AdminAccessSettings() {
 	const blockingError = settings.error || profiles.error;
 	if (settings.isPending || profiles.isPending) return <PageLoading />;
 	if (blockingError || !settings.data || !profiles.data) {
-		return <LoadErrorState onRetry={() => Promise.all([settings.refetch(), profiles.refetch()])} />;
+		return <ErrorState onAction={() => Promise.all([settings.refetch(), profiles.refetch()])} />;
 	}
 
 	const changeMode = (value: string) => {
@@ -105,7 +106,11 @@ export function AdminAccessSettings() {
 					</FormRow>
 				</FormSectionCard>
 				<FormSectionFooter>{t("access.defaultAccessHint")}</FormSectionFooter>
-				{updateSettings.isError && <InlineFeedback>{updateSettings.error.message}</InlineFeedback>}
+				{updateSettings.isError && (
+					<InlineFeedback>
+						{getLocalizedError(updateSettings.error, "access.settingsSaveError")}
+					</InlineFeedback>
+				)}
 			</section>
 
 			{editingProfile !== undefined ? (
@@ -172,7 +177,11 @@ export function AdminAccessSettings() {
 					</FormSectionCard>
 				</section>
 			)}
-			{deactivate.isError && <InlineFeedback>{deactivate.error.message}</InlineFeedback>}
+			{deactivate.isError && (
+				<InlineFeedback>
+					{getLocalizedError(deactivate.error, "access.deactivateError")}
+				</InlineFeedback>
+			)}
 
 			<ConfirmDialog
 				open={confirmation !== null}

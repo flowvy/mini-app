@@ -3,6 +3,7 @@ import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	formatExpiry,
+	formatMissing,
 	formatMonthDay,
 	formatRelativeTimeUnix,
 	formatResetStrategy,
@@ -52,7 +53,7 @@ export function HeroCard({ subscription }: HeroCardProps) {
 			<div className={styles.topRow}>
 				<div className={styles.topLeft}>
 					<span className={styles.name}>{subscription.name}</span>
-					<StatusBadge status={subscription.status} />
+					<StatusBadge status={subscription.status} context="subscription" />
 				</div>
 				<div className={styles.topRight}>
 					<div className={styles.kpi}>
@@ -79,7 +80,11 @@ export function HeroCard({ subscription }: HeroCardProps) {
 			<div className={styles.trafficRow}>
 				<span className={styles.trafficUsed}>{formatTraffic(usedBytes)}</span>
 				<span className={styles.trafficTotal}>
-					/ {unlimitedTraffic ? t("home.heroCard.trafficUnlimited") : formatTraffic(totalBytes)}
+					{t("format.ratioSuffix", {
+						total: unlimitedTraffic
+							? t("home.heroCard.trafficUnlimited")
+							: formatTraffic(totalBytes),
+					})}
 				</span>
 			</div>
 
@@ -111,13 +116,13 @@ export function HeroCard({ subscription }: HeroCardProps) {
 					<span className={styles.statValue}>
 						{subscription.resetStrategy
 							? formatResetStrategy(subscription.resetStrategy)
-							: "\u2014"}
+							: formatMissing()}
 					</span>
 					<span className={styles.statLabel}>{t("home.heroCard.trafficResetLabel")}</span>
 				</div>
 				<div className={styles.stat}>
 					<span className={styles.statValue}>
-						{subscription.refillDate ? formatMonthDay(subscription.refillDate) : "\u2014"}
+						{subscription.refillDate ? formatMonthDay(subscription.refillDate) : formatMissing()}
 					</span>
 					<span className={styles.statLabel}>{t("home.heroCard.nextResetLabel")}</span>
 				</div>
@@ -125,7 +130,7 @@ export function HeroCard({ subscription }: HeroCardProps) {
 					<span className={styles.statValue}>
 						{subscription.lifetimeUsedBytes != null
 							? formatTraffic(subscription.lifetimeUsedBytes)
-							: "\u2014"}
+							: formatMissing()}
 					</span>
 					<span className={styles.statLabel}>{t("home.heroCard.allTimeLabel")}</span>
 				</div>

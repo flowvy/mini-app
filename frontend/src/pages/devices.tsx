@@ -1,9 +1,10 @@
 import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DeviceRow } from "../components/devices/device-row.tsx";
-import { LoadErrorState } from "../components/ui/load-error-state.tsx";
+import { ErrorState } from "../components/ui/error-state.tsx";
 import { PageLoading } from "../components/ui/page-loading.tsx";
 import { useDeleteAllDevices, useDeleteDevice, useDevices } from "../hooks/use-devices.ts";
+import { formatRatio } from "../lib/format.ts";
 import { hapticNotification } from "../lib/haptics.ts";
 import styles from "./devices.module.css";
 
@@ -21,7 +22,7 @@ export const Devices: FC = () => {
 	}
 
 	if (error) {
-		return <LoadErrorState onRetry={refetch} />;
+		return <ErrorState onAction={refetch} />;
 	}
 
 	const devices = data?.devices ?? [];
@@ -58,9 +59,7 @@ export const Devices: FC = () => {
 			)}
 			{limit !== null && (
 				<div className={styles.counter}>
-					<span className={styles.counterUsed}>{devices.length}</span>
-					<span className={styles.counterSep}>/</span>
-					<span className={styles.counterTotal}>{limit}</span>
+					<span className={styles.counterUsed}>{formatRatio(devices.length, limit)}</span>
 				</div>
 			)}
 

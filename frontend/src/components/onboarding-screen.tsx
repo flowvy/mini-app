@@ -1,11 +1,12 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOnboarding } from "../hooks/use-onboarding.ts";
+import { getLocalizedError } from "../lib/error-copy.ts";
 import { dismissKeyboardOnEnter } from "../lib/keyboard.ts";
 import styles from "./onboarding-screen.module.css";
 import { AppLogo } from "./ui/app-logo.tsx";
+import { ErrorState } from "./ui/error-state.tsx";
 import { InlineFeedback } from "./ui/inline-feedback.tsx";
-import { LoadErrorState } from "./ui/load-error-state.tsx";
 import { SpinnerIcon } from "./ui/spinner-icon.tsx";
 
 interface OnboardingScreenProps {
@@ -23,6 +24,10 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 	const isPending =
 		registerMutation.isPending || redeemMutation.isPending || redeemLaunchMutation.isPending;
 	const error = registerMutation.error ?? redeemMutation.error ?? redeemLaunchMutation.error;
+
+	useEffect(() => {
+		document.title = appName;
+	}, [appName]);
 
 	useEffect(() => {
 		if (
@@ -63,7 +68,7 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 		);
 	}
 	if (statusQuery.isError) {
-		return <LoadErrorState onRetry={() => statusQuery.refetch()} />;
+		return <ErrorState onAction={() => statusQuery.refetch()} />;
 	}
 
 	return (
@@ -107,7 +112,9 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 							/>
 						</label>
 					)}
-					{error && <InlineFeedback>{error.message}</InlineFeedback>}
+					{error && (
+						<InlineFeedback>{getLocalizedError(error, "onboarding.error.generic")}</InlineFeedback>
+					)}
 					<button
 						type="submit"
 						className={styles.submit}

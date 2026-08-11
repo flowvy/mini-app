@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 import {
 	formatDateISO,
 	formatLastSeen,
+	formatMetaList,
+	formatMissing,
 	isUnlimitedDevices,
 	isUnlimitedExpiryISO,
 } from "../../lib/format.ts";
@@ -29,7 +31,7 @@ function Row({
 	mono?: boolean;
 	muted?: boolean;
 }) {
-	const display = value ?? "\u2014";
+	const display = value ?? formatMissing();
 	const cls = [styles.rowValue, muted || !value ? styles.rowMuted : "", mono ? styles.rowMono : ""]
 		.filter(Boolean)
 		.join(" ");
@@ -45,7 +47,9 @@ function Row({
 export const AdminUserDetail: FC<AdminUserDetailProps> = ({ user }) => {
 	const { t } = useTranslation();
 	const ut = user.userTraffic;
-	const internalSquads = user.activeInternalSquads?.map((sq) => sq.name.trim()).join(", ");
+	const internalSquads = formatMetaList(
+		user.activeInternalSquads?.map((sq) => sq.name.trim()) ?? [],
+	);
 
 	return (
 		<div>

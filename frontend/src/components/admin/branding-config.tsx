@@ -34,7 +34,7 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings }) => {
 	const dirty = appName !== initAppName || logoUrl !== initLogoUrl;
 
 	const blocker = useBlocker({
-		shouldBlockFn: () => dirty,
+		shouldBlockFn: () => dirty && !saved,
 		withResolver: true,
 	});
 
@@ -63,8 +63,9 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings }) => {
 			{saveFailed && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
 			<FormSectionHeader>{t("settings.branding.identitySection")}</FormSectionHeader>
 			<FormSectionCard>
-				<FormRow label={t("settings.branding.appNameLabel")}>
+				<FormRow label={t("settings.branding.appNameLabel")} htmlFor="branding-app-name">
 					<FormInlineInput
+						id="branding-app-name"
 						value={appName}
 						onChange={(v) => {
 							setAppName(v);
@@ -74,8 +75,9 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings }) => {
 					/>
 				</FormRow>
 				<FormRowSeparator />
-				<FormRow label={t("settings.branding.logoUrlLabel")}>
+				<FormRow label={t("settings.branding.logoUrlLabel")} htmlFor="branding-logo-url">
 					<FormInlineInput
+						id="branding-logo-url"
 						value={logoUrl}
 						onChange={(v) => {
 							setLogoUrl(v);

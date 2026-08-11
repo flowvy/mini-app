@@ -8,15 +8,19 @@ const TB = GB * 1024;
 
 /** Format bytes to human-readable traffic string. */
 export function formatTraffic(bytes: number): string {
-	if (bytes <= 0) return "0";
-	if (bytes >= TB) return `${(bytes / TB).toFixed(1)} ${i18n.t("format.traffic.tb")}`;
+	if (bytes <= 0) return i18n.t("format.number.zero");
+	if (bytes >= TB) return formatTrafficValue((bytes / TB).toFixed(1), "format.traffic.tb");
 	const gb = bytes / GB;
-	if (gb >= 100) return `${Math.round(gb)} ${i18n.t("format.traffic.gb")}`;
-	if (gb >= 10) return `${gb.toFixed(1)} ${i18n.t("format.traffic.gb")}`;
-	if (gb >= 1) return `${gb.toFixed(2)} ${i18n.t("format.traffic.gb")}`;
+	if (gb >= 100) return formatTrafficValue(String(Math.round(gb)), "format.traffic.gb");
+	if (gb >= 10) return formatTrafficValue(gb.toFixed(1), "format.traffic.gb");
+	if (gb >= 1) return formatTrafficValue(gb.toFixed(2), "format.traffic.gb");
 	const mb = bytes / MB;
-	if (mb >= 1) return `${mb.toFixed(1)} ${i18n.t("format.traffic.mb")}`;
-	return `${(bytes / KB).toFixed(0)} ${i18n.t("format.traffic.kb")}`;
+	if (mb >= 1) return formatTrafficValue(mb.toFixed(1), "format.traffic.mb");
+	return formatTrafficValue((bytes / KB).toFixed(0), "format.traffic.kb");
+}
+
+function formatTrafficValue(value: string, unitKey: string): string {
+	return i18n.t("format.traffic.value", { value, unit: i18n.t(unitKey) });
 }
 
 /** Whether traffic limit is unlimited (0 = unlimited in Remnawave). */
@@ -67,16 +71,18 @@ export function formatExpiry(daysLeft: number): string {
 
 /** Format Unix timestamp to short date with year. */
 export function formatShortDate(unix: number): string {
-	const d = new Date(unix * 1000);
-	const mo = d.toLocaleString(i18n.t("format.date.locale"), { month: "short" });
-	return `${mo} ${d.getDate()}, ${d.getFullYear()}`;
+	return new Intl.DateTimeFormat(i18n.language, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+	}).format(new Date(unix * 1000));
 }
 
 /** Format Unix timestamp to compact month + day (no year). */
 export function formatMonthDay(unix: number): string {
-	const d = new Date(unix * 1000);
-	const mo = d.toLocaleString(i18n.t("format.date.locale"), { month: "short" });
-	return `${mo} ${d.getDate()}`;
+	return new Intl.DateTimeFormat(i18n.language, { month: "short", day: "numeric" }).format(
+		new Date(unix * 1000),
+	);
 }
 
 /** Format Unix timestamp (seconds) to relative time. */
@@ -94,8 +100,10 @@ export function formatRelativeTimeUnix(unix: number): string {
 
 /** Format traffic pair: "3.5 MB / 1 TB" or "5 GB / ∞". */
 export function formatTrafficPair(used: number, limit: number): string {
-	if (limit === 0) return `${formatTraffic(used)} / \u221E`;
-	return `${formatTraffic(used)} / ${formatTraffic(limit)}`;
+	return formatRatio(
+		formatTraffic(used),
+		limit === 0 ? i18n.t("format.unlimitedSymbol") : formatTraffic(limit),
+	);
 }
 
 /** Format ISO date string to relative last-seen label. */
@@ -116,7 +124,7 @@ export function formatLastSeen(onlineAt: string | null): string {
 export function formatAdminExpiry(expireAt: string): string {
 	const diff = new Date(expireAt).getTime() - Date.now();
 	const days = Math.floor(diff / 86400000);
-	if (days > 3650) return "\u221E";
+	if (days > 3650) return i18n.t("format.unlimitedSymbol");
 	if (days < 0) return i18n.t("format.adminExpiry.expired", { n: Math.abs(days) });
 	if (days === 0) return i18n.t("format.adminExpiry.today");
 	if (days <= 30) return i18n.t("format.adminExpiry.daysLeft", { n: days });
@@ -134,10 +142,12 @@ export function getAdminExpiryColor(expireAt: string): string | null {
 
 /** Format ISO date string to "Mon DD, YYYY". */
 export function formatDateISO(iso: string | null): string {
-	if (!iso) return "\u2014";
-	const d = new Date(iso);
-	const mo = d.toLocaleString(i18n.t("format.date.locale"), { month: "short" });
-	return `${mo} ${d.getDate()}, ${d.getFullYear()}`;
+	if (!iso) return formatMissing();
+	return new Intl.DateTimeFormat(i18n.language, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+	}).format(new Date(iso));
 }
 
 /** Whether ISO expiry is effectively unlimited (year > 2090). */
@@ -173,7 +183,39 @@ export function formatExpiryCompact(daysLeft: number): string {
 /** Format memory usage: "2.5 GB / 3.8 GB (66%)". */
 export function formatMemory(used: number, total: number): string {
 	const pct = total > 0 ? Math.round((used / total) * 100) : 0;
-	return `${formatTraffic(used)} / ${formatTraffic(total)} (${pct}%)`;
+	return i18n.t("format.memory", {
+		used: formatTraffic(used),
+		total: formatTraffic(total),
+		pct,
+	});
+}
+
+export function formatMissing(): string {
+	return i18n.t("format.missing");
+}
+
+export function formatRatio(current: string | number, total: string | number): string {
+	return i18n.t("format.ratio", { current, total });
+}
+
+export function formatVersion(version: string): string {
+	return i18n.t("format.version", { version });
+}
+
+export function formatPositiveNumber(value: number): string {
+	return i18n.t("format.positiveNumber", { value });
+}
+
+export function formatTrend(difference: string): string {
+	if (!difference) return "";
+	const positive = !difference.startsWith("-");
+	return i18n.t(positive ? "format.trend.up" : "format.trend.down", {
+		value: difference.replace("-", ""),
+	});
+}
+
+export function formatMetaList(parts: string[]): string {
+	return parts.join(i18n.t("format.metaSeparator"));
 }
 
 /** Format uptime seconds: "39d 1h" or "5h". */

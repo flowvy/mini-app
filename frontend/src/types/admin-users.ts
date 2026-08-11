@@ -1,4 +1,4 @@
-import type { SubscriptionStatus } from "./subscription.ts";
+import type { UserStatus } from "./user-status.ts";
 
 export interface AdminUserTraffic {
 	usedTrafficBytes: number;
@@ -14,7 +14,7 @@ export interface AdminUserInternalSquad {
 export interface AdminUser {
 	id: number;
 	username: string;
-	status: SubscriptionStatus;
+	status: UserStatus;
 	tag: string | null;
 	description: string | null;
 	trafficLimitBytes: number;

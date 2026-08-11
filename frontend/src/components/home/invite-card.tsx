@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useInvite } from "../../hooks/use-invite.ts";
 import { hapticImpact, hapticNotification } from "../../lib/haptics.ts";
+import { useCurrentUser } from "../auth-guard.tsx";
 import { Skeleton } from "../ui/skeleton.tsx";
 import styles from "./invite-card.module.css";
 
@@ -21,6 +22,8 @@ export function InviteCardSkeleton() {
 export function InviteCard() {
 	const { t } = useTranslation();
 	const invite = useInvite();
+	const { branding } = useCurrentUser();
+	const appName = branding.appName || t("common.appName");
 	const [copied, setCopied] = useState(false);
 	const [copyFailed, setCopyFailed] = useState(false);
 
@@ -42,7 +45,7 @@ export function InviteCard() {
 
 	const shareUrl = invite.data.referralUrl
 		? `https://t.me/share/url?url=${encodeURIComponent(invite.data.referralUrl)}&text=${encodeURIComponent(
-				t("home.invite.shareText", { code: invite.data.code }),
+				t("home.invite.shareText", { appName, code: invite.data.code }),
 			)}`
 		: "";
 

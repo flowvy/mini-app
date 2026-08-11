@@ -8,7 +8,10 @@ const registeredUser = {
 	role: "user",
 	is_active: true,
 	features: { pulse: true },
-	branding: { appName: "Flowvy", logoUrl: null },
+	branding: {
+		appName: "Flowvy",
+		logoUrl: null,
+	},
 };
 
 test("invite-only onboarding handles an invalid code and enters the app without reload", async ({
@@ -37,11 +40,14 @@ test("invite-only onboarding handles an invalid code and enters the app without 
 	await page.goto("/");
 	await expect(page.getByRole("heading", { name: "Invitation required" })).toBeVisible();
 	await expect(page.getByText("Flowvy Test")).toBeVisible();
+	await expect(page).toHaveTitle("Flowvy Test");
 
 	const code = page.getByLabel("Invite code");
 	await code.fill("FVY-WRONG-CODE");
 	await page.getByRole("button", { name: "Continue" }).click();
-	await expect(page.getByRole("alert")).toContainText("Invite is invalid");
+	await expect(page.getByRole("alert")).toContainText(
+		"This invite code is invalid or no longer available.",
+	);
 
 	await code.fill("FVY-TEST-CODE-1");
 	await page.getByRole("button", { name: "Continue" }).click();

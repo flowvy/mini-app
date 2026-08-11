@@ -2,13 +2,18 @@ import { ChevronDown, X } from "lucide-react";
 import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSaveAccessProfile } from "../../hooks/use-registration-admin.ts";
+import { getLocalizedError } from "../../lib/error-copy.ts";
 import type {
 	AccessProfile,
 	AccessProfileInput,
-	ProviderUserStatus,
 	TrafficStrategy,
 	ValidityMode,
 } from "../../types/registration.ts";
+import {
+	PROVIDER_USER_STATUSES,
+	type ProviderUserStatus,
+	isProviderUserStatus,
+} from "../../types/user-status.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
 import {
 	FormField,
@@ -23,6 +28,13 @@ import { SegmentedControl } from "../ui/segmented-control.tsx";
 import styles from "./access-profile-editor.module.css";
 
 const GB = 1024 ** 3;
+
+const STATUS_OPTION_KEY: Record<ProviderUserStatus, string> = {
+	ACTIVE: "access.statusOptions.active",
+	DISABLED: "access.statusOptions.disabled",
+	LIMITED: "access.statusOptions.limited",
+	EXPIRED: "access.statusOptions.expired",
+};
 
 const EMPTY_PROFILE: AccessProfileInput = {
 	name: "",
@@ -292,13 +304,15 @@ export function AccessProfileEditor({
 						<FormFieldSelect
 							id="access-profile-status"
 							value={draft.status}
-							options={["ACTIVE", "DISABLED", "LIMITED", "EXPIRED"].map((status) => ({
+							options={PROVIDER_USER_STATUSES.map((status) => ({
 								value: status,
-								label: status,
+								label: t(STATUS_OPTION_KEY[status]),
 							}))}
-							onChange={(event) =>
-								setDraft({ ...draft, status: event.target.value as ProviderUserStatus })
-							}
+							onChange={(event) => {
+								if (isProviderUserStatus(event.target.value)) {
+									setDraft({ ...draft, status: event.target.value });
+								}
+							}}
 						/>
 					</FormField>
 					<FormField label={t("access.reset")} htmlFor="access-profile-reset">
@@ -391,7 +405,9 @@ export function AccessProfileEditor({
 				</div>
 			</details>
 
-			{save.isError && <InlineFeedback>{save.error.message}</InlineFeedback>}
+			{save.isError && (
+				<InlineFeedback>{getLocalizedError(save.error, "access.profileSaveError")}</InlineFeedback>
+			)}
 			<ActionBtn
 				type="submit"
 				variant="confirm"

@@ -39,7 +39,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings }) => {
 	const dirty = url !== initUrl || slug !== initSlug;
 
 	const blocker = useBlocker({
-		shouldBlockFn: () => dirty,
+		shouldBlockFn: () => dirty && !saved,
 		withResolver: true,
 	});
 
@@ -72,7 +72,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings }) => {
 	const connText = connStatus?.ok
 		? t("settings.kuma.connected")
 		: connStatus?.error
-			? connStatus.error
+			? t("settings.kuma.testError")
 			: t("settings.kuma.notTested");
 
 	return (

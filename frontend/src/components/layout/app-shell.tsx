@@ -1,12 +1,12 @@
 /**
  * App shell — floating header + scrollable content + floating tab bar + edge blur overlays.
  */
-import { Link, Outlet, useLocation } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
+import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useBackButton } from "../../hooks/use-back-button.ts";
 import { useKeyboardVisibility } from "../../hooks/use-keyboard-visibility.ts";
 import { useScrollCompact } from "../../hooks/use-scroll-compact.ts";
 import { useCurrentUser } from "../auth-guard.tsx";
+import { ErrorState } from "../ui/error-state.tsx";
 import styles from "./app-shell.module.css";
 import { EdgeBlur } from "./edge-blur.tsx";
 import { Header } from "./header.tsx";
@@ -14,8 +14,8 @@ import { TabBar } from "./tab-bar.tsx";
 
 export function AppShell() {
 	useBackButton();
-	const { t } = useTranslation();
 	const user = useCurrentUser();
+	const navigate = useNavigate();
 	const location = useLocation();
 	const { compact, scrollRef } = useScrollCompact();
 	const keyboardVisible = useKeyboardVisibility();
@@ -26,13 +26,7 @@ export function AppShell() {
 			<Header />
 			<main ref={scrollRef} className={styles.content} data-scroll-restoration-id="main-content">
 				{adminDenied ? (
-					<section className={styles.denied} role="alert">
-						<h1>{t("common.accessDenied.title")}</h1>
-						<p>{t("common.accessDenied.description")}</p>
-						<Link to="/" className={styles.deniedLink}>
-							{t("common.accessDenied.back")}
-						</Link>
-					</section>
+					<ErrorState variant="forbidden" onAction={() => navigate({ to: "/" })} />
 				) : (
 					<div key={location.pathname} className={styles.routeView}>
 						<Outlet />

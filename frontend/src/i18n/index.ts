@@ -9,6 +9,12 @@ i18n
 		lng: "en",
 		fallbackLng: "en",
 		interpolation: { escapeValue: false },
+	})
+	.then(() => {
+		if (typeof document !== "undefined") {
+			document.documentElement.lang = i18n.language;
+			document.title = i18n.t("common.appName");
+		}
 	});
 
 export default i18n;

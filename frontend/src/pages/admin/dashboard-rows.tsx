@@ -1,3 +1,4 @@
+import { formatTrend } from "../../lib/format.ts";
 import styles from "./dashboard.module.css";
 
 export function Row({
@@ -32,7 +33,5 @@ export function StatusRow({ label, value, dot }: { label: string; value: number;
 }
 
 export function formatBwDiffSub(diff: string): string {
-	if (!diff) return "";
-	const positive = !diff.startsWith("-");
-	return `${positive ? "\u2191" : "\u2193"} ${diff.replace("-", "")}`;
+	return formatTrend(diff);
 }

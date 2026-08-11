@@ -1,4 +1,6 @@
-export type SubscriptionStatus = "ACTIVE" | "LIMITED" | "DISABLED" | "EXPIRED";
+import type { UserStatus } from "./user-status.ts";
+
+export type SubscriptionStatus = UserStatus;
 
 export type ResetStrategy = "MONTH" | "MONTH_ROLLING" | "WEEK" | "DAY" | "NO_RESET";
 

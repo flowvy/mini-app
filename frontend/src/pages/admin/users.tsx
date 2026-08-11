@@ -4,7 +4,7 @@ import { type FC, useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FILTER_KEYS, FilterChips, type FilterKey } from "../../components/admin/filter-chips.tsx";
 import { VirtualizedUserList } from "../../components/admin/virtualized-user-list.tsx";
-import { LoadErrorState } from "../../components/ui/load-error-state.tsx";
+import { ErrorState } from "../../components/ui/error-state.tsx";
 import { useAllAdminUsers } from "../../hooks/use-all-admin-users.ts";
 import { dismissKeyboardOnEnter } from "../../lib/keyboard.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
@@ -90,7 +90,7 @@ export const AdminUsers: FC = () => {
 	if (isPending) return <UsersListSkeleton />;
 
 	if (error) {
-		return <LoadErrorState onRetry={refetch} />;
+		return <ErrorState onAction={refetch} />;
 	}
 
 	return (

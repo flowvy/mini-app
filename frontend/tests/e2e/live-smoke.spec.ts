@@ -39,8 +39,8 @@ test("read-only live routes render against the local BFF and configured Remnawav
 	await expect(page.getByRole("button", { name: "Remove all devices" })).toBeVisible();
 
 	await page.goto("/admin/dashboard");
-	await expect(page.getByRole("button", { name: "VPN" })).toBeVisible();
-	await expect(page.getByRole("button", { name: "Bot" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Remnawave" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Flowvy Mini-App" })).toBeVisible();
 
 	await page.goto("/admin/users");
 	await expect(page.getByRole("textbox", { name: "Search users" })).toBeVisible();

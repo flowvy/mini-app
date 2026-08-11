@@ -1,20 +1,32 @@
 {
 	"common": {
-		"notAuthenticated": "Not authenticated",
 		"retry": "Retry",
-		"loadError": {
-			"title": "Unable to load data",
-			"description": "Something went wrong. Please try again.",
-			"retry": "Retry"
+		"errorState": {
+			"load": {
+				"title": "Unable to load data",
+				"description": "Something went wrong. Please try again.",
+				"action": "Retry"
+			},
+			"auth": {
+				"title": "Unable to sign in",
+				"description": "Authentication could not be completed. Reopen the Mini App or try again.",
+				"action": "Retry"
+			},
+			"forbidden": {
+				"title": "Access denied",
+				"description": "This section is available to administrators only.",
+				"action": "Back to app"
+			},
+			"notFound": {
+				"title": "User not found",
+				"description": "This user may have been removed or is no longer available.",
+				"action": "Back to users"
+			}
 		},
-		"back": "Back",
-		"accessDenied": {
-			"title": "Access denied",
-			"description": "This section is available to administrators only.",
-			"back": "Back to app"
+		"apiError": {
+			"accountDisabled": "This account is disabled. Contact support if you think this is a mistake."
 		},
 		"appName": "Flowvy",
-		"comingSoon": "Coming soon",
 		"header": {
 			"pulse": "Pulse",
 			"devices": "Devices",
@@ -40,10 +52,20 @@
 			"closeLabel": "Close"
 		},
 		"status": {
-			"active": "Active",
-			"limited": "Limited",
-			"disabled": "Disabled",
-			"expired": "Expired"
+			"subscription": {
+				"active": "Active",
+				"limited": "Limited",
+				"disabled": "Disabled",
+				"expired": "Expired",
+				"unknown": "Unknown status"
+			},
+			"user": {
+				"active": "Active",
+				"limited": "Limited",
+				"disabled": "Disabled",
+				"expired": "Expired",
+				"unknown": "Unknown status"
+			}
 		}
 	},
 	"home": {
@@ -58,7 +80,7 @@
 			"copied": "Copied",
 			"copyFailed": "Try again",
 			"share": "Share in Telegram",
-			"shareText": "Join me on Flowvy. If Telegram asks, use invite code {{code}}:",
+			"shareText": "Join me on {{appName}}. If Telegram asks, use invite code {{code}}:",
 			"shareUnavailable": "The Telegram invite link is not configured yet. You can still copy and send your code.",
 			"loadError": "Your invite is temporarily unavailable."
 		},
@@ -108,7 +130,14 @@
 		"codeLabel": "Invite code",
 		"codePlaceholder": "FVY-XXXX-XXXX-XXXX",
 		"redeem": "Continue",
-		"register": "Get started"
+		"register": "Get started",
+		"error": {
+			"inviteRequired": "Enter an invite code to continue.",
+			"invalidInvite": "This invite code is invalid or no longer available.",
+			"rateLimited": "Too many attempts. Try again later.",
+			"unavailable": "Registration is temporarily unavailable. Try again later.",
+			"generic": "Could not complete registration. Try again."
+		}
 	},
 	"access": {
 		"registration": "Registration",
@@ -120,7 +149,7 @@
 		"inviteOnly": "Invite only",
 		"defaultAccess": "Default access",
 		"defaultAccessHint": "Applied to every new account, whether registration is open or invite-only.",
-		"localOnly": "No VPN access",
+		"localOnly": "No proxy access",
 		"profiles": "Access profiles",
 		"profile": "Access profile",
 		"add": "Add",
@@ -147,6 +176,12 @@
 		"unlimited": "Unlimited",
 		"advanced": "Advanced Remnawave fields",
 		"status": "Initial status",
+		"statusOptions": {
+			"active": "Active",
+			"disabled": "Disabled",
+			"limited": "Limited",
+			"expired": "Expired"
+		},
 		"reset": "Traffic reset",
 		"noReset": "Never",
 		"daily": "Daily",
@@ -156,14 +191,15 @@
 		"tag": "Remnawave tag",
 		"tagHint": "Choose an existing user tag from Remnawave.",
 		"noTags": "No user tags exist in Remnawave.",
-		"loadingOptions": "Loading Remnawave options…",
 		"description": "Description",
 		"internalSquads": "Internal squads",
 		"externalSquad": "External squad",
 		"none": "None",
-		"saving": "Saving…",
 		"providerOptionsUnavailable": "Remnawave options are temporarily unavailable. Unchanged provider fields can still be saved.",
 		"noProfiles": "No access profiles yet.",
+		"settingsSaveError": "Could not save registration settings. Try again.",
+		"profileSaveError": "Could not save the access profile. Check the values and try again.",
+		"deactivateError": "Could not deactivate the access profile. Try again.",
 		"deactivate": "Deactivate profile",
 		"deactivateTitle": "Deactivate access profile?",
 		"deactivateBody": "{{name}} will no longer be available for new registrations.",
@@ -173,7 +209,7 @@
 		"empty": {
 			"ariaLabel": "No devices",
 			"title": "No devices",
-			"desc": "Connect a device to your VPN to see it here"
+			"desc": "Connect a device with your subscription to see it here"
 		},
 		"removeAll": "Remove all devices",
 		"confirmAll": "Remove all {{n}} devices?",
@@ -195,10 +231,19 @@
 			"unknown": "Unknown device"
 		},
 		"platform": {
+			"android": "Android",
+			"ios": "iOS",
+			"macos": "macOS",
+			"windows": "Windows",
+			"linux": "Linux",
 			"mobile": "Mobile device",
 			"desktop": "Desktop device",
 			"unknown": "Unknown device"
 		}
+	},
+	"support": {
+		"title": "Support",
+		"comingSoon": "In-app support is coming soon."
 	},
 	"pulse": {
 		"noIncidents": "No active incidents",
@@ -217,7 +262,6 @@
 		}
 	},
 	"settings": {
-		"title": "Settings",
 		"saveError": "Could not save changes. Try again.",
 		"integrations": "Integrations",
 		"pulseProvider": "Pulse source",
@@ -226,15 +270,12 @@
 		"providerBeszel": "Beszel",
 		"uptimeKuma": "Uptime Kuma",
 		"integrationsHint": "Status page monitoring for your services.",
-		"configure": "Configure",
-		"configureDesc": "URL, slug, connection test",
 		"configured": "Configured",
 		"active": "Active",
 		"system": "System",
 		"remnawave": "Remnawave",
-		"flowvy": "Flowvy",
+		"flowvyVersion": "Flowvy Mini-App",
 		"kuma": {
-			"title": "Uptime Kuma",
 			"configureDesc": "Public status page",
 			"connectionSection": "Connection",
 			"connectionHint": "Public status page URL and slug identifier.",
@@ -272,10 +313,9 @@
 			"discardCancel": "Keep editing",
 			"discardBody": "You have unsaved changes that will be lost."
 		},
-		"brandingRow": "Name & Logo",
-		"brandingRowDesc": "Customize app identity",
+		"brandingRow": "Identity",
+		"brandingRowDesc": "Customize app name and logo",
 		"branding": {
-			"title": "Branding",
 			"identitySection": "Identity",
 			"identityHint": "Name displayed in the header. Logo supports SVG for both themes.",
 			"appNameLabel": "App Name",
@@ -287,13 +327,12 @@
 			"discardCancel": "Keep editing",
 			"discardBody": "You have unsaved changes that will be lost."
 		},
-		"bot": {
-			"section": "Bot",
+		"miniApp": {
+			"section": "Flowvy Mini-App",
 			"welcomeRow": "Welcome Message",
 			"welcomeRowDesc": "Greeting sent on /start"
 		},
 		"welcome": {
-			"title": "Welcome Message",
 			"messageSection": "Message",
 			"messageHint": "HTML supported. Use {{ app_name }} for dynamic name.",
 			"messagePlaceholder": "Welcome! \ud83d\udcf1\nManage your service directly in Telegram.",
@@ -302,7 +341,12 @@
 			"mediaChange": "Change",
 			"mediaReset": "Reset",
 			"mediaUploadError": "Upload failed",
-			"mediaResetConfirm": "Reset to default animation?",
+			"mediaCustomName": "Custom media",
+			"mediaDefaultName": "Default media",
+			"mediaType": {
+				"photo": "Photo",
+				"animation": "Animation"
+			},
 			"buttonSection": "Button",
 			"buttonHint": "Inline button that opens the Mini App.",
 			"buttonTextLabel": "Button Text",
@@ -315,11 +359,18 @@
 		}
 	},
 	"admin": {
+		"userStatus": {
+			"active": "Active",
+			"disabled": "Disabled",
+			"limited": "Limited",
+			"expired": "Expired",
+			"unknown": "Unknown status"
+		},
 		"dashboard": {
 			"viewLabel": "Dashboard view",
 			"tab": {
-				"vpn": "VPN",
-				"bot": "Bot"
+				"remnawave": "Remnawave",
+				"flowvy": "Flowvy Mini-App"
 			},
 			"kpi": {
 				"users": "Users",
@@ -330,18 +381,13 @@
 				"requests": "Requests",
 				"uptime": "Uptime",
 				"onlineNow": "{{n}} online now",
-				"online": "online",
 				"allNodes": "all nodes",
 				"plusToday": "+{{n}} today",
 				"todaySub": "today",
 				"version": "v{{v}}"
 			},
-			"vpn": {
+			"remnawave": {
 				"usersByStatus": "Users by status",
-				"active": "Active",
-				"disabled": "Disabled",
-				"limited": "Limited",
-				"expired": "Expired",
 				"online": "Online",
 				"now": "Now",
 				"last24h": "Last 24h",
@@ -360,7 +406,7 @@
 				"memory": "Memory",
 				"uptimeLabel": "Uptime"
 			},
-			"bot": {
+			"flowvy": {
 				"users": "Users",
 				"total": "Total",
 				"registeredToday": "Registered today",
@@ -378,11 +424,7 @@
 				"uptimeLabel": "Uptime",
 				"versionLabel": "Version"
 			},
-			"noData": "Remnawave unavailable",
-			"domain": {
-				"vpn": "VPN Infrastructure",
-				"bot": "Bot Analytics"
-			}
+			"noData": "Remnawave unavailable"
 		},
 		"broadcast": {
 			"comingSoon": "Coming soon"
@@ -395,10 +437,6 @@
 			"filter": {
 				"label": "Filter by status",
 				"all": "All",
-				"active": "Active",
-				"disabled": "Disabled",
-				"limited": "Limited",
-				"expired": "Expired",
 				"online": "Online"
 			},
 			"empty": {
@@ -443,8 +481,8 @@
 			"enable": "Enable",
 			"disableTitle": "Disable user?",
 			"enableTitle": "Enable user?",
-			"disableDesc": "{{username}} will lose VPN access.",
-			"enableDesc": "{{username}} will regain VPN access.",
+			"disableDesc": "{{username}} will lose proxy access.",
+			"enableDesc": "{{username}} will regain proxy access.",
 			"resetTraffic": "Reset traffic",
 			"resetTrafficTitle": "Reset traffic?",
 			"resetTrafficDesc": "Traffic counter for {{username}} will be set to zero.",
@@ -460,7 +498,23 @@
 		}
 	},
 	"format": {
+		"missing": "—",
+		"unlimitedSymbol": "∞",
+		"ratio": "{{current}} / {{total}}",
+		"ratioSuffix": " / {{total}}",
+		"version": "v{{version}}",
+		"positiveNumber": "+{{value}}",
+		"metaSeparator": " · ",
+		"memory": "{{used}} / {{total}} ({{pct}}%)",
+		"number": {
+			"zero": "0"
+		},
+		"trend": {
+			"up": "↑ {{value}}",
+			"down": "↓ {{value}}"
+		},
 		"traffic": {
+			"value": "{{value}} {{unit}}",
 			"tb": "TB",
 			"gb": "GB",
 			"mb": "MB",
@@ -471,9 +525,6 @@
 			"today": "Today",
 			"oneDay": "1 day",
 			"days": "{{n}}d"
-		},
-		"date": {
-			"locale": "en"
 		},
 		"relative": {
 			"justNow": "just now",

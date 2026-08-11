@@ -3,10 +3,12 @@ import type { FC } from "react";
 import {
 	formatAdminExpiry,
 	formatLastSeen,
+	formatMetaList,
 	formatTrafficPair,
 	getAdminExpiryColor,
 	getTrafficColor,
 	getTrafficPercent,
+	isUnlimitedExpiryISO,
 } from "../../lib/format.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
 import { StatusBadge } from "../ui/status-badge.tsx";
@@ -22,6 +24,7 @@ export const UserRow: FC<UserRowProps> = ({ user, onClick }) => {
 	const limit = user.trafficLimitBytes;
 	const pct = getTrafficPercent(used, limit);
 	const expiryText = formatAdminExpiry(user.expireAt);
+	const unlimitedExpiry = isUnlimitedExpiryISO(user.expireAt);
 	const expiryColor = getAdminExpiryColor(user.expireAt);
 
 	const parts: string[] = [];
@@ -46,7 +49,7 @@ export const UserRow: FC<UserRowProps> = ({ user, onClick }) => {
 			<div className={styles.rowContent}>
 				<div className={styles.line1}>
 					<span className={styles.username}>{user.username}</span>
-					<StatusBadge status={user.status} />
+					<StatusBadge status={user.status} context="user" />
 					<div className={styles.rightGroup}>
 						{limit > 0 && (
 							<div className={styles.trafficBar}>
@@ -64,8 +67,8 @@ export const UserRow: FC<UserRowProps> = ({ user, onClick }) => {
 				</div>
 
 				<div className={styles.line2}>
-					<span className={styles.meta}>{parts.join(" \u00B7 ")}</span>
-					{expiryText !== "\u221E" && (
+					<span className={styles.meta}>{formatMetaList(parts)}</span>
+					{!unlimitedExpiry && (
 						<span
 							className={styles.expiry}
 							style={{ color: expiryColor ?? "var(--v2-text-tertiary)" }}

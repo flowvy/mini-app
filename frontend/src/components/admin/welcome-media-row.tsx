@@ -41,7 +41,11 @@ export const WelcomeMediaRow: FC<WelcomeMediaRowProps> = ({
 				<MediaIcon size={16} className={ms.icon} />
 				<div className={ms.info}>
 					<span className={ms.fileName}>{fileName}</span>
-					<span className={ms.fileType}>{mediaType === "photo" ? "Photo" : "Animation"}</span>
+					<span className={ms.fileType}>
+						{mediaType === "photo"
+							? t("settings.welcome.mediaType.photo")
+							: t("settings.welcome.mediaType.animation")}
+					</span>
 				</div>
 				<div className={ms.actions}>
 					<ActionBtn

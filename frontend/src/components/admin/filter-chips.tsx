@@ -15,10 +15,10 @@ export const FILTER_KEYS: readonly FilterKey[] = [
 
 const LABEL_KEY: Record<FilterKey, string> = {
 	ALL: "admin.users.filter.all",
-	ACTIVE: "admin.users.filter.active",
-	DISABLED: "admin.users.filter.disabled",
-	LIMITED: "admin.users.filter.limited",
-	EXPIRED: "admin.users.filter.expired",
+	ACTIVE: "admin.userStatus.active",
+	DISABLED: "admin.userStatus.disabled",
+	LIMITED: "admin.userStatus.limited",
+	EXPIRED: "admin.userStatus.expired",
 	ONLINE: "admin.users.filter.online",
 };
 

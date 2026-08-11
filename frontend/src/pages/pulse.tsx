@@ -2,7 +2,7 @@ import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import { MonitorGroup } from "../components/pulse/monitor-group.tsx";
 import { StatusBanner } from "../components/pulse/status-banner.tsx";
-import { LoadErrorState } from "../components/ui/load-error-state.tsx";
+import { ErrorState } from "../components/ui/error-state.tsx";
 import { PageLoading } from "../components/ui/page-loading.tsx";
 import { usePulse } from "../hooks/use-pulse.ts";
 import styles from "./pulse.module.css";
@@ -16,7 +16,7 @@ export const Pulse: FC = () => {
 	}
 
 	if (error || !pulse) {
-		return <LoadErrorState onRetry={refetch} />;
+		return <ErrorState onAction={refetch} />;
 	}
 
 	return (

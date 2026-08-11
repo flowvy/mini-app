@@ -12,7 +12,10 @@ test("authentication retry and direct admin denial are explicit", async ({
 		}
 	});
 	await page.goto("/");
-	await expect(page.getByText("Not authenticated")).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Unable to sign in" })).toBeVisible();
+	await expect(page.getByRole("alert")).toContainText(
+		"Authentication could not be completed. Reopen the Mini App or try again.",
+	);
 
 	await page.evaluate(() => localStorage.removeItem("flowvy:mock-auth"));
 	await page.getByRole("button", { name: "Retry" }).click();
@@ -22,10 +25,33 @@ test("authentication retry and direct admin denial are explicit", async ({
 	await page.reload();
 	await page.goto("/admin/settings");
 	await expect(page.getByRole("alert")).toContainText("Access denied");
-	await expect(page.getByRole("link", { name: "Back to app" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Back to app" })).toBeVisible();
 	await expect(page.getByRole("link", { name: "Home" })).toBeVisible();
 	await expect(page.getByRole("link", { name: "Dashboard" })).toHaveCount(0);
 	await assertNoHorizontalOverflow(page);
+});
+
+test("stable authentication codes use localized copy instead of backend diagnostics", async ({
+	page,
+	mockApi,
+}) => {
+	await page.addInitScript(() => localStorage.setItem("flowvy:mock-auth", "onboarding"));
+	mockApi.mock("GET", "/api/me", {
+		status: 403,
+		body: {
+			detail: {
+				code: "account_disabled",
+				message: "Raw backend account diagnostic",
+			},
+		},
+	});
+
+	await page.goto("/");
+	const errorState = page.getByRole("alert");
+	await expect(errorState).toContainText(
+		"This account is disabled. Contact support if you think this is a mistake.",
+	);
+	await expect(errorState).not.toContainText("Raw backend account diagnostic");
 });
 
 test("subscription loading, active, absent, and provider error states render safely", async ({
@@ -95,6 +121,9 @@ test("device confirmations support cancel, failure, and successful remove-all", 
 	await page.getByRole("button", { name: "Remove all devices" }).click();
 	await page.getByRole("button", { name: "Remove", exact: true }).click();
 	await expect(page.getByText("No devices", { exact: true })).toBeVisible();
+	await expect(
+		page.getByText("Connect a device with your subscription to see it here"),
+	).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -108,7 +137,7 @@ test("Pulse renders partial, down, maintenance, incidents, failure, and retry", 
 			body: {
 				...pulse,
 				overallStatus: "partial",
-				incidents: [{ title: "VPN nodes are degraded", createdAt: "2026-08-01T12:00:00Z" }],
+				incidents: [{ title: "Proxy nodes are degraded", createdAt: "2026-08-01T12:00:00Z" }],
 			},
 		},
 		{ body: { ...pulse, overallStatus: "down" } },
@@ -120,7 +149,7 @@ test("Pulse renders partial, down, maintenance, incidents, failure, and retry", 
 
 	await page.goto("/pulse");
 	await expect(page.getByText("Partial system outage")).toBeVisible();
-	await expect(page.getByText("VPN nodes are degraded")).toBeVisible();
+	await expect(page.getByText("Proxy nodes are degraded")).toBeVisible();
 
 	await page.reload();
 	await expect(page.getByText("Major outage")).toBeVisible();
@@ -172,8 +201,8 @@ test("dashboard supports full, unavailable, and backend error states", async ({
 			memory: { total: 16 * 1024 ** 3, free: 8 * 1024 ** 3, used: 8 * 1024 ** 3 },
 			uptime: 864000,
 			users: {
-				statusCounts: { ACTIVE: 123456, DISABLED: 2, LIMITED: 3, EXPIRED: 4 },
-				totalUsers: 123465,
+				statusCounts: { ACTIVE: 123456, DISABLED: 2, LIMITED: 3, EXPIRED: 4, UNKNOWN: 5 },
+				totalUsers: 123470,
 			},
 			onlineStats: { onlineNow: 9876, lastDay: 10000, lastWeek: 12000, neverOnline: 10 },
 			nodes: { totalOnline: 42, totalBytesLifetime: "999999999999999" },
@@ -194,14 +223,41 @@ test("dashboard supports full, unavailable, and backend error states", async ({
 	]);
 
 	await page.goto("/admin/dashboard");
-	await expect(page.getByText("123465")).toBeVisible();
-	await page.getByRole("button", { name: "Bot" }).click();
+	await expect(page.getByText("123470")).toBeVisible();
+	await expect(page.getByText("Unknown status", { exact: true })).toBeVisible();
+	await page.getByRole("button", { name: "Flowvy Mini-App" }).click();
 	await expect(page.getByText("10", { exact: true })).toBeVisible();
 	await page.reload();
 	await expect(page.getByText("Remnawave unavailable")).toBeVisible();
 	await page.reload();
 	await expect(page.getByRole("heading", { name: "Unable to load data" })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
+});
+
+test("unknown Remnawave status is explicit and does not offer a status mutation", async ({
+	page,
+	mockApi,
+}) => {
+	const unknownSubscription = { ...mockData.subscription, status: "UNKNOWN" };
+	const unknownUser = { ...mockData.adminUser, status: "UNKNOWN" };
+	mockApi.mock("GET", "/api/me/subscription", { body: unknownSubscription });
+	mockApi.mock("GET", "/api/debug/admin/users/1", { body: unknownUser });
+
+	await page.goto("/");
+	await expect(page.getByText("Unknown status", { exact: true })).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+
+	await page.goto("/admin/users/1");
+	await expect(page.getByText("Unknown status", { exact: true })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Enable" })).toHaveCount(0);
+	await expect(page.getByRole("button", { name: "Disable" })).toHaveCount(0);
+	await expect(page.getByRole("button", { name: "Reset Traffic" })).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+	const result = await new AxeBuilder({ page }).analyze();
+	const serious = result.violations.filter((violation) =>
+		["serious", "critical"].includes(violation.impact ?? ""),
+	);
+	expect(serious).toEqual([]);
 });
 
 test("users support empty search, missing detail, and failed actions", async ({
@@ -227,7 +283,8 @@ test("users support empty search, missing detail, and failed actions", async ({
 		{ status: 404, body: { detail: "Not found" } },
 	]);
 	await page.goto("/admin/users/missing-user");
-	await expect(page.getByText("User not found")).toBeVisible();
+	await expect(page.getByRole("heading", { name: "User not found" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Back to users" })).toBeVisible();
 
 	mockApi.mock("POST", "/api/debug/admin/users/1/disable", {
 		status: 502,
@@ -236,6 +293,7 @@ test("users support empty search, missing detail, and failed actions", async ({
 	await page.goto("/admin/users/1");
 	await page.getByRole("button", { name: "Disable", exact: true }).click();
 	await expect(page.getByRole("dialog", { name: "Disable user?" })).toBeVisible();
+	await expect(page.getByRole("dialog")).toContainText("alice will lose proxy access.");
 	await page.getByRole("button", { name: "Disable", exact: true }).last().click();
 	await expect(page.getByRole("alert")).toContainText("The action failed");
 	await assertNoHorizontalOverflow(page);
@@ -294,6 +352,34 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 	await assertNoHorizontalOverflow(page);
 });
 
+test("provider identity updates the user experience without a reload", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.goto("/admin/settings/branding");
+	await page.getByLabel("App Name").fill("Northstar Proxy");
+	await page.getByRole("button", { name: "Save" }).click();
+
+	await expect(page).toHaveTitle("Northstar Proxy");
+	await page.getByRole("button", { name: "User mode" }).click();
+	await page.getByRole("link", { name: "Home" }).click();
+	const share = page.getByRole("link", { name: "Share in Telegram" });
+	const shareUrl = new URL((await share.getAttribute("href")) ?? "");
+	expect(shareUrl.searchParams.get("text")).toContain("Join me on Northstar Proxy.");
+	await assertNoHorizontalOverflow(page);
+});
+
+test("support stays an in-app feature placeholder without an external action", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.goto("/support");
+	const support = page.getByRole("region", { name: "Support" });
+	await expect(support.getByText("In-app support is coming soon.")).toBeVisible();
+	await expect(support.getByRole("link")).toHaveCount(0);
+	await assertNoHorizontalOverflow(page);
+});
+
 test("settings select Beszel and verify its server-side read-only connection", async ({
 	page,
 	mockApi: _mock,
@@ -343,10 +429,19 @@ test("enabling a configured Beszel source exposes Pulse without reloading", asyn
 	const provider = page.getByRole("group", { name: "Pulse source" });
 	await provider.getByRole("button", { name: "Beszel", exact: true }).click();
 	await page.getByPlaceholder("https://monitor.example.com").fill("https://beszel.example.test");
+	const settingsReadsBeforeSave = mockApi.calls.filter(
+		(call) => call === "GET /api/debug/admin/settings",
+	).length;
 	await page.getByRole("button", { name: "Save" }).click();
+	await expect
+		.poll(() => mockApi.calls.filter((call) => call === "GET /api/debug/admin/settings").length)
+		.toBeGreaterThan(settingsReadsBeforeSave);
 	await page.goBack();
 	await expect(page).toHaveURL(/\/admin\/settings$/);
-	await provider.getByRole("button", { name: "Beszel", exact: true }).click();
+	await expect(page.getByRole("dialog", { name: "Discard changes?" })).toHaveCount(0);
+	const currentProvider = page.getByRole("group", { name: "Pulse source" });
+	await expect(currentProvider).toBeVisible();
+	await currentProvider.getByRole("button", { name: "Beszel", exact: true }).click();
 	await expect(page.getByText("Active", { exact: true })).toBeVisible();
 
 	await page.getByRole("button", { name: "User mode" }).click();

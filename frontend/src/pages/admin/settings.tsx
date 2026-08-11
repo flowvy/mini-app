@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
+import { ErrorState } from "../../components/ui/error-state.tsx";
 import {
 	FormRow,
 	FormRowSeparator,
@@ -10,11 +11,11 @@ import {
 	FormSectionHeader,
 } from "../../components/ui/form-section.tsx";
 import { InlineFeedback } from "../../components/ui/inline-feedback.tsx";
-import { LoadErrorState } from "../../components/ui/load-error-state.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { SegmentedControl } from "../../components/ui/segmented-control.tsx";
 import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import { useRegistrationSettings } from "../../hooks/use-registration-admin.ts";
+import { formatMissing, formatVersion } from "../../lib/format.ts";
 import type { PulseProvider } from "../../types/admin-settings.ts";
 import styles from "./settings.module.css";
 
@@ -61,7 +62,7 @@ export const AdminSettings: FC = () => {
 	}
 
 	if (error || !settings) {
-		return <LoadErrorState onRetry={refetch} />;
+		return <ErrorState onAction={refetch} />;
 	}
 
 	const kumaConfigured = Boolean(settings.kumaUrl && settings.kumaSlug);
@@ -134,7 +135,7 @@ export const AdminSettings: FC = () => {
 				/>
 			</FormSectionCard>
 
-			<FormSectionHeader>{t("settings.bot.section")}</FormSectionHeader>
+			<FormSectionHeader>{t("settings.miniApp.section")}</FormSectionHeader>
 			<FormSectionCard>
 				<SettingsToolRow
 					label={t("settings.brandingRow")}
@@ -157,8 +158,8 @@ export const AdminSettings: FC = () => {
 				/>
 				<FormRowSeparator />
 				<SettingsToolRow
-					label={t("settings.bot.welcomeRow")}
-					desc={t("settings.bot.welcomeRowDesc")}
+					label={t("settings.miniApp.welcomeRow")}
+					desc={t("settings.miniApp.welcomeRowDesc")}
 					onClick={() => navigate({ to: "/admin/settings/welcome" })}
 				/>
 			</FormSectionCard>
@@ -173,11 +174,11 @@ export const AdminSettings: FC = () => {
 							fontFamily: "var(--font-mono)",
 						}}
 					>
-						{settings.remnawaveVersion ? `v${settings.remnawaveVersion}` : "\u2014"}
+						{settings.remnawaveVersion ? formatVersion(settings.remnawaveVersion) : formatMissing()}
 					</span>
 				</FormRow>
 				<FormRowSeparator />
-				<FormRow label={t("settings.flowvy")}>
+				<FormRow label={t("settings.flowvyVersion")}>
 					<span
 						style={{
 							fontSize: 12,
@@ -185,7 +186,7 @@ export const AdminSettings: FC = () => {
 							fontFamily: "var(--font-mono)",
 						}}
 					>
-						v{settings.flowvyVersion}
+						{formatVersion(settings.flowvyVersion)}
 					</span>
 				</FormRow>
 			</FormSectionCard>

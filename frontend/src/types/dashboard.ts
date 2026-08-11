@@ -4,6 +4,7 @@ export interface RemnawaveStatusCounts {
 	DISABLED: number;
 	LIMITED: number;
 	EXPIRED: number;
+	UNKNOWN: number;
 }
 
 export interface RemnawaveStats {
