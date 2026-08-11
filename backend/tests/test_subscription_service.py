@@ -103,6 +103,32 @@ async def test_get_for_3_x_user_caches_numeric_identity_without_uuid() -> None:
 
 
 @pytest.mark.asyncio
+async def test_unknown_provider_status_is_safe_in_response_and_local_cache() -> None:
+    """A future provider status becomes UNKNOWN and is never exposed raw."""
+    user = RemnawaveUserData.from_raw(
+        {
+            "id": 42,
+            "uuid": "550e8400-e29b-41d4-a716-446655440000",
+            "shortUuid": "abc123",
+            "username": "testuser",
+            "status": "PAUSED",
+            "expireAt": "2026-05-01T00:00:00Z",
+            "createdAt": "2026-01-01T00:00:00Z",
+            "updatedAt": "2026-04-01T12:00:00Z",
+            "subscriptionUrl": "https://panel.example.com/sub/abc123",
+            "userTraffic": {},
+        }
+    )
+    service = _make_service(remnawave_return=user)
+
+    result = await service.get_for_user(123456789)
+
+    assert result is not None
+    assert result.status == "UNKNOWN"
+    assert service._sub_repo.upsert_from_remnawave.await_args.kwargs["status"] == "UNKNOWN"
+
+
+@pytest.mark.asyncio
 async def test_refill_date_computed_for_month() -> None:
     """Should compute next refill date for MONTH strategy."""
     service = _make_service()

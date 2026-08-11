@@ -152,6 +152,36 @@ async def test_get_user_by_telegram_id_not_found() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("status", ["ACTIVE", "DISABLED", "LIMITED", "EXPIRED"])
+async def test_user_lookup_preserves_official_status(status: str) -> None:
+    """All status values from the locked Remnawave enum cross the BFF unchanged."""
+    client = _make_client(
+        [_make_response({"response": [{**FAKE_USER, "status": status}]})],
+        version="2.8.1",
+    )
+
+    user = await client.get_user_by_telegram_id(123456789)
+
+    assert user is not None
+    assert user.status == status
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [None, 42, "PAUSED"])
+async def test_user_lookup_normalizes_unknown_status(status: object) -> None:
+    """Missing, malformed, and future provider status values never leak through the BFF."""
+    client = _make_client(
+        [_make_response({"response": [{**FAKE_USER, "status": status}]})],
+        version="2.8.1",
+    )
+
+    user = await client.get_user_by_telegram_id(123456789)
+
+    assert user is not None
+    assert user.status == "UNKNOWN"
+
+
+@pytest.mark.asyncio
 async def test_get_user_by_telegram_id_filters_nonmatching_records() -> None:
     """A broad provider response must still resolve the exact Telegram ID."""
     wrong_user = {**FAKE_USER, "telegramId": 111}
@@ -265,6 +295,45 @@ async def test_3x_stream_lookup_rejects_repeated_cursor() -> None:
 
 
 @pytest.mark.asyncio
+async def test_admin_user_page_is_typed_and_normalizes_future_status() -> None:
+    """The paginated admin path uses the same safe user contract as exact lookups."""
+    client = _make_client(
+        [
+            _make_response(
+                {
+                    "response": {
+                        "users": [{**FAKE_USER, "status": "PAUSED"}],
+                        "total": 1,
+                    }
+                }
+            )
+        ]
+    )
+
+    page = await client.get_users()
+
+    assert page.total == 1
+    assert page.users[0].status == "UNKNOWN"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "response",
+    [
+        {"users": [], "total": "1"},
+        {"users": "wrong", "total": 1},
+        {"users": [FAKE_USER], "total": 0},
+    ],
+)
+async def test_admin_user_page_rejects_malformed_contract(response: dict) -> None:
+    """Malformed pagination metadata remains a safe provider failure."""
+    client = _make_client([_make_response({"response": response})])
+
+    with pytest.raises(RemnawaveError, match="user-list response"):
+        await client.get_users()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("version", "response_user"),
     [("2.8.1", FAKE_USER), ("3.0.0", FAKE_USER_3), ("3.1.0", FAKE_USER_3)],
@@ -358,6 +427,29 @@ async def test_user_tags_match_the_locked_28_and_3x_contract() -> None:
 
     assert await client.get_user_tags() == ["FREE", "PREMIUM"]
     assert http.get.await_args.args[0] == "https://panel.example.com/api/users/tags"
+
+
+@pytest.mark.asyncio
+async def test_dashboard_status_counts_fill_known_and_aggregate_unknown() -> None:
+    """Dashboard never exposes arbitrary provider status keys to the frontend."""
+    stats = {
+        **FAKE_SYSTEM_STATS,
+        "users": {
+            "statusCounts": {"ACTIVE": 2, "LIMITED": 1, "PAUSED": 3},
+            "totalUsers": 6,
+        },
+    }
+    client = _make_client([_make_response({"response": stats})])
+
+    result = await client.get_system_stats()
+
+    assert result["users"]["statusCounts"] == {
+        "ACTIVE": 2,
+        "DISABLED": 0,
+        "LIMITED": 1,
+        "EXPIRED": 0,
+        "UNKNOWN": 3,
+    }
 
 
 @pytest.mark.asyncio

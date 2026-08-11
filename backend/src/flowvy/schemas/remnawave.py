@@ -5,8 +5,14 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.alias_generators import to_camel
+
+from flowvy.schemas.user_status import (
+    ProviderUserStatus,
+    UserStatus,
+    normalize_user_status,
+)
 
 
 class RemnawaveCreateUserRequest(BaseModel):
@@ -15,7 +21,7 @@ class RemnawaveCreateUserRequest(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     username: str
-    status: str = "ACTIVE"
+    status: ProviderUserStatus = "ACTIVE"
     traffic_limit_bytes: int = 0
     traffic_limit_strategy: str = "NO_RESET"
     expire_at: datetime
@@ -60,7 +66,7 @@ class RemnawaveUserData(BaseModel):
     uuid: str | None = None
     short_uuid: str
     username: str
-    status: str
+    status: UserStatus
     traffic_limit_bytes: int = 0
     traffic_limit_strategy: str = "NO_RESET"
     expire_at: datetime
@@ -77,6 +83,12 @@ class RemnawaveUserData(BaseModel):
     external_squad_uuid: str | None = None
     user_traffic: RemnawaveUserTraffic
 
+    @field_validator("status", mode="before")
+    @classmethod
+    def normalize_status(cls, value: object) -> UserStatus:
+        """Keep known provider codes and hide future/raw values behind UNKNOWN."""
+        return normalize_user_status(value)
+
     @classmethod
     def from_raw(cls, raw: dict) -> RemnawaveUserData:
         """Map camelCase JSON to model."""
@@ -87,7 +99,7 @@ class RemnawaveUserData(BaseModel):
             uuid=raw.get("uuid"),
             short_uuid=raw["shortUuid"],
             username=raw["username"],
-            status=raw.get("status", "ACTIVE"),
+            status=raw.get("status"),
             traffic_limit_bytes=raw.get("trafficLimitBytes", 0),
             traffic_limit_strategy=raw.get("trafficLimitStrategy", "NO_RESET"),
             expire_at=raw["expireAt"],
@@ -129,10 +141,23 @@ class RemnawaveSubInfoUser(BaseModel):
     lifetime_traffic_used_bytes: str
     expires_at: datetime
     is_active: bool
-    user_status: str
+    user_status: UserStatus
     traffic_limit_strategy: str
     hwid_device_limit: int | None = None
     hwid_device_count: int | None = None
+
+    @field_validator("user_status", mode="before")
+    @classmethod
+    def normalize_status(cls, value: object) -> UserStatus:
+        """Normalize subscription-info status to the same BFF-safe enum."""
+        return normalize_user_status(value)
+
+
+class RemnawaveUsersPage(BaseModel):
+    """Validated page returned by the Remnawave admin users endpoint."""
+
+    users: list[RemnawaveUserData]
+    total: int = Field(ge=0)
 
 
 class RemnawaveSubInfo(BaseModel):

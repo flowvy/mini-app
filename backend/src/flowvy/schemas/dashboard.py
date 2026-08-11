@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel
+
+from flowvy.schemas.user_status import PROVIDER_USER_STATUSES, UserStatus
 
 
 class BotSystemStats(BaseModel):
@@ -69,8 +71,28 @@ class RemnawaveUserStats(BaseModel):
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    status_counts: dict[str, int]
+    status_counts: dict[UserStatus, int]
     total_users: int = Field(ge=0)
+
+    @field_validator("status_counts", mode="before")
+    @classmethod
+    def normalize_status_counts(cls, value: object) -> dict[UserStatus, int]:
+        """Fill known counters and aggregate future provider statuses as UNKNOWN."""
+        if not isinstance(value, dict):
+            raise ValueError("statusCounts must be an object")
+        normalized: dict[UserStatus, int] = {
+            "ACTIVE": 0,
+            "DISABLED": 0,
+            "LIMITED": 0,
+            "EXPIRED": 0,
+            "UNKNOWN": 0,
+        }
+        for status, count in value.items():
+            if type(count) is not int or count < 0:
+                raise ValueError("statusCounts values must be non-negative integers")
+            key: UserStatus = status if status in PROVIDER_USER_STATUSES else "UNKNOWN"
+            normalized[key] += count
+        return normalized
 
 
 class RemnawaveOnlineStats(BaseModel):

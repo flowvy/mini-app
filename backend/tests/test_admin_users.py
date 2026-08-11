@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from flowvy.schemas.remnawave import RemnawaveUserData
+from flowvy.schemas.remnawave import RemnawaveUserData, RemnawaveUsersPage
 from flowvy.services.admin_users import AdminUsersService
 
 USER = RemnawaveUserData.from_raw(
@@ -56,3 +56,21 @@ async def test_user_detail_includes_direct_invitation_count() -> None:
 
     assert result.invited_count == 4
     users.count_invited_by.assert_awaited_once_with(123)
+
+
+@pytest.mark.asyncio
+async def test_user_list_preserves_normalized_unknown_status() -> None:
+    """Admin list consumes typed provider users instead of raw status dictionaries."""
+    unknown = USER.model_copy(update={"status": "UNKNOWN"})
+    remnawave = AsyncMock()
+    remnawave.get_users = AsyncMock(
+        return_value=RemnawaveUsersPage(users=[unknown], total=1),
+    )
+    redis = AsyncMock()
+    redis.get = AsyncMock(return_value=b"{}")
+    service = AdminUsersService(remnawave, redis, AsyncMock())
+
+    result = await service.get_users()
+
+    assert result.total == 1
+    assert result.users[0].status == "UNKNOWN"

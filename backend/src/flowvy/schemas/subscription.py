@@ -5,6 +5,8 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
+from flowvy.schemas.user_status import UserStatus
+
 
 class SubscriptionResponse(BaseModel):
     """Aggregated subscription data sent to the Mini App."""
@@ -17,7 +19,7 @@ class SubscriptionResponse(BaseModel):
 
     id: str
     name: str
-    status: str
+    status: UserStatus
     used_bytes: int
     total_bytes: int
     expires_at: int

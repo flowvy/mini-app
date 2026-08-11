@@ -17,6 +17,7 @@ from flowvy.schemas.remnawave import (
     RemnawaveSubInfo,
     RemnawaveSubInfoUser,
     RemnawaveUserData,
+    RemnawaveUsersPage,
 )
 
 
@@ -331,12 +332,16 @@ class RemnawaveClient:
         self._remember_api_version(data)
         return data
 
-    async def get_users(self, size: int = 25, start: int = 0) -> dict:
-        """Fetch paginated user list (``GET /api/users``)."""
+    async def get_users(self, size: int = 25, start: int = 0) -> RemnawaveUsersPage:
+        """Fetch and validate one paginated user list."""
         data = await self._get(f"/api/users?size={size}&start={start}")
-        if not isinstance(data, dict):
+        if not isinstance(data, dict) or type(data.get("total")) is not int:
             raise RemnawaveError(502, "Unexpected user-list response")
-        return data
+        total = data["total"]
+        users = self._parse_users(data.get("users"), "Unexpected user-list response")
+        if total < len(users):
+            raise RemnawaveError(502, "Unexpected user-list response")
+        return RemnawaveUsersPage(users=users, total=total)
 
     async def get_user_by_id(self, user_id: int) -> RemnawaveUserData:
         """Fetch one user by the stable numeric ID across 2.x and 3.x."""

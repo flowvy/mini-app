@@ -13,7 +13,7 @@ class FeaturesResponse(BaseModel):
 
 
 class BrandingResponse(BaseModel):
-    """Provider branding — custom app name and logo."""
+    """Public provider identity."""
 
     model_config = ConfigDict(
         alias_generator=to_camel,

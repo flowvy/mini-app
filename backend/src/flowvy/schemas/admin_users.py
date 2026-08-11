@@ -7,6 +7,8 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
+from flowvy.schemas.user_status import UserStatus
+
 
 class AdminUserTrafficResponse(BaseModel):
     """Traffic counters embedded in admin user response."""
@@ -46,7 +48,7 @@ class AdminUserResponse(BaseModel):
 
     id: int
     username: str
-    status: str
+    status: UserStatus
     tag: str | None = None
     description: str | None = None
     traffic_limit_bytes: int = 0

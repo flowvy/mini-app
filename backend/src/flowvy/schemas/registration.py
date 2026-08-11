@@ -10,10 +10,11 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.alias_generators import to_camel
 
+from flowvy.schemas.user_status import ProviderUserStatus
+
 RegistrationMode = Literal["open", "invite_only"]
 ValidityMode = Literal["duration", "fixed", "lifetime"]
 TrafficStrategy = Literal["NO_RESET", "DAY", "WEEK", "MONTH", "MONTH_ROLLING"]
-ProviderUserStatus = Literal["ACTIVE", "DISABLED", "LIMITED", "EXPIRED"]
 ReferralStatus = Literal["ready", "main_app_not_configured", "telegram_unavailable"]
 
 

@@ -41,8 +41,8 @@ class AdminUsersService:
         """Fetch all users by batching Remnawave API calls."""
         batch_size = 100
         first = await self._remnawave.get_users(batch_size, 0)
-        total = first.get("total", 0)
-        all_raw: list[dict] = list(first.get("users", []))
+        total = first.total
+        all_users = list(first.users)
         if total > batch_size:
             remaining = range(batch_size, total, batch_size)
             logger.info("Fetching all users: %d total, %d batches", total, len(remaining) + 1)
@@ -50,9 +50,9 @@ class AdminUsersService:
                 *(self._remnawave.get_users(batch_size, s) for s in remaining),
             )
             for batch in batches:
-                all_raw.extend(batch.get("users", []))
+                all_users.extend(batch.users)
         squad_map = await self._get_external_squads_map()
-        users = [_to_response(raw, squad_map) for raw in all_raw]
+        users = [_map_user_data(user, squad_map) for user in all_users]
         return AdminUsersResponse(users=users, total=total)
 
     async def get_users(
@@ -61,10 +61,10 @@ class AdminUsersService:
         start: int = 0,
     ) -> AdminUsersResponse:
         """Fetch paginated user list from Remnawave."""
-        data = await self._remnawave.get_users(size, start)
+        page = await self._remnawave.get_users(size, start)
         squad_map = await self._get_external_squads_map()
-        users = [_to_response(raw, squad_map) for raw in data.get("users", [])]
-        return AdminUsersResponse(users=users, total=data.get("total", 0))
+        users = [_map_user_data(user, squad_map) for user in page.users]
+        return AdminUsersResponse(users=users, total=page.total)
 
     async def get_user(self, user_id: int) -> AdminUserResponse:
         """Fetch single user from Remnawave + resolve squad."""
@@ -124,41 +124,6 @@ class AdminUsersService:
             ex=SQUADS_CACHE_TTL,
         )
         return squad_map
-
-
-def _to_response(
-    raw: dict,
-    squad_map: dict[str, str],
-) -> AdminUserResponse:
-    """Map raw Remnawave JSON dict to admin user response."""
-    traffic = raw.get("userTraffic", {})
-    ext_uuid = raw.get("externalSquadUuid")
-    squads_raw = raw.get("activeInternalSquads", [])
-    return AdminUserResponse(
-        id=raw["id"],
-        username=raw["username"],
-        status=raw.get("status", "ACTIVE"),
-        tag=raw.get("tag"),
-        description=raw.get("description"),
-        traffic_limit_bytes=raw.get("trafficLimitBytes", 0),
-        traffic_limit_strategy=raw.get("trafficLimitStrategy", "NO_RESET"),
-        expire_at=raw["expireAt"],
-        telegram_id=raw.get("telegramId"),
-        email=raw.get("email"),
-        hwid_device_limit=raw.get("hwidDeviceLimit"),
-        created_at=raw["createdAt"],
-        subscription_url=raw.get("subscriptionUrl", ""),
-        active_internal_squads=[
-            AdminUserInternalSquadResponse(name=s.get("name", "")) for s in squads_raw
-        ],
-        external_squad_name=squad_map.get(ext_uuid) if ext_uuid else None,
-        user_traffic=AdminUserTrafficResponse(
-            used_traffic_bytes=traffic.get("usedTrafficBytes", 0),
-            lifetime_used_traffic_bytes=traffic.get("lifetimeUsedTrafficBytes", 0),
-            online_at=traffic.get("onlineAt"),
-            first_connected_at=traffic.get("firstConnectedAt"),
-        ),
-    )
 
 
 def _map_user_data(
