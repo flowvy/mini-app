@@ -2,7 +2,14 @@
 
 Здесь хранятся решения, которые меняют устойчивую границу, безопасность, данные, внешний контракт
 или эксплуатацию и которые нельзя восстановить только из кода. Текущая архитектура описана в
-[`../ARCHITECTURE.md`](../ARCHITECTURE.md); на момент создания каталога отдельных ADR ещё нет.
+[`../ARCHITECTURE.md`](../ARCHITECTURE.md).
+
+Принятые решения:
+
+- [`0001-invite-registration-and-access-profiles.md`](0001-invite-registration-and-access-profiles.md) —
+  пользовательские invites и единый registration access profile;
+- [`0002-ui-copy-and-provider-owned-content.md`](0002-ui-copy-and-provider-owned-content.md) —
+  граница locale, operator-owned content и provider data.
 
 ## Когда нужен ADR
 

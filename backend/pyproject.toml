@@ -1,7 +1,7 @@
 [project]
 name = "flowvy"
 version = "0.1.0"
-description = "Telegram Mini App + Bot for VPN subscription management"
+description = "Telegram Mini App + Bot for Xray proxy subscription management"
 requires-python = ">=3.12"
 dependencies = [
     "aiogram>=3.26,<4",

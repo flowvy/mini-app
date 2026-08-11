@@ -25,7 +25,7 @@ class SubscriptionStatus(enum.StrEnum):
 
 
 class Subscription(Base):
-    """VPN subscription linked to Remnawave."""
+    """Xray proxy subscription linked to Remnawave."""
 
     __tablename__ = "subscriptions"
 

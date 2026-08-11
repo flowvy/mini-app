@@ -198,16 +198,23 @@ worker сейчас нет.
   URL.
 - `components/` содержит feature и reusable UI; страницы остаются composition boundary.
 - `styles/tokens.css`, CSS Modules и Telegram theme/safe-area интеграция задают внешний вид.
-- `i18n/locales/en.json` — единственный текущий locale resource.
+- `i18n/locales/en.json` — единственный текущий locale resource и источник product-owned UI-copy.
+  Operator-owned identity и bot welcome приходят через branding/settings contract;
+  provider facts остаются typed runtime data. Полная граница описана в
+  [`decisions/0002-ui-copy-and-provider-owned-content.md`](decisions/0002-ui-copy-and-provider-owned-content.md).
+- Page-level load/auth/forbidden/not-found состояния используют единый `ErrorState`; inline mutation
+  errors берут безопасный текст из locale, а raw provider/backend `message` не отображается.
 
 До появления local user `AuthGuard` показывает отдельный onboarding без app navigation. Успешная
 mutation сразу кладёт полученного user в общий TanStack Query cache, поэтому вход не требует reload.
 Для launch invite frontend получает от backend только boolean о наличии корректного signed
 `start_param` и вызывает no-body mutation; сам код из URL/SDK frontend не читает и не пересылает.
 
-Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Admin URL: `/admin/dashboard`,
-`/admin/users`, `/admin/users/$userId`, `/admin/broadcast`, `/admin/settings` и отдельные Kuma,
-Beszel, branding, welcome и registration/access subroutes. Support и Broadcast пока заглушки.
+Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Support остаётся локализованной
+заглушкой будущего встроенного support flow и не перенаправляет во внешний канал. Admin URL:
+`/admin/dashboard`, `/admin/users`, `/admin/users/$userId`, `/admin/broadcast`, `/admin/settings` и
+отдельные Kuma, Beszel, branding, welcome и registration/access subroutes. Broadcast пока остаётся
+заглушкой.
 
 ## Автоматизация разработки
 

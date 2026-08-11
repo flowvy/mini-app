@@ -8,7 +8,7 @@ task-specific reasoning in `plans/active/`, and current facts in `docs/PROJECT_S
 
 ## Product and boundaries
 
-Flowvy is a Telegram Mini App and bot for VPN subscription management. The React frontend talks
+Flowvy is a Telegram Mini App and bot for Xray proxy subscription management. The React frontend talks
 only to the FastAPI BFF. FastAPI owns Telegram authentication, local PostgreSQL data, Redis-backed
 metrics/cache, and calls Remnawave plus the selected Uptime Kuma or Beszel Pulse provider. Treat the
 project as an unfinished MVP, not a

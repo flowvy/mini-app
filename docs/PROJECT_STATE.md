@@ -1,7 +1,8 @@
 # Текущее состояние Flowvy
 
-Последняя проверка: **2026-08-04**
-Проверенный кодовый baseline этой серии: **`dd3b5c8`** (`dev`)
+Последняя полная проверка: **2026-08-11**
+Проверенное текущее состояние: **рабочее дерево `dev` поверх `e73256f`**
+Последний полный baseline: **`dd3b5c8`** (`dev`, 2026-08-04)
 Стадия: **незавершённый MVP; production readiness не подтверждена**
 
 Этот файл описывает наблюдаемое состояние, а не желаемую функциональность. При расхождении с кодом,
@@ -41,6 +42,9 @@
 - Remnawave client, HMAC-проверка Remnawave webhook и инвалидация связанных Redis cache keys.
 - Version-aware Remnawave client поддерживает 2.7/2.8 и 3.0/3.1: числовой provider ID является
   основной identity, UUID остаётся optional только для legacy 2.x, неизвестный major закрывается.
+- Remnawave user status проходит единый typed contract: четыре official provider-кода сохраняются,
+  неизвестный/malformed inbound код нормализуется в BFF-only `UNKNOWN`, raw admin list больше не
+  обходит provider model, dashboard агрегирует будущие status counters без утечки нового ключа.
 - Async PostgreSQL/SQLAlchemy, Redis, Dishka DI и линейная цепочка Alembic migrations.
 - Метрики запросов/активности и периодические snapshot-записи.
 - Fail-closed Telegram auth: пустой token не принимается, проверяются TTL/future timestamp/user,
@@ -72,7 +76,9 @@
   no-body launch-redeem только по server-validated признаку и открывает приложение без reload. Во
   время загрузки карточка остаётся согласованным skeleton в итоговой позиции.
   Admin detail показывает число приглашённых без выпуска admin codes.
-- Name & Logo, Registration & Access и Welcome Message собраны в секции Bot. Access editor не
+- Identity, Registration & Access и Welcome Message собраны в секции Flowvy Mini-App. Branding
+  contract позволяет оператору задать app name/logo. Support остаётся отдельной локализованной
+  заглушкой будущей встроенной поддержки без внешнего action. Access editor не
   дублирует список во время редактирования, явно объясняет бессрочный/безлимитный grant и использует
   общие FormField/Input/Select/Textarea. Select/date разделяют app-owned видимый слой Geist 13px и
   нативный semantic/editing слой 16px на touch: системный picker и защита от iOS focus zoom
@@ -84,7 +90,15 @@
   окончания keyboard-ввода и возвращаются по Enter/blur, поэтому iOS keyboard больше не поднимает
   навигацию поверх активного поля. Native select/date picker и desktop focus навигацию не скрывают.
 - Query hooks, typed view models, i18next English locale, CSS Modules и светлая/тёмная тема на
-  дизайн-токенах.
+  дизайн-токенах. Product-owned copy, форматирование и accessible names находятся в locale;
+  operator-owned identity/welcome и provider facts приходят как typed runtime data.
+- Page-level load/auth/forbidden/not-found состояния используют единый переиспользуемый error UI.
+  Stable backend codes получают локализованный текст, raw backend/provider `message` не выводится.
+- Subscription/user status badges используют контекстные locale keys и явный neutral `UNKNOWN`;
+  при неизвестном status admin UI не предлагает enable/disable mutation. Admin dashboard/filter
+  переиспользуют общий plural-context, а access profile select больше не показывает raw enum text.
+- Product-owned UI и документация называют Remnawave-доступ Xray-прокси или Remnawave-доступом;
+  произвольные operator/provider-owned названия остаются runtime-данными и не нормализуются.
 - Прямые admin/user URL и browser history через TanStack Router.
 - Same-origin `/api` для localhost/Tunnel и корректная обработка успешного `204 No Content`.
 
@@ -106,12 +120,14 @@
   безопасного Quick Tunnel и проверки документации.
 - GitHub Actions CI с PostgreSQL/Redis, Ruff, Alembic, pytest, Biome/TypeScript/Vitest/build и
   Playwright Chromium smoke.
-- Пять Vitest unit файлов (26 тестов), детерминированная Playwright state matrix на четырёх
+- Семь Vitest unit файлов (33 теста), включая автоматический запрет неиспользуемых locale leaves,
+  прямого видимого JSX-copy, raw error message и неверной терминологии Xray-доступа;
+  детерминированная Playwright state matrix на четырёх
   browser/viewport проектах и отдельный read-only live-smoke.
 
 ## Что не завершено или не доказано
 
-- Support и Broadcast пока отображают `coming soon`; отправка рассылки не реализована.
+- Broadcast пока отображает `coming soon`; отправка рассылки не реализована.
 - Нет покупки/продления/платежей и управления уже выданным access profile как тарифом.
 - Нет production deployment manifests, проверенных production runbooks и production-контура.
 - Нет component tests и integrated fake-backend suite; offline/network-loss поведение проверяется
@@ -192,14 +208,18 @@ Kuma и полный Telegram test-bot flow.
 
 - Не настроен статический Python type checker.
 - В `queryKeys` остаётся неиспользуемый ключ `nodes`, хотя отдельного nodes flow в текущем коде нет.
-- Единственная locale — English; один admin fallback остаётся hardcoded, locale parity и
-  plural/fallback tests отсутствуют.
+- Единственная locale — English; locale parity и plural/fallback tests для нескольких языков
+  отсутствуют.
 
 ## Последняя свежая проверка
 
 P0 команды запускались 2026-08-01. Backend P1 этапы и Remnawave 3.x compatibility повторно полностью
-проверены 2026-08-02 после webhook/Kuma/upload/provider/metrics/readiness изменений. Вся текущая
-серия registration/frontend/dev изменений свежо проверена Full gate 2026-08-04 перед публикацией.
+проверены 2026-08-02 после webhook/Kuma/upload/provider/metrics/readiness изменений. Серия
+registration/frontend/dev изменений проверена Full gate 2026-08-04 перед публикацией. Объединённое
+изменение Remnawave user-status contract, provider-neutral copy и единых error states, а затем
+возврат Support к встроенной заглушке и точные Remnawave/Flowvy Mini-App labels прошли полный
+локальный gate 2026-08-11. Последующее исправление терминологии Xray-прокси прошло свежие
+diff-применимые static/unit/build/docs проверки и 44-case UI-матрицу на четырёх проектах.
 
 | Область | Команда | Результат |
 |---|---|---|
@@ -223,6 +243,8 @@ P0 команды запускались 2026-08-01. Backend P1 этапы и Re
 | PowerShell/tool policy | parser + `codex execpolicy check` | все scripts parsed; forbid/prompt/safe rule cases совпали с ожиданием |
 | Codex fresh session | `codex exec --ephemeral --strict-config ...` | config принят; корневой `AGENTS.md`, четыре repo skills и custom role `repo_mapper` обнаружены |
 | Change-aware gate | `scripts/verify.ps1 -Scope Changed -SkipE2E` | 249 service-free backend tests, frontend install/lint/type/unit/build и docs passed; E2E подтверждён отдельно |
+| Remnawave user-status contract | `scripts/verify.ps1 -Scope Changed` | 263 service-free backend tests, Ruff, 29 frontend unit tests, lint/type/build, 45 mobile Chromium scenarios и docs passed; 49 DB-dependent backend tests deselected by this scope |
+| User-status UI matrix | focused Playwright at 320x568, 430x932 and 1280x900 | 9/9 scenarios passed; Home/admin detail light/dark evidence (12 screenshots) inspected; unknown badge, dashboard row, no inferred enable/disable, overflow, network/console and serious Axe checks passed |
 | Полный локальный gate | `PLAYWRIGHT_PORT=5196; scripts/verify.ps1 -Scope Full` | migrations, 298 pytest, 41 Remnawave contract, frontend lint/type/unit/build, 43 Chromium browser и docs passed |
 | Frontend lint/typecheck | `pnpm lint`; `pnpm typecheck` | пройдено, 166 linted files |
 | Frontend unit | `pnpm test` | 5 files, 26 tests passed |
@@ -235,8 +257,14 @@ P0 команды запускались 2026-08-01. Backend P1 этапы и Re
 | Visual UI | Playwright evidence + manual review | Beszel и date access editor повторно просмотрены в light/dark; section headers теперь semantic `h2` без изменения геометрии, touch picker, typography, hidden keyboard tab bar, overflow, axe и dialog focus прошли |
 | Public Tunnel smoke | dedicated Flowvy named route + safe production build | root/health/readiness/asset `200`, backend debug route `404`; exact process-level `WEBAPP_URL`, system connector не изменён |
 | GitHub CI | `.github/workflows/ci.yml` | локально не выполнялся и ещё не подтверждён remote run |
+| Provider-neutral UI full gate | `CI=1; PLAYWRIGHT_PORT=5204; scripts/verify.ps1 -Scope Full` | one-head/zero-to-head/downgrade/re-upgrade/drift migrations, 315 backend tests, 53 Remnawave contract tests, Ruff, frontend lint/typecheck, 32 unit tests, production build, 50 mobile Chromium scenarios и docs passed |
+| Support/dashboard focused matrix | focused Playwright at 430x932, 320x568, iPhone 13/WebKit и 1280x900 | 40/40; Support placeholder без external action, Identity-only settings, Remnawave/Flowvy Mini-App labels, Back/motion, overflow, console/network и route states passed |
+| Support/dashboard visual evidence | Playwright screenshots + manual inspection | Support placeholder, Identity settings и dashboard labels просмотрены в light/dark и mobile/desktop; длинная вкладка помещается на 320x568, горизонтального overflow нет |
+| Xray proxy terminology | official pinned READMEs + locale regression + frontend/docs/backend static gates | Remnawave/Xray contract зафиксирован по commits `a39e153`/`bc6e966`; 33 unit tests, lint, typecheck, build, Ruff и docs passed; прежняя ошибочная классификация отсутствует |
+| Xray terminology UI matrix | 11 focused scenarios × 4 Playwright projects | 44/44; proxy/local access, devices empty state, disable dialog, Pulse, Remnawave/Flowvy tabs, provider identity и overflow прошли |
+| Xray terminology visual evidence | access policy screenshots at 320x568 and 1280x900 | `No proxy access` просмотрен вручную в light/dark; текст помещается, контраст и геометрия сохранены |
 
 ## Следующее действие
 
-Выбрать следующий продуктовый поток: подписки/продление, Support или безопасный Broadcast.
+Выбрать следующий продуктовый поток: подписки/продление или безопасный Broadcast.
 Отдельно остаются live Remnawave 3.x, Kuma и первый подтверждённый удалённый CI run.

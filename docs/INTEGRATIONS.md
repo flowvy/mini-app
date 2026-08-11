@@ -136,6 +136,15 @@ Primary evidence, проверено 2026-08-04 и 2026-08-08:
 client имеет timeout 10 секунд; при непустом URL startup вызывает `/api/auth/status` и останавливает
 приложение, если ping неуспешен.
 
+Терминологическая граница сверена 2026-08-11 с первичными источниками: официальный
+[Remnawave README на commit `a39e153`](https://github.com/remnawave/panel/blob/a39e153c663cccd9b11357fd171016f778429cb9/README.md)
+описывает панель как средство управления прокси поверх Xray-core, а официальный
+[Xray-core README на commit `bc6e966`](https://github.com/XTLS/Xray-core/blob/bc6e966af890d0ef481501ec171321ec802c6857/README.md)
+перечисляет Remnawave среди web panels. Поэтому собственный UI и документация Flowvy называют
+выдаваемый этой интеграцией доступ Xray-прокси или просто Remnawave-доступом, но не подменяют его
+другим классом технологии. Произвольные operator-owned названия бренда, мониторов и инцидентов
+передаются как данные и не переписываются во время выполнения.
+
 Flowvy поддерживает Remnawave 2.7/2.8 и 3.0/3.1 через одну version-aware границу. При первом
 version-sensitive запросе client читает `/api/system/metadata`, принимает только major `2` или `3`
 и кэширует major на время жизни приложения. Неизвестный будущий major и malformed version закрывают
@@ -168,6 +177,15 @@ Raw `data` не сохраняется: оно может содержать ema
 - `2.8.1` — `ba51868149362d0b9ac0e23133d0532176ccb5a2`;
 - `3.0.0` — `0f8b639b6c5b194c1f81bf574dab1026d0efcb7c`;
 - `3.1.0` — `c7495492ce62f43332e9fb7dd66b9f97a799a73e`.
+
+User status contract повторно сверён 2026-08-08 по official exact tag
+[2.8.1](https://github.com/remnawave/backend/blob/2.8.1/libs/contract/constants/users/status/status.constant.ts):
+provider возвращает только `ACTIVE`, `DISABLED`, `LIMITED`, `EXPIRED`. Outbound create/access
+profile принимает ровно эти четыре значения. Inbound user/subscription/admin/dashboard mapping не
+публикует произвольный provider-текст: известные коды сохраняются, отсутствующий, malformed или
+будущий код нормализуется в BFF-only `UNKNOWN`, а неизвестные dashboard counters суммируются в
+`UNKNOWN`. Frontend локализует код по контексту и не предлагает enable/disable, пока status
+неизвестен; это исключает ошибочную mutation из предположения «всё, что не ACTIVE, надо включить».
 
 Официальный [переход на 3.0](https://f.docs.rw/releases/v300) и
 [API diff 3.0 → 3.1](https://f.docs.rw/t/topic/354/6) подтверждают ключевую границу: с 3.0 user
