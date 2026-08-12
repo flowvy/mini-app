@@ -96,14 +96,14 @@ test("user and admin pages share one external vertical rhythm", async ({
 	expect(pulseGap).toBeCloseTo(SECTION_GAP, 1);
 
 	await page.goto("/admin/dashboard");
-	const dashboardTabs = page.getByRole("group", { name: "Dashboard view" });
+	const dashboardTabs = page.getByRole("tablist", { name: "Dashboard view" });
 	const dashboardGap = await dashboardTabs.evaluate((tabs) => {
 		const content = tabs.nextElementSibling;
 		if (!content) throw new Error("Dashboard tab content is missing");
 		return content.getBoundingClientRect().top - tabs.getBoundingClientRect().bottom;
 	});
 	expect(dashboardGap).toBeCloseTo(SECTION_GAP, 1);
-	await page.getByRole("button", { name: "Flowvy Mini-App" }).click();
+	await page.getByRole("tab", { name: "Flowvy Mini-App" }).click();
 	await expectDirectSectionGap(page.getByRole("heading", { name: "Users" }));
 
 	await page.goto("/admin/users");
@@ -164,8 +164,8 @@ test("admin routes render deterministic success and placeholder states", async (
 	mockApi: _mock,
 }) => {
 	await page.goto("/admin/dashboard");
-	await expect(page.getByRole("button", { name: "Remnawave" })).toBeVisible();
-	await expect(page.getByRole("button", { name: "Flowvy Mini-App" })).toBeVisible();
+	await expect(page.getByRole("tab", { name: "Remnawave" })).toBeVisible();
+	await expect(page.getByRole("tab", { name: "Flowvy Mini-App" })).toBeVisible();
 	await expect(page.getByText("Remnawave unavailable")).toBeVisible();
 
 	await page.goto("/admin/users");

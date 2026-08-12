@@ -89,6 +89,11 @@
 - App shell отслеживает touch focus и VisualViewport: tab bar и нижний edge chrome скрываются до
   окончания keyboard-ввода и возвращаются по Enter/blur, поэтому iOS keyboard больше не поднимает
   навигацию поверх активного поля. Native select/date picker и desktop focus навигацию не скрывают.
+- Общий SegmentedControl использует recessed track и отдельный elevated sliding thumb: dashboard
+  получает более выразительный navigation-вариант, а Pulse source, registration mode и validity —
+  спокойный form-вариант. Dashboard реализует `tablist`/`tab`/`tabpanel`, form choices —
+  `radiogroup`/`radio`; стрелки перемещают selection/focus, реальная смена даёт Telegram selection
+  haptic, а `prefers-reduced-motion` отключает движение.
 - Query hooks, typed view models, i18next English locale, CSS Modules и светлая/тёмная тема на
   дизайн-токенах. Product-owned copy, форматирование и accessible names находятся в locale;
   operator-owned identity/welcome и provider facts приходят как typed runtime data.
@@ -225,6 +230,8 @@ registration/frontend/dev изменений проверена Full gate 2026-0
 локальный gate 2026-08-11. Последующее исправление терминологии Xray-прокси прошло свежие
 diff-применимые static/unit/build/docs проверки и 44-case UI-матрицу на четырёх проектах.
 Унификация page-level вертикального ритма проверена 2026-08-12 отдельной полной frontend-матрицей.
+Новый layered SegmentedControl проверен 2026-08-13 полной 204-case frontend-матрицей и отдельным
+ручным просмотром affected light/dark evidence.
 
 | Область | Команда | Результат |
 |---|---|---|
@@ -269,6 +276,7 @@ diff-применимые static/unit/build/docs проверки и 44-case UI-
 | Xray terminology UI matrix | 11 focused scenarios × 4 Playwright projects | 44/44; proxy/local access, devices empty state, disable dialog, Pulse, Remnawave/Flowvy tabs, provider identity и overflow прошли |
 | Xray terminology visual evidence | access policy screenshots at 320x568 and 1280x900 | `No proxy access` просмотрен вручную в light/dark; текст помещается, контраст и геометрия сохранены |
 | Unified page rhythm | changed-file Biome, `pnpm typecheck`, `pnpm test`, `pnpm build`, full Playwright all projects | общий внешний gap 8px проверен на user/admin routes; 33 unit и 204/204 browser scenarios прошли; 112 route/theme/viewport screenshots просмотрены вручную, overflow и serious Axe checks зелёные. Общий `pnpm lint` отдельно остаётся красным на трёх предшествовавших format findings вне этого изменения |
+| Layered segmented controls | changed-file Biome, `pnpm typecheck`, `pnpm test`, `pnpm build`, `PLAYWRIGHT_PORT=5214; pnpm test:e2e:all` | 33 unit и 204/204 browser scenarios прошли на 430x932, 320x568, iPhone 13/WebKit и 1280x900; tabs/radiogroup semantics, arrow focus, sliding/reduced motion, overflow, serious Axe и mutations зелёные; dashboard/settings/access evidence вручную просмотрены в light/dark |
 
 ## Следующее действие
 

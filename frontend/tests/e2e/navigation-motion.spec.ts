@@ -1,8 +1,10 @@
 import type { Locator } from "@playwright/test";
 import { expect, test } from "./fixtures/mock-api.ts";
 
-async function selectedLayerOpacity(locator: Locator): Promise<number> {
-	return locator.evaluate((element) => Number(getComputedStyle(element, "::before").opacity));
+async function selectedLayerOffset(locator: Locator): Promise<number> {
+	return locator.evaluate((element) =>
+		Number.parseFloat(getComputedStyle(element, "::before").insetInlineStart),
+	);
 }
 
 async function selectedLayerDurationMs(locator: Locator): Promise<number> {
@@ -12,31 +14,25 @@ async function selectedLayerDurationMs(locator: Locator): Promise<number> {
 	});
 }
 
-test("distant navigation selections cross-fade locally instead of travelling", async ({
+test("segmented selection surface slides between related views", async ({
 	page,
 	mockApi: _mock,
 }) => {
 	await page.emulateMedia({ reducedMotion: "no-preference" });
-	await page.goto("/");
-	const navigation = page.getByRole("navigation");
-	const home = navigation.getByRole("link", { name: "Home" });
-	const support = navigation.getByRole("link", { name: "Support" });
-
-	expect(await selectedLayerDurationMs(home)).toBeLessThanOrEqual(200);
-	await expect.poll(() => selectedLayerOpacity(home)).toBe(1);
-	await support.click();
-	await expect(page).toHaveURL(/\/support$/);
-	await expect.poll(() => selectedLayerOpacity(home)).toBe(0);
-	await expect.poll(() => selectedLayerOpacity(support)).toBe(1);
-
 	await page.goto("/admin/dashboard");
-	const dashboardView = page.getByRole("group", { name: "Dashboard view" });
-	const remnawave = dashboardView.getByRole("button", { name: "Remnawave" });
-	const flowvy = dashboardView.getByRole("button", { name: "Flowvy Mini-App" });
-	await expect.poll(() => selectedLayerOpacity(remnawave)).toBe(1);
+	const dashboardView = page.getByRole("tablist", { name: "Dashboard view" });
+	const remnawave = dashboardView.getByRole("tab", { name: "Remnawave" });
+	const flowvy = dashboardView.getByRole("tab", { name: "Flowvy Mini-App" });
+	const initialOffset = await selectedLayerOffset(dashboardView);
+	expect(await selectedLayerDurationMs(dashboardView)).toBeLessThanOrEqual(200);
+	await expect(remnawave).toHaveAttribute("aria-selected", "true");
 	await flowvy.click();
-	await expect.poll(() => selectedLayerOpacity(remnawave)).toBe(0);
-	await expect.poll(() => selectedLayerOpacity(flowvy)).toBe(1);
+	await expect(flowvy).toHaveAttribute("aria-selected", "true");
+	await expect(page.getByRole("tabpanel", { name: "Flowvy Mini-App" })).toBeVisible();
+	await expect.poll(() => selectedLayerOffset(dashboardView)).toBeGreaterThan(initialOffset + 50);
+	await flowvy.press("ArrowLeft");
+	await expect(remnawave).toBeFocused();
+	await expect(remnawave).toHaveAttribute("aria-selected", "true");
 });
 
 test("selection motion follows the system Reduce Motion preference", async ({
@@ -45,10 +41,8 @@ test("selection motion follows the system Reduce Motion preference", async ({
 }) => {
 	await page.emulateMedia({ reducedMotion: "reduce" });
 	await page.goto("/admin/dashboard");
-	const remnawave = page
-		.getByRole("group", { name: "Dashboard view" })
-		.getByRole("button", { name: "Remnawave" });
-	expect(await selectedLayerDurationMs(remnawave)).toBeLessThan(1);
+	const dashboardView = page.getByRole("tablist", { name: "Dashboard view" });
+	expect(await selectedLayerDurationMs(dashboardView)).toBeLessThan(1);
 });
 
 test("form controls avoid the iOS focus-zoom threshold without disabling user zoom", async ({
@@ -128,7 +122,7 @@ test("access controls keep Flowvy typography with compact placeholders", async (
 		await expect(days).toHaveCSS("font-size", "13px");
 	}
 
-	await page.getByRole("button", { name: "Date" }).click();
+	await page.getByRole("radio", { name: "Date" }).click();
 	await expect(page.getByText("Every new user receives access until this date.")).toHaveCount(0);
 	const date = page.getByRole("textbox", { name: "Expires at" });
 	const dateRow = page.getByRole("group", { name: "Expires at" });

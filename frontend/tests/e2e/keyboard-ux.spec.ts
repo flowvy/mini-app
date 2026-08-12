@@ -125,7 +125,7 @@ test("mobile form focus hides bottom chrome until editing finishes", async ({
 	await status.blur();
 	await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
 
-	await page.getByRole("button", { name: "Date" }).click();
+	await page.getByRole("radio", { name: "Date" }).click();
 	const date = page.getByRole("textbox", { name: "Expires at" });
 	await date.focus();
 	await expect(navigation).not.toHaveAttribute("aria-hidden", "true");

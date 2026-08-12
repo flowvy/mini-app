@@ -21,8 +21,18 @@ export const AdminDashboard: FC = () => {
 	if (error || !data) return <ErrorState onAction={refetch} />;
 
 	const tabOptions = [
-		{ key: "remnawave", label: t("admin.dashboard.tab.remnawave") },
-		{ key: "flowvy", label: t("admin.dashboard.tab.flowvy") },
+		{
+			key: "remnawave",
+			label: t("admin.dashboard.tab.remnawave"),
+			id: "dashboard-tab-remnawave",
+			panelId: "dashboard-panel-remnawave",
+		},
+		{
+			key: "flowvy",
+			label: t("admin.dashboard.tab.flowvy"),
+			id: "dashboard-tab-flowvy",
+			panelId: "dashboard-panel-flowvy",
+		},
 	];
 
 	return (
@@ -32,10 +42,15 @@ export const AdminDashboard: FC = () => {
 				value={tab}
 				onChange={(k) => setTab(k as "remnawave" | "flowvy")}
 				ariaLabel={t("admin.dashboard.viewLabel")}
+				variant="navigation"
+				semantics="tabs"
 			/>
 			<div
 				key={tab}
+				id={`dashboard-panel-${tab}`}
 				className={styles.tabContent}
+				role="tabpanel"
+				aria-labelledby={`dashboard-tab-${tab}`}
 				onTouchStart={swipe.onTouchStart}
 				onTouchEnd={swipe.onTouchEnd}
 			>

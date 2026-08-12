@@ -225,7 +225,7 @@ test("dashboard supports full, unavailable, and backend error states", async ({
 	await page.goto("/admin/dashboard");
 	await expect(page.getByText("123470")).toBeVisible();
 	await expect(page.getByText("Unknown status", { exact: true })).toBeVisible();
-	await page.getByRole("button", { name: "Flowvy Mini-App" }).click();
+	await page.getByRole("tab", { name: "Flowvy Mini-App" }).click();
 	await expect(page.getByText("10", { exact: true })).toBeVisible();
 	await page.reload();
 	await expect(page.getByText("Remnawave unavailable")).toBeVisible();
@@ -386,7 +386,7 @@ test("settings select Beszel and verify its server-side read-only connection", a
 }) => {
 	await page.goto("/admin/settings");
 	await expect(page.getByText("Pulse source")).toBeVisible();
-	await page.getByRole("button", { name: "Beszel", exact: true }).click();
+	await page.getByRole("radio", { name: "Beszel", exact: true }).click();
 	await expect(page.getByText("Active", { exact: true })).toBeVisible();
 
 	await page.getByRole("button", { name: /^Beszel Hub and read-only access/ }).click();
@@ -426,8 +426,8 @@ test("enabling a configured Beszel source exposes Pulse without reloading", asyn
 			"same-document";
 	});
 
-	const provider = page.getByRole("group", { name: "Pulse source" });
-	await provider.getByRole("button", { name: "Beszel", exact: true }).click();
+	const provider = page.getByRole("radiogroup", { name: "Pulse source" });
+	await provider.getByRole("radio", { name: "Beszel", exact: true }).click();
 	await page.getByPlaceholder("https://monitor.example.com").fill("https://beszel.example.test");
 	const settingsReadsBeforeSave = mockApi.calls.filter(
 		(call) => call === "GET /api/debug/admin/settings",
@@ -439,9 +439,9 @@ test("enabling a configured Beszel source exposes Pulse without reloading", asyn
 	await page.goBack();
 	await expect(page).toHaveURL(/\/admin\/settings$/);
 	await expect(page.getByRole("dialog", { name: "Discard changes?" })).toHaveCount(0);
-	const currentProvider = page.getByRole("group", { name: "Pulse source" });
+	const currentProvider = page.getByRole("radiogroup", { name: "Pulse source" });
 	await expect(currentProvider).toBeVisible();
-	await currentProvider.getByRole("button", { name: "Beszel", exact: true }).click();
+	await currentProvider.getByRole("radio", { name: "Beszel", exact: true }).click();
 	await expect(page.getByText("Active", { exact: true })).toBeVisible();
 
 	await page.getByRole("button", { name: "User mode" }).click();
@@ -474,17 +474,17 @@ test("unconfigured Pulse source opens setup without an invalid save", async ({ p
 	});
 
 	await page.goto("/admin/settings");
-	const provider = page.getByRole("group", { name: "Pulse source" });
-	await expect(provider.getByRole("button", { name: "Off" })).toHaveAttribute(
-		"aria-pressed",
+	const provider = page.getByRole("radiogroup", { name: "Pulse source" });
+	await expect(provider.getByRole("radio", { name: "Off" })).toHaveAttribute(
+		"aria-checked",
 		"true",
 	);
 	for (const label of ["Off", "Kuma", "Beszel"]) {
-		const bounds = await provider.getByRole("button", { name: label, exact: true }).boundingBox();
+		const bounds = await provider.getByRole("radio", { name: label, exact: true }).boundingBox();
 		expect(bounds?.width ?? 0).toBeGreaterThan(60);
 	}
 
-	await provider.getByRole("button", { name: "Beszel", exact: true }).click();
+	await provider.getByRole("radio", { name: "Beszel", exact: true }).click();
 	await expect(page).toHaveURL(/\/admin\/settings\/beszel$/);
 	await expect(page.getByRole("heading", { name: "Connection" })).toBeVisible();
 	await expect(page.getByText("Could not save changes. Try again.")).toHaveCount(0);

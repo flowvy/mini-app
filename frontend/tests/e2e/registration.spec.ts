@@ -120,17 +120,19 @@ test("admin configures registration policy and the global access profile", async
 }) => {
 	await page.goto("/admin/settings/access");
 	await expect(page.getByText("Service mode")).toBeVisible();
-	await page.getByRole("button", { name: "Invite only" }).click();
-	await expect(page.getByRole("button", { name: "Invite only" })).toHaveAttribute(
-		"aria-pressed",
+	const serviceMode = page.getByRole("radiogroup", { name: "Service mode" });
+	await serviceMode.getByRole("radio", { name: "Open" }).focus();
+	await page.keyboard.press("ArrowRight");
+	await expect(serviceMode.getByRole("radio", { name: "Invite only" })).toHaveAttribute(
+		"aria-checked",
 		"true",
 	);
 
 	await page.getByRole("button", { name: /Add/ }).click();
 	await expect(page.getByText("Access profiles", { exact: true })).not.toBeVisible();
-	await page.getByRole("button", { name: "No expiry" }).click();
+	await page.getByRole("radio", { name: "No expiry" }).click();
 	await expect(page.getByText(/No expiration.*fully unlimited access/)).toBeVisible();
-	await page.getByRole("button", { name: "Days" }).click();
+	await page.getByRole("radio", { name: "Days" }).click();
 	await page.getByPlaceholder("Free 30 days").fill("Weekend trial");
 	await page.getByLabel("Number of days").fill("3");
 	await page.getByLabel("Traffic (GB, 0 = unlimited)").fill("10");

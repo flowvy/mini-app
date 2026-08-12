@@ -89,6 +89,7 @@ export function AdminAccessSettings() {
 							]}
 							value={settings.data.registrationMode}
 							onChange={changeMode}
+							ariaLabel={t("access.serviceMode")}
 							disabled={updateSettings.isPending}
 						/>
 					</div>

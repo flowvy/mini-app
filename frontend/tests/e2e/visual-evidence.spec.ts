@@ -204,7 +204,7 @@ test("capture the lifetime access editor in light and dark themes", async ({
 			path: testInfo.outputPath(`admin-access-days-${colorScheme}.png`),
 			animations: "disabled",
 		});
-		await page.getByRole("button", { name: "No expiry" }).click();
+		await page.getByRole("radio", { name: "No expiry" }).click();
 		await page.getByText("Advanced Remnawave fields").click();
 		await expect(page.getByLabel("Remnawave tag")).toBeEnabled();
 		await assertNoHorizontalOverflow(page);
@@ -212,7 +212,7 @@ test("capture the lifetime access editor in light and dark themes", async ({
 			path: testInfo.outputPath(`admin-access-lifetime-${colorScheme}.png`),
 			animations: "disabled",
 		});
-		await page.getByRole("button", { name: "Date" }).click();
+		await page.getByRole("radio", { name: "Date" }).click();
 		const dateInput = page.getByRole("textbox", { name: "Expires at" });
 		await expect(dateInput).toBeVisible();
 		await expect(page.getByText("Every new user receives access until this date.")).toHaveCount(0);
@@ -268,7 +268,7 @@ test("capture the unconfigured Pulse source selector", async ({ page, mockApi },
 	});
 
 	await page.goto("/admin/settings");
-	await expect(page.getByRole("group", { name: "Pulse source" })).toBeVisible();
+	await expect(page.getByRole("radiogroup", { name: "Pulse source" })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 	await page.screenshot({
 		path: testInfo.outputPath("admin-settings-unconfigured.png"),
