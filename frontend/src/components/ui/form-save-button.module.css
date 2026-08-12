@@ -1,7 +1,7 @@
 /* ── Full-width Save Button ── */
 
 .wrapper {
-	margin-top: 20px;
+	margin-top: var(--layout-section-gap);
 }
 
 .btn {

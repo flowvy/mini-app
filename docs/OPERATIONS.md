@@ -4,7 +4,7 @@
 production deployment/operations контура. Этот документ не является разрешением запускать MVP на
 публичном сервере. Требования безопасности: [`SECURITY.md`](SECURITY.md).
 
-## Локальный lifecycle
+## Localhost-only lifecycle
 
 После создания безопасного `backend/.env`:
 
@@ -21,6 +21,10 @@ URL вместо случайных process-level `DATABASE_URL`/`REDIS_URL`, п
 long polling при пустом `WEBHOOK_URL`; одновременно должен работать только один polling-процесс
 test bot. PID и stdout/stderr находятся в `.artifacts/dev`. `dev-down` останавливает только
 записанные process trees и Compose services, не удаляя `pgdata`.
+
+Это намеренно непубличный режим без Telegram. На машине владельца запрос **полноценного** или
+**штатного** Flowvy dev означает named-Tunnel lifecycle из раздела
+[Cloudflare Tunnel](#cloudflare-tunnel), с `-EnableTelegram` и `https://dev-app.flowvy.io`.
 
 Не удаляйте process file вручную, пока процессы живы. Не используйте `docker compose down -v` как
 обычное исправление: volume содержит локальные данные и удаляется необратимо.
@@ -72,8 +76,16 @@ hostname на `http://localhost:80`. Repository поднимает только 
     -NamedTunnelUrl 'https://<test-host>'
 ```
 
-Текущий hostname Flowvy на машине владельца — `https://dev-app.flowvy.io`; каноническая команда и
-preflight перечислены в [`DEV_ENVIRONMENT.md`](DEV_ENVIRONMENT.md#штатный-flowvy-dev-контур).
+Текущий hostname Flowvy на машине владельца — `https://dev-app.flowvy.io`. Поэтому канонический
+полноценный запуск здесь использует exact URL, а не placeholder:
+
+```powershell
+.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+    -NamedTunnelUrl 'https://dev-app.flowvy.io'
+```
+
+Полный preflight перечислен в
+[`DEV_ENVIRONMENT.md`](DEV_ENVIRONMENT.md#штатный-flowvy-dev-контур).
 
 Команда передаёт тот же origin backend как `WEBAPP_URL`, разрешает Vite только этот hostname,
 проверяет public root и `/api/health`. `dev-down` останавливает repo-owned preview, но не системный

@@ -63,7 +63,8 @@ Frontend доступен на `http://localhost:5173`, API — на `http://loc
 Полная инструкция, включая Telegram tunnel и ограничения debug-режима:
 [`docs/DEV_ENVIRONMENT.md`](docs/DEV_ENVIRONMENT.md).
 
-После создания и проверки локальных `.env` тот же запуск можно выполнить одной командой:
+После создания и проверки локальных `.env` безопасный localhost-only запуск без Telegram и
+публичного Tunnel можно выполнить одной командой:
 
 ```powershell
 .\scripts\dev-up.ps1
@@ -71,8 +72,8 @@ Frontend доступен на `http://localhost:5173`, API — на `http://loc
 .\scripts\dev-down.ps1
 ```
 
-На машине владельца постоянный Telegram dev-контур использует уже созданный named Tunnel
-`dev-app.flowvy.io`:
+На машине владельца **полноценный/штатный Flowvy dev-контур** означает Telegram-enabled запуск через
+уже созданный named Tunnel `dev-app.flowvy.io`:
 
 ```powershell
 .\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `

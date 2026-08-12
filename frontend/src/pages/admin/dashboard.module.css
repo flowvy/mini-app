@@ -3,7 +3,7 @@
 .page {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: var(--layout-section-gap);
 	padding: 16px;
 	padding-bottom: 96px;
 }

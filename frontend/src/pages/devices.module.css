@@ -1,11 +1,12 @@
 .page {
 	display: flex;
 	flex-direction: column;
+	gap: var(--layout-section-gap);
 	padding: 16px;
 }
 
 .mutationError {
-	margin: 0 0 12px;
+	margin: 0;
 	padding: 9px 12px;
 	border: 1px solid var(--v2-border-negative-secondary);
 	border-radius: var(--radius-sm);
@@ -83,7 +84,7 @@
 .dangerBtn {
 	width: 100%;
 	padding: 7px 14px;
-	margin-top: 12px;
+	margin-top: 0;
 	border-radius: var(--radius-sm);
 	border: 1px solid var(--v2-border-negative-secondary);
 	background: transparent;
@@ -104,7 +105,7 @@
 
 /* Confirm bar */
 .confirmBar {
-	margin-top: 12px;
+	margin-top: 0;
 	padding: 10px 14px;
 	border-radius: var(--radius-md);
 	border: 1px solid var(--v2-border-negative-secondary);

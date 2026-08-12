@@ -143,7 +143,8 @@ dev-контура. Menu Button или inline `web_app` button не заменя
 
 ## Управляемый запуск
 
-После создания и проверки `backend/.env` из корня можно запустить весь dev-контур:
+После создания и проверки `backend/.env` из корня можно запустить localhost-only контур без Telegram
+и публичного Tunnel:
 
 ```powershell
 .\scripts\dev-up.ps1
@@ -181,8 +182,11 @@ trees, включая repo-owned public preview, останавливает Comp
 ## Штатный Flowvy dev-контур
 
 Для этого репозитория постоянный test hostname — `https://dev-app.flowvy.io`. Он не является
-секретом и предназначен только для локального test bot/Mini App. После первичного bootstrap и
-заполнения локального `backend/.env` обычный запуск после перезагрузки выполняется из корня:
+секретом и предназначен только для локального test bot/Mini App. Термины **полноценный dev** и
+**штатный dev** в задачах этого репозитория всегда означают именно Telegram-enabled named-Tunnel
+контур ниже, а не простой `dev-up.ps1`. Localhost-only режим запускается только по явному запросу
+без Tunnel/интеграций. После первичного bootstrap и заполнения локального `backend/.env` обычный
+запуск после перезагрузки выполняется из корня:
 
 ```powershell
 .\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `

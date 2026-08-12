@@ -92,6 +92,10 @@
 - Query hooks, typed view models, i18next English locale, CSS Modules и светлая/тёмная тема на
   дизайн-токенах. Product-owned copy, форматирование и accessible names находятся в locale;
   operator-owned identity/welcome и provider facts приходят как typed runtime data.
+- Внешний вертикальный ритм пользовательских и admin-страниц использует единый design token 8px:
+  карточки, заголовки секций, списки, feedback и save controls больше не задают отдельные
+  page-level интервалы 12/16/20/22px. Геометрия закреплена browser regression на четырёх viewport,
+  а визуальные evidence включают все маршруты в light/dark.
 - Page-level load/auth/forbidden/not-found состояния используют единый переиспользуемый error UI.
   Stable backend codes получают локализованный текст, raw backend/provider `message` не выводится.
 - Subscription/user status badges используют контекстные locale keys и явный neutral `UNKNOWN`;
@@ -220,6 +224,7 @@ registration/frontend/dev изменений проверена Full gate 2026-0
 возврат Support к встроенной заглушке и точные Remnawave/Flowvy Mini-App labels прошли полный
 локальный gate 2026-08-11. Последующее исправление терминологии Xray-прокси прошло свежие
 diff-применимые static/unit/build/docs проверки и 44-case UI-матрицу на четырёх проектах.
+Унификация page-level вертикального ритма проверена 2026-08-12 отдельной полной frontend-матрицей.
 
 | Область | Команда | Результат |
 |---|---|---|
@@ -263,6 +268,7 @@ diff-применимые static/unit/build/docs проверки и 44-case UI-
 | Xray proxy terminology | official pinned READMEs + locale regression + frontend/docs/backend static gates | Remnawave/Xray contract зафиксирован по commits `a39e153`/`bc6e966`; 33 unit tests, lint, typecheck, build, Ruff и docs passed; прежняя ошибочная классификация отсутствует |
 | Xray terminology UI matrix | 11 focused scenarios × 4 Playwright projects | 44/44; proxy/local access, devices empty state, disable dialog, Pulse, Remnawave/Flowvy tabs, provider identity и overflow прошли |
 | Xray terminology visual evidence | access policy screenshots at 320x568 and 1280x900 | `No proxy access` просмотрен вручную в light/dark; текст помещается, контраст и геометрия сохранены |
+| Unified page rhythm | changed-file Biome, `pnpm typecheck`, `pnpm test`, `pnpm build`, full Playwright all projects | общий внешний gap 8px проверен на user/admin routes; 33 unit и 204/204 browser scenarios прошли; 112 route/theme/viewport screenshots просмотрены вручную, overflow и serious Axe checks зелёные. Общий `pnpm lint` отдельно остаётся красным на трёх предшествовавших format findings вне этого изменения |
 
 ## Следующее действие
 

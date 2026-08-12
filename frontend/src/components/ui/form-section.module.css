@@ -2,7 +2,7 @@
 
 .header {
 	margin: 0;
-	padding-top: 16px;
+	padding-top: var(--layout-section-gap);
 	padding-bottom: 6px;
 	padding-left: 14px;
 	font-size: 11px;

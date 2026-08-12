@@ -4,12 +4,17 @@ const screens = [
 	{ name: "home", path: "/", marker: "Account Info" },
 	{ name: "devices", path: "/devices", marker: "Pixel 8" },
 	{ name: "pulse", path: "/pulse", marker: "All systems operational" },
+	{ name: "support", path: "/support", marker: "In-app support is coming soon." },
 	{ name: "admin-dashboard", path: "/admin/dashboard", marker: "Remnawave unavailable" },
 	{ name: "admin-users", path: "/admin/users", marker: "alice" },
 	{ name: "admin-user-detail", path: "/admin/users/1", marker: "alice" },
+	{ name: "admin-broadcast", path: "/admin/broadcast", marker: "Coming soon" },
 	{ name: "admin-settings", path: "/admin/settings", marker: "Integrations" },
 	{ name: "admin-access", path: "/admin/settings/access", marker: "Service mode" },
+	{ name: "admin-settings-kuma", path: "/admin/settings/kuma", marker: "URL" },
 	{ name: "admin-settings-beszel", path: "/admin/settings/beszel", marker: "Hub URL" },
+	{ name: "admin-settings-branding", path: "/admin/settings/branding", marker: "App Name" },
+	{ name: "admin-settings-welcome", path: "/admin/settings/welcome", marker: "Message" },
 ] as const;
 
 test("capture invite-only onboarding", async ({ page, mockApi }, testInfo) => {
@@ -87,14 +92,21 @@ test("capture deterministic visual evidence for key screens", async ({
 	page,
 	mockApi: _mock,
 }, testInfo) => {
-	for (const screen of screens) {
-		await page.goto(screen.path);
-		await expect(page.getByText(screen.marker, { exact: true }).first()).toBeVisible();
-		await assertNoHorizontalOverflow(page);
-		await page.screenshot({
-			path: testInfo.outputPath(`${screen.name}.png`),
-			animations: "disabled",
-		});
+	test.setTimeout(120_000);
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		for (const screen of screens) {
+			await page.goto(screen.path);
+			await page.evaluate((theme) => {
+				document.documentElement.setAttribute("data-theme", theme);
+			}, colorScheme);
+			await expect(page.getByText(screen.marker, { exact: true }).first()).toBeVisible();
+			await assertNoHorizontalOverflow(page);
+			await page.screenshot({
+				path: testInfo.outputPath(`${screen.name}-${colorScheme}.png`),
+				animations: "disabled",
+			});
+		}
 	}
 });
 

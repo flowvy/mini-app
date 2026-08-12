@@ -75,9 +75,18 @@ From the repository root, prefer the checked-in PowerShell workflows:
 .\scripts\verify.ps1 -Scope Changed     # diff-aware local gate
 .\scripts\verify.ps1 -Scope Full        # services, migrations, contracts, and UI
 .\scripts\dev-reset-data.ps1 -ConfirmDevDataReset # local Flowvy DB + Redis DB 0 only
-.\scripts\dev-up.ps1                    # tracked local processes + PostgreSQL/Redis
+.\scripts\dev-up.ps1                    # localhost-only: Telegram and public tunnel disabled
+.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+    -NamedTunnelUrl 'https://dev-app.flowvy.io' # canonical full Flowvy dev on the owner's machine
 .\scripts\dev-down.ps1                  # stops only tracked processes; preserves volumes
 ```
+
+In this repository, a request to start the **full** or **standard** Flowvy dev environment means the
+Telegram-enabled named-Tunnel command above, including PostgreSQL/Redis, migrations, backend, Vite,
+the safe public preview, and the existing `dev-app.flowvy.io` route. Use plain `dev-up.ps1` only when
+the user explicitly asks for localhost-only or integration-free development. The full command assumes
+Docker Desktop and the system `cloudflared` connector are running and must not start a second polling
+process for the same test bot. It never authorizes printing credentials or Telegram init data.
 
 Use the narrowest verification scope while iterating and `Full` for a final handoff when Docker and
 browsers are available. Run from the stated directory below when diagnosing a helper or when a direct

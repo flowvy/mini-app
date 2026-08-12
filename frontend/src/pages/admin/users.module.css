@@ -3,6 +3,7 @@
 .page {
 	display: flex;
 	flex-direction: column;
+	gap: var(--layout-section-gap);
 	padding: 16px;
 	padding-bottom: 96px;
 }
@@ -12,7 +13,7 @@
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
-	margin-bottom: 12px;
+	margin-bottom: 0;
 }
 
 .searchWrap {
@@ -68,7 +69,7 @@
 	flex-direction: column;
 	padding: 16px;
 	padding-bottom: 96px;
-	gap: 16px;
+	gap: var(--layout-section-gap);
 }
 
 /* Empty / error states */
