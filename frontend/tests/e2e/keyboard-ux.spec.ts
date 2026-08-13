@@ -50,7 +50,7 @@ test("Enter dismisses every single-line editor and preserves multiline input", a
 	}
 
 	await page.goto("/admin/settings/access");
-	await page.getByRole("button", { name: "Add" }).click();
+	await page.getByRole("button", { name: "Create profile" }).click();
 	const accessInputs = page.locator('input:not([type="file"]):not([type="checkbox"])');
 	const accessInputCount = await accessInputs.count();
 	for (const input of await accessInputs.all()) {
@@ -90,7 +90,7 @@ test("mobile form focus hides bottom chrome until editing finishes", async ({
 	mockApi: _mock,
 }) => {
 	await page.goto("/admin/settings/access");
-	await page.getByRole("button", { name: "Add" }).click();
+	await page.getByRole("button", { name: "Create profile" }).click();
 	const navigation = page.getByRole("navigation", { includeHidden: true });
 	const touchInput = await page.evaluate(
 		() => window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
@@ -109,7 +109,8 @@ test("mobile form focus hides bottom chrome until editing finishes", async ({
 	await expect(name).not.toBeFocused();
 	await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
 
-	await page.getByText("Advanced Remnawave fields").click();
+	await page.getByText("Advanced Remnawave fields").focus();
+	await page.keyboard.press("Enter");
 	const description = page.getByLabel("Description");
 	await description.focus();
 	await description.press("Enter");

@@ -13,8 +13,8 @@ const screens = [
 	{ name: "admin-access", path: "/admin/settings/access", marker: "Service mode" },
 	{ name: "admin-settings-kuma", path: "/admin/settings/kuma", marker: "URL" },
 	{ name: "admin-settings-beszel", path: "/admin/settings/beszel", marker: "Hub URL" },
-	{ name: "admin-settings-branding", path: "/admin/settings/branding", marker: "App Name" },
-	{ name: "admin-settings-welcome", path: "/admin/settings/welcome", marker: "Message" },
+	{ name: "admin-settings-branding", path: "/admin/settings/branding", marker: "App name" },
+	{ name: "admin-settings-welcome", path: "/admin/settings/welcome", marker: "Content" },
 ] as const;
 
 test("capture invite-only onboarding", async ({ page, mockApi }, testInfo) => {
@@ -189,7 +189,7 @@ test("capture the lifetime access editor in light and dark themes", async ({
 			path: testInfo.outputPath(`admin-access-policy-${colorScheme}.png`),
 			animations: "disabled",
 		});
-		await page.getByRole("button", { name: /Add/ }).click();
+		await page.getByRole("button", { name: "Create profile" }).click();
 		const daysRestingValue = page.getByLabel("Number of days").locator("..").getByText("30");
 		const touchInput = await page.evaluate(
 			() => window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
@@ -205,7 +205,8 @@ test("capture the lifetime access editor in light and dark themes", async ({
 			animations: "disabled",
 		});
 		await page.getByRole("radio", { name: "No expiry" }).click();
-		await page.getByText("Advanced Remnawave fields").click();
+		await page.getByText("Advanced Remnawave fields").focus();
+		await page.keyboard.press("Enter");
 		await expect(page.getByLabel("Remnawave tag")).toBeEnabled();
 		await assertNoHorizontalOverflow(page);
 		await page.screenshot({
@@ -219,7 +220,7 @@ test("capture the lifetime access editor in light and dark themes", async ({
 		await expect
 			.poll(() => dateInput.evaluate((element) => getComputedStyle(element).colorScheme))
 			.toContain(colorScheme);
-		const editor = page.getByRole("form", { name: "New access profile" });
+		const editor = page.getByRole("dialog", { name: "Create access profile" });
 		const [editorBox, dateBox] = await Promise.all([editor.boundingBox(), dateInput.boundingBox()]);
 		expect(editorBox).not.toBeNull();
 		expect(dateBox).not.toBeNull();
@@ -233,12 +234,37 @@ test("capture the lifetime access editor in light and dark themes", async ({
 	}
 });
 
+test("capture contextual empty access profiles in light and dark themes", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	mockApi.mock("GET", "/api/debug/admin/registration/access-profiles", { body: [] });
+
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/admin/settings/access");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		const profilesPanel = page
+			.getByRole("heading", { name: "Access profiles" })
+			.locator("xpath=ancestor::section[1]");
+		await expect(profilesPanel.getByText("No access profiles yet", { exact: true })).toBeVisible();
+		await expect(profilesPanel.getByRole("button", { name: "Create profile" })).toBeVisible();
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`admin-access-empty-${colorScheme}.png`),
+			animations: "disabled",
+		});
+	}
+});
+
 test("capture access editor focus with keyboard-aware bottom chrome", async ({
 	page,
 	mockApi: _mock,
 }, testInfo) => {
 	await page.goto("/admin/settings/access");
-	await page.getByRole("button", { name: "Add" }).click();
+	await page.getByRole("button", { name: "Create profile" }).click();
 	await page.getByLabel("Name").focus();
 	const touchInput = await page.evaluate(
 		() => window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,

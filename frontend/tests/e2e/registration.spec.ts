@@ -128,22 +128,32 @@ test("admin configures registration policy and the global access profile", async
 		"true",
 	);
 
-	await page.getByRole("button", { name: /Add/ }).click();
-	await expect(page.getByText("Access profiles", { exact: true })).not.toBeVisible();
+	const profilesPanel = page
+		.getByRole("heading", { name: "Access profiles" })
+		.locator("xpath=ancestor::section[1]");
+	await profilesPanel.getByRole("button", { name: "Create profile" }).click();
+	await expect(page.getByRole("dialog", { name: "Create access profile" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Create access profile" })).toBeFocused();
+	await expect(page.getByText(/Provider options stay under Advanced/)).toBeVisible();
 	await page.getByRole("radio", { name: "No expiry" }).click();
 	await expect(page.getByText(/No expiration.*fully unlimited access/)).toBeVisible();
 	await page.getByRole("radio", { name: "Days" }).click();
 	await page.getByPlaceholder("Free 30 days").fill("Weekend trial");
 	await page.getByLabel("Number of days").fill("3");
 	await page.getByLabel("Traffic (GB, 0 = unlimited)").fill("10");
-	await page.getByText("Advanced Remnawave fields").click();
+	await page.getByText("Advanced Remnawave fields").focus();
+	await page.keyboard.press("Enter");
 	await page.getByLabel("Remnawave tag").selectOption("FREE_TRIAL");
 	await page.getByRole("checkbox", { name: "Primary" }).check();
 	await page.getByLabel("External squad").selectOption({ label: "Public" });
-	await page.getByRole("button", { name: "Save" }).click();
+	await page
+		.getByRole("dialog", { name: "Create access profile" })
+		.getByRole("button", { name: "Create profile", exact: true })
+		.click();
 	await expect(page.getByRole("strong").filter({ hasText: "Weekend trial" })).toBeVisible();
 	await page.getByRole("button", { name: "Edit access profile" }).last().click();
-	await page.getByText("Advanced Remnawave fields").click();
+	await page.getByText("Advanced Remnawave fields").focus();
+	await page.keyboard.press("Enter");
 	await expect(page.getByLabel("Remnawave tag")).toHaveValue("FREE_TRIAL");
 	await expect(page.getByRole("checkbox", { name: "Primary" })).toBeChecked();
 	await expect(page.getByLabel("External squad")).toHaveValue(
@@ -166,7 +176,7 @@ test("admin configures registration policy and the global access profile", async
 	expect(serious).toEqual([]);
 });
 
-test("access editor waits for provider choices without changing the Add control geometry", async ({
+test("access editor waits for provider choices without changing the create control geometry", async ({
 	page,
 	mockApi,
 }) => {
@@ -180,15 +190,86 @@ test("access editor waits for provider choices without changing the Add control 
 	});
 
 	await page.goto("/admin/settings/access");
-	const add = page.getByRole("button", { name: "Add" });
-	const before = await add.boundingBox();
-	await expect(add).toBeDisabled();
-	await expect(add).toBeEnabled();
-	const after = await add.boundingBox();
+	const create = page.getByRole("button", { name: "Create profile" });
+	const before = await create.boundingBox();
+	await expect(create).toBeDisabled();
+	await expect(create).toBeEnabled();
+	const after = await create.boundingBox();
 	expect(after?.width).toBe(before?.width);
 	expect(after?.height).toBe(before?.height);
-	await add.click();
-	await expect(page.getByRole("heading", { name: "New access profile" })).toBeVisible();
+	await create.click();
+	await expect(page.getByRole("heading", { name: "Create access profile" })).toBeVisible();
+});
+
+test("empty access profiles keep creation contextual to the collection", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.mock("GET", "/api/debug/admin/registration/access-profiles", { body: [] });
+
+	await page.goto("/admin/settings/access");
+	const profilesPanel = page
+		.getByRole("heading", { name: "Access profiles" })
+		.locator("xpath=ancestor::section[1]");
+	await expect(profilesPanel.getByText("No access profiles yet", { exact: true })).toBeVisible();
+	await expect(profilesPanel.getByText(/reusable access template/)).toBeVisible();
+	const create = profilesPanel.getByRole("button", { name: "Create profile" });
+	await expect(create).toBeVisible();
+	await create.click();
+	await expect(page.getByRole("dialog", { name: "Create access profile" })).toBeVisible();
+});
+
+test("access profile editor traps focus, passes Axe, and returns focus to its trigger", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.goto("/admin/settings/access");
+	const create = page.getByRole("button", { name: "Create profile" });
+	await create.click();
+
+	const dialog = page.getByRole("dialog", { name: "Create access profile" });
+	await expect(dialog).toBeVisible();
+	expect(
+		await dialog.evaluate(
+			(element) => element.matches(":modal") && element.parentElement === document.body,
+		),
+	).toBe(true);
+	await dialog.evaluate(async (element) => {
+		await Promise.all(
+			element
+				.getAnimations({ subtree: true })
+				.map((animation) => animation.finished.catch(() => undefined)),
+		);
+	});
+	const [dialogBox, viewport] = await Promise.all([
+		dialog.boundingBox(),
+		page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight })),
+	]);
+	expect(dialogBox).not.toBeNull();
+	if (viewport.width <= 600) {
+		expect(dialogBox?.x).toBeCloseTo(0, 0);
+		expect(dialogBox?.y).toBeCloseTo(0, 0);
+		expect(dialogBox?.width).toBeCloseTo(viewport.width, 0);
+		expect(dialogBox?.height).toBeCloseTo(viewport.height, 0);
+	} else {
+		expect(dialogBox?.width ?? viewport.width).toBeLessThan(viewport.width);
+		expect(dialogBox?.height ?? viewport.height).toBeLessThan(viewport.height);
+	}
+	await expect(page.getByRole("heading", { name: "Create access profile" })).toBeFocused();
+	await page.keyboard.press("Tab");
+	await expect(page.getByRole("button", { name: "Close editor" })).toBeFocused();
+	await page.keyboard.press("Shift+Tab");
+	await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
+
+	const result = await new AxeBuilder({ page }).include("dialog").analyze();
+	const serious = result.violations.filter((violation) =>
+		["serious", "critical"].includes(violation.impact ?? ""),
+	);
+	expect(serious).toEqual([]);
+
+	await page.keyboard.press("Escape");
+	await expect(dialog).toHaveCount(0);
+	await expect(create).toBeFocused();
 });
 
 test("home keeps the invite card in skeleton state until the page data settles", async ({
@@ -219,15 +300,19 @@ test("access editor fails safely when Remnawave options are unavailable", async 
 	});
 
 	await page.goto("/admin/settings/access");
-	await page.getByRole("button", { name: /Add/ }).click();
+	await page.getByRole("button", { name: "Create profile" }).click();
 	await expect(page.getByRole("alert")).toContainText(
 		"Remnawave options are temporarily unavailable",
 	);
-	await page.getByText("Advanced Remnawave fields").click();
+	await page.getByText("Advanced Remnawave fields").focus();
+	await page.keyboard.press("Enter");
 	await expect(page.getByLabel("Remnawave tag")).toBeDisabled();
 	await page.getByPlaceholder("Free 30 days").fill("Local trial");
-	await expect(page.getByRole("button", { name: "Save" })).toBeEnabled();
-	await page.getByRole("button", { name: "Save" }).click();
+	const submit = page
+		.getByRole("dialog", { name: "Create access profile" })
+		.getByRole("button", { name: "Create profile", exact: true });
+	await expect(submit).toBeEnabled();
+	await submit.click();
 	await expect(page.getByRole("strong").filter({ hasText: "Local trial" })).toBeVisible();
 });
 

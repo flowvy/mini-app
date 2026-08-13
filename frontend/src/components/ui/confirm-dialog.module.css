@@ -1,20 +1,22 @@
 .overlay {
 	position: fixed;
 	inset: 0;
+	padding: max(12px, var(--tg-viewport-safe-area-inset-top, 0px)) 12px
+		max(12px, var(--tg-viewport-safe-area-inset-bottom, 0px));
 	background: var(--v2-overlay-bg);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	z-index: 100;
+	z-index: 300;
 }
 
 .modal {
 	all: unset;
 	box-sizing: border-box;
-	width: 320px;
-	max-width: calc(100vw - 32px);
+	width: min(360px, 100%);
+	max-width: 100%;
 	background: var(--v2-floor-0);
-	border-radius: var(--radius-md);
+	border-radius: var(--radius-lg);
 	border: 1px solid var(--v2-border-tertiary);
 	box-shadow: var(--v2-shadow);
 	display: flex;
@@ -24,7 +26,8 @@
 }
 
 .header {
-	padding: 14px 18px;
+	min-height: 58px;
+	padding: 11px 12px 11px 18px;
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -38,12 +41,14 @@
 }
 
 .closeBtn {
-	padding: 4px;
-	border-radius: 6px;
+	display: grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	border-radius: var(--radius-sm);
 	color: var(--v2-icon-secondary);
 	flex-shrink: 0;
-	display: flex;
-	align-items: center;
 	background: none;
 	border: none;
 	cursor: pointer;
@@ -57,8 +62,8 @@
 }
 
 .body {
-	padding: 16px 18px;
-	font-size: 12.5px;
+	padding: 18px;
+	font-size: 13px;
 	color: var(--v2-text-secondary);
 	line-height: 1.5;
 }
@@ -67,6 +72,27 @@
 	display: flex;
 	justify-content: flex-end;
 	gap: 8px;
-	padding: 14px 18px;
+	padding: 12px 18px 14px;
 	border-top: 1px solid var(--v2-border-tertiary);
+}
+
+.footer > button {
+	min-width: 96px;
+	min-height: 40px;
+}
+
+@media (max-width: 480px) and (pointer: coarse) {
+	.overlay {
+		align-items: flex-end;
+		padding-inline: 8px;
+	}
+
+	.modal {
+		width: 100%;
+		border-radius: 18px;
+	}
+
+	.footer > button {
+		flex: 1;
+	}
 }

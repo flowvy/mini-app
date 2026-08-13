@@ -87,7 +87,7 @@ test("access controls keep Flowvy typography with compact placeholders", async (
 		expect(defaultAccessFocus.boxShadow).toBe("none");
 	}
 
-	await page.getByRole("button", { name: "Add" }).click();
+	await page.getByRole("button", { name: "Create profile" }).click();
 	const name = page.getByPlaceholder("Free 30 days");
 	const typography = await name.evaluate((element) => ({
 		controlSize: Number.parseFloat(getComputedStyle(element).fontSize),
@@ -130,7 +130,7 @@ test("access controls keep Flowvy typography with compact placeholders", async (
 	const dateValue = date.locator("..").getByText("Sep 1, 2026", { exact: true });
 	await expect(dateValue).toHaveCSS("font-family", /Geist/);
 	await expect(dateValue).toHaveCSS("font-size", "13px");
-	const editor = page.getByRole("form", { name: "New access profile" });
+	const editor = page.getByRole("dialog", { name: "Create access profile" });
 	const expiresLabel = page.getByText("Expires at", { exact: true });
 	const [editorBox, rowBox, labelBox, dateBox] = await Promise.all([
 		editor.boundingBox(),
@@ -153,7 +153,7 @@ test("access controls keep Flowvy typography with compact placeholders", async (
 	expect(dateRowStyle.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
 	expect(dateRowStyle.borderTopStyle).not.toBe("none");
 	expect(dateRowStyle.borderTopWidth).toBe("1px");
-	expect(rowBox?.width ?? 0).toBeGreaterThan((editorBox?.width ?? 0) * 0.85);
+	expect(rowBox?.width ?? 0).toBeGreaterThan((editorBox?.width ?? 0) * 0.8);
 	expect((dateBox?.x ?? 0) + (dateBox?.width ?? 0)).toBeLessThanOrEqual(
 		(editorBox?.x ?? 0) + (editorBox?.width ?? 0),
 	);
@@ -166,7 +166,8 @@ test("access controls keep Flowvy typography with compact placeholders", async (
 	).toBeLessThan(2);
 	await date.fill("2026-09-15");
 	await expect(date.locator("..").getByText("Sep 15, 2026", { exact: true })).toBeVisible();
-	await page.getByText("Advanced Remnawave fields").click();
+	await page.getByText("Advanced Remnawave fields").focus();
+	await page.keyboard.press("Enter");
 	const initialStatus = page.getByLabel("Initial status");
 	await expect(initialStatus.locator("..").locator("span", { hasText: "ACTIVE" })).toHaveCSS(
 		"font-family",
