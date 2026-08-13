@@ -47,9 +47,9 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
   Read-only check использует fixed HTTPS origin, не следует redirects, не доверяет proxy environment,
   ограничивает тело и не возвращает upstream body. Observe-only `/api/webhooks/tribute` закрыт при
   пустом key, проверяет `trbt-signature` над ограниченным raw body до JSON parse, временное окно,
-  strict envelope и exact replay. Текущий UI не публикует callback URL; документированный Tribute
-  contract не определяет encoding подписи, поэтому реальная controlled delivery обязательна до
-  переключения операторского webhook.
+  strict envelope и exact replay. Реальная controlled test delivery подтвердила 64-hex encoding;
+  отдельный bounded `test_event` ping получает `200` без persistence или side effects. Текущий UI не
+  публикует callback URL до появления безопасного executor.
 - Commerce-rule CRUD требует актуального active admin и повторно проверяет active access profile
   перед каждым save. Draft preview не пишет БД и не вызывает provider/user mutations. Money приходит
   и хранится как bounded integer minor units; bands, currency, commerce/payment shape, duration и
@@ -60,8 +60,8 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
   snapshot rule/profile.
 - Успешная аутентификация Tribute webhook разрешает только минимальную durable запись и exact-body
   дедупликацию, но не user/access/provider mutation. Callback URL нельзя показывать оператору до
-  подтверждения реального encoding подписи и event-family payload shapes; entitlement execution
-  требует отдельного ledger и повторной проверки identity/rule/profile.
+  появления entitlement ledger и подтверждения event-family payload shapes; execution требует
+  semantic idempotency и повторной проверки identity/rule/profile.
 - Upload ограничивается при streaming, до полного чтения в память; type/size проверяются server-side.
 - Unknown provider status/enum обрабатывается безопасно, а не считается активным.
 - Все внешние calls имеют finite timeout, bounded concurrency и безопасное error mapping.

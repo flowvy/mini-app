@@ -202,10 +202,12 @@ freshness и timestamp consistency. PostgreSQL `tribute_webhook_events` атом
 inbox после server-configured 90 дней. Service graph receiver содержит только dedicated repository:
 он не может обратиться к commerce, user, registration или Remnawave service.
 
-Callback URL в UI намеренно отсутствует. Документация Tribute не фиксирует encoding подписи и
-универсальную semantic event identity, поэтому перед переключением существующего внешнего receiver
-нужна controlled delivery. Identity reconciliation, entitlement ledger/executor, refund
-compensation и checkout остаются следующим backend/product этапом.
+Отдельный подписанный `test_event` ping проходит strict test schema, возвращает `200` и не пишет
+inbox; его 64-hex signature contract подтверждён controlled delivery 2026-08-14. Callback URL в UI
+намеренно отсутствует: документация Tribute всё ещё не фиксирует универсальную semantic event
+identity, а production event shapes не подтверждены live payment. Identity reconciliation,
+entitlement ledger/executor, refund compensation и checkout остаются следующим backend/product
+этапом.
 
 ### Webhooks и Telegram bot
 

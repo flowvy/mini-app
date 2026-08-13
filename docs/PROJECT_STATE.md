@@ -97,7 +97,10 @@
   донатов, подписок и цифровых товаров. Admin выбирает payment conditions, fixed/volume duration,
   active access profile, extend/replace, priority и enabled state; backend preview показывает
   результат без save/access side effect. Observe-only receiver уже существует, но callback URL не
-  публикуется до controlled contract verification и появления безопасного executor.
+  публикуется до появления безопасного executor.
+- Штатный подписанный Tribute test-ping подтверждён controlled delivery 2026-08-14: отдельный exact
+  object с bounded `test_event` получает `200` после HMAC, не пишет inbox и не запускает commerce.
+  Реальная доставка подтвердила ожидаемый 64-hex signature encoding без раскрытия тела или секрета.
 - Tribute draft preview проверен через настоящий authenticated FastAPI route точным camelCase
   payload `500 / 3499 / 30`: backend возвращает 4 дня. Ошибки сессии, admin-доступа, валидации и
   временной недоступности получают отдельный безопасный текст без raw diagnostics, а изменение
@@ -198,9 +201,10 @@
 ## Что не завершено или не доказано
 
 - Broadcast пока отображает `coming soon`; отправка рассылки не реализована.
-- Tribute receiver пока не получает реальные deliveries: существующий внешний webhook не изменён,
-  а encoding `trbt-signature` и event-family payload shapes не подтверждены controlled delivery.
-  Exact-body replay закрыт только для observe-only inbox; нет semantic payment idempotency,
+- Tribute receiver пока не получал реального payment event: существующий внешний webhook не изменён,
+  а production event-family payload shapes подтверждены только официальной документацией и fixtures.
+  Signature и отдельный test-ping проверены live. Exact-body replay закрыт только для observe-only
+  inbox; нет semantic payment idempotency,
   сопоставления события с пользователем, entitlement ledger/executor, checkout, обработки/возврата
   платежей, выдачи, замены, продления либо отзыва access profile. Официальный Tribute sandbox/test
   payment не документирован; API check подтверждает только read-only доступ.
@@ -322,8 +326,11 @@ chrome не возвращается между `focusout` и завершени
 430x932 Chromium, 320x568 Chromium, iPhone/WebKit и desktop Chromium; affected light/dark evidence
 просмотрены вручную. Реальный Tribute, webhook и access mutation не вызывались.
 Observe-only Tribute receiver 2026-08-14 добавил защищённый raw-body ingress, минимальный
-PostgreSQL inbox, atomic exact replay и bounded retention. Ни callback, ни реальные deliveries, ни
-commerce/access/provider mutation не включались.
+PostgreSQL inbox, atomic exact replay и bounded retention. Ни постоянный callback, ни реальные
+payment deliveries, ни commerce/access/provider mutation не включались.
+Последующая штатная тестовая доставка Tribute подтвердила 64-hex подпись и отдельную форму
+`test_event`: первый запрос безопасно выявил schema difference, после strict test-ping адаптации
+Tribute показал success, endpoint вернул `200`, inbox остался пустым.
 
 | Область | Команда | Результат |
 |---|---|---|
@@ -383,16 +390,14 @@ commerce/access/provider mutation не включались.
 | Tribute rule editor mobile polish | `PLAYWRIGHT_PORT=5291; scripts/verify.ps1 -Scope Full`; focused Tribute and shared-editor all-project matrices | Full gate: migrations/drift, 344 backend, 53 Remnawave contract, Ruff, frontend lint/typecheck, 36 unit, production build, 68 mobile E2E и docs passed. Tribute 40/40 и Access/keyboard 52/52 прошли на 430x932, 320x568, iPhone/WebKit и desktop. Compact bands, aligned currency/priority, footer без delayed reserved space, сохранённые Add band/Preview taps, keyboard dismissal, save, Axe/overflow/console/network зелёные; light/dark evidence после 1,1 секунды просмотрены вручную |
 | Tribute preview runtime repair | authenticated FastAPI regression; retained-initData unit; `PLAYWRIGHT_PORT=5294; pnpm exec playwright test tests/e2e/tribute.spec.ts --workers=4`; `PLAYWRIGHT_PORT=5295; scripts/verify.ps1 -Scope Full` | Exact production payload возвращает 4 дня; first-read initData regression зелёный. Tribute 44/44 прошли на 430x932, 320x568, iPhone/WebKit и desktop; late preview auth, safe `401` copy, stale-error reset, explicit payment-unit labels, console/network/overflow и визуальный dark error state проверены. Full gate прошёл migrations/drift, 345 backend, 53 Remnawave contract, Ruff, frontend lint/typecheck, 37 unit, production build, 69 mobile E2E и docs. Стандартный dev перезапущен; local/public asset `index-j_XaGRQy.js` совпадает, readiness `200`, public debug `404` |
 | Global mobile input/loading UX | `PLAYWRIGHT_PORT=5314; scripts/verify.ps1 -Scope Changed`; focused all-project Playwright matrix and visual evidence | Changed gate: 293 service-free backend tests, Ruff, 37 frontend unit, lint/typecheck/build, 69 mobile smoke и docs passed. Дополнительно 72/72 affected browser scenarios прошли на 430x932, 320x568, iPhone/WebKit и desktop Chromium. Active-control reveal, deferred footer/tab return, сохранённая button activation, CSS spinner без SVG/backing box, Axe/contrast, overflow, console/network guards зелёные; Tribute Settings и pending Save просмотрены в light/dark |
-| Tribute observe-only webhook inbox | focused HTTP/repository suites; `PLAYWRIGHT_PORT=5321; scripts/verify.ps1 -Scope Full` | 50/50 focused passed. Full gate: one-head, zero/previous-head upgrade, downgrade/re-upgrade/drift, 376 backend, 53 Remnawave contract, Ruff, frontend lint/typecheck, 37 unit, production build, 69 mobile E2E и docs passed. Exact 64-hex signature, BIGINT bounds, body/content/schema/time limits, exact/concurrent replay, normalized-only storage и retention покрыты без реального Tribute или access side effect |
+| Tribute observe-only webhook inbox | focused HTTP/repository suites; `PLAYWRIGHT_PORT=5321; scripts/verify.ps1 -Scope Full`; live test-ping; follow-up full backend и `scripts/verify.ps1 -Scope Changed` | 51/51 focused и 383/383 current backend passed; Changed gate — 328 service-free, Ruff/docs. Исходный Full gate прошёл one-head, zero/previous-head upgrade, downgrade/re-upgrade/drift, 53 Remnawave contract, frontend lint/typecheck, 37 unit, production build и 69 mobile E2E. Controlled Tribute test подтвердил strict 64-hex signature и отдельный `test_event`: endpoint `200`, inbox 0 rows, без commerce/access side effect |
 
 ## Следующее действие
 
-До активации Flowvy callback принять штатный тестовый запрос из операторского интерфейса Tribute и
-подтвердить реальный encoding `trbt-signature` и payload shape; для этого не нужен реальный платёж и
-существующий операторский webhook не следует менять дольше самой контролируемой доставки. Затем
-отдельно спроектировать identity reconciliation и
-idempotent entitlement ledger/executor со snapshot rule/profile, absolute target expiry и refund
-compensation. Только после deterministic failure/retry tests показывать callback URL в админском UX
-и планировать переключение Tribute.
+Следующий отдельный slice — спроектировать identity reconciliation и idempotent entitlement
+ledger/executor со snapshot rule/profile, absolute target expiry и refund compensation. До любых
+access side effects нужно зафиксировать semantic identity каждого event family и доказать concurrent
+retry/recovery. Только после deterministic failure tests и controlled production-like fixture можно
+показывать callback URL в админском UX и планировать постоянное переключение Tribute.
 Отдельно остаются безопасный Broadcast, live Remnawave 3.x, Kuma и первый подтверждённый удалённый
 CI run.

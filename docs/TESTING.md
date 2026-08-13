@@ -42,8 +42,9 @@ credential isolation и 1m/20m Pulse mapping. Tribute fixtures проверяю�
 products request, server-only key, auth/non-2xx, timeout, oversized/malformed/schema-drift response
 без сети. Отдельный Tribute webhook suite строит HMAC локальным placeholder key и проверяет
 fail-closed missing key/signature, content type, raw/declared size, strict envelope, timestamp window,
-malformed normalized fields, ignored unknown event, exact replay, конкурентный DB duplicate и
-retention без raw payload/signature/username или внешних side effects. Commerce fixtures отдельно
+malformed normalized fields, отдельный authenticated `test_event` ping без persistence, safe
+schema-shape diagnostics без values, ignored unknown event, exact replay, конкурентный DB duplicate
+и retention без raw payload/signature/username или внешних side effects. Commerce fixtures отдельно
 проверяют conditional rule validation, active-profile gate,
 CRUD, no-match/fixed/volume preview и целочисленные 500/1000/3500/4000 RUB boundaries без webhook
 или access side effect. Media tests сканируют ложный declared size и действительно читают aiogram `InputFile`

@@ -27,7 +27,8 @@ callback URL. Старый внешний receiver остаётся вне Flowv
   идемпотентной обработки.
 
 Документация не фиксирует encoding подписи, отдельный timestamp header или универсальный event ID.
-Это неизвестное нельзя маскировать предположением при включении side effects.
+64-hex encoding позже подтверждён controlled test delivery; отсутствие universal event ID остаётся
+блокером для side effects.
 
 ## Scope
 
@@ -79,9 +80,9 @@ refund API call, admin event journal, публикация callback URL и из�
 
 - Tribute подписывает raw body тем же API key и документирует retries примерно 24 часа, но не публикует
   универсальный event ID или отдельный timestamp header.
-- После реализации оператор подтвердил наличие штатного действия отправки тестового webhook-
-  запроса в интерфейсе Tribute. Оно позволяет проверить ingress без платежа; его payload/signature
-  остаются неизвестными до фактической контролируемой доставки.
+- После реализации оператор подтвердил и выполнил штатный тестовый webhook. Он использует отдельный
+  signed exact object с bounded string `test_event`, без production envelope timestamps/payload;
+  после отдельной strict schema получил success/`200` без inbox row.
 - Официальный OpenAPI endpoint `https://tribute.tg/api/v1/openapi/ru` дважды не отдал полный
   83-KiB document за 60/120 секунд (получено 21 839 bytes). Реализация не должна делать неизвестные
   payload-поля обязательными или считать их достаточными для entitlement execution.
@@ -97,9 +98,8 @@ refund API call, admin event journal, публикация callback URL и из�
   webhook остаётся без изменений.
 - 2026-08-14 — default ingress limits: 64 KiB body, 25 часов max age для документированного
   примерно 24-часового retry schedule, 5 минут future tolerance и 90 дней retention.
-- 2026-08-14 — verifier принимает 64-символьный hexadecimal HMAC-SHA256 digest, но это не считается
-  live-совместимостью: официальная документация не фиксирует encoding, поэтому callback остаётся
-  скрыт до controlled delivery или официального уточнения.
+- 2026-08-14 — verifier принимает 64-символьный hexadecimal HMAC-SHA256 digest; live test-ping
+  подтвердил этот encoding. Callback остаётся скрыт до entitlement ledger/executor.
 - 2026-08-14 — неизвестный syntactically safe event сохраняется со статусом `ignored`; exact-body
   SHA-256 подавляет только идентичные deliveries и не заменяет semantic entitlement ledger.
 
@@ -112,6 +112,9 @@ refund API call, admin event journal, публикация callback URL и из�
   downgrade/re-upgrade и model drift passed; `PLAYWRIGHT_PORT=5321;
   scripts\verify.ps1 -Scope Full` — 376 backend, 53 Remnawave contract, Ruff, 37 frontend unit,
   lint/typecheck/build, 69 mobile Chromium E2E и docs passed.
+- Follow-up controlled Tribute test-ping: provider success, public endpoint `200`, inbox 0 rows;
+  strict test schema и redacted shape diagnostics — 51 focused tests, final backend — 383 passed;
+  Changed gate — 328 service-free tests, Ruff и docs passed.
 - Реальный Tribute/Telegram/Remnawave не вызывается; подписи строятся локальными fixtures.
 
 ## Recovery and rollback
@@ -122,8 +125,8 @@ downgrade, удаляющий только новую пустую/observe-only 
 
 ## Outcomes & Retrospective
 
-Observe-only ingress доказан локальными HMAC fixtures и disposable PostgreSQL без обращения к
-реальному Tribute. Минимальная запись, exact/concurrent replay, strict transport/schema/time
-failure paths и retention покрыты. Архитектурная граница сохранена: receiver не читает правила и
-не выдаёт доступ. До активации остаётся контролируемо подтвердить encoding подписи и реальные
-payload shapes, затем отдельным планом реализовать semantic ledger/executor.
+Observe-only ingress доказан локальными HMAC fixtures, disposable PostgreSQL и штатной
+контролируемой test delivery Tribute. Минимальная запись, exact/concurrent replay, strict
+transport/schema/time failure paths, отдельный no-persistence test ping и retention покрыты.
+Архитектурная граница сохранена: receiver не читает правила и не выдаёт доступ. Следующим отдельным
+планом требуется реализовать semantic identity reconciliation и entitlement ledger/executor.

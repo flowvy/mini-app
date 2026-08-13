@@ -9,6 +9,18 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
+class TributeWebhookTestEnvelope(BaseModel):
+    """Authenticated provider test ping with no commerce semantics."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    test_event: str = Field(
+        min_length=1,
+        max_length=100,
+        pattern=r"^[^\x00-\x1f\x7f]+$",
+    )
+
+
 class TributeWebhookEnvelope(BaseModel):
     """Signed Tribute event envelope; payload fields are normalized separately."""
 

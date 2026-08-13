@@ -443,9 +443,9 @@ key. Актуальный
 официальный Markdown 2026-08-14 документирует exponential retries примерно 24 часа:
 5m/15m/30m/1h/2h/4h/8h/8h, но не даёт event ID для subscription/donation и не описывает
 encoding подписи, key scopes/rotation или отдельный timestamp header. Текущий verifier принимает
-64-символьный hexadecimal SHA-256 digest без учёта регистра. Это необходимо подтвердить реальной
-контролируемой доставкой или официальным уточнением до переключения callback; наличие endpoint само
-по себе не является разрешением менять действующий webhook.
+64-символьный hexadecimal SHA-256 digest без учёта регистра. Этот encoding подтверждён 2026-08-14
+штатной контролируемой тестовой доставкой Tribute; наличие рабочего endpoint само по себе всё ещё не
+является разрешением включать entitlement side effects или постоянно менять действующий webhook.
 
 PostgreSQL inbox хранит SHA-256 точного raw body как `delivery_key`, event family/status, provider
 timestamps и только допустимые нормализованные Telegram/payment/item identifiers, сумму в integer
@@ -462,12 +462,14 @@ Exact-body dedupe не является semantic payment idempotency: повто
 effect. Identity reconciliation, semantic idempotency key для каждого event family, rule/profile
 snapshot, абсолютный target expiry и refund compensation остаются отдельным executor slice.
 
-У Tribute не найден официальный sandbox, test hostname/credential или health endpoint. При этом
-операторский интерфейс Tribute содержит действие отправки тестового webhook-запроса; его фактические
-signature encoding и payload shape ещё не приняты Flowvy и потому не считаются частью доказанного
-контракта. OpenAPI указывает только production origin. Автотесты используют MockTransport и
-Playwright fixtures; реальный платёж или self-payment не нужны как smoke. Live API check и штатную
-тестовую доставку может инициировать только оператор явно настроенной интеграции.
+У Tribute не найден официальный sandbox, test hostname/credential или health endpoint. Операторский
+интерфейс отправляет отдельный подписанный test-ping: exact JSON object с единственным bounded string
+полем `test_event`, без `name/created_at/sent_at/payload`. Flowvy проверяет тот же HMAC до parse,
+валидирует отдельную strict schema, отвечает `200` и не сохраняет ping в inbox. Контракт подтверждён
+2026-08-14 реальной контролируемой отправкой: Tribute показал success, server зафиксировал один `200`,
+а число inbox rows осталось нулевым. OpenAPI указывает только production origin. Автотесты используют
+MockTransport и Playwright fixtures; реальный платёж или self-payment не нужны как smoke. Live API
+check и штатную тестовую доставку может инициировать только оператор явно настроенной интеграции.
 
 Provider-neutral rule design дополнительно сверялся 2026-08-13 с primary Stripe pricing/
 entitlements документацией: provider prices не являются internal entitlements, а volume и graduated

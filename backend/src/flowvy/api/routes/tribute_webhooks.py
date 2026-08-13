@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import datetime
+import json
 import logging
+import re
+from typing import Any
 
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Request, Response, status
@@ -11,7 +14,10 @@ from pydantic import ValidationError
 
 from flowvy.api.webhook_utils import read_limited_body
 from flowvy.config import Settings
-from flowvy.schemas.tribute_webhooks import TributeWebhookEnvelope
+from flowvy.schemas.tribute_webhooks import (
+    TributeWebhookEnvelope,
+    TributeWebhookTestEnvelope,
+)
 from flowvy.services.tribute_webhook_inbox import (
     TributeWebhookInboxService,
     TributeWebhookPayloadError,
@@ -21,6 +27,46 @@ from flowvy.services.webhook_security import sha256_hex
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["webhooks"], route_class=DishkaRoute)
+
+_SAFE_FIELD_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
+
+
+def _safe_json_shape(body: bytes) -> dict[str, object]:
+    """Describe signed JSON structure without logging provider-owned values."""
+    try:
+        value: Any = json.loads(body)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return {"root": "invalid_json"}
+    if not isinstance(value, dict):
+        return {"root": type(value).__name__}
+
+    keys = sorted(
+        key for key in value if isinstance(key, str) and _SAFE_FIELD_NAME.fullmatch(key)
+    )[:20]
+    field_types = {key: type(value[key]).__name__ for key in keys}
+    shape: dict[str, object] = {
+        "root": "object",
+        "keys": keys,
+        "field_types": field_types,
+        "omitted_keys": max(0, len(value) - len(keys)),
+    }
+    payload = value.get("payload")
+    if isinstance(payload, dict):
+        payload_keys = sorted(
+            key for key in payload if isinstance(key, str) and _SAFE_FIELD_NAME.fullmatch(key)
+        )[:20]
+        shape["payload_keys"] = payload_keys
+        shape["omitted_payload_keys"] = max(0, len(payload) - len(payload_keys))
+    return shape
+
+
+def _acknowledgement() -> Response:
+    """Return the provider acknowledgement shared by tests and deliveries."""
+    return Response(
+        content='{"status":"ok"}',
+        media_type="application/json",
+        status_code=status.HTTP_200_OK,
+    )
 
 
 @router.post(
@@ -55,9 +101,20 @@ async def receive_tribute_webhook(
         return Response(status_code=status.HTTP_401_UNAUTHORIZED)
 
     try:
+        TributeWebhookTestEnvelope.model_validate_json(body)
+    except (ValidationError, ValueError, TypeError):
+        pass
+    else:
+        logger.info("Authenticated Tribute webhook test acknowledged")
+        return _acknowledgement()
+
+    try:
         envelope = TributeWebhookEnvelope.model_validate_json(body)
     except (ValidationError, ValueError, TypeError):
-        logger.warning("Malformed Tribute webhook envelope")
+        logger.warning(
+            "Malformed Tribute webhook envelope shape=%s",
+            _safe_json_shape(body),
+        )
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
     now = datetime.datetime.now(datetime.UTC)
@@ -77,8 +134,4 @@ async def receive_tribute_webhook(
         logger.warning("Malformed Tribute webhook payload")
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
 
-    return Response(
-        content='{"status":"ok"}',
-        media_type="application/json",
-        status_code=status.HTTP_200_OK,
-    )
+    return _acknowledgement()

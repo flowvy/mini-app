@@ -12,7 +12,11 @@ import pytest
 from pydantic import SecretStr
 from starlette.requests import Request
 
-from flowvy.api.routes.tribute_webhooks import receive_tribute_webhook, router
+from flowvy.api.routes.tribute_webhooks import (
+    _safe_json_shape,
+    receive_tribute_webhook,
+    router,
+)
 from flowvy.config import Settings
 from flowvy.repositories.tribute_webhook_event import TributeWebhookEventRepository
 from flowvy.services.tribute_webhook_inbox import TributeWebhookInboxService
@@ -186,6 +190,46 @@ async def test_signature_accepts_equivalent_uppercase_hex() -> None:
 
     assert response.status_code == 200
     repo.record_once.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_authenticated_provider_test_ping_is_acknowledged_without_persistence() -> None:
+    body = b'{"test_event":"webhook check"}'
+    service, repo = _service()
+
+    response = await receive_tribute_webhook(
+        _request(body, signature=_signature(body)),
+        _settings(),
+        service,
+    )
+
+    assert response.status_code == 200
+    assert response.body == b'{"status":"ok"}'
+    repo.record_once.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "body",
+    [
+        b'{"test_event":""}',
+        b'{"test_event":123}',
+        b'{"test_event":"ok","extra":true}',
+        json.dumps({"test_event": "x" * 101}).encode(),
+        b'{"test_event":"unsafe\\nvalue"}',
+    ],
+)
+async def test_malformed_provider_test_ping_is_rejected(body: bytes) -> None:
+    service, repo = _service()
+
+    response = await receive_tribute_webhook(
+        _request(body, signature=_signature(body)),
+        _settings(),
+        service,
+    )
+
+    assert response.status_code == 400
+    repo.record_once.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -397,3 +441,32 @@ def test_app_registers_dedicated_tribute_webhook_path() -> None:
 
     assert "/api/webhooks/tribute" in paths
     assert "/webhook/tribute" not in paths
+
+
+def test_signed_payload_diagnostics_expose_shape_but_never_values() -> None:
+    body = json.dumps(
+        {
+            "event_type": "secret-event-value",
+            "payload": {
+                "telegram_user_id": 123456789,
+                "unsafe\nkey": "secret-payload-value",
+            },
+            "unsafe\nroot": "secret-root-value",
+        },
+    ).encode()
+
+    shape = _safe_json_shape(body)
+    rendered = repr(shape)
+
+    assert shape == {
+        "root": "object",
+        "keys": ["event_type", "payload"],
+        "field_types": {"event_type": "str", "payload": "dict"},
+        "omitted_keys": 1,
+        "payload_keys": ["telegram_user_id"],
+        "omitted_payload_keys": 1,
+    }
+    assert "secret-event-value" not in rendered
+    assert "123456789" not in rendered
+    assert "secret-payload-value" not in rendered
+    assert "unsafe" not in rendered
