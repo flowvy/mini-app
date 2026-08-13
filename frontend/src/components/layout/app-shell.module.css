@@ -6,8 +6,11 @@
 	);
 	--shell-bottom: calc(76px + max(10px, var(--tg-viewport-safe-area-inset-bottom, 0px)));
 
-	position: relative;
-	height: 100dvh;
+	position: fixed;
+	top: var(--fv-visual-viewport-offset-top, 0px);
+	right: 0;
+	left: 0;
+	height: var(--fv-visual-viewport-height, 100dvh);
 	overflow: hidden;
 }
 
@@ -22,7 +25,7 @@
 	scroll-padding-block: var(--shell-top) var(--shell-bottom);
 }
 
-.shell[data-keyboard-open="true"] {
+.shell[data-touch-editing="true"] {
 	--shell-bottom: max(16px, var(--tg-viewport-safe-area-inset-bottom, 0px));
 }
 

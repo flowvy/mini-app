@@ -1,20 +1,11 @@
-.overlay {
-	position: fixed;
-	inset: 0;
-	padding: max(12px, var(--tg-viewport-safe-area-inset-top, 0px)) 12px
-		max(12px, var(--tg-viewport-safe-area-inset-bottom, 0px));
-	background: var(--v2-overlay-bg);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	z-index: 300;
-}
-
 .modal {
 	all: unset;
+	position: fixed;
+	inset: 0;
 	box-sizing: border-box;
-	width: min(360px, 100%);
+	width: min(360px, calc(100% - 24px));
 	max-width: 100%;
+	margin: auto;
 	background: var(--v2-floor-0);
 	border-radius: var(--radius-lg);
 	border: 1px solid var(--v2-border-tertiary);
@@ -23,6 +14,10 @@
 	flex-direction: column;
 	overflow: hidden;
 	animation: var(--fv-anim-modal-in) 0.2s ease-out;
+}
+
+.modal::backdrop {
+	background: var(--v2-overlay-bg);
 }
 
 .header {
@@ -82,14 +77,11 @@
 }
 
 @media (max-width: 480px) and (pointer: coarse) {
-	.overlay {
-		align-items: flex-end;
-		padding-inline: 8px;
-	}
-
 	.modal {
-		width: 100%;
+		inset: auto 8px max(8px, var(--tg-viewport-safe-area-inset-bottom, 0px));
+		width: auto;
 		border-radius: 18px;
+		margin: 0;
 	}
 
 	.footer > button {

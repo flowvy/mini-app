@@ -20,16 +20,20 @@ export function useRegistrationSettings() {
 
 export function useRegistrationAdmin() {
 	const settings = useRegistrationSettings();
-	const profiles = useQuery({
-		queryKey: queryKeys.accessProfiles,
-		queryFn: () => apiGet<AccessProfile[]>(`${prefix}/access-profiles`),
-	});
+	const profiles = useAccessProfiles();
 	const options = useQuery({
 		queryKey: queryKeys.registrationOptions,
 		queryFn: () => apiGet<RegistrationOptions>(`${prefix}/options`),
 		retry: false,
 	});
 	return { settings, profiles, options };
+}
+
+export function useAccessProfiles() {
+	return useQuery({
+		queryKey: queryKeys.accessProfiles,
+		queryFn: () => apiGet<AccessProfile[]>(`${prefix}/access-profiles`),
+	});
 }
 
 export function useUpdateRegistrationSettings() {

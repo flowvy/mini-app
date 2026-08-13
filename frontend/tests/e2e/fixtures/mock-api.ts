@@ -7,6 +7,7 @@ export const mockData = {
 		kumaSlug: "flowvy",
 		beszelUrl: "https://monitor.example.test",
 		beszelCredentialsConfigured: true,
+		tributeCredentialsConfigured: true,
 		appName: "Flowvy",
 		logoUrl: null,
 		welcomeText: "Welcome to Flowvy",
@@ -133,6 +134,7 @@ export const mockData = {
 			updatedAt: "2026-08-01T00:00:00Z",
 		},
 	],
+	commerceRules: [],
 	registrationOptions: {
 		internalSquads: [{ uuid: "00000000-0000-4000-8000-000000000011", name: "Primary" }],
 		externalSquads: [{ uuid: "00000000-0000-4000-8000-000000000021", name: "Public" }],
@@ -167,6 +169,7 @@ export interface MockApi {
 	calls: string[];
 	mock: (method: string, path: string | RegExp, reply: MockReply | MockReply[]) => void;
 	seedSettings: (patch: Record<string, unknown>) => void;
+	seedCommerceRules: (rules: Array<Record<string, unknown>>) => void;
 }
 
 interface MockState {
@@ -174,6 +177,7 @@ interface MockState {
 	devices: { devices: Array<Record<string, unknown>>; total: number; limit: number | null };
 	registration: Record<string, unknown>;
 	accessProfiles: Array<Record<string, unknown>>;
+	commerceRules: Array<Record<string, unknown>>;
 }
 
 function clone<T>(value: T): T {
@@ -245,9 +249,76 @@ async function handleApi(
 		await reply(route, { body: { ok: true, error: null } });
 		return;
 	}
+	if (method === "POST" && path === "/api/debug/admin/settings/tribute/test") {
+		await reply(route, { body: { ok: true, error: null } });
+		return;
+	}
 	if (method === "POST" && path === "/api/debug/admin/settings/welcome-media") {
 		await reply(route, {
 			body: { fileId: "telegram-file-1", fileName: "welcome.mp4", mediaType: "animation" },
+		});
+		return;
+	}
+	if (method === "GET" && path === "/api/debug/admin/commerce/rules") {
+		await reply(route, { body: state.commerceRules });
+		return;
+	}
+	if (method === "POST" && path === "/api/debug/admin/commerce/rules") {
+		const input = request.postDataJSON() as Record<string, unknown>;
+		const created = {
+			...input,
+			id: `10000000-0000-4000-8000-${String(state.commerceRules.length + 1).padStart(12, "0")}`,
+		};
+		state.commerceRules.push(created);
+		await reply(route, { status: 201, body: created });
+		return;
+	}
+	const commerceRuleMatch = path.match(/^\/api\/debug\/admin\/commerce\/rules\/([^/]+)$/);
+	if (commerceRuleMatch && method === "PUT") {
+		const input = request.postDataJSON() as Record<string, unknown>;
+		const index = state.commerceRules.findIndex((rule) => rule.id === commerceRuleMatch[1]);
+		state.commerceRules[index] = { ...input, id: commerceRuleMatch[1] };
+		await reply(route, { body: state.commerceRules[index] });
+		return;
+	}
+	if (commerceRuleMatch && method === "DELETE") {
+		state.commerceRules = state.commerceRules.filter((rule) => rule.id !== commerceRuleMatch[1]);
+		await reply(route, { status: 204 });
+		return;
+	}
+	if (method === "POST" && path === "/api/debug/admin/commerce/preview") {
+		const body = request.postDataJSON() as {
+			amountMinor: number;
+			rule: {
+				calculationType: "fixed" | "volume";
+				fixedDurationDays: number | null;
+				amountBands: Array<{
+					fromAmountMinor: number;
+					unitAmountMinor: number;
+					unitDays: number;
+				}>;
+			};
+		};
+		if (body.rule.calculationType === "fixed") {
+			await reply(route, {
+				body: { matched: true, durationDays: body.rule.fixedDurationDays, matchedBand: null },
+			});
+			return;
+		}
+		const matchedBand = [...body.rule.amountBands]
+			.sort((left, right) => left.fromAmountMinor - right.fromAmountMinor)
+			.filter((band) => body.amountMinor >= band.fromAmountMinor)
+			.at(-1);
+		await reply(route, {
+			body: matchedBand
+				? {
+						matched: true,
+						durationDays: Math.floor(
+							(body.amountMinor * matchedBand.unitDays) / matchedBand.unitAmountMinor,
+						),
+						matchedBand,
+					}
+				: { matched: false, durationDays: null, matchedBand: null },
 		});
 		return;
 	}
@@ -366,6 +437,7 @@ export const test = base.extend<{ mockApi: MockApi }>({
 			devices: clone(mockData.devices),
 			registration: clone(mockData.registration),
 			accessProfiles: clone(mockData.accessProfiles),
+			commerceRules: clone(mockData.commerceRules),
 		};
 		const tracker: MockApi = {
 			unhandled: [],
@@ -382,6 +454,9 @@ export const test = base.extend<{ mockApi: MockApi }>({
 			},
 			seedSettings(patch) {
 				state.settings = { ...state.settings, ...clone(patch) };
+			},
+			seedCommerceRules(rules) {
+				state.commerceRules = clone(rules);
 			},
 		};
 

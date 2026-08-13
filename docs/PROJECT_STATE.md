@@ -1,7 +1,7 @@
 # Текущее состояние Flowvy
 
 Последняя полная проверка: **2026-08-13**
-Проверенное текущее состояние: **рабочее дерево `dev` поверх `7da10bf`**
+Проверенное текущее состояние: **рабочее дерево `dev` поверх `1a198fd`**
 Последний полный baseline: **`dd3b5c8`** (`dev`, 2026-08-04)
 Стадия: **незавершённый MVP; production readiness не подтверждена**
 
@@ -21,7 +21,15 @@
   `ADMIN_TELEGRAM_IDS`.
 - Пользовательские API для профиля, подписки, HWID-устройств и provider-neutral Pulse.
 - Admin API для dashboard, пользователей, действий над пользователем, выбора Kuma/Beszel для Pulse,
-  branding и welcome template/media.
+  branding, welcome template/media, server-side Tribute API access check и persisted commerce rules.
+- Tribute credential остаётся только в server environment. BFF сообщает Mini App лишь факт его
+  наличия, а ручная проверка администратора выполняет фиксированный read-only
+  `GET https://tribute.tg/api/v1/products?page=1&size=1` с bounded timeout/body, без redirect,
+  environment proxy и передачи upstream diagnostics клиенту.
+- Provider-neutral `commerce_rules` сопоставляют Tribute donation/subscription/digital-product с
+  active access profile. Fixed или volume calculator использует integer minor units; draft preview
+  не пишет БД. Priority, enabled state и extend/replace policy сохраняются, но ни один executor пока
+  эти правила не читает и пользовательский access не изменяет.
 - Явная открытая/invite-only регистрация: `/api/me` не создаёт полностью неизвестного пользователя
   чтением, но безопасно импортирует exact provider-only Remnawave match; onboarding работает
   одинаково из Mini App и бота.
@@ -58,7 +66,10 @@
 
 ### Frontend
 
-- React/TanStack приложение с Telegram SDK, mock-admin режимом и авторизационным guard.
+- React/TanStack приложение с Telegram SDK, mock-admin режимом и авторизационным guard. Первый
+  успешно прочитанный Telegram `initData` удерживается только в памяти текущего WebView для поздних
+  API mutations: повторное чтение launch params не может оставить `Preview` без Authorization, а
+  значение не пишется в отдельное storage и не логируется.
 - Telegram adapter не отправляет viewport/fullscreen startup-команды платформе `tdesktop` и один
   раз выходит из уже активного fullscreen. Это документированный app-side обход открытого
   Telegram Desktop Windows multi-monitor bug; нативные координаты и drag-area остаются под
@@ -75,7 +86,18 @@
   notification; лишнего warning при открытии confirmation нет. Контракт SnapDOM сверялся с
   [official repository](https://github.com/zumerlab/snapdom) 2026-08-13.
 - Admin dashboard, список/карточка пользователя, действия, выбор Pulse source, отдельные
-  Kuma/Beszel/branding/welcome/access settings и Broadcast route.
+  Kuma/Beszel/branding/welcome/access/Tribute settings и Broadcast route.
+- Settings выделяет Payments отдельно от взаимоисключающего Pulse source. Вложенный Tribute flow
+  показывает server-side состояние API key, безопасный read-only API check и rule builder для
+  донатов, подписок и цифровых товаров. Admin выбирает payment conditions, fixed/volume duration,
+  active access profile, extend/replace, priority и enabled state; backend preview показывает
+  результат без save/access side effect. Webhook receiver честно отмечен следующим этапом без
+  публикации несуществующего callback URL.
+- Tribute draft preview проверен через настоящий authenticated FastAPI route точным camelCase
+  payload `500 / 3499 / 30`: backend возвращает 4 дня. Ошибки сессии, admin-доступа, валидации и
+  временной недоступности получают отдельный безопасный текст без raw diagnostics, а изменение
+  черновика скрывает устаревший результат. Amount-band поля теперь явно различают порог, payment
+  unit и access per unit; формула показана над полосами.
 - Admin settings используют один settings-specific composition layer для section headers,
   navigation/status/fact rows, notices и field groups. Overview группирует integrations,
   Flowvy Mini-App и system facts; вложенные Kuma/Beszel/Identity/Welcome/Access маршруты используют
@@ -87,7 +109,7 @@
   полноэкранный task surface без app header/tab bar, а desktop — центрированный dialog с dimmed inert
   контекстом. Отдельные header/body/footer, focus trap, `Escape` и возврат focus на фактический trigger
   проверены в Chromium/WebKit.
-- Uptime Kuma, Beszel, Remnawave и Flowvy в Settings используют локальные монохромные brand marks в
+- Uptime Kuma, Beszel, Remnawave, Tribute и Flowvy в Settings используют локальные монохромные brand marks в
   одинаковых нейтральных icon tiles; Pulse source тоже нейтрален и не маскируется под positive status.
   Welcome собран в одну content surface: premium constraint показан компактным inline warning у
   Greeting text, HTML/app-name подсказка перенесена в placeholder самого textarea, а формат
@@ -114,9 +136,15 @@
   оставляет зелёную рамку после выбора; keyboard focus на desktop остаётся видимым. Compact date
   стоит в одной строке с label и внутри editor без лишнего helper; pending Remnawave options не
   меняют геометрию editor после открытия.
-- App shell отслеживает touch focus и VisualViewport: tab bar и нижний edge chrome скрываются до
-  окончания keyboard-ввода и возвращаются по Enter/blur, поэтому iOS keyboard больше не поднимает
-  навигацию поверх активного поля. Native select/date picker и desktop focus навигацию не скрывают.
+- Один browser adapter отслеживает editable focus, pointer activation и `VisualViewport`, публикует
+  фактические offset/height как CSS variables и раскрывает активный control через `scrollIntoView()`.
+  Tab bar и editor footer скрываются на всём touch-editing lifecycle и возвращаются только после
+  восстановления visual viewport, а не на раннем `focusout`; локальных `preventDefault`, ручного
+  blur или Telegram keyboard workaround в редакторах нет. Native select/date picker и desktop focus
+  навигацию это состояние не включают.
+- Общие `ActionBtn` и `FormSaveButton` используют CSS border spinner с прозрачным фоном и стабильной
+  геометрией вместо вращения inline SVG; loading state сохраняет accessible label и не создаёт
+  отдельный WebKit compositing rectangle.
 - Общий SegmentedControl использует recessed track и отдельный elevated sliding thumb: dashboard
   получает более выразительный navigation-вариант, а Pulse source, registration mode и validity —
   спокойный form-вариант. Dashboard реализует `tablist`/`tab`/`tabpanel`, form choices —
@@ -157,7 +185,7 @@
   безопасного Quick Tunnel и проверки документации.
 - GitHub Actions CI с PostgreSQL/Redis, Ruff, Alembic, pytest, Biome/TypeScript/Vitest/build и
   Playwright Chromium smoke.
-- Семь Vitest unit файлов (33 теста), включая автоматический запрет неиспользуемых locale leaves,
+- Девять Vitest unit файлов (37 тестов), включая автоматический запрет неиспользуемых locale leaves,
   прямого видимого JSX-copy, raw error message и неверной терминологии Xray-доступа;
   детерминированная Playwright state matrix на четырёх
   browser/viewport проектах и отдельный read-only live-smoke.
@@ -165,7 +193,10 @@
 ## Что не завершено или не доказано
 
 - Broadcast пока отображает `coming soon`; отправка рассылки не реализована.
-- Нет покупки/продления/платежей и управления уже выданным access profile как тарифом.
+- Нет checkout, приёма Tribute webhook, обработки/возврата платежей, idempotency/replay защиты,
+  сопоставления события с пользователем и исполнения сохранённого commerce rule: выдачи, замены,
+  продления либо отзыва access profile. Официальный Tribute
+  sandbox/test payment не документирован; текущий API check подтверждает только read-only доступ.
 - Нет production deployment manifests, проверенных production runbooks и production-контура.
 - Нет component tests и integrated fake-backend suite; offline/network-loss поведение проверяется
   только на уровне перехваченных ошибок, а не реальным отключением браузера.
@@ -262,12 +293,33 @@ diff-применимые static/unit/build/docs проверки и 44-case UI-
 ручным просмотром affected light/dark evidence. Единая система Settings и Access dialog затем
 прошли полный repository gate и 208-case browser matrix 2026-08-13; affected light/dark evidence
 проверены на mobile, small-mobile и desktop.
+Админский Tribute onboarding затем прошёл полный repository gate и 244-case browser matrix
+2026-08-13; configured/missing-key, success/failure, light/dark и responsive evidence просмотрены
+вручную, а реальный Tribute API и платежи не вызывались.
+Provider-neutral commerce-rule builder продолжил этот slice 2026-08-13: Full gate прошёл 344
+backend, 53 Remnawave contract, 36 frontend unit и 67 mobile browser tests; отдельные 36 Tribute
+scenarios прошли на mobile Chromium, 320px Chromium, iOS WebKit и desktop Chromium. Flexible
+donation editor и preview просмотрены вручную в light/dark; реальный Tribute, webhook и access
+mutation не вызывались.
+Последующий mobile UX polish выровнял Currency/Priority без растягивания resting value, заменил
+amount-band stack на компактные стандартные form rows с явными единицами и скрывает общий editor
+footer на время touch-ввода без зарезервированной пустой полосы. Кнопки внутри формы сохраняют tap,
+после действия штатно закрывают клавиатуру и только затем возвращают footer. Light/dark evidence
+после 1,1-секундной выдержки просмотрены вручную. Реальный Tribute, webhook и access mutation не
+вызывались.
+Глобальный mobile-input follow-up 2026-08-14 заменил этот локальный keyboard workaround единым
+VisualViewport/focus lifecycle: сфокусированный control раскрывается в видимом scrollport, а нижний
+chrome не возвращается между `focusout` и завершением системной анимации клавиатуры. Tribute получил
+официальный круглый star mark, а общий loading indicator больше не вращает inline SVG. Focus,
+непрерывность lifecycle, loading/Axe/overflow и console/network guards прошли 72/72 сценария на
+430x932 Chromium, 320x568 Chromium, iPhone/WebKit и desktop Chromium; affected light/dark evidence
+просмотрены вручную. Реальный Tribute, webhook и access mutation не вызывались.
 
 | Область | Команда | Результат |
 |---|---|---|
-| Backend collection | full pytest run | 298 тестов выполнено |
-| Backend lock/lint/format | `uv lock --check`; Ruff checks | пройдено, 130 Python файлов formatted |
-| Backend полный suite | `uv run --frozen pytest -q` | 298 passed; известны только upstream Python 3.16 deprecation warnings pytest-asyncio |
+| Backend collection | full pytest run | 345 тестов выполнено |
+| Backend lock/lint/format | `uv lock --check`; Ruff checks | пройдено, 143 Python файла formatted |
+| Backend полный suite | `uv run --frozen pytest -q` | 345 passed; известны только upstream Python 3.16 deprecation warnings pytest-asyncio |
 | Telegram Main Mini App focused | capability/link/bot/auth/health/security tests | 46 passed; bounded transient `getMe`, strict `?startapp=`, signed no-body redeem, malformed payload и отсутствие `/start` fallback покрыты |
 | Telegram Main Mini App live | новый test account и свежая `?startapp=` ссылка | владелец подтвердил корректное открытие и referral flow |
 | Bot `/start` single-flight focused | bot/registration/Remnawave tests | 64 passed; concurrent duplicate, transient retry, non-retryable failure, Redis fail-closed и token-safe finish покрыты |
@@ -288,8 +340,8 @@ diff-применимые static/unit/build/docs проверки и 44-case UI-
 | Remnawave user-status contract | `scripts/verify.ps1 -Scope Changed` | 263 service-free backend tests, Ruff, 29 frontend unit tests, lint/type/build, 45 mobile Chromium scenarios и docs passed; 49 DB-dependent backend tests deselected by this scope |
 | User-status UI matrix | focused Playwright at 320x568, 430x932 and 1280x900 | 9/9 scenarios passed; Home/admin detail light/dark evidence (12 screenshots) inspected; unknown badge, dashboard row, no inferred enable/disable, overflow, network/console and serious Axe checks passed |
 | Полный локальный gate | `PLAYWRIGHT_PORT=5196; scripts/verify.ps1 -Scope Full` | migrations, 298 pytest, 41 Remnawave contract, frontend lint/type/unit/build, 43 Chromium browser и docs passed |
-| Frontend lint/typecheck | `pnpm lint`; `pnpm typecheck` | пройдено, 166 linted files |
-| Frontend unit | `pnpm test` | 5 files, 26 tests passed |
+| Frontend lint/typecheck | `pnpm lint`; `pnpm typecheck` | пройдено, 192 linted files |
+| Frontend unit | `pnpm test` | 9 files, 37 tests passed |
 | Telegram Desktop viewport fix | 13 policy cases; Playwright mobile + desktop; live TDesktop 7.0.6 | 13/13 unit и 86/86 browser scenarios; light/dark Home evidence просмотрены; оконный recovery подтверждён владельцем |
 | Dev lifecycle tooling | PowerShell parser + destructive guard checks | `dev-reset-data.ps1` parsed; запуск без confirmation и при живом dev закрывается до side effect |
 | Frontend build | `pnpm build` | пройдено |
@@ -316,8 +368,16 @@ diff-применимые static/unit/build/docs проверки и 44-case UI-
 | Device removal motion | delayed-refetch Playwright regression; focused all-project matrix; `PLAYWRIGHT_PORT=5245; scripts/verify.ps1 -Scope Full` | Базовое fade/collapse удаление одного устройства и remove-all больше не зависело от задержанного на 1,2 с refetch; cancel/failure/success и reduced motion прошли, focused matrix 8/8 на mobile, small-mobile, iOS WebKit и desktop. Этот baseline затем заменён Telegram-like canvas dust effect; его свежая проверка указана ниже |
 | Telegram-like device dust removal | focused all-project Playwright matrix; light/dark canvas evidence; `PLAYWRIGHT_PORT=5253; scripts/verify.ps1 -Scope Full` | 12/12 focused сценариев прошли на mobile Chromium, small-mobile Chromium, iOS WebKit и desktop Chromium; single/remove-all, delayed refetch, stagger, canvas pixels, fallback, reduced motion и overflow покрыты. Light/dark evidence просмотрены вручную. Full gate: migrations/drift, 315 backend, 53 Remnawave contract, Ruff, 33 frontend unit, lint/typecheck/build, 56 mobile E2E и docs passed; после live-отзыва blur убран из каждого кадра, число и DPR слоёв снижены, SnapDOM остаётся отдельным lazy chunk |
 | Device dust smoothness optimization | compositor-property regression; light/dark midpoint evidence; `PLAYWRIGHT_PORT=5256; scripts/verify.ps1 -Scope Full` | Focused matrix 12/12 и evidence 2/2 passed: runtime-анимация использует только `transform`/`opacity`, без per-frame `filter`; 12 слоёв с DPR не выше 1,5 снижают canvas memory и upload cost. Full gate повторно прошёл migrations/drift, 315 backend, 53 Remnawave contract, Ruff, 33 frontend unit, lint/typecheck/build, 56 mobile E2E и docs |
+| Tribute admin onboarding | `PLAYWRIGHT_PORT=5264; scripts/verify.ps1 -Scope Full`; `PLAYWRIGHT_PORT=5267; pnpm exec playwright test --workers=2` | Full gate: migrations/drift, 328 backend, 53 Remnawave contract, Ruff, frontend lint/typecheck, 33 unit, production build, 61 mobile E2E и docs passed. Итоговая матрица 244/244 прошла на mobile Chromium, small-mobile Chromium, iOS WebKit и desktop Chromium; все 16 Tribute scenarios, Axe/overflow/console/network guards и визуальные состояния зелёные. Реальный Tribute не вызывался |
+| Tribute commerce rules admin UX | `PLAYWRIGHT_PORT=5269; scripts/verify.ps1 -Scope Full`; `PLAYWRIGHT_PORT=5270; pnpm exec playwright test tests/e2e/tribute.spec.ts --workers=4` | Full gate: one-head/zero-to-head/downgrade/re-upgrade/drift, 344 backend, 53 Remnawave contract, Ruff, frontend lint/typecheck, 36 unit, production build, 67 mobile E2E и docs passed. Affected Tribute matrix 36/36 прошла на 430x932, 320x568, iPhone/WebKit и desktop; CRUD/preview/no-match/failure/unavailable-profile, nested native dialog, Axe/overflow/console/network зелёные. Flexible 500/3500 bands и 4000→417 preview просмотрены в light/dark. Реальный Tribute/webhook/access mutation не вызывались |
+| Tribute rule editor mobile polish | `PLAYWRIGHT_PORT=5291; scripts/verify.ps1 -Scope Full`; focused Tribute and shared-editor all-project matrices | Full gate: migrations/drift, 344 backend, 53 Remnawave contract, Ruff, frontend lint/typecheck, 36 unit, production build, 68 mobile E2E и docs passed. Tribute 40/40 и Access/keyboard 52/52 прошли на 430x932, 320x568, iPhone/WebKit и desktop. Compact bands, aligned currency/priority, footer без delayed reserved space, сохранённые Add band/Preview taps, keyboard dismissal, save, Axe/overflow/console/network зелёные; light/dark evidence после 1,1 секунды просмотрены вручную |
+| Tribute preview runtime repair | authenticated FastAPI regression; retained-initData unit; `PLAYWRIGHT_PORT=5294; pnpm exec playwright test tests/e2e/tribute.spec.ts --workers=4`; `PLAYWRIGHT_PORT=5295; scripts/verify.ps1 -Scope Full` | Exact production payload возвращает 4 дня; first-read initData regression зелёный. Tribute 44/44 прошли на 430x932, 320x568, iPhone/WebKit и desktop; late preview auth, safe `401` copy, stale-error reset, explicit payment-unit labels, console/network/overflow и визуальный dark error state проверены. Full gate прошёл migrations/drift, 345 backend, 53 Remnawave contract, Ruff, frontend lint/typecheck, 37 unit, production build, 69 mobile E2E и docs. Стандартный dev перезапущен; local/public asset `index-j_XaGRQy.js` совпадает, readiness `200`, public debug `404` |
+| Global mobile input/loading UX | `PLAYWRIGHT_PORT=5314; scripts/verify.ps1 -Scope Changed`; focused all-project Playwright matrix and visual evidence | Changed gate: 293 service-free backend tests, Ruff, 37 frontend unit, lint/typecheck/build, 69 mobile smoke и docs passed. Дополнительно 72/72 affected browser scenarios прошли на 430x932, 320x568, iPhone/WebKit и desktop Chromium. Active-control reveal, deferred footer/tab return, сохранённая button activation, CSS spinner без SVG/backing box, Axe/contrast, overflow, console/network guards зелёные; Tribute Settings и pending Save просмотрены в light/dark |
 
 ## Следующее действие
 
-Выбрать следующий продуктовый поток: подписки/продление или безопасный Broadcast.
-Отдельно остаются live Remnawave 3.x, Kuma и первый подтверждённый удалённый CI run.
+Спроектировать и реализовать Tribute webhook/payment boundary: raw-body HMAC validation,
+freshness/replay/idempotency, durable event model, user matching и явное entitlement mapping для
+подписок, цифровых товаров и донатов до включения callback URL в админском UX.
+Отдельно остаются безопасный Broadcast, live Remnawave 3.x, Kuma и первый подтверждённый удалённый
+CI run.

@@ -1,0 +1,12 @@
+.spinner {
+	display: inline-block;
+	box-sizing: border-box;
+	width: var(--fv-spinner-size);
+	height: var(--fv-spinner-size);
+	flex: 0 0 var(--fv-spinner-size);
+	border: max(1.5px, calc(var(--fv-spinner-size) * 0.1)) solid currentColor;
+	border-inline-end-color: transparent;
+	border-radius: 50%;
+	background: transparent;
+	animation: var(--fv-anim-spin) 0.8s linear infinite;
+}

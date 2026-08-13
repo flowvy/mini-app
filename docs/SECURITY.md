@@ -25,7 +25,7 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
 - Provider UUID из локальной БД — cache связи, не вечное доказательство ownership.
 - Redis не является источником ролей. Его сбой не должен разрешать доступ и по возможности не должен
   ломать уже проверенный read request.
-- Ответы Remnawave/Kuma/Beszel и webhook payloads — недоверенный внешний ввод: schema, size,
+- Ответы Remnawave/Kuma/Beszel/Tribute и webhook payloads — недоверенный внешний ввод: schema, size,
   timeout, SSRF, replay, retention и safe logging проверяются явно.
 
 ## Обязательные инварианты
@@ -43,6 +43,18 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
   operator-controlled allow-list entry.
 - Beszel credential хранится только в server environment; frontend/БД получают лишь URL и признак
   наличия credential. Интеграция использует отдельного пользователя с ролью `readonly`.
+- Tribute API key хранится только в server environment; frontend получает лишь признак наличия.
+  Read-only check использует fixed HTTPS origin, не следует redirects, не доверяет proxy environment,
+  ограничивает тело и не возвращает upstream body. Тот же key по контракту Tribute подписывает
+  webhook, поэтому будущий receiver нельзя включать без отдельной replay/idempotency и rotation
+  модели; текущий UI не публикует callback URL.
+- Commerce-rule CRUD требует актуального active admin и повторно проверяет active access profile
+  перед каждым save. Draft preview не пишет БД и не вызывает provider/user mutations. Money приходит
+  и хранится как bounded integer minor units; bands, currency, commerce/payment shape, duration и
+  priority schema-validated, а calculator JSONB никогда не принимается напрямую в ORM.
+- Сохранённое правило не является разрешением выдать доступ: webhook receiver/executor отсутствует.
+  Будущий executor должен отдельно аутентифицировать raw event, reconcile identity, сделать
+  idempotent ledger write и только затем применить snapshot rule/profile.
 - Upload ограничивается при streaming, до полного чтения в память; type/size проверяются server-side.
 - Unknown provider status/enum обрабатывается безопасно, а не считается активным.
 - Все внешние calls имеют finite timeout, bounded concurrency и безопасное error mapping.

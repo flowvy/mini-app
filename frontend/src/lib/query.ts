@@ -28,5 +28,6 @@ export const queryKeys = {
 	registrationSettings: ["admin", "registration", "settings"] as const,
 	accessProfiles: ["admin", "registration", "access-profiles"] as const,
 	registrationOptions: ["admin", "registration", "options"] as const,
+	commerceRules: (provider: string) => ["admin", "commerce", "rules", provider] as const,
 	myInvite: ["registration", "my-invite"] as const,
 };

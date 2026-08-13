@@ -13,6 +13,7 @@ const screens = [
 	{ name: "admin-access", path: "/admin/settings/access", marker: "Service mode" },
 	{ name: "admin-settings-kuma", path: "/admin/settings/kuma", marker: "URL" },
 	{ name: "admin-settings-beszel", path: "/admin/settings/beszel", marker: "Hub URL" },
+	{ name: "admin-settings-tribute", path: "/admin/settings/tribute", marker: "API key" },
 	{ name: "admin-settings-branding", path: "/admin/settings/branding", marker: "App name" },
 	{ name: "admin-settings-welcome", path: "/admin/settings/welcome", marker: "Content" },
 ] as const;
@@ -166,6 +167,150 @@ test("capture Beszel settings in light and dark themes", async ({
 			animations: "disabled",
 		});
 	}
+});
+
+test("capture Tribute settings in configured and setup states", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/admin/settings");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await expect(page.getByRole("heading", { name: "Payments" })).toBeVisible();
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`admin-settings-payments-${colorScheme}.png`),
+			animations: "disabled",
+		});
+		await page.goto("/admin/settings/tribute");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await expect(page.getByText("Configured on server", { exact: true })).toBeVisible();
+		await expect(page.getByText("Next phase", { exact: true })).toBeVisible();
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`admin-settings-tribute-${colorScheme}.png`),
+			animations: "disabled",
+		});
+	}
+
+	mockApi.seedSettings({ tributeCredentialsConfigured: false });
+	await page.goto("/admin/settings/tribute");
+	await expect(page.getByText("Missing on server", { exact: true })).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+	await page.screenshot({
+		path: testInfo.outputPath("admin-settings-tribute-setup.png"),
+		animations: "disabled",
+	});
+});
+
+test("capture the flexible Tribute donation rule editor", async ({ page, mockApi }, testInfo) => {
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/admin/settings/tribute");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await page.getByRole("button", { name: "Create first rule" }).click();
+		await page.getByLabel("Rule name").fill("Donation access");
+		await page.getByLabel("Starts at").fill("500");
+		await page.getByLabel("Payment unit").fill("500");
+		await page.getByLabel("Access per unit").fill("30");
+		await page.getByRole("button", { name: "Add band" }).click();
+		await page.getByLabel("Starts at").nth(1).fill("3500");
+		await page.getByLabel("Payment unit").nth(1).fill("3500");
+		await page.getByLabel("Access per unit").nth(1).fill("365");
+		const ruleDialog = page.getByRole("dialog", { name: "Create automation rule" });
+		const focusedCurrency = page.getByLabel("Currency");
+		await focusedCurrency.focus();
+		await expect(ruleDialog.locator("footer")).toHaveAttribute("aria-hidden", "true");
+		await page.waitForTimeout(1_100);
+		await expect(ruleDialog.locator("footer")).toBeHidden();
+		await page.screenshot({
+			path: testInfo.outputPath(`admin-settings-tribute-rule-focused-${colorScheme}.png`),
+			animations: "disabled",
+		});
+		await focusedCurrency.press("Enter");
+		await expect(ruleDialog.locator("footer")).toBeVisible();
+		await page.getByLabel("Payment amount (RUB)").fill("4000");
+		mockApi.mock("POST", "/api/debug/admin/commerce/preview", {
+			delayMs: 1_000,
+			body: {
+				matched: true,
+				durationDays: 417,
+				matchedBand: {
+					fromAmountMinor: 350_000,
+					unitAmountMinor: 350_000,
+					unitDays: 365,
+				},
+			},
+		});
+		const previewButton = page.getByRole("button", { name: "Preview", exact: true });
+		await previewButton.click();
+		await expect(previewButton).toHaveAttribute("aria-busy", "true");
+		await page.screenshot({
+			path: testInfo.outputPath(`admin-settings-tribute-rule-loading-${colorScheme}.png`),
+			animations: "disabled",
+		});
+		await previewButton.screenshot({
+			path: testInfo.outputPath(`admin-settings-tribute-spinner-${colorScheme}.png`),
+			animations: "disabled",
+		});
+		await expect(page.getByText("417 access days", { exact: true })).toBeVisible();
+		await assertNoHorizontalOverflow(page);
+		const body = page.getByRole("dialog", { name: "Create automation rule" }).locator("form > div");
+		await page.evaluate(() => {
+			if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+		});
+		await body.evaluate((element) => {
+			element.scrollTop = 0;
+		});
+		await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBe(0);
+		await page.screenshot({
+			path: testInfo.outputPath(`admin-settings-tribute-rule-top-${colorScheme}.png`),
+			animations: "disabled",
+		});
+		await body.evaluate((element) => {
+			element.scrollTop = element.scrollHeight;
+		});
+		await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+		await page.screenshot({
+			path: testInfo.outputPath(`admin-settings-tribute-rule-outcome-${colorScheme}.png`),
+			animations: "disabled",
+		});
+	}
+
+	mockApi.mock("POST", "/api/debug/admin/commerce/preview", {
+		status: 401,
+		body: { detail: "private authentication diagnostic" },
+	});
+	await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+	await page.goto("/admin/settings/tribute");
+	await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+	await page.getByRole("button", { name: "Create first rule" }).click();
+	await page.getByLabel("Rule name").fill("Donation access");
+	await page.getByLabel("Starts at").fill("500");
+	await page.getByLabel("Payment unit").fill("3499");
+	await page.getByLabel("Access per unit").fill("30");
+	await page.getByLabel("Payment amount (RUB)").fill("500");
+	await page.getByRole("button", { name: "Preview", exact: true }).click();
+	await expect(page.getByRole("alert")).toContainText("Telegram session expired");
+	const errorBody = page
+		.getByRole("dialog", { name: "Create automation rule" })
+		.locator("form > div");
+	await errorBody.evaluate((element) => {
+		element.scrollTop = element.scrollHeight;
+	});
+	await assertNoHorizontalOverflow(page);
+	await page.screenshot({
+		path: testInfo.outputPath("admin-settings-tribute-preview-session-error-dark.png"),
+		animations: "disabled",
+	});
 });
 
 test("capture the lifetime access editor in light and dark themes", async ({

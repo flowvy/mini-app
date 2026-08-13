@@ -10,11 +10,13 @@ from flowvy.schemas.provider_settings import (
     KumaTestResponse,
     ProviderSettingsPatch,
     ProviderSettingsResponse,
+    TributeTestResponse,
 )
 from flowvy.services.beszel import BeszelClient, BeszelError
 from flowvy.services.kuma import KumaError, UptimeKumaClient
 from flowvy.services.pulse import CACHE_KEY
 from flowvy.services.remnawave import RemnawaveClient, RemnawaveError
+from flowvy.services.tribute import TributeClient, TributeError
 
 PULSE_FIELDS = frozenset({"pulse_provider", "kuma_url", "kuma_slug", "beszel_url"})
 
@@ -32,12 +34,14 @@ class ProviderSettingsService:
         remnawave: RemnawaveClient,
         kuma: UptimeKumaClient,
         beszel: BeszelClient,
+        tribute: TributeClient,
         redis: Redis,
     ) -> None:
         self._repo = repo
         self._remnawave = remnawave
         self._kuma = kuma
         self._beszel = beszel
+        self._tribute = tribute
         self._redis = redis
 
     async def get(self) -> ProviderSettingsResponse:
@@ -50,6 +54,7 @@ class ProviderSettingsService:
             kuma_slug=row.kuma_slug,
             beszel_url=row.beszel_url,
             beszel_credentials_configured=self._beszel.credentials_configured,
+            tribute_credentials_configured=self._tribute.credentials_configured,
             app_name=row.app_name,
             logo_url=row.logo_url,
             welcome_text=row.welcome_text,
@@ -128,6 +133,14 @@ class ProviderSettingsService:
             return BeszelTestResponse(ok=True)
         except BeszelError as exc:
             return BeszelTestResponse(ok=False, error=exc.detail)
+
+    async def test_tribute(self) -> TributeTestResponse:
+        """Validate server-side Tribute API access without creating a payment."""
+        try:
+            await self._tribute.test_connection()
+            return TributeTestResponse(ok=True)
+        except TributeError as exc:
+            return TributeTestResponse(ok=False, error=exc.detail)
 
     async def _get_remnawave_version(self) -> str | None:
         """Fetch Remnawave version from /api/system/metadata."""

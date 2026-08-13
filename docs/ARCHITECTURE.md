@@ -20,17 +20,17 @@ FastAPI BFF + aiogram webhook/polling (:8001)
        v             v              v
  PostgreSQL        Redis        External HTTP
  local state    cache/metrics   Remnawave, Kuma/Beszel,
-                                Telegram Bot API
+                                Tribute, Telegram Bot API
 ```
 
-Frontend не обращается к Remnawave, Kuma, Beszel, PostgreSQL или Redis напрямую. FastAPI формирует
+Frontend не обращается к Remnawave, Kuma, Beszel, Tribute, PostgreSQL или Redis напрямую. FastAPI формирует
 ответы под конкретные экраны, проверяет Telegram identity и скрывает особенности внешних API.
 
 ## Доверенные границы
 
 1. **Telegram Mini App input** — недоверенный до проверки подписи и `auth_date` по bot token.
 2. **Frontend role/mode** — только отображение. Решение о доступе всегда принимает backend.
-3. **Remnawave/Kuma/Beszel и webhooks** — внешние данные: нужны timeout, schema validation,
+3. **Remnawave/Kuma/Beszel/Tribute и webhooks** — внешние данные: нужны timeout, schema validation,
    безопасная ошибка, проверка подписи и защита от повторов там, где есть side effect.
 4. **PostgreSQL** — локальная долговременная запись. Изменяется приложением и Alembic migrations.
 5. **Redis** — временные cache/metrics/activity данные; потеря Redis не должна менять права доступа.
@@ -60,7 +60,7 @@ Frontend не обращается к Remnawave, Kuma, Beszel, PostgreSQL или
 - `di.py`, `di_bff.py`, `di_dashboard.py`, `di_webhooks.py`, `di_bot.py` — Dishka wiring.
 
 APP scope используется для Settings, engine/session factory, Redis, shared httpx client, Remnawave,
-Kuma, отдельного proxy-free Beszel client и bot. SQLAlchemy session и большинство BFF services имеют
+Kuma, отдельных proxy-free Beszel/Tribute clients и bot. SQLAlchemy session и большинство BFF services имеют
 REQUEST scope; provider commits или rollbacks транзакцию после обработки запроса.
 
 ### HTTP-потоки
@@ -81,8 +81,10 @@ REQUEST scope; provider commits или rollbacks транзакцию после
 
 Admin routes под `/api/admin` повторно получают текущего локального пользователя и проверяют его
 роль. Они отдают dashboard, полный/постраничный список пользователей, detail/actions и provider,
-branding/welcome settings. `/api/admin/registration` управляет режимом, access profiles и live squad
-options. Admin Broadcast API в текущем коде отсутствует.
+branding/welcome settings. `POST /api/admin/settings/tribute/test` выполняет только фиксированный
+read-only запрос первой страницы products с server-side key; ключ в response не входит.
+`/api/admin/registration` управляет режимом, access profiles и live squad options. Admin Broadcast
+API в текущем коде отсутствует.
 
 Служебные маршруты:
 
@@ -169,6 +171,33 @@ Kuma использует публичный status-page contract. Beszel авт
 redirect/proxy запрет, ограниченное тело и безопасное error mapping. Private Docker/LAN origins
 требуют отдельного точного allow-list для каждого provider.
 
+### Tribute payments administration
+
+Текущий Tribute slice ограничен admin configuration и проверкой API access. Секрет
+`TRIBUTE_API_KEY` хранится только в server environment. Fixed-origin client обращается только к
+`https://tribute.tg/api/v1/products?page=1&size=1`, запрещает redirects/proxy environment,
+ограничивает timeout/body и валидирует минимальную JSON-схему. Ни платеж, ни возврат, ни provider
+mutation при проверке не создаются.
+
+Frontend выделяет Payments в отдельную Settings section и показывает credential presence,
+read-only API check и persisted automation rules для donations, subscriptions и digital products.
+Rule сопоставляет provider/source conditions с внутренним access profile, но не является provider
+product/price. `fixed` задаёт постоянное число дней, а `volume` выбирает максимальный подходящий
+порог и целочисленно вычисляет `floor(amount_minor * unit_days / unit_amount_minor)` для всей суммы.
+Calculated days явно переопределяют default validity выбранного access profile; traffic/device/
+squad/tag/provider options переиспользуются. `extend` означает будущую базу
+`max(now, current_expiry)`, `replace` — `now`; сам executor в текущем slice отсутствует.
+
+PostgreSQL `commerce_rules` хранит provider-neutral match/action columns и schema-validated JSONB
+calculator payload. Admin-only CRUD повторно проверяет active access profile. Draft preview
+выполняет тот же backend calculator, не сохраняет rule и не изменяет пользователя. Frontend вводит
+major currency units, но wire/storage используют integer minor units; floating-point не участвует
+в entitlement calculation.
+
+Webhook URL намеренно отсутствует: receiver, signature/freshness/replay/idempotency, event storage,
+identity reconciliation, entitlement execution и checkout остаются следующим backend/product
+этапом. Существующий внешний receiver оператор должен оставить без изменений.
+
 ### Webhooks и Telegram bot
 
 Remnawave webhook доступен только при непустом shared secret. Валидное событие сохраняется в
@@ -198,6 +227,9 @@ worker сейчас нет.
   URL.
 - `components/` содержит feature и reusable UI; страницы остаются composition boundary.
 - `styles/tokens.css`, CSS Modules и Telegram theme/safe-area интеграция задают внешний вид.
+- Один frontend browser adapter нормализует editable focus, pointer activation и геометрию
+  `VisualViewport`; shell и top-layer editors подписываются на общий snapshot и CSS variables,
+  поэтому не создают собственные keyboard listeners или event-cancellation workaround.
 - `i18n/locales/en.json` — единственный текущий locale resource и источник product-owned UI-copy.
   Operator-owned identity и bot welcome приходят через branding/settings contract;
   provider facts остаются typed runtime data. Полная граница описана в
@@ -213,7 +245,7 @@ mutation сразу кладёт полученного user в общий TanSt
 Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Support остаётся локализованной
 заглушкой будущего встроенного support flow и не перенаправляет во внешний канал. Admin URL:
 `/admin/dashboard`, `/admin/users`, `/admin/users/$userId`, `/admin/broadcast`, `/admin/settings` и
-отдельные Kuma, Beszel, branding, welcome и registration/access subroutes. Broadcast пока остаётся
+отдельные Kuma, Beszel, Tribute, branding, welcome и registration/access subroutes. Broadcast пока остаётся
 заглушкой.
 
 ## Автоматизация разработки
@@ -226,7 +258,7 @@ mutation сразу кладёт полученного user в общий TanSt
 
 Frontend имеет Vitest unit seed и Playwright mock state matrix. Browser suite запускает только Vite,
 перехватывает каждый `/api/*` request и проверяет critical user/admin routes, роли, ошибки, mutations,
-accessibility и visual evidence без Telegram, backend, PostgreSQL, Redis, Remnawave, Kuma или Beszel.
+accessibility и visual evidence без Telegram, backend, PostgreSQL, Redis, Remnawave, Kuma, Beszel или Tribute.
 Отдельный live-smoke читает настроенный provider через уже запущенный локальный BFF и не входит в CI.
 
 GitHub Actions повторяет locked install, backend lint/tests/migrations с disposable PostgreSQL/Redis

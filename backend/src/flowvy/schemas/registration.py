@@ -7,21 +7,15 @@ import re
 import uuid
 from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from pydantic.alias_generators import to_camel
+from pydantic import Field, field_validator, model_validator
 
+from flowvy.schemas.base import CamelModel
 from flowvy.schemas.user_status import ProviderUserStatus
 
 RegistrationMode = Literal["open", "invite_only"]
 ValidityMode = Literal["duration", "fixed", "lifetime"]
 TrafficStrategy = Literal["NO_RESET", "DAY", "WEEK", "MONTH", "MONTH_ROLLING"]
 ReferralStatus = Literal["ready", "main_app_not_configured", "telegram_unavailable"]
-
-
-class CamelModel(BaseModel):
-    """Base model for camelCase HTTP contracts."""
-
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class AccessProfileInput(CamelModel):

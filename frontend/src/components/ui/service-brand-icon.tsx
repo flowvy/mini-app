@@ -51,6 +51,26 @@ export function BeszelIcon({ size = 18, ...props }: ServiceBrandIconProps) {
 	);
 }
 
+/** Adapted from the official circular mark published in wiki.tribute.tg icon metadata. */
+export function TributeIcon({ size = 18, ...props }: ServiceBrandIconProps) {
+	return (
+		<svg
+			{...iconProps(size, props)}
+			viewBox="0 0 100 100"
+			fill="none"
+			data-service-brand="tribute"
+			aria-hidden="true"
+		>
+			<path
+				fill="currentColor"
+				fillRule="evenodd"
+				d="M50 0a50 50 0 1 1 0 100A50 50 0 0 1 50 0Zm0 17.5 9.3 21.2 23 2c2.7.2 3.8 3.6 1.7 5.3L66.5 81c-2.3 2-5.8-.2-5-3.1l5.3-22.4-19.7 12.1-19.8 12.2c-2.6 1.6-5.7-.8-4.8-3.7l6.6-21.9L11.5 40c-2.2-1.8-1-5.3 1.8-5.5l23.1-1.2L45.1 12c1-2.6 4.8-2.6 5.9 0l8.3 20.5-6.4.4L50 17.5Z"
+				clipRule="evenodd"
+			/>
+		</svg>
+	);
+}
+
 /** Adapted from remnawave/panel static/img/logo.svg (AGPL-3.0). */
 export function RemnawaveIcon({ size = 18, ...props }: ServiceBrandIconProps) {
 	return (

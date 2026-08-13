@@ -9,14 +9,16 @@ interface ToggleProps {
 	checked: boolean;
 	onChange: (checked: boolean) => void;
 	disabled?: boolean;
+	ariaLabel?: string;
 }
 
-export const Toggle: FC<ToggleProps> = ({ checked, onChange, disabled }) => {
+export const Toggle: FC<ToggleProps> = ({ checked, onChange, disabled, ariaLabel }) => {
 	return (
 		<button
 			type="button"
 			role="switch"
 			aria-checked={checked}
+			aria-label={ariaLabel}
 			className={`${styles.track} ${checked ? styles.on : ""}`}
 			disabled={disabled}
 			onClick={() => {

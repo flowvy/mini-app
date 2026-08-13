@@ -17,6 +17,7 @@ import {
 } from "./telegram-viewport.ts";
 
 let initialized = false;
+let retainedRawInitData: string | undefined;
 
 function getPlatform(): string | undefined {
 	try {
@@ -124,8 +125,11 @@ export function initTelegramApp(): void {
 }
 
 export function getRawInitData(): string | undefined {
+	if (retainedRawInitData) return retainedRawInitData;
 	try {
-		return retrieveRawInitData();
+		const rawInitData = retrieveRawInitData();
+		if (rawInitData) retainedRawInitData = rawInitData;
+		return rawInitData;
 	} catch {
 		return undefined;
 	}

@@ -27,6 +27,7 @@ class ProviderSettingsResponse(BaseModel):
     kuma_slug: str | None
     beszel_url: str | None
     beszel_credentials_configured: bool
+    tribute_credentials_configured: bool
     app_name: str | None = None
     logo_url: str | None = None
     welcome_text: str | None = None
@@ -134,15 +135,13 @@ class BeszelTestRequest(BaseModel):
         return normalize_beszel_base_url(value)
 
 
-class KumaTestResponse(BaseModel):
-    """Kuma connection-test response."""
+class ProviderTestResponse(BaseModel):
+    """Safe provider connection-test response."""
 
     ok: bool
     error: str | None = None
 
 
-class BeszelTestResponse(BaseModel):
-    """Beszel connection-test response."""
-
-    ok: bool
-    error: str | None = None
+KumaTestResponse = ProviderTestResponse
+BeszelTestResponse = ProviderTestResponse
+TributeTestResponse = ProviderTestResponse

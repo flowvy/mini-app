@@ -1,13 +1,5 @@
-import { ChevronDown, X } from "lucide-react";
-import {
-	type FormEvent,
-	type KeyboardEvent,
-	useCallback,
-	useEffect,
-	useRef,
-	useState,
-} from "react";
-import { createPortal } from "react-dom";
+import { ChevronDown } from "lucide-react";
+import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSaveAccessProfile } from "../../hooks/use-registration-admin.ts";
 import { getLocalizedError } from "../../lib/error-copy.ts";
@@ -23,6 +15,7 @@ import {
 	isProviderUserStatus,
 } from "../../types/user-status.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
+import { EditorDialog } from "../ui/editor-dialog.tsx";
 import {
 	FormField,
 	FormFieldInput,
@@ -36,9 +29,6 @@ import { SegmentedControl } from "../ui/segmented-control.tsx";
 import styles from "./access-profile-editor.module.css";
 
 const GB = 1024 ** 3;
-const FOCUSABLE =
-	'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
 const STATUS_OPTION_KEY: Record<ProviderUserStatus, string> = {
 	ACTIVE: "access.statusOptions.active",
 	DISABLED: "access.statusOptions.disabled",
@@ -138,13 +128,6 @@ export function AccessProfileEditor({
 		profile?.hwidDeviceLimit == null ? "" : String(profile.hwidDeviceLimit),
 	);
 	const save = useSaveAccessProfile();
-	const dialogRef = useRef<HTMLDialogElement>(null);
-	const titleRef = useRef<HTMLHeadingElement>(null);
-	const previousFocusRef = useRef<HTMLElement | null>(
-		returnFocusTo ??
-			(document.activeElement instanceof HTMLElement ? document.activeElement : null),
-	);
-	const restoreFocusFrameRef = useRef<number | null>(null);
 	const fixedDate = dateValue(draft.fixedExpireAt);
 	const tagIsUnchanged = Boolean(profile?.tag && profile.tag === draft.tag);
 	const tagIsValid = draft.tag === null || tags.includes(draft.tag) || tagIsUnchanged;
@@ -182,321 +165,18 @@ export function AccessProfileEditor({
 		);
 	};
 
-	useEffect(() => {
-		const dialog = dialogRef.current;
-		if (restoreFocusFrameRef.current !== null) {
-			window.cancelAnimationFrame(restoreFocusFrameRef.current);
-			restoreFocusFrameRef.current = null;
-		}
-		if (dialog && !dialog.open) dialog.showModal();
-		titleRef.current?.focus();
-		return () => {
-			if (dialog?.open) dialog.close();
-			const previousFocus = previousFocusRef.current;
-			restoreFocusFrameRef.current = window.requestAnimationFrame(() => {
-				restoreFocusFrameRef.current = null;
-				if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
-			});
-		};
-	}, []);
-
-	const handleKeyDown = useCallback(
-		(event: KeyboardEvent<HTMLDialogElement>) => {
-			if (event.key === "Escape" && !save.isPending) {
-				event.preventDefault();
-				onClose();
-				return;
-			}
-			if (event.key !== "Tab" || !dialogRef.current) return;
-			const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
-			if (focusable.length === 0) return;
-			const first = focusable[0];
-			const last = focusable[focusable.length - 1];
-			if (event.shiftKey && document.activeElement === first) {
-				event.preventDefault();
-				last.focus();
-			} else if (!event.shiftKey && document.activeElement === last) {
-				event.preventDefault();
-				first.focus();
-			}
-		},
-		[onClose, save.isPending],
-	);
-
-	return createPortal(
-		<dialog
-			ref={dialogRef}
-			className={styles.panel}
-			aria-modal="true"
-			aria-labelledby="access-profile-editor-title"
-			aria-busy={save.isPending}
-			onKeyDown={handleKeyDown}
-			onCancel={(event) => {
-				event.preventDefault();
-				if (!save.isPending) onClose();
-			}}
-		>
-			<form className={styles.form} onSubmit={submit} noValidate>
-				<header className={styles.header}>
-					<div>
-						<p className={styles.eyebrow}>{t("access.profile")}</p>
-						<h2 id="access-profile-editor-title" ref={titleRef} tabIndex={-1}>
-							{profile ? t("access.editProfile") : t("access.newProfile")}
-						</h2>
-						<p className={styles.subtitle}>{profile?.name || t("access.profileEditorHint")}</p>
-					</div>
-					<ActionBtn
-						variant="ghost"
-						className={styles.closeButton}
-						onClick={onClose}
-						disabled={save.isPending}
-						aria-label={t("access.closeEditor")}
-					>
-						<X size={18} />
-					</ActionBtn>
-				</header>
-
-				<div className={styles.dialogBody}>
-					{optionsState === "error" && (
-						<InlineFeedback>{t("access.providerOptionsUnavailable")}</InlineFeedback>
-					)}
-
-					<section className={styles.editorSection} aria-labelledby="profile-details-title">
-						<div className={styles.editorCard}>
-							<h3 id="profile-details-title" className={styles.editorSectionTitle}>
-								{t("access.profileDetails")}
-							</h3>
-							<div className={styles.fields}>
-								<FormField label={t("access.name")} htmlFor="access-profile-name">
-									<FormFieldInput
-										id="access-profile-name"
-										value={draft.name}
-										onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-										placeholder={t("access.namePlaceholder")}
-										autoComplete="off"
-										maxLength={100}
-									/>
-								</FormField>
-
-								<FormField label={t("access.validity")}>
-									<SegmentedControl
-										ariaLabel={t("access.validity")}
-										options={[
-											{ key: "duration", label: t("access.days") },
-											{ key: "fixed", label: t("access.date") },
-											{ key: "lifetime", label: t("access.lifetimeOption") },
-										]}
-										value={draft.validityMode}
-										onChange={(value) => {
-											const mode = value as ValidityMode;
-											setDraft({
-												...draft,
-												validityMode: mode,
-												validityDays: mode === "duration" ? (draft.validityDays ?? 30) : null,
-												fixedExpireAt:
-													mode === "fixed" ? (draft.fixedExpireAt ?? defaultFixedExpiry()) : null,
-											});
-										}}
-									/>
-								</FormField>
-
-								<div className={styles.validityPanel}>
-									{draft.validityMode === "duration" && (
-										<FormField
-											label={t("access.validityDays")}
-											htmlFor="access-profile-days"
-											hint={t("access.durationHint")}
-										>
-											<FormFieldInput
-												id="access-profile-days"
-												type="number"
-												inputMode="numeric"
-												min="1"
-												max="3650"
-												value={draft.validityDays ?? ""}
-												onChange={(event) =>
-													setDraft({
-														...draft,
-														validityDays: Number(event.target.value) || null,
-													})
-												}
-											/>
-										</FormField>
-									)}
-									{draft.validityMode === "fixed" && (
-										<FormInlineField label={t("access.expireAt")} htmlFor="access-profile-expiry">
-											<FormInlineDate
-												id="access-profile-expiry"
-												value={fixedDate}
-												displayValue={formatDateValue(fixedDate, navigator.language)}
-												min={dateValue(new Date().toISOString())}
-												onChange={(event) =>
-													setDraft({
-														...draft,
-														fixedExpireAt: event.target.value
-															? endOfLocalDay(event.target.value)
-															: null,
-													})
-												}
-											/>
-										</FormInlineField>
-									)}
-									{draft.validityMode === "lifetime" && (
-										<p className={styles.validityNotice}>{t("access.lifetimeHint")}</p>
-									)}
-								</div>
-
-								<div className={styles.twoColumns}>
-									<FormField label={t("access.trafficGb")} htmlFor="access-profile-traffic">
-										<FormFieldInput
-											id="access-profile-traffic"
-											type="number"
-											inputMode="decimal"
-											min="0"
-											step="0.1"
-											value={trafficGb}
-											placeholder={t("access.zero")}
-											aria-invalid={!trafficIsValid}
-											onChange={(event) => setTrafficGb(event.target.value)}
-										/>
-									</FormField>
-									<FormField label={t("access.devices")} htmlFor="access-profile-devices">
-										<FormFieldInput
-											id="access-profile-devices"
-											type="number"
-											inputMode="numeric"
-											min="0"
-											max="1000"
-											value={devices}
-											placeholder={t("access.unlimited")}
-											aria-invalid={!devicesAreValid}
-											onChange={(event) => setDevices(event.target.value)}
-										/>
-									</FormField>
-								</div>
-							</div>
-						</div>
-					</section>
-
-					<details className={styles.advanced}>
-						<summary>
-							{t("access.advanced")}
-							<ChevronDown size={15} />
-						</summary>
-						<div className={styles.advancedFields}>
-							<FormField label={t("access.status")} htmlFor="access-profile-status">
-								<FormFieldSelect
-									id="access-profile-status"
-									value={draft.status}
-									options={PROVIDER_USER_STATUSES.map((status) => ({
-										value: status,
-										label: t(STATUS_OPTION_KEY[status]),
-									}))}
-									onChange={(event) => {
-										if (isProviderUserStatus(event.target.value)) {
-											setDraft({ ...draft, status: event.target.value });
-										}
-									}}
-								/>
-							</FormField>
-							<FormField label={t("access.reset")} htmlFor="access-profile-reset">
-								<FormFieldSelect
-									id="access-profile-reset"
-									value={draft.trafficLimitStrategy}
-									options={[
-										{ value: "NO_RESET", label: t("access.noReset") },
-										{ value: "DAY", label: t("access.daily") },
-										{ value: "WEEK", label: t("access.weekly") },
-										{ value: "MONTH", label: t("access.monthly") },
-										{ value: "MONTH_ROLLING", label: t("access.rolling") },
-									]}
-									onChange={(event) =>
-										setDraft({
-											...draft,
-											trafficLimitStrategy: event.target.value as TrafficStrategy,
-										})
-									}
-								/>
-							</FormField>
-							<FormField
-								label={t("access.tag")}
-								htmlFor="access-profile-tag"
-								hint={
-									optionsState === "ready" && tags.length === 0
-										? t("access.noTags")
-										: t("access.tagHint")
-								}
-							>
-								<FormFieldSelect
-									id="access-profile-tag"
-									value={draft.tag ?? ""}
-									options={[
-										{ value: "", label: t("access.none") },
-										...(draft.tag && !tags.includes(draft.tag)
-											? [{ value: draft.tag, label: draft.tag }]
-											: []),
-										...tags.map((tag) => ({ value: tag, label: tag })),
-									]}
-									onChange={(event) => setDraft({ ...draft, tag: event.target.value || null })}
-									disabled={optionsState !== "ready"}
-								/>
-							</FormField>
-							<FormField label={t("access.description")} htmlFor="access-profile-description">
-								<FormFieldTextarea
-									id="access-profile-description"
-									rows={3}
-									maxLength={500}
-									value={draft.description ?? ""}
-									onChange={(event) => setDraft({ ...draft, description: event.target.value })}
-								/>
-							</FormField>
-							{internalSquads.length > 0 && (
-								<fieldset className={styles.checks}>
-									<legend>{t("access.internalSquads")}</legend>
-									{internalSquads.map((squad) => (
-										<label key={squad.uuid}>
-											<input
-												type="checkbox"
-												checked={draft.internalSquadUuids.includes(squad.uuid)}
-												onChange={(event) =>
-													setDraft({
-														...draft,
-														internalSquadUuids: event.target.checked
-															? [...draft.internalSquadUuids, squad.uuid]
-															: draft.internalSquadUuids.filter((id) => id !== squad.uuid),
-													})
-												}
-											/>
-											<span>{squad.name}</span>
-										</label>
-									))}
-								</fieldset>
-							)}
-							<FormField label={t("access.externalSquad")} htmlFor="access-profile-external">
-								<FormFieldSelect
-									id="access-profile-external"
-									value={draft.externalSquadUuid ?? ""}
-									options={[
-										{ value: "", label: t("access.none") },
-										...externalSquads.map((squad) => ({ value: squad.uuid, label: squad.name })),
-									]}
-									onChange={(event) =>
-										setDraft({ ...draft, externalSquadUuid: event.target.value || null })
-									}
-									disabled={optionsState !== "ready"}
-								/>
-							</FormField>
-						</div>
-					</details>
-
-					{save.isError && (
-						<InlineFeedback>
-							{getLocalizedError(save.error, "access.profileSaveError")}
-						</InlineFeedback>
-					)}
-				</div>
-
-				<footer className={styles.footer}>
+	return (
+		<EditorDialog
+			eyebrow={t("access.profile")}
+			title={profile ? t("access.editProfile") : t("access.newProfile")}
+			subtitle={profile?.name || t("access.profileEditorHint")}
+			closeLabel={t("access.closeEditor")}
+			busy={save.isPending}
+			returnFocusTo={returnFocusTo}
+			onClose={onClose}
+			onSubmit={submit}
+			footer={
+				<>
 					<ActionBtn variant="ghost" size="md" onClick={onClose} disabled={save.isPending}>
 						{t("access.cancel")}
 					</ActionBtn>
@@ -510,9 +190,244 @@ export function AccessProfileEditor({
 					>
 						{profile ? t("common.save") : t("access.createProfile")}
 					</ActionBtn>
-				</footer>
-			</form>
-		</dialog>,
-		document.body,
+				</>
+			}
+		>
+			{optionsState === "error" && (
+				<InlineFeedback>{t("access.providerOptionsUnavailable")}</InlineFeedback>
+			)}
+
+			<section className={styles.editorSection} aria-labelledby="profile-details-title">
+				<div className={styles.editorCard}>
+					<h3 id="profile-details-title" className={styles.editorSectionTitle}>
+						{t("access.profileDetails")}
+					</h3>
+					<div className={styles.fields}>
+						<FormField label={t("access.name")} htmlFor="access-profile-name">
+							<FormFieldInput
+								id="access-profile-name"
+								value={draft.name}
+								onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+								placeholder={t("access.namePlaceholder")}
+								autoComplete="off"
+								maxLength={100}
+							/>
+						</FormField>
+
+						<FormField label={t("access.validity")}>
+							<SegmentedControl
+								ariaLabel={t("access.validity")}
+								options={[
+									{ key: "duration", label: t("access.days") },
+									{ key: "fixed", label: t("access.date") },
+									{ key: "lifetime", label: t("access.lifetimeOption") },
+								]}
+								value={draft.validityMode}
+								onChange={(value) => {
+									const mode = value as ValidityMode;
+									setDraft({
+										...draft,
+										validityMode: mode,
+										validityDays: mode === "duration" ? (draft.validityDays ?? 30) : null,
+										fixedExpireAt:
+											mode === "fixed" ? (draft.fixedExpireAt ?? defaultFixedExpiry()) : null,
+									});
+								}}
+							/>
+						</FormField>
+
+						<div className={styles.validityPanel}>
+							{draft.validityMode === "duration" && (
+								<FormField
+									label={t("access.validityDays")}
+									htmlFor="access-profile-days"
+									hint={t("access.durationHint")}
+								>
+									<FormFieldInput
+										id="access-profile-days"
+										type="number"
+										inputMode="numeric"
+										min="1"
+										max="3650"
+										value={draft.validityDays ?? ""}
+										onChange={(event) =>
+											setDraft({
+												...draft,
+												validityDays: Number(event.target.value) || null,
+											})
+										}
+									/>
+								</FormField>
+							)}
+							{draft.validityMode === "fixed" && (
+								<FormInlineField label={t("access.expireAt")} htmlFor="access-profile-expiry">
+									<FormInlineDate
+										id="access-profile-expiry"
+										value={fixedDate}
+										displayValue={formatDateValue(fixedDate, navigator.language)}
+										min={dateValue(new Date().toISOString())}
+										onChange={(event) =>
+											setDraft({
+												...draft,
+												fixedExpireAt: event.target.value
+													? endOfLocalDay(event.target.value)
+													: null,
+											})
+										}
+									/>
+								</FormInlineField>
+							)}
+							{draft.validityMode === "lifetime" && (
+								<p className={styles.validityNotice}>{t("access.lifetimeHint")}</p>
+							)}
+						</div>
+
+						<div className={styles.twoColumns}>
+							<FormField label={t("access.trafficGb")} htmlFor="access-profile-traffic">
+								<FormFieldInput
+									id="access-profile-traffic"
+									type="number"
+									inputMode="decimal"
+									min="0"
+									step="0.1"
+									value={trafficGb}
+									placeholder={t("access.zero")}
+									aria-invalid={!trafficIsValid}
+									onChange={(event) => setTrafficGb(event.target.value)}
+								/>
+							</FormField>
+							<FormField label={t("access.devices")} htmlFor="access-profile-devices">
+								<FormFieldInput
+									id="access-profile-devices"
+									type="number"
+									inputMode="numeric"
+									min="0"
+									max="1000"
+									value={devices}
+									placeholder={t("access.unlimited")}
+									aria-invalid={!devicesAreValid}
+									onChange={(event) => setDevices(event.target.value)}
+								/>
+							</FormField>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<details className={styles.advanced}>
+				<summary>
+					{t("access.advanced")}
+					<ChevronDown size={15} />
+				</summary>
+				<div className={styles.advancedFields}>
+					<FormField label={t("access.status")} htmlFor="access-profile-status">
+						<FormFieldSelect
+							id="access-profile-status"
+							value={draft.status}
+							options={PROVIDER_USER_STATUSES.map((status) => ({
+								value: status,
+								label: t(STATUS_OPTION_KEY[status]),
+							}))}
+							onChange={(event) => {
+								if (isProviderUserStatus(event.target.value)) {
+									setDraft({ ...draft, status: event.target.value });
+								}
+							}}
+						/>
+					</FormField>
+					<FormField label={t("access.reset")} htmlFor="access-profile-reset">
+						<FormFieldSelect
+							id="access-profile-reset"
+							value={draft.trafficLimitStrategy}
+							options={[
+								{ value: "NO_RESET", label: t("access.noReset") },
+								{ value: "DAY", label: t("access.daily") },
+								{ value: "WEEK", label: t("access.weekly") },
+								{ value: "MONTH", label: t("access.monthly") },
+								{ value: "MONTH_ROLLING", label: t("access.rolling") },
+							]}
+							onChange={(event) =>
+								setDraft({
+									...draft,
+									trafficLimitStrategy: event.target.value as TrafficStrategy,
+								})
+							}
+						/>
+					</FormField>
+					<FormField
+						label={t("access.tag")}
+						htmlFor="access-profile-tag"
+						hint={
+							optionsState === "ready" && tags.length === 0
+								? t("access.noTags")
+								: t("access.tagHint")
+						}
+					>
+						<FormFieldSelect
+							id="access-profile-tag"
+							value={draft.tag ?? ""}
+							options={[
+								{ value: "", label: t("access.none") },
+								...(draft.tag && !tags.includes(draft.tag)
+									? [{ value: draft.tag, label: draft.tag }]
+									: []),
+								...tags.map((tag) => ({ value: tag, label: tag })),
+							]}
+							onChange={(event) => setDraft({ ...draft, tag: event.target.value || null })}
+							disabled={optionsState !== "ready"}
+						/>
+					</FormField>
+					<FormField label={t("access.description")} htmlFor="access-profile-description">
+						<FormFieldTextarea
+							id="access-profile-description"
+							rows={3}
+							maxLength={500}
+							value={draft.description ?? ""}
+							onChange={(event) => setDraft({ ...draft, description: event.target.value })}
+						/>
+					</FormField>
+					{internalSquads.length > 0 && (
+						<fieldset className={styles.checks}>
+							<legend>{t("access.internalSquads")}</legend>
+							{internalSquads.map((squad) => (
+								<label key={squad.uuid}>
+									<input
+										type="checkbox"
+										checked={draft.internalSquadUuids.includes(squad.uuid)}
+										onChange={(event) =>
+											setDraft({
+												...draft,
+												internalSquadUuids: event.target.checked
+													? [...draft.internalSquadUuids, squad.uuid]
+													: draft.internalSquadUuids.filter((id) => id !== squad.uuid),
+											})
+										}
+									/>
+									<span>{squad.name}</span>
+								</label>
+							))}
+						</fieldset>
+					)}
+					<FormField label={t("access.externalSquad")} htmlFor="access-profile-external">
+						<FormFieldSelect
+							id="access-profile-external"
+							value={draft.externalSquadUuid ?? ""}
+							options={[
+								{ value: "", label: t("access.none") },
+								...externalSquads.map((squad) => ({ value: squad.uuid, label: squad.name })),
+							]}
+							onChange={(event) =>
+								setDraft({ ...draft, externalSquadUuid: event.target.value || null })
+							}
+							disabled={optionsState !== "ready"}
+						/>
+					</FormField>
+				</div>
+			</details>
+
+			{save.isError && (
+				<InlineFeedback>{getLocalizedError(save.error, "access.profileSaveError")}</InlineFeedback>
+			)}
+		</EditorDialog>
 	);
 }

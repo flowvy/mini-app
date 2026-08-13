@@ -58,3 +58,7 @@
 	line-height: 1.4;
 	color: var(--v2-text-secondary);
 }
+
+.panelInset {
+	padding: 12px 14px;
+}

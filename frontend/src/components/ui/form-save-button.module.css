@@ -5,6 +5,7 @@
 }
 
 .btn {
+	position: relative;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -22,6 +23,22 @@
 	box-shadow: 0 1px 0 color-mix(in srgb, var(--v2-border-tertiary) 42%, transparent);
 	transition: opacity var(--duration-base), background-color var(--duration-base), color
 		var(--duration-base), border-color var(--duration-base);
+}
+
+.content {
+	opacity: 1;
+}
+
+.content[data-loading-hidden] {
+	opacity: 0;
+}
+
+.loadingIndicator {
+	position: absolute;
+	inset: 50% auto auto 50%;
+	display: grid;
+	place-items: center;
+	transform: translate(-50%, -50%);
 }
 
 .btn[data-active] {

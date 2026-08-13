@@ -308,6 +308,7 @@ test("access editor fails safely when Remnawave options are unavailable", async 
 	await page.keyboard.press("Enter");
 	await expect(page.getByLabel("Remnawave tag")).toBeDisabled();
 	await page.getByPlaceholder("Free 30 days").fill("Local trial");
+	await page.getByPlaceholder("Free 30 days").press("Enter");
 	const submit = page
 		.getByRole("dialog", { name: "Create access profile" })
 		.getByRole("button", { name: "Create profile", exact: true });

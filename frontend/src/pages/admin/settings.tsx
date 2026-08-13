@@ -17,6 +17,7 @@ import {
 	BeszelIcon,
 	FlowvyIcon,
 	RemnawaveIcon,
+	TributeIcon,
 	UptimeKumaIcon,
 } from "../../components/ui/service-brand-icon.tsx";
 import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
@@ -113,6 +114,21 @@ export const AdminSettings: FC = () => {
 					}
 					tone={beszelConfigured ? "positive" : "default"}
 					onClick={() => navigate({ to: "/admin/settings/beszel" })}
+				/>
+			</SettingsSection>
+
+			<SettingsSection title={t("settings.payments")}>
+				<SettingsNavRow
+					icon={<TributeIcon size={17} />}
+					label={t("settings.tribute.title")}
+					description={t("settings.tribute.configureDesc")}
+					value={
+						settings.tributeCredentialsConfigured
+							? t("settings.tribute.keyAdded")
+							: t("settings.tribute.setupRequired")
+					}
+					tone={settings.tributeCredentialsConfigured ? "positive" : "warning"}
+					onClick={() => navigate({ to: "/admin/settings/tribute" })}
 				/>
 			</SettingsSection>
 

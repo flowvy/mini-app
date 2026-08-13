@@ -18,12 +18,14 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from flowvy.api.middleware import MetricsMiddleware
+from flowvy.api.routes.admin.commerce import router as admin_commerce_router
 from flowvy.api.routes.admin.dashboard import router as admin_dashboard_router
 from flowvy.api.routes.admin.registration import router as admin_registration_router
 from flowvy.api.routes.admin.settings import router as admin_settings_router
 from flowvy.api.routes.admin.users import router as admin_users_router
 from flowvy.api.routes.debug import router as debug_router
 from flowvy.api.routes.debug_admin import router as debug_admin_router
+from flowvy.api.routes.debug_commerce import router as debug_commerce_router
 from flowvy.api.routes.devices import router as devices_router
 from flowvy.api.routes.health import router as health_router
 from flowvy.api.routes.pulse import router as pulse_router
@@ -169,6 +171,7 @@ def create_app() -> FastAPI:
     app.include_router(devices_router)
     app.include_router(pulse_router)
     app.include_router(admin_dashboard_router)
+    app.include_router(admin_commerce_router)
     app.include_router(admin_registration_router)
     app.include_router(admin_settings_router)
     app.include_router(admin_users_router)
@@ -176,6 +179,7 @@ def create_app() -> FastAPI:
     if settings.debug:
         app.include_router(debug_router)
         app.include_router(debug_admin_router)
+        app.include_router(debug_commerce_router)
 
     if settings.webhook_url:
 

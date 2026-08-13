@@ -19,9 +19,21 @@ export const FormSaveButton: FC<FormSaveButtonProps> = ({ dirty, loading, onSave
 				className={styles.btn}
 				data-active={dirty ? "" : undefined}
 				disabled={!dirty || loading}
+				aria-busy={loading || undefined}
 				onClick={onSave}
 			>
-				{loading ? <SpinnerIcon size={14} /> : t("common.save")}
+				{loading ? (
+					<>
+						<span className={styles.content} data-loading-hidden="">
+							{t("common.save")}
+						</span>
+						<span className={styles.loadingIndicator}>
+							<SpinnerIcon size={14} />
+						</span>
+					</>
+				) : (
+					t("common.save")
+				)}
 			</button>
 		</div>
 	);

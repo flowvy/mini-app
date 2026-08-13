@@ -4,6 +4,7 @@
  */
 import { X } from "lucide-react";
 import { type FC, type ReactNode, type RefObject, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { hapticImpact, hapticNotification } from "../../lib/haptics.ts";
 import { ActionBtn } from "./action-btn.tsx";
@@ -33,7 +34,6 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 	returnFocusRef,
 }) => {
 	const { t } = useTranslation();
-	const overlayRef = useRef<HTMLDivElement>(null);
 	const modalRef = useRef<HTMLDialogElement>(null);
 	const closeRef = useRef<HTMLButtonElement>(null);
 	const fallbackFocusRef = useRef<HTMLElement | null>(null);
@@ -42,7 +42,12 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 		if (!open) return;
 		fallbackFocusRef.current =
 			document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		const modal = modalRef.current;
+		if (modal && !modal.open) modal.showModal();
 		closeRef.current?.focus();
+		return () => {
+			if (modal?.open) modal.close();
+		};
 	}, [open]);
 
 	const restoreTriggerFocus = () => {
@@ -65,12 +70,14 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 
 	if (!open) return null;
 
-	return (
-		<div
-			ref={overlayRef}
-			className={styles.overlay}
+	return createPortal(
+		<dialog
+			ref={modalRef}
+			className={styles.modal}
+			aria-label={title}
+			aria-modal="true"
 			onClick={(event) => {
-				if (event.target === overlayRef.current) cancel();
+				if (event.target === modalRef.current) cancel();
 			}}
 			onKeyDown={(event) => {
 				if (event.key === "Escape") {
@@ -94,54 +101,47 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 					first.focus();
 				}
 			}}
+			onCancel={(event) => {
+				event.preventDefault();
+				cancel();
+			}}
 		>
-			<dialog
-				ref={modalRef}
-				open
-				className={styles.modal}
-				aria-label={title}
-				aria-modal="true"
-				onCancel={(event) => {
-					event.preventDefault();
-					cancel();
-				}}
-			>
-				<div className={styles.header}>
-					<span className={styles.title}>{title}</span>
-					<button
-						ref={closeRef}
-						type="button"
-						className={styles.closeBtn}
-						onClick={cancel}
-						aria-label={t("common.confirmDialog.closeLabel")}
-					>
-						<X size={16} />
-					</button>
-				</div>
-				<div className={styles.body}>{children}</div>
-				<div className={styles.footer}>
-					<ActionBtn
-						variant="ghost"
-						size="md"
-						onClick={() => {
-							hapticImpact("light");
-							cancel();
-						}}
-					>
-						{cancelLabel}
-					</ActionBtn>
-					<ActionBtn
-						variant={confirmVariant}
-						size="md"
-						onClick={() => {
-							hapticNotification("warning");
-							confirm();
-						}}
-					>
-						{confirmLabel}
-					</ActionBtn>
-				</div>
-			</dialog>
-		</div>
+			<div className={styles.header}>
+				<span className={styles.title}>{title}</span>
+				<button
+					ref={closeRef}
+					type="button"
+					className={styles.closeBtn}
+					onClick={cancel}
+					aria-label={t("common.confirmDialog.closeLabel")}
+				>
+					<X size={16} />
+				</button>
+			</div>
+			<div className={styles.body}>{children}</div>
+			<div className={styles.footer}>
+				<ActionBtn
+					variant="ghost"
+					size="md"
+					onClick={() => {
+						hapticImpact("light");
+						cancel();
+					}}
+				>
+					{cancelLabel}
+				</ActionBtn>
+				<ActionBtn
+					variant={confirmVariant}
+					size="md"
+					onClick={() => {
+						hapticNotification("warning");
+						confirm();
+					}}
+				>
+					{confirmLabel}
+				</ActionBtn>
+			</div>
+		</dialog>,
+		document.body,
 	);
 };

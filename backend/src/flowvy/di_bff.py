@@ -22,6 +22,7 @@ from flowvy.services.provider_settings import ProviderSettingsService
 from flowvy.services.pulse import PulseService
 from flowvy.services.remnawave import RemnawaveClient
 from flowvy.services.subscription import SubscriptionService
+from flowvy.services.tribute import TributeClient
 
 
 class BffServiceProvider(Provider):
@@ -59,6 +60,21 @@ class BffServiceProvider(Provider):
                 email=settings.beszel_email,
                 password=settings.beszel_password.get_secret_value(),
                 max_response_bytes=settings.beszel_max_response_bytes,
+            )
+
+    @provide(scope=Scope.APP)
+    async def get_tribute(self, settings: Settings) -> AsyncIterable[TributeClient]:
+        """Create a fixed-origin Tribute client with a server-only credential."""
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(10.0, connect=5.0),
+            follow_redirects=False,
+            trust_env=False,
+            limits=httpx.Limits(max_keepalive_connections=0),
+        ) as http:
+            yield TributeClient(
+                http,
+                api_key=settings.tribute_api_key.get_secret_value(),
+                max_response_bytes=settings.tribute_max_response_bytes,
             )
 
     @provide(scope=Scope.REQUEST)
@@ -99,10 +115,11 @@ class BffServiceProvider(Provider):
         remnawave: RemnawaveClient,
         kuma: UptimeKumaClient,
         beszel: BeszelClient,
+        tribute: TributeClient,
         redis: Redis,
     ) -> ProviderSettingsService:
         """Create provider settings service."""
-        return ProviderSettingsService(repo, remnawave, kuma, beszel, redis)
+        return ProviderSettingsService(repo, remnawave, kuma, beszel, tribute, redis)
 
     @provide(scope=Scope.REQUEST)
     def get_admin_users_service(

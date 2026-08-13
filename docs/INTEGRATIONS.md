@@ -400,6 +400,81 @@ history/status mapping. Draft read-only test с локальными server cred
 публичный `GET /api/pulse` вернул `200`, `operational`, 1 group и 7 monitors;
 Hub URL и credentials в артефакты/логи не выводились.
 
+## Tribute: первый платёжный provider
+
+Текущий реализованный scope — admin configuration и безопасная проверка server-side API key.
+Секрет задаётся как `TRIBUTE_API_KEY`, хранится в environment и никогда не возвращается frontend,
+БД или Redis. `POST /api/admin/settings/tribute/test` через fixed-origin client выполняет один
+`GET https://tribute.tg/api/v1/products?page=1&size=1`. Это read-only API check, а не тестовый
+платёж: он не создаёт order, subscription, donation, purchase или refund. Client не следует
+redirects, игнорирует proxy environment, имеет конечный timeout, ограничивает response body и
+валидирует JSON до success.
+
+Admin Settings выделяет Payments отдельно от взаимоисключающего Pulse provider selector. Tribute
+экран показывает credential presence, API-check state и provider-neutral access automation для:
+
+- subscriptions: `new_subscription`, `renewed_subscription`, `cancelled_subscription`; типы
+  `regular`, `gift`, `trial`, причём gift/trial при продлении становятся regular;
+- digital products: `new_digital_product`, `digital_product_refunded`; `purchase_id` связывает
+  возврат с исходной покупкой;
+- donations: `new_donation`, `recurrent_donation`, `cancelled_donation`.
+
+Automation rule состоит из source match, duration calculator и internal entitlement action:
+
+- source: `donation`, `subscription` или `digital_product`; donation дополнительно различает
+  one-time/recurring, subscription/product требуют точный external item ID;
+- calculator: постоянное число дней либо volume amount bands. Выбирается максимальный порог,
+  подходящий к amount, и его ratio применяется ко всей сумме через integer minor units;
+- action: active access profile, `extend`/`replace`, priority и enabled state. Calculated duration
+  переопределяет default validity profile, остальные provider/access limits переиспользуются;
+- preview вызывает backend calculator с draft и amount, но ничего не сохраняет и не выполняет.
+
+Правила не содержат встроенной бизнес-схемы. Например, bands `500 RUB / 30 days` и
+`3500 RUB / 365 days` дают 30, 60, 365 и 417 дней для 500, 1000, 3500 и 4000 RUB, но это только
+admin-authored/test fixture. Repository не seed-ит такие суммы.
+
+На этом этапе Flowvy не публикует callback URL и прямо помечает receiver как следующий этап.
+Webhook contract использует `trbt-signature`: HMAC-SHA256 от raw body тем же API key. Provider
+документирует повторные доставки, но не даёт event ID для subscription/donation и не описывает
+encoding подписи, key scopes/rotation или отдельный timestamp header. Поэтому receiver нельзя
+добавлять без отдельного решения по raw-byte verification, idempotency, retry/freshness, PII
+retention и entitlement reconciliation. Для digital purchase явным idempotency identity является
+`purchase_id`; для остальных событий canonical dedupe key остаётся неизвестным.
+
+У Tribute не найден официальный sandbox, test hostname/credential, health endpoint или send-test-
+webhook flow. OpenAPI указывает только production origin. Автотесты используют MockTransport и
+Playwright fixtures; реальный key или self-payment не нужны и не допускаются как smoke. Live API
+check может запустить только оператор, который явно настроил server environment.
+
+Provider-neutral rule design дополнительно сверялся 2026-08-13 с primary Stripe pricing/
+entitlements документацией: provider prices не являются internal entitlements, а volume и graduated
+tiers должны различаться явно. Flowvy реализует только volume semantics, нужную текущему UX, и не
+называет её graduated:
+
+- https://docs.stripe.com/products-prices/pricing-models
+- https://docs.stripe.com/subscriptions/pricing-models/tiered-pricing
+- https://docs.stripe.com/billing/entitlements
+
+Primary evidence, проверено 2026-08-13: русская Wiki revision `CMk0YDiolSYBsE89s7Fs`, generated
+2026-08-04; OpenAPI `3.1.0`, Tribute API `1.0.0`, единственный server
+`https://tribute.tg/api/v1`.
+
+- [Tribute API authorization](https://wiki.tribute.tg/ru/api-dokumentaciya) — создание key и
+  обязательный header `Api-Key`.
+- [Tribute products API](https://wiki.tribute.tg/ru/api-dokumentaciya/tovary) — read-only list/detail,
+  product types/statuses и Stars-only API refund restriction.
+- [Tribute subscriptions API](https://wiki.tribute.tg/ru/api-dokumentaciya/podpiski) — read-only
+  subscription/period catalog; публичного CRUD offers нет.
+- [Tribute webhooks](https://wiki.tribute.tg/ru/api-dokumentaciya/vebkhuki) — signature, envelope,
+  retry и перечисленные lifecycle events.
+- [Digital-product integration](https://wiki.tribute.tg/ru/for-content-creators/digital-product/api-integration)
+  — payment links, Telegram identity caveat, access grant и refund flow.
+- [Donation request](https://wiki.tribute.tg/ru/for-content-creators/donations/donation-request) и
+  [regular donations](https://wiki.tribute.tg/ru/for-content-creators/donations/regulyarnye-donaty)
+  — one-off/recurring/anonymous behavior; публичного donation catalog endpoint нет.
+- [Canonical Russian OpenAPI](https://tribute.tg/api/v1/openapi/ru) — текущие required/optional
+  payload fields и enum differences между catalog и webhook.
+
 ## Правила изменения контракта
 
 1. Проследить route → service/client → schema → frontend type/hook/fixture.

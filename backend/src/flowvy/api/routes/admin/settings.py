@@ -25,6 +25,7 @@ from flowvy.schemas.provider_settings import (
     KumaTestResponse,
     ProviderSettingsPatch,
     ProviderSettingsResponse,
+    TributeTestResponse,
     WelcomeMediaUploadResponse,
 )
 from flowvy.services.provider_settings import ProviderSettingsError, ProviderSettingsService
@@ -105,6 +106,15 @@ async def test_beszel_candidate(
 ) -> BeszelTestResponse:
     """Test an unsaved Beszel URL without changing settings."""
     return await service.test_beszel_candidate(candidate.url)
+
+
+@router.post("/settings/tribute/test", response_model=TributeTestResponse)
+async def test_tribute(
+    _admin: CurrentAdmin,
+    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
+) -> TributeTestResponse:
+    """Check configured Tribute API access with one read-only products request."""
+    return await service.test_tribute()
 
 
 @router.post(

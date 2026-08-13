@@ -1,6 +1,7 @@
 /* ── Base ── */
 
 .btn {
+	position: relative;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -19,14 +20,33 @@
 	color: inherit;
 }
 
-.btn:disabled {
+.btn:disabled:not(.loading) {
 	opacity: 0.5;
 	cursor: default;
 }
 
 .btn.loading {
-	opacity: 0.7;
 	cursor: wait;
+}
+
+.content {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: inherit;
+	opacity: 1;
+}
+
+.content[data-loading-hidden] {
+	opacity: 0;
+}
+
+.loadingIndicator {
+	position: absolute;
+	inset: 50% auto auto 50%;
+	display: grid;
+	place-items: center;
+	transform: translate(-50%, -50%);
 }
 
 /* ── Sizes ── */
@@ -64,7 +84,7 @@
 	color: var(--v2-text-primary-inverted);
 }
 
-.confirm:disabled {
+.confirm:disabled:not(.loading) {
 	opacity: 0.4;
 }
 
@@ -75,7 +95,7 @@
 	color: #fff;
 }
 
-.danger:disabled {
+.danger:disabled:not(.loading) {
 	opacity: 0.4;
 }
 

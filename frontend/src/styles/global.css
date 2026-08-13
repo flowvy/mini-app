@@ -87,6 +87,7 @@ textarea,
 select {
 	font: inherit;
 	color: inherit;
+	scroll-margin-block: 20px;
 }
 
 /* iOS/WKWebView zooms focused controls whose rendered text is below 16px.

@@ -618,6 +618,7 @@ test("key interactive screens have no serious accessibility violations in light 
 		"/pulse",
 		"/admin/settings",
 		"/admin/settings/beszel",
+		"/admin/settings/tribute",
 	] as const) {
 		await page.goto(path);
 		await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));

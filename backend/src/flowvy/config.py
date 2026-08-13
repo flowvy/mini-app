@@ -60,6 +60,12 @@ class Settings(BaseSettings):
         ge=1024,
         le=10_485_760,
     )
+    tribute_api_key: SecretStr = SecretStr("")
+    tribute_max_response_bytes: int = Field(
+        default=1_048_576,
+        ge=1024,
+        le=10_485_760,
+    )
     debug: bool = False
     admin_telegram_ids: Annotated[list[int], NoDecode] = []
 

@@ -16,10 +16,12 @@ from sqlalchemy.ext.asyncio import (
 
 from flowvy.config import Settings
 from flowvy.repositories.access_profile import AccessProfileRepository
+from flowvy.repositories.commerce_rule import CommerceRuleRepository
 from flowvy.repositories.invite import InviteRepository
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.user import UserRepository
+from flowvy.services.commerce import CommerceRuleService
 from flowvy.services.registration import RegistrationAdminService, RegistrationService
 from flowvy.services.remnawave import RemnawaveClient
 from flowvy.services.user import UserService
@@ -86,6 +88,11 @@ class RepositoryProvider(Provider):
         return AccessProfileRepository(session)
 
     @provide(scope=Scope.REQUEST)
+    def get_commerce_rule_repo(self, session: AsyncSession) -> CommerceRuleRepository:
+        """Create commerce-rule repository bound to current session."""
+        return CommerceRuleRepository(session)
+
+    @provide(scope=Scope.REQUEST)
     def get_subscription_repo(
         self,
         session: AsyncSession,
@@ -113,6 +120,15 @@ class ServiceProvider(Provider):
     ) -> UserService:
         """Create user service with injected repository and settings."""
         return UserService(repo, settings)
+
+    @provide(scope=Scope.REQUEST)
+    def get_commerce_rule_service(
+        self,
+        rules: CommerceRuleRepository,
+        profiles: AccessProfileRepository,
+    ) -> CommerceRuleService:
+        """Create side-effect-free commerce-rule administration service."""
+        return CommerceRuleService(rules, profiles)
 
     @provide(scope=Scope.REQUEST)
     def get_registration_service(

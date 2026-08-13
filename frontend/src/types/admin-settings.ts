@@ -6,6 +6,7 @@ export interface AdminSettings {
 	kumaSlug: string | null;
 	beszelUrl: string | null;
 	beszelCredentialsConfigured: boolean;
+	tributeCredentialsConfigured: boolean;
 	appName: string | null;
 	logoUrl: string | null;
 	welcomeText: string | null;
@@ -40,12 +41,14 @@ export interface WelcomeMediaUpload {
 	mediaType: string;
 }
 
-export interface KumaTestResult {
+export interface ProviderTestResult {
 	ok: boolean;
 	error: string | null;
 }
 
-export type BeszelTestResult = KumaTestResult;
+export type KumaTestResult = ProviderTestResult;
+export type BeszelTestResult = ProviderTestResult;
+export type TributeTestResult = ProviderTestResult;
 
 export interface KumaTestInput {
 	url: string;

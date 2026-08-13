@@ -115,4 +115,6 @@ def test_openapi_schema_includes_registration_routes(
     assert "/api/onboarding/redeem-launch" in schema["paths"]
     assert "/api/me/invite" in schema["paths"]
     assert "/api/admin/registration" in schema["paths"]
+    assert "/api/admin/commerce/rules" in schema["paths"]
+    assert "/api/admin/commerce/preview" in schema["paths"]
     assert "/api/admin/registration/invites" not in schema["paths"]

@@ -9,6 +9,7 @@ import { AdminAccessSettings } from "./pages/admin/settings-access.tsx";
 import { AdminBeszelConfig } from "./pages/admin/settings-beszel.tsx";
 import { AdminBrandingConfig } from "./pages/admin/settings-branding.tsx";
 import { AdminKumaConfig } from "./pages/admin/settings-kuma.tsx";
+import { AdminTributeConfig } from "./pages/admin/settings-tribute.tsx";
 import { AdminWelcomeConfig } from "./pages/admin/settings-welcome.tsx";
 import { AdminSettings } from "./pages/admin/settings.tsx";
 import { AdminUserDetailPage } from "./pages/admin/user-detail-page.tsx";
@@ -88,6 +89,12 @@ const adminSettingsBeszelRoute = createRoute({
 	component: AdminBeszelConfig,
 });
 
+const adminSettingsTributeRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/tribute",
+	component: AdminTributeConfig,
+});
+
 const adminSettingsBrandingRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/settings/branding",
@@ -118,6 +125,7 @@ const routeTree = rootRoute.addChildren([
 	adminSettingsRoute,
 	adminSettingsKumaRoute,
 	adminSettingsBeszelRoute,
+	adminSettingsTributeRoute,
 	adminSettingsBrandingRoute,
 	adminSettingsWelcomeRoute,
 	adminSettingsAccessRoute,

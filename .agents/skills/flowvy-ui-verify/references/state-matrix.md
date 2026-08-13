@@ -7,7 +7,7 @@ Use this inventory to select cases; not every change requires every cell, but ev
 | Area | Routes |
 | --- | --- |
 | User | `/`, `/devices`, `/pulse`, `/support` |
-| Admin | `/admin/dashboard`, `/admin/users`, `/admin/users/:id`, `/admin/broadcast`, `/admin/settings`, `/admin/settings/kuma`, `/admin/settings/beszel`, `/admin/settings/branding`, `/admin/settings/access`, `/admin/settings/welcome` |
+| Admin | `/admin/dashboard`, `/admin/users`, `/admin/users/:id`, `/admin/broadcast`, `/admin/settings`, `/admin/settings/kuma`, `/admin/settings/beszel`, `/admin/settings/tribute`, `/admin/settings/branding`, `/admin/settings/access`, `/admin/settings/welcome` |
 
 ## Identities and navigation
 
@@ -26,7 +26,7 @@ Use this inventory to select cases; not every change requires every cell, but ev
 | Pulse | operational, partial, down, maintenance, incidents, disabled, Kuma/Beszel timeout/schema error |
 | Dashboard | full data, Remnawave unavailable, zero metrics, large values, backend error |
 | Users | 0, 1, and large virtualized list; search; every status filter; no results; detail missing |
-| Settings | unconfigured/configured, source selection, dirty/save/failure, Kuma/Beszel test pass/fail, server credential presence without secret values, registration open/invite-only, local/timed/fixed/lifetime access, compact resting input/select/date typography, touch picker focus cleanup and overflow, provider tag/squad options pass/fail, upload/reset pass/fail, discard dialog |
+| Settings | unconfigured/configured, source selection, dirty/save/failure, Kuma/Beszel/Tribute read-only check pass/fail, server credential presence without secret values, commerce rule loading/empty/error/create/edit/toggle/delete, fixed/volume preview/no-match, late Telegram-authenticated preview mutation, stale preview-error clearance and safe status copy, explicit payment-unit amount bands, compact amount-band rows, aligned currency/priority fields, focused-input reveal inside the visual viewport, touch editing that keeps editor actions hidden through viewport restoration without blocking button activation, CSS loading indicators without SVG backing boxes, unavailable access profile, responsive editor and nested confirmation, registration open/invite-only, local/timed/fixed/lifetime access, compact resting input/select/date typography, touch picker focus cleanup and overflow, provider tag/squad options pass/fail, upload/reset pass/fail, discard dialog |
 
 For applicable requests also cover loading, `401`, `403`, `404`, `500`, timeout/offline, malformed JSON/schema, mutation `200`/`204`, and mutation failure.
 

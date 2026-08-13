@@ -13,6 +13,7 @@ import type {
 	BeszelTestResult,
 	KumaTestInput,
 	KumaTestResult,
+	TributeTestResult,
 } from "../types/admin-settings.ts";
 import type { UserResponse } from "./use-auth.ts";
 
@@ -71,5 +72,11 @@ export function useTestKuma() {
 export function useTestBeszel() {
 	return useMutation<BeszelTestResult, Error, BeszelTestInput>({
 		mutationFn: (candidate) => apiPost<BeszelTestResult>(`${prefix}/beszel/test`, candidate),
+	});
+}
+
+export function useTestTribute() {
+	return useMutation<TributeTestResult, Error, void>({
+		mutationFn: () => apiPost<TributeTestResult>(`${prefix}/tribute/test`),
 	});
 }

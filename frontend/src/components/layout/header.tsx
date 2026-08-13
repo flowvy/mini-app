@@ -21,7 +21,7 @@ import { type AppMode, useMode } from "../../contexts/mode-context.tsx";
 import { hapticSelection } from "../../lib/haptics.ts";
 import { useCurrentUser } from "../auth-guard.tsx";
 import { AppLogo } from "../ui/app-logo.tsx";
-import { BeszelIcon, UptimeKumaIcon } from "../ui/service-brand-icon.tsx";
+import { BeszelIcon, TributeIcon, UptimeKumaIcon } from "../ui/service-brand-icon.tsx";
 import styles from "./header.module.css";
 
 interface PageMeta {
@@ -43,6 +43,10 @@ const PAGE_META: Record<string, PageMeta> = {
 	"/admin/settings/beszel": {
 		title: "common.header.settingsBeszel",
 		icon: <BeszelIcon size={16} />,
+	},
+	"/admin/settings/tribute": {
+		title: "common.header.settingsTribute",
+		icon: <TributeIcon size={16} />,
 	},
 	"/admin/settings/access": {
 		title: "common.header.settingsAccess",

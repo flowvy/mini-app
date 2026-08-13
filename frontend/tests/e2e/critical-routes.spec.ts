@@ -235,7 +235,12 @@ test("admin routes render deterministic success and placeholder states", async (
 	await expect(page.getByText("Integrations")).toBeVisible();
 	await expect(page.getByText("Remnawave", { exact: true })).toBeVisible();
 	await expect(page.getByText("Registration & Access")).toBeVisible();
-	for (const brand of ["uptime-kuma", "beszel", "remnawave", "flowvy"]) {
+	const paymentsCard = page
+		.getByRole("heading", { name: "Payments" })
+		.locator("xpath=ancestor::section[1]");
+	await expect(paymentsCard.getByText("Tribute", { exact: true })).toBeVisible();
+	await expect(paymentsCard.getByText("Key added", { exact: true })).toBeVisible();
+	for (const brand of ["uptime-kuma", "beszel", "tribute", "remnawave", "flowvy"]) {
 		await expect(page.locator(`svg[data-service-brand="${brand}"]`)).toHaveCount(1);
 	}
 	const iconTreatments = await Promise.all(
@@ -259,6 +264,7 @@ test("admin routes render deterministic success and placeholder states", async (
 	for (const [path, title] of [
 		["/admin/settings/kuma", "Connection"],
 		["/admin/settings/beszel", "Connection"],
+		["/admin/settings/tribute", "Connection"],
 		["/admin/settings/branding", "Identity"],
 		["/admin/settings/welcome", "Content"],
 		["/admin/settings/access", "Registration"],
@@ -320,6 +326,7 @@ test("detail screens rely on Telegram Back instead of duplicate in-content heade
 	const detailScreens = [
 		{ path: "/admin/settings/kuma", marker: "URL", title: "Uptime Kuma" },
 		{ path: "/admin/settings/beszel", marker: "Hub URL", title: "Beszel" },
+		{ path: "/admin/settings/tribute", marker: "API key", title: "Tribute" },
 		{ path: "/admin/settings/branding", marker: "App name", title: "Identity" },
 		{ path: "/admin/settings/welcome", marker: "Content", title: "Welcome" },
 		{ path: "/admin/settings/access", marker: "Service mode", title: "Access" },

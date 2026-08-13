@@ -15,6 +15,7 @@ from flowvy.schemas.provider_settings import (
     KumaTestResponse,
     ProviderSettingsPatch,
     ProviderSettingsResponse,
+    TributeTestResponse,
     WelcomeMediaUploadResponse,
 )
 from flowvy.services.admin_users import AdminUsersService
@@ -207,6 +208,16 @@ async def debug_test_beszel_candidate(
     """Test an unsaved Beszel target without Telegram auth or persistence."""
     check_debug(request)
     return await service.test_beszel_candidate(candidate.url)
+
+
+@router.post("/settings/tribute/test", response_model=TributeTestResponse)
+async def debug_test_tribute(
+    request: Request,
+    service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
+) -> TributeTestResponse:
+    """Check Tribute API access without Telegram auth. DEBUG mode only."""
+    check_debug(request)
+    return await service.test_tribute()
 
 
 @router.post(

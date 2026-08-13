@@ -19,6 +19,7 @@ from flowvy.services.beszel import BeszelError
 from flowvy.services.kuma import KumaError
 from flowvy.services.provider_settings import ProviderSettingsError, ProviderSettingsService
 from flowvy.services.pulse import CACHE_KEY
+from flowvy.services.tribute import TributeError
 
 
 def _row(**overrides: object) -> SimpleNamespace:
@@ -52,9 +53,16 @@ def _service(
     kuma = AsyncMock()
     beszel = AsyncMock()
     beszel.credentials_configured = True
+    tribute = AsyncMock()
+    tribute.credentials_configured = False
     redis = AsyncMock()
     redis.delete = AsyncMock(return_value=1)
-    return ProviderSettingsService(repo, remnawave, kuma, beszel, redis), kuma, beszel, redis
+    return (
+        ProviderSettingsService(repo, remnawave, kuma, beszel, tribute, redis),
+        kuma,
+        beszel,
+        redis,
+    )
 
 
 @pytest.mark.parametrize(
@@ -276,10 +284,38 @@ async def test_beszel_candidate_test_uses_unsaved_target_without_persistence() -
 async def test_settings_response_exposes_only_credential_presence() -> None:
     service, _kuma, beszel, _redis = _service(_row(beszel_url="https://monitor.example.test"))
     beszel.credentials_configured = True
+    service._tribute.credentials_configured = True
 
-    result = await service.get()
-    payload = result.model_dump()
+    payload = (await service.get()).model_dump(by_alias=True)
 
-    assert payload["beszel_credentials_configured"] is True
-    assert "beszel_email" not in payload
-    assert "beszel_password" not in payload
+    assert payload["beszelCredentialsConfigured"] is True
+    assert payload["tributeCredentialsConfigured"] is True
+    assert "beszelEmail" not in payload
+    assert "beszelPassword" not in payload
+    assert "tributeApiKey" not in payload
+
+
+@pytest.mark.asyncio
+async def test_tribute_connection_test_is_read_only_and_returns_safe_status() -> None:
+    service, _kuma, _beszel, redis = _service(_row())
+    service._tribute.test_connection = AsyncMock(return_value=None)
+
+    result = await service.test_tribute()
+
+    assert result.ok is True
+    service._tribute.test_connection.assert_awaited_once_with()
+    service._repo.update_partial.assert_not_awaited()
+    redis.delete.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_tribute_connection_test_hides_transport_details_from_response_shape() -> None:
+    service, _kuma, _beszel, _redis = _service(_row())
+    service._tribute.test_connection = AsyncMock(
+        side_effect=TributeError("Tribute connection timed out")
+    )
+
+    result = await service.test_tribute()
+
+    assert result.ok is False
+    assert result.error == "Tribute connection timed out"

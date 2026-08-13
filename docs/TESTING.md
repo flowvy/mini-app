@@ -34,12 +34,16 @@ uv run --frozen pytest -q
 
 `tests/conftest.py` автоматически маркирует тесты с fixtures `engine` или `session` как
 `integration`. Они используют отдельную PostgreSQL database/user `test:test`; SQLite не является
-заменой. Remnawave, Kuma, Beszel, Telegram, clock и transport должны быть fake/mock.
+заменой. Remnawave, Kuma, Beszel, Tribute, Telegram, clock и transport должны быть fake/mock.
 
 Kuma/Beszel tests подменяют resolver и HTTPX transport, проверяя pinned IP/Host/SNI без сети.
 Beszel fixtures фиксируют v0.18.7 auth/systems/system_stats contracts, pagination limits,
-credential isolation и 1m/20m Pulse mapping. Media tests
-сканируют ложный declared size и действительно читают aiogram `InputFile` chunks. Remnawave tests
+credential isolation и 1m/20m Pulse mapping. Tribute fixtures проверяют fixed-origin read-only
+products request, server-only key, auth/non-2xx, timeout, oversized/malformed/schema-drift response
+без сети. Commerce fixtures отдельно проверяют conditional rule validation, active-profile gate,
+CRUD, no-match/fixed/volume preview и целочисленные 500/1000/3500/4000 RUB boundaries без webhook
+или access side effect. Media tests сканируют ложный declared size и действительно читают aiogram `InputFile`
+chunks. Remnawave tests
 используют locked 2.8.1/3.0.0/3.1.0 response fixtures: проверяют выбор route/body, metadata version,
 cursor stream, UUID-less 3.x user, `204`, ownership и safe future-major failure. Они отдельно
 доказывают, что upstream body/extra dashboard fields не проходят в BFF. Ни один из этих suites не
@@ -80,8 +84,11 @@ pnpm test:e2e:live  # существующие dev-up frontend/backend и реа
 Обычный Playwright suite запускает только Vite с `VITE_MOCK_AUTH=true`; stateful fixture перехватывает
 каждый `/api/*` request. Неизвестный запрос, `console.error`, `pageerror` или network failure валит
 тест. Матрица покрывает auth/role, loading/empty/error/malformed/retry, device mutation, Pulse,
-dashboard/users/settings, выбор Kuma/Beszel, credential-state без секретов, keyboard focus,
-light-mode axe, overflow и визуальные evidence screenshots.
+dashboard/users/settings, выбор Kuma/Beszel, Tribute credential/API-check states без секретов,
+commerce-rule empty/create/edit/toggle/delete/save failure, fixed/volume preview/no-match,
+раскрытие focused input внутри visual viewport, непрерывный touch-editing lifecycle при закрытии
+клавиатуры, loading spinner без SVG backing box, light-mode axe, overflow и визуальные evidence
+screenshots.
 
 `test:e2e:live` намеренно исключён из обычного/CI suite. Сначала запустите `scripts/dev-up.ps1`,
 проверьте redacted target и только затем выполняйте его: сценарий читает Home, Devices, admin
