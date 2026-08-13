@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
-import hmac
 import logging
 from collections.abc import Awaitable, Callable
 
@@ -13,6 +11,7 @@ from flowvy.repositories.webhook_event import WebhookEventRepository
 from flowvy.schemas.webhooks import WebhookPayload
 from flowvy.services.dashboard import CACHE_KEY as DASHBOARD_CACHE_KEY
 from flowvy.services.pulse import CACHE_KEY as PULSE_CACHE_KEY
+from flowvy.services.webhook_security import verify_hmac_sha256_hex
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +29,7 @@ class WebhookHandlerService:
     @staticmethod
     def verify_signature(body: bytes, secret: str, signature: str) -> bool:
         """Verify HMAC-SHA256 signature from Remnawave."""
-        expected = hmac.new(
-            secret.encode(),
-            body,
-            hashlib.sha256,
-        ).hexdigest()
-        return hmac.compare_digest(expected, signature)
+        return verify_hmac_sha256_hex(body, secret, signature)
 
     async def handle_event(self, payload: WebhookPayload, delivery_key: str) -> bool:
         """Persist and dispatch a delivery once, returning whether it was new."""

@@ -31,6 +31,7 @@ from flowvy.api.routes.health import router as health_router
 from flowvy.api.routes.pulse import router as pulse_router
 from flowvy.api.routes.registration import router as registration_router
 from flowvy.api.routes.subscription import router as subscription_router
+from flowvy.api.routes.tribute_webhooks import router as tribute_webhooks_router
 from flowvy.api.routes.users import router as users_router
 from flowvy.api.routes.webhooks import router as webhooks_router
 from flowvy.bot.factory import create_dispatcher
@@ -110,6 +111,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         run_webhook_retention(
             sm,
             settings.remnawave_webhook_retention_days,
+            settings.tribute_webhook_retention_days,
             settings.remnawave_webhook_cleanup_interval_seconds,
             settings.remnawave_webhook_cleanup_batch_size,
         ),
@@ -176,6 +178,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_settings_router)
     app.include_router(admin_users_router)
     app.include_router(webhooks_router)
+    app.include_router(tribute_webhooks_router)
     if settings.debug:
         app.include_router(debug_router)
         app.include_router(debug_admin_router)

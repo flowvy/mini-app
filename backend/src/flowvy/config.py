@@ -66,6 +66,22 @@ class Settings(BaseSettings):
         ge=1024,
         le=10_485_760,
     )
+    tribute_webhook_max_age_seconds: int = Field(
+        default=90_000,
+        ge=3600,
+        le=172_800,
+    )
+    tribute_webhook_future_tolerance_seconds: int = Field(
+        default=300,
+        ge=0,
+        le=900,
+    )
+    tribute_webhook_max_body_bytes: int = Field(
+        default=65_536,
+        ge=1024,
+        le=1_048_576,
+    )
+    tribute_webhook_retention_days: int = Field(default=90, ge=1, le=365)
     debug: bool = False
     admin_telegram_ids: Annotated[list[int], NoDecode] = []
 

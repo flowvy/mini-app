@@ -1,7 +1,7 @@
 # Текущее состояние Flowvy
 
-Последняя полная проверка: **2026-08-13**
-Проверенное текущее состояние: **рабочее дерево `dev` поверх `1a198fd`**
+Последняя полная проверка: **2026-08-14**; последний change-aware gate: **2026-08-14**
+Проверенное текущее состояние: **рабочее дерево `dev` поверх `b63a6ba`**
 Последний полный baseline: **`dd3b5c8`** (`dev`, 2026-08-04)
 Стадия: **незавершённый MVP; production readiness не подтверждена**
 
@@ -30,6 +30,11 @@
   active access profile. Fixed или volume calculator использует integer minor units; draft preview
   не пишет БД. Priority, enabled state и extend/replace policy сохраняются, но ни один executor пока
   эти правила не читает и пользовательский access не изменяет.
+- Отдельный `POST /api/webhooks/tribute` реализует observe-only inbox: при настроенном server-only
+  key проверяет raw-body HMAC до strict JSON parsing, 64-KiB limit, 25-часовую freshness с 5-минутным
+  future tolerance и атомарно подавляет exact-body replay. PostgreSQL хранит только нормализованные
+  metadata без raw body/signature/username, общий worker очищает их через 90 дней. Receiver не имеет
+  commerce/user/Remnawave dependency и не выдаёт доступ.
 - Явная открытая/invite-only регистрация: `/api/me` не создаёт полностью неизвестного пользователя
   чтением, но безопасно импортирует exact provider-only Remnawave match; onboarding работает
   одинаково из Mini App и бота.
@@ -91,8 +96,8 @@
   показывает server-side состояние API key, безопасный read-only API check и rule builder для
   донатов, подписок и цифровых товаров. Admin выбирает payment conditions, fixed/volume duration,
   active access profile, extend/replace, priority и enabled state; backend preview показывает
-  результат без save/access side effect. Webhook receiver честно отмечен следующим этапом без
-  публикации несуществующего callback URL.
+  результат без save/access side effect. Observe-only receiver уже существует, но callback URL не
+  публикуется до controlled contract verification и появления безопасного executor.
 - Tribute draft preview проверен через настоящий authenticated FastAPI route точным camelCase
   payload `500 / 3499 / 30`: backend возвращает 4 дня. Ошибки сессии, admin-доступа, валидации и
   временной недоступности получают отдельный безопасный текст без raw diagnostics, а изменение
@@ -193,10 +198,12 @@
 ## Что не завершено или не доказано
 
 - Broadcast пока отображает `coming soon`; отправка рассылки не реализована.
-- Нет checkout, приёма Tribute webhook, обработки/возврата платежей, idempotency/replay защиты,
-  сопоставления события с пользователем и исполнения сохранённого commerce rule: выдачи, замены,
-  продления либо отзыва access profile. Официальный Tribute
-  sandbox/test payment не документирован; текущий API check подтверждает только read-only доступ.
+- Tribute receiver пока не получает реальные deliveries: существующий внешний webhook не изменён,
+  а encoding `trbt-signature` и event-family payload shapes не подтверждены controlled delivery.
+  Exact-body replay закрыт только для observe-only inbox; нет semantic payment idempotency,
+  сопоставления события с пользователем, entitlement ledger/executor, checkout, обработки/возврата
+  платежей, выдачи, замены, продления либо отзыва access profile. Официальный Tribute sandbox/test
+  payment не документирован; API check подтверждает только read-only доступ.
 - Нет production deployment manifests, проверенных production runbooks и production-контура.
 - Нет component tests и integrated fake-backend suite; offline/network-loss поведение проверяется
   только на уровне перехваченных ошибок, а не реальным отключением браузера.
@@ -314,6 +321,9 @@ chrome не возвращается между `focusout` и завершени
 непрерывность lifecycle, loading/Axe/overflow и console/network guards прошли 72/72 сценария на
 430x932 Chromium, 320x568 Chromium, iPhone/WebKit и desktop Chromium; affected light/dark evidence
 просмотрены вручную. Реальный Tribute, webhook и access mutation не вызывались.
+Observe-only Tribute receiver 2026-08-14 добавил защищённый raw-body ingress, минимальный
+PostgreSQL inbox, atomic exact replay и bounded retention. Ни callback, ни реальные deliveries, ни
+commerce/access/provider mutation не включались.
 
 | Область | Команда | Результат |
 |---|---|---|
@@ -373,11 +383,16 @@ chrome не возвращается между `focusout` и завершени
 | Tribute rule editor mobile polish | `PLAYWRIGHT_PORT=5291; scripts/verify.ps1 -Scope Full`; focused Tribute and shared-editor all-project matrices | Full gate: migrations/drift, 344 backend, 53 Remnawave contract, Ruff, frontend lint/typecheck, 36 unit, production build, 68 mobile E2E и docs passed. Tribute 40/40 и Access/keyboard 52/52 прошли на 430x932, 320x568, iPhone/WebKit и desktop. Compact bands, aligned currency/priority, footer без delayed reserved space, сохранённые Add band/Preview taps, keyboard dismissal, save, Axe/overflow/console/network зелёные; light/dark evidence после 1,1 секунды просмотрены вручную |
 | Tribute preview runtime repair | authenticated FastAPI regression; retained-initData unit; `PLAYWRIGHT_PORT=5294; pnpm exec playwright test tests/e2e/tribute.spec.ts --workers=4`; `PLAYWRIGHT_PORT=5295; scripts/verify.ps1 -Scope Full` | Exact production payload возвращает 4 дня; first-read initData regression зелёный. Tribute 44/44 прошли на 430x932, 320x568, iPhone/WebKit и desktop; late preview auth, safe `401` copy, stale-error reset, explicit payment-unit labels, console/network/overflow и визуальный dark error state проверены. Full gate прошёл migrations/drift, 345 backend, 53 Remnawave contract, Ruff, frontend lint/typecheck, 37 unit, production build, 69 mobile E2E и docs. Стандартный dev перезапущен; local/public asset `index-j_XaGRQy.js` совпадает, readiness `200`, public debug `404` |
 | Global mobile input/loading UX | `PLAYWRIGHT_PORT=5314; scripts/verify.ps1 -Scope Changed`; focused all-project Playwright matrix and visual evidence | Changed gate: 293 service-free backend tests, Ruff, 37 frontend unit, lint/typecheck/build, 69 mobile smoke и docs passed. Дополнительно 72/72 affected browser scenarios прошли на 430x932, 320x568, iPhone/WebKit и desktop Chromium. Active-control reveal, deferred footer/tab return, сохранённая button activation, CSS spinner без SVG/backing box, Axe/contrast, overflow, console/network guards зелёные; Tribute Settings и pending Save просмотрены в light/dark |
+| Tribute observe-only webhook inbox | focused HTTP/repository suites; `PLAYWRIGHT_PORT=5321; scripts/verify.ps1 -Scope Full` | 50/50 focused passed. Full gate: one-head, zero/previous-head upgrade, downgrade/re-upgrade/drift, 376 backend, 53 Remnawave contract, Ruff, frontend lint/typecheck, 37 unit, production build, 69 mobile E2E и docs passed. Exact 64-hex signature, BIGINT bounds, body/content/schema/time limits, exact/concurrent replay, normalized-only storage и retention покрыты без реального Tribute или access side effect |
 
 ## Следующее действие
 
-Спроектировать и реализовать Tribute webhook/payment boundary: raw-body HMAC validation,
-freshness/replay/idempotency, durable event model, user matching и явное entitlement mapping для
-подписок, цифровых товаров и донатов до включения callback URL в админском UX.
+До активации Flowvy callback принять штатный тестовый запрос из операторского интерфейса Tribute и
+подтвердить реальный encoding `trbt-signature` и payload shape; для этого не нужен реальный платёж и
+существующий операторский webhook не следует менять дольше самой контролируемой доставки. Затем
+отдельно спроектировать identity reconciliation и
+idempotent entitlement ledger/executor со snapshot rule/profile, absolute target expiry и refund
+compensation. Только после deterministic failure/retry tests показывать callback URL в админском UX
+и планировать переключение Tribute.
 Отдельно остаются безопасный Broadcast, live Remnawave 3.x, Kuma и первый подтверждённый удалённый
 CI run.

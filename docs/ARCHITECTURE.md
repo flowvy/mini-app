@@ -171,9 +171,10 @@ Kuma использует публичный status-page contract. Beszel авт
 redirect/proxy запрет, ограниченное тело и безопасное error mapping. Private Docker/LAN origins
 требуют отдельного точного allow-list для каждого provider.
 
-### Tribute payments administration
+### Tribute payments administration и observe-only inbox
 
-Текущий Tribute slice ограничен admin configuration и проверкой API access. Секрет
+Текущий Tribute slice включает admin configuration, проверку API access и отдельный observe-only
+webhook inbox. Секрет
 `TRIBUTE_API_KEY` хранится только в server environment. Fixed-origin client обращается только к
 `https://tribute.tg/api/v1/products?page=1&size=1`, запрещает redirects/proxy environment,
 ограничивает timeout/body и валидирует минимальную JSON-схему. Ни платеж, ни возврат, ни provider
@@ -194,14 +195,23 @@ calculator payload. Admin-only CRUD повторно проверяет active a
 major currency units, но wire/storage используют integer minor units; floating-point не участвует
 в entitlement calculation.
 
-Webhook URL намеренно отсутствует: receiver, signature/freshness/replay/idempotency, event storage,
-identity reconciliation, entitlement execution и checkout остаются следующим backend/product
-этапом. Существующий внешний receiver оператор должен оставить без изменений.
+`POST /api/webhooks/tribute` проверяет HMAC-SHA256 над ограниченным raw body до strict JSON parsing,
+freshness и timestamp consistency. PostgreSQL `tribute_webhook_events` атомарно подавляет точные
+повторы по SHA-256 body и хранит только нормализованные metadata без raw payload/signature/username;
+неизвестный безопасный event записывается как `ignored`. Общий retention worker пакетно удаляет
+inbox после server-configured 90 дней. Service graph receiver содержит только dedicated repository:
+он не может обратиться к commerce, user, registration или Remnawave service.
+
+Callback URL в UI намеренно отсутствует. Документация Tribute не фиксирует encoding подписи и
+универсальную semantic event identity, поэтому перед переключением существующего внешнего receiver
+нужна controlled delivery. Identity reconciliation, entitlement ledger/executor, refund
+compensation и checkout остаются следующим backend/product этапом.
 
 ### Webhooks и Telegram bot
 
 Remnawave webhook доступен только при непустом shared secret. Валидное событие сохраняется в
-PostgreSQL и инвалидирует dashboard/Pulse cache по scope/event. Signature, freshness, replay,
+PostgreSQL и инвалидирует dashboard/Pulse cache по scope/event. Tribute webhook использует отдельный
+observe-only inbox и не имеет side effects. Для обоих contracts signature, freshness, replay,
 idempotency, payload size и retention проверяются до/после сохранения в соответствующей границе.
 
 Aiogram dispatcher содержит обычный `/start` flow, ручной ввод invite code и отправку welcome

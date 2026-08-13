@@ -45,16 +45,23 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
   наличия credential. Интеграция использует отдельного пользователя с ролью `readonly`.
 - Tribute API key хранится только в server environment; frontend получает лишь признак наличия.
   Read-only check использует fixed HTTPS origin, не следует redirects, не доверяет proxy environment,
-  ограничивает тело и не возвращает upstream body. Тот же key по контракту Tribute подписывает
-  webhook, поэтому будущий receiver нельзя включать без отдельной replay/idempotency и rotation
-  модели; текущий UI не публикует callback URL.
+  ограничивает тело и не возвращает upstream body. Observe-only `/api/webhooks/tribute` закрыт при
+  пустом key, проверяет `trbt-signature` над ограниченным raw body до JSON parse, временное окно,
+  strict envelope и exact replay. Текущий UI не публикует callback URL; документированный Tribute
+  contract не определяет encoding подписи, поэтому реальная controlled delivery обязательна до
+  переключения операторского webhook.
 - Commerce-rule CRUD требует актуального active admin и повторно проверяет active access profile
   перед каждым save. Draft preview не пишет БД и не вызывает provider/user mutations. Money приходит
   и хранится как bounded integer minor units; bands, currency, commerce/payment shape, duration и
   priority schema-validated, а calculator JSONB никогда не принимается напрямую в ORM.
-- Сохранённое правило не является разрешением выдать доступ: webhook receiver/executor отсутствует.
-  Будущий executor должен отдельно аутентифицировать raw event, reconcile identity, сделать
-  idempotent ledger write и только затем применить snapshot rule/profile.
+- Сохранённое правило и запись Tribute inbox не являются разрешением выдать доступ: receiver
+  работает observe-only, а executor отсутствует. Будущий executor должен отдельно reconcile
+  identity, сформировать semantic idempotency key, сделать ledger write и только затем применить
+  snapshot rule/profile.
+- Успешная аутентификация Tribute webhook разрешает только минимальную durable запись и exact-body
+  дедупликацию, но не user/access/provider mutation. Callback URL нельзя показывать оператору до
+  подтверждения реального encoding подписи и event-family payload shapes; entitlement execution
+  требует отдельного ledger и повторной проверки identity/rule/profile.
 - Upload ограничивается при streaming, до полного чтения в память; type/size проверяются server-side.
 - Unknown provider status/enum обрабатывается безопасно, а не считается активным.
 - Все внешние calls имеют finite timeout, bounded concurrency и безопасное error mapping.

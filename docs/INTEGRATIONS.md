@@ -402,7 +402,8 @@ Hub URL и credentials в артефакты/логи не выводились.
 
 ## Tribute: первый платёжный provider
 
-Текущий реализованный scope — admin configuration и безопасная проверка server-side API key.
+Текущий реализованный scope — admin configuration, безопасная проверка server-side API key и
+observe-only webhook inbox. Ни один из этих flows не исполняет commerce rule и не меняет доступ.
 Секрет задаётся как `TRIBUTE_API_KEY`, хранится в environment и никогда не возвращается frontend,
 БД или Redis. `POST /api/admin/settings/tribute/test` через fixed-origin client выполняет один
 `GET https://tribute.tg/api/v1/products?page=1&size=1`. Это read-only API check, а не тестовый
@@ -433,18 +434,40 @@ Automation rule состоит из source match, duration calculator и interna
 `3500 RUB / 365 days` дают 30, 60, 365 и 417 дней для 500, 1000, 3500 и 4000 RUB, но это только
 admin-authored/test fixture. Repository не seed-ит такие суммы.
 
-На этом этапе Flowvy не публикует callback URL и прямо помечает receiver как следующий этап.
-Webhook contract использует `trbt-signature`: HMAC-SHA256 от raw body тем же API key. Provider
-документирует повторные доставки, но не даёт event ID для subscription/donation и не описывает
-encoding подписи, key scopes/rotation или отдельный timestamp header. Поэтому receiver нельзя
-добавлять без отдельного решения по raw-byte verification, idempotency, retry/freshness, PII
-retention и entitlement reconciliation. Для digital purchase явным idempotency identity является
-`purchase_id`; для остальных событий canonical dedupe key остаётся неизвестным.
+Flowvy принимает подписанный envelope на `POST /api/webhooks/tribute`, но намеренно не публикует
+этот callback URL в UI. Endpoint доступен только при непустом `TRIBUTE_API_KEY`, требует точный
+`application/json` и `trbt-signature`, ограничивает raw body 64 KiB, проверяет подпись до JSON parse,
+принимает `sent_at` не старше 25 часов с допуском 5 минут в будущее и строго валидирует
+`name/created_at/sent_at/payload`. Webhook contract использует HMAC-SHA256 от raw body тем же API
+key. Актуальный
+официальный Markdown 2026-08-14 документирует exponential retries примерно 24 часа:
+5m/15m/30m/1h/2h/4h/8h/8h, но не даёт event ID для subscription/donation и не описывает
+encoding подписи, key scopes/rotation или отдельный timestamp header. Текущий verifier принимает
+64-символьный hexadecimal SHA-256 digest без учёта регистра. Это необходимо подтвердить реальной
+контролируемой доставкой или официальным уточнением до переключения callback; наличие endpoint само
+по себе не является разрешением менять действующий webhook.
 
-У Tribute не найден официальный sandbox, test hostname/credential, health endpoint или send-test-
-webhook flow. OpenAPI указывает только production origin. Автотесты используют MockTransport и
-Playwright fixtures; реальный key или self-payment не нужны и не допускаются как smoke. Live API
-check может запустить только оператор, который явно настроил server environment.
+PostgreSQL inbox хранит SHA-256 точного raw body как `delivery_key`, event family/status, provider
+timestamps и только допустимые нормализованные Telegram/payment/item identifiers, сумму в integer
+minor units, валюту и payment mode. Raw body, signature и username не сохраняются. Одинаковые и
+конкурентные exact deliveries атомарно подавляются уникальным DB constraint; поддерживаемые события
+получают статус `observed`, неизвестные безопасные event names — `ignored`. Retention удаляет записи
+пакетно через 90 дней. Параметры границы задаются server-only переменными
+`TRIBUTE_WEBHOOK_MAX_AGE_SECONDS`, `TRIBUTE_WEBHOOK_FUTURE_TOLERANCE_SECONDS`,
+`TRIBUTE_WEBHOOK_MAX_BODY_BYTES` и `TRIBUTE_WEBHOOK_RETENTION_DAYS`.
+
+Exact-body dedupe не является semantic payment idempotency: повторно сформированный provider event
+может иметь другой body, а один transaction/purchase identifier ещё не описан для всех event family.
+Поэтому inbox не зависит от commerce/user/Remnawave services и не выполняет entitlement side
+effect. Identity reconciliation, semantic idempotency key для каждого event family, rule/profile
+snapshot, абсолютный target expiry и refund compensation остаются отдельным executor slice.
+
+У Tribute не найден официальный sandbox, test hostname/credential или health endpoint. При этом
+операторский интерфейс Tribute содержит действие отправки тестового webhook-запроса; его фактические
+signature encoding и payload shape ещё не приняты Flowvy и потому не считаются частью доказанного
+контракта. OpenAPI указывает только production origin. Автотесты используют MockTransport и
+Playwright fixtures; реальный платёж или self-payment не нужны как smoke. Live API check и штатную
+тестовую доставку может инициировать только оператор явно настроенной интеграции.
 
 Provider-neutral rule design дополнительно сверялся 2026-08-13 с primary Stripe pricing/
 entitlements документацией: provider prices не являются internal entitlements, а volume и graduated
@@ -455,8 +478,8 @@ tiers должны различаться явно. Flowvy реализует т
 - https://docs.stripe.com/subscriptions/pricing-models/tiered-pricing
 - https://docs.stripe.com/billing/entitlements
 
-Primary evidence, проверено 2026-08-13: русская Wiki revision `CMk0YDiolSYBsE89s7Fs`, generated
-2026-08-04; OpenAPI `3.1.0`, Tribute API `1.0.0`, единственный server
+Primary evidence, повторно проверено 2026-08-14: русская Wiki revision `CMk0YDiolSYBsE89s7Fs`,
+generated 2026-08-04; ранее прочитанный OpenAPI `3.1.0`, Tribute API `1.0.0`, единственный server
 `https://tribute.tg/api/v1`.
 
 - [Tribute API authorization](https://wiki.tribute.tg/ru/api-dokumentaciya) — создание key и
@@ -472,8 +495,9 @@ Primary evidence, проверено 2026-08-13: русская Wiki revision `C
 - [Donation request](https://wiki.tribute.tg/ru/for-content-creators/donations/donation-request) и
   [regular donations](https://wiki.tribute.tg/ru/for-content-creators/donations/regulyarnye-donaty)
   — one-off/recurring/anonymous behavior; публичного donation catalog endpoint нет.
-- [Canonical Russian OpenAPI](https://tribute.tg/api/v1/openapi/ru) — текущие required/optional
-  payload fields и enum differences между catalog и webhook.
+- [Canonical Russian OpenAPI](https://tribute.tg/api/v1/openapi/ru) — ранее зафиксированные
+  required/optional поля и enum differences; 2026-08-14 endpoint дважды не отдал полный документ
+  за 60/120 секунд, поэтому неизвестные webhook payload fields не стали обязательными.
 
 ## Правила изменения контракта
 

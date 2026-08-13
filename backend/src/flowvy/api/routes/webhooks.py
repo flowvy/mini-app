@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime
-import hashlib
 import json
 import logging
 
@@ -11,31 +10,15 @@ from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Request, Response, status
 from pydantic import ValidationError
 
+from flowvy.api.webhook_utils import read_limited_body
 from flowvy.config import Settings
 from flowvy.schemas.webhooks import WebhookPayload
 from flowvy.services.webhook_handler import WebhookHandlerService
+from flowvy.services.webhook_security import sha256_hex
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["webhooks"], route_class=DishkaRoute)
-
-
-async def _read_limited_body(request: Request, limit: int) -> bytes | None:
-    """Read at most ``limit`` bytes, returning none as soon as it is exceeded."""
-    content_length = request.headers.get("content-length")
-    if content_length:
-        try:
-            if int(content_length) > limit:
-                return None
-        except ValueError:
-            return None
-
-    body = bytearray()
-    async for chunk in request.stream():
-        if len(chunk) > limit - len(body):
-            return None
-        body.extend(chunk)
-    return bytes(body)
 
 
 @router.post(
@@ -57,7 +40,7 @@ async def receive_remnawave_webhook(
     if not signature or not provider_timestamp:
         return Response(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    body = await _read_limited_body(
+    body = await read_limited_body(
         request,
         settings.remnawave_webhook_max_body_bytes,
     )
@@ -96,7 +79,7 @@ async def receive_remnawave_webhook(
         logger.warning("Webhook timestamp is outside the accepted freshness window")
         return Response(status_code=status.HTTP_401_UNAUTHORIZED)
 
-    delivery_key = hashlib.sha256(body).hexdigest()
+    delivery_key = sha256_hex(body)
     await handler.handle_event(payload, delivery_key)
 
     return Response(

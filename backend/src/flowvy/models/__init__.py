@@ -7,6 +7,7 @@ from flowvy.models.commerce_rule import CommerceRule
 from flowvy.models.invite import Invite
 from flowvy.models.provider_settings import ProviderSettings
 from flowvy.models.subscription import Subscription, SubscriptionStatus
+from flowvy.models.tribute_webhook_event import TributeWebhookEvent
 from flowvy.models.user import User, UserRole
 from flowvy.models.webhook_event import WebhookEvent
 
@@ -20,6 +21,7 @@ __all__ = [
     "ProviderSettings",
     "Subscription",
     "SubscriptionStatus",
+    "TributeWebhookEvent",
     "User",
     "UserRole",
     "WebhookEvent",

@@ -40,7 +40,11 @@ Kuma/Beszel tests подменяют resolver и HTTPX transport, проверя
 Beszel fixtures фиксируют v0.18.7 auth/systems/system_stats contracts, pagination limits,
 credential isolation и 1m/20m Pulse mapping. Tribute fixtures проверяют fixed-origin read-only
 products request, server-only key, auth/non-2xx, timeout, oversized/malformed/schema-drift response
-без сети. Commerce fixtures отдельно проверяют conditional rule validation, active-profile gate,
+без сети. Отдельный Tribute webhook suite строит HMAC локальным placeholder key и проверяет
+fail-closed missing key/signature, content type, raw/declared size, strict envelope, timestamp window,
+malformed normalized fields, ignored unknown event, exact replay, конкурентный DB duplicate и
+retention без raw payload/signature/username или внешних side effects. Commerce fixtures отдельно
+проверяют conditional rule validation, active-profile gate,
 CRUD, no-match/fixed/volume preview и целочисленные 500/1000/3500/4000 RUB boundaries без webhook
 или access side effect. Media tests сканируют ложный declared size и действительно читают aiogram `InputFile`
 chunks. Remnawave tests
