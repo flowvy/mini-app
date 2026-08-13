@@ -1,54 +1,29 @@
 /** Admin Settings page — main list, sub-screens are separate routes. */
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { Activity, MessageSquareText, Palette, ShieldCheck } from "lucide-react";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
-import { ErrorState } from "../../components/ui/error-state.tsx";
 import {
-	FormRow,
-	FormRowSeparator,
-	FormSectionCard,
-	FormSectionHeader,
-} from "../../components/ui/form-section.tsx";
+	SettingsDivider,
+	SettingsFactRow,
+	SettingsNavRow,
+	SettingsSection,
+} from "../../components/admin/settings-surface.tsx";
+import { ErrorState } from "../../components/ui/error-state.tsx";
 import { InlineFeedback } from "../../components/ui/inline-feedback.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { SegmentedControl } from "../../components/ui/segmented-control.tsx";
+import {
+	BeszelIcon,
+	FlowvyIcon,
+	RemnawaveIcon,
+	UptimeKumaIcon,
+} from "../../components/ui/service-brand-icon.tsx";
 import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import { useRegistrationSettings } from "../../hooks/use-registration-admin.ts";
 import { formatMissing, formatVersion } from "../../lib/format.ts";
 import type { PulseProvider } from "../../types/admin-settings.ts";
 import styles from "./settings.module.css";
-
-interface SettingsToolRowProps {
-	label: string;
-	desc?: string;
-	value?: string;
-	valuePositive?: boolean;
-	onClick: () => void;
-}
-
-const SettingsToolRow: FC<SettingsToolRowProps> = ({
-	label,
-	desc,
-	value,
-	valuePositive,
-	onClick,
-}) => (
-	<button type="button" className={styles.toolRow} onClick={onClick}>
-		<div className={styles.toolRowLeft}>
-			<span className={styles.toolRowLabel}>{label}</span>
-			{desc && <span className={styles.toolRowDesc}>{desc}</span>}
-		</div>
-		<span className={styles.toolRowRight}>
-			{value && (
-				<span className={valuePositive ? styles.rowValuePositive : styles.rowValue}>{value}</span>
-			)}
-			<span className={styles.toolRowChevron}>
-				<ChevronRight size={14} />
-			</span>
-		</span>
-	</button>
-);
 
 export const AdminSettings: FC = () => {
 	const { t } = useTranslation();
@@ -90,12 +65,16 @@ export const AdminSettings: FC = () => {
 	return (
 		<div className={styles.page}>
 			{updateMutation.isError && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
-			<FormSectionHeader>{t("settings.integrations")}</FormSectionHeader>
-			<FormSectionCard>
+			<SettingsSection title={t("settings.integrations")}>
 				<div className={styles.providerRow}>
-					<div className={styles.providerHeading}>
-						<span className={styles.providerLabel}>{t("settings.pulseProvider")}</span>
-						<span className={styles.providerDescription}>{t("settings.integrationsHint")}</span>
+					<div className={styles.providerTitleRow}>
+						<span className={styles.providerIcon} data-settings-icon="pulse" aria-hidden="true">
+							<Activity size={16} strokeWidth={1.8} />
+						</span>
+						<div className={styles.providerHeading}>
+							<span className={styles.providerLabel}>{t("settings.pulseProvider")}</span>
+							<span className={styles.providerDescription}>{t("settings.integrationsHint")}</span>
+						</div>
 					</div>
 					<SegmentedControl
 						options={providerOptions}
@@ -105,10 +84,11 @@ export const AdminSettings: FC = () => {
 						disabled={updateMutation.isPending}
 					/>
 				</div>
-				<FormRowSeparator />
-				<SettingsToolRow
+				<SettingsDivider />
+				<SettingsNavRow
+					icon={<UptimeKumaIcon size={17} />}
 					label={t("settings.uptimeKuma")}
-					desc={t("settings.kuma.configureDesc")}
+					description={t("settings.kuma.configureDesc")}
 					value={
 						settings.pulseProvider === "kuma"
 							? t("settings.active")
@@ -116,13 +96,14 @@ export const AdminSettings: FC = () => {
 								? t("settings.configured")
 								: undefined
 					}
-					valuePositive={kumaConfigured}
+					tone={kumaConfigured ? "positive" : "default"}
 					onClick={() => navigate({ to: "/admin/settings/kuma" })}
 				/>
-				<FormRowSeparator />
-				<SettingsToolRow
+				<SettingsDivider />
+				<SettingsNavRow
+					icon={<BeszelIcon size={17} />}
 					label={t("settings.beszel.title")}
-					desc={t("settings.beszel.configureDesc")}
+					description={t("settings.beszel.configureDesc")}
 					value={
 						settings.pulseProvider === "beszel"
 							? t("settings.active")
@@ -130,23 +111,24 @@ export const AdminSettings: FC = () => {
 								? t("settings.configured")
 								: undefined
 					}
-					valuePositive={beszelConfigured}
+					tone={beszelConfigured ? "positive" : "default"}
 					onClick={() => navigate({ to: "/admin/settings/beszel" })}
 				/>
-			</FormSectionCard>
+			</SettingsSection>
 
-			<FormSectionHeader>{t("settings.miniApp.section")}</FormSectionHeader>
-			<FormSectionCard>
-				<SettingsToolRow
+			<SettingsSection title={t("settings.miniApp.section")}>
+				<SettingsNavRow
+					icon={<Palette size={17} strokeWidth={1.8} aria-hidden="true" />}
 					label={t("settings.brandingRow")}
-					desc={t("settings.brandingRowDesc")}
+					description={t("settings.brandingRowDesc")}
 					value={settings.appName || undefined}
 					onClick={() => navigate({ to: "/admin/settings/branding" })}
 				/>
-				<FormRowSeparator />
-				<SettingsToolRow
+				<SettingsDivider />
+				<SettingsNavRow
+					icon={<ShieldCheck size={17} strokeWidth={1.8} aria-hidden="true" />}
 					label={t("access.settingsRow")}
-					desc={t("access.settingsRowDesc")}
+					description={t("access.settingsRowDesc")}
 					value={
 						registration.data?.registrationMode === "invite_only"
 							? t("access.inviteOnly")
@@ -156,40 +138,31 @@ export const AdminSettings: FC = () => {
 					}
 					onClick={() => navigate({ to: "/admin/settings/access" })}
 				/>
-				<FormRowSeparator />
-				<SettingsToolRow
+				<SettingsDivider />
+				<SettingsNavRow
+					icon={<MessageSquareText size={17} strokeWidth={1.8} aria-hidden="true" />}
 					label={t("settings.miniApp.welcomeRow")}
-					desc={t("settings.miniApp.welcomeRowDesc")}
+					description={t("settings.miniApp.welcomeRowDesc")}
 					onClick={() => navigate({ to: "/admin/settings/welcome" })}
 				/>
-			</FormSectionCard>
+			</SettingsSection>
 
-			<FormSectionHeader>{t("settings.system")}</FormSectionHeader>
-			<FormSectionCard>
-				<FormRow label={t("settings.remnawave")}>
-					<span
-						style={{
-							fontSize: 11,
-							color: "var(--v2-text-positive)",
-							fontFamily: "var(--font-mono)",
-						}}
-					>
-						{settings.remnawaveVersion ? formatVersion(settings.remnawaveVersion) : formatMissing()}
-					</span>
-				</FormRow>
-				<FormRowSeparator />
-				<FormRow label={t("settings.flowvyVersion")}>
-					<span
-						style={{
-							fontSize: 12,
-							color: "var(--v2-text-secondary)",
-							fontFamily: "var(--font-mono)",
-						}}
-					>
-						{formatVersion(settings.flowvyVersion)}
-					</span>
-				</FormRow>
-			</FormSectionCard>
+			<SettingsSection title={t("settings.system")}>
+				<SettingsFactRow
+					icon={<RemnawaveIcon size={16} />}
+					label={t("settings.remnawave")}
+					value={
+						settings.remnawaveVersion ? formatVersion(settings.remnawaveVersion) : formatMissing()
+					}
+					tone={settings.remnawaveVersion ? "positive" : "default"}
+				/>
+				<SettingsDivider />
+				<SettingsFactRow
+					icon={<FlowvyIcon size={16} />}
+					label={t("settings.flowvyVersion")}
+					value={formatVersion(settings.flowvyVersion)}
+				/>
+			</SettingsSection>
 		</div>
 	);
 };

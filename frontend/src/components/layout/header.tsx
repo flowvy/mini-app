@@ -2,41 +2,60 @@
  * App header — shows page title (or logo + app name on home) and admin/user mode toggle.
  */
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import type { LucideIcon } from "lucide-react";
 import {
 	Activity,
 	HelpCircle,
 	Megaphone,
+	MessageSquareText,
+	Palette,
 	Settings,
+	ShieldCheck,
 	Smartphone,
 	User,
 	UserStar,
 	Users,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { type AppMode, useMode } from "../../contexts/mode-context.tsx";
 import { hapticSelection } from "../../lib/haptics.ts";
 import { useCurrentUser } from "../auth-guard.tsx";
 import { AppLogo } from "../ui/app-logo.tsx";
+import { BeszelIcon, UptimeKumaIcon } from "../ui/service-brand-icon.tsx";
 import styles from "./header.module.css";
 
 interface PageMeta {
 	title: string;
-	icon: LucideIcon;
+	icon: ReactNode;
 }
 
 const PAGE_META: Record<string, PageMeta> = {
-	"/pulse": { title: "common.header.pulse", icon: Activity },
-	"/devices": { title: "common.header.devices", icon: Smartphone },
-	"/support": { title: "common.header.support", icon: HelpCircle },
-	"/admin/users": { title: "common.header.users", icon: Users },
-	"/admin/broadcast": { title: "common.header.broadcast", icon: Megaphone },
-	"/admin/settings": { title: "common.header.settings", icon: Settings },
-	"/admin/settings/kuma": { title: "common.header.settings", icon: Settings },
-	"/admin/settings/beszel": { title: "common.header.settings", icon: Settings },
-	"/admin/settings/access": { title: "common.header.settings", icon: Settings },
-	"/admin/settings/branding": { title: "common.header.settings", icon: Settings },
-	"/admin/settings/welcome": { title: "common.header.settings", icon: Settings },
+	"/pulse": { title: "common.header.pulse", icon: <Activity size={16} /> },
+	"/devices": { title: "common.header.devices", icon: <Smartphone size={16} /> },
+	"/support": { title: "common.header.support", icon: <HelpCircle size={16} /> },
+	"/admin/users": { title: "common.header.users", icon: <Users size={16} /> },
+	"/admin/broadcast": { title: "common.header.broadcast", icon: <Megaphone size={16} /> },
+	"/admin/settings": { title: "common.header.settings", icon: <Settings size={16} /> },
+	"/admin/settings/kuma": {
+		title: "common.header.settingsKuma",
+		icon: <UptimeKumaIcon size={16} />,
+	},
+	"/admin/settings/beszel": {
+		title: "common.header.settingsBeszel",
+		icon: <BeszelIcon size={16} />,
+	},
+	"/admin/settings/access": {
+		title: "common.header.settingsAccess",
+		icon: <ShieldCheck size={16} />,
+	},
+	"/admin/settings/branding": {
+		title: "common.header.settingsIdentity",
+		icon: <Palette size={16} />,
+	},
+	"/admin/settings/welcome": {
+		title: "common.header.settingsWelcome",
+		icon: <MessageSquareText size={16} />,
+	},
 };
 
 export function Header() {
@@ -64,7 +83,7 @@ export function Header() {
 			<header className={styles.header}>
 				{meta ? (
 					<div className={styles.titleGroup}>
-						<meta.icon size={16} className={styles.titleIcon} />
+						<span className={styles.titleIcon}>{meta.icon}</span>
 						<span className={styles.title}>{t(meta.title)}</span>
 					</div>
 				) : (

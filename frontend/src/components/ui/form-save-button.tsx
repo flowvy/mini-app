@@ -14,7 +14,13 @@ export const FormSaveButton: FC<FormSaveButtonProps> = ({ dirty, loading, onSave
 
 	return (
 		<div className={styles.wrapper}>
-			<button type="button" className={styles.btn} disabled={!dirty || loading} onClick={onSave}>
+			<button
+				type="button"
+				className={styles.btn}
+				data-active={dirty ? "" : undefined}
+				disabled={!dirty || loading}
+				onClick={onSave}
+			>
 				{loading ? <SpinnerIcon size={14} /> : t("common.save")}
 			</button>
 		</div>

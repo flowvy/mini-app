@@ -1,11 +1,15 @@
 /* ── Welcome Media Row ── */
 
 .row {
-	display: flex;
+	display: grid;
+	grid-template-columns: 18px minmax(0, 1fr) auto;
 	align-items: center;
 	gap: 10px;
-	padding: 11px 14px;
-	min-height: 44px;
+	min-height: 56px;
+	padding: 9px 10px;
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-sm);
+	background: var(--v2-bg-secondary);
 }
 
 .icon {
@@ -30,8 +34,13 @@
 }
 
 .fileType {
-	font-size: 11px;
+	display: -webkit-box;
+	overflow: hidden;
+	font-size: 10.5px;
+	line-height: 1.35;
 	color: var(--v2-text-secondary);
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
 }
 
 .actions {
@@ -43,4 +52,15 @@
 
 .hiddenInput {
 	display: none;
+}
+
+@media (max-width: 350px) {
+	.row {
+		gap: 8px;
+		padding-inline: 9px;
+	}
+
+	.actions {
+		gap: 4px;
+	}
 }

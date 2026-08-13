@@ -7,15 +7,9 @@ import ss from "../../pages/admin/settings.module.css";
 import type { AdminSettings } from "../../types/admin-settings.ts";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { FormSaveButton } from "../ui/form-save-button.tsx";
-import {
-	FormInlineInput,
-	FormRow,
-	FormRowSeparator,
-	FormSectionCard,
-	FormSectionFooter,
-	FormSectionHeader,
-} from "../ui/form-section.tsx";
+import { FormField, FormFieldInput } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
+import { SettingsFields, SettingsPanel } from "./settings-surface.tsx";
 
 interface BrandingConfigProps {
 	settings: AdminSettings;
@@ -59,37 +53,44 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings }) => {
 	};
 
 	return (
-		<div className={ss.page}>
+		<div className={ss.formPage}>
 			{saveFailed && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
-			<FormSectionHeader>{t("settings.branding.identitySection")}</FormSectionHeader>
-			<FormSectionCard>
-				<FormRow label={t("settings.branding.appNameLabel")} htmlFor="branding-app-name">
-					<FormInlineInput
-						id="branding-app-name"
-						value={appName}
-						onChange={(v) => {
-							setAppName(v);
-							setSaved(false);
-						}}
-						placeholder={t("settings.branding.appNamePlaceholder")}
-					/>
-				</FormRow>
-				<FormRowSeparator />
-				<FormRow label={t("settings.branding.logoUrlLabel")} htmlFor="branding-logo-url">
-					<FormInlineInput
-						id="branding-logo-url"
-						value={logoUrl}
-						onChange={(v) => {
-							setLogoUrl(v);
-							setSaved(false);
-						}}
-						placeholder={t("settings.branding.logoUrlPlaceholder")}
-						mono
-						type="url"
-					/>
-				</FormRow>
-			</FormSectionCard>
-			<FormSectionFooter>{t("settings.branding.identityHint")}</FormSectionFooter>
+			<SettingsPanel title={t("settings.branding.identitySection")}>
+				<SettingsFields>
+					<FormField label={t("settings.branding.appNameLabel")} htmlFor="branding-app-name">
+						<FormFieldInput
+							id="branding-app-name"
+							value={appName}
+							onChange={(event) => {
+								setAppName(event.target.value);
+								setSaved(false);
+							}}
+							placeholder={t("settings.branding.appNamePlaceholder")}
+							maxLength={80}
+						/>
+					</FormField>
+					<FormField
+						label={t("settings.branding.logoUrlLabel")}
+						htmlFor="branding-logo-url"
+						hint={t("settings.branding.identityHint")}
+					>
+						<FormFieldInput
+							id="branding-logo-url"
+							type="url"
+							inputMode="url"
+							value={logoUrl}
+							onChange={(event) => {
+								setLogoUrl(event.target.value);
+								setSaved(false);
+							}}
+							placeholder={t("settings.branding.logoUrlPlaceholder")}
+							autoCapitalize="none"
+							autoCorrect="off"
+							spellCheck={false}
+						/>
+					</FormField>
+				</SettingsFields>
+			</SettingsPanel>
 
 			<FormSaveButton
 				dirty={dirty && !saved}

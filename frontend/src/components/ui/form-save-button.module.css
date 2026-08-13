@@ -1,7 +1,7 @@
 /* ── Full-width Save Button ── */
 
 .wrapper {
-	margin-top: var(--layout-section-gap);
+	display: flex;
 }
 
 .btn {
@@ -9,25 +9,35 @@
 	align-items: center;
 	justify-content: center;
 	width: 100%;
-	padding: 13px 16px;
-	border: none;
+	min-height: 46px;
+	padding: 12px 16px;
+	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-md);
-	background: var(--v2-bg-primary-inverted);
-	color: var(--v2-text-primary-inverted);
+	background: var(--v2-bg-primary);
+	color: var(--v2-text-secondary);
 	font-size: 14px;
 	font-weight: 600;
 	font-family: inherit;
 	cursor: pointer;
-	transition: opacity var(--duration-base);
+	box-shadow: 0 1px 0 color-mix(in srgb, var(--v2-border-tertiary) 42%, transparent);
+	transition: opacity var(--duration-base), background-color var(--duration-base), color
+		var(--duration-base), border-color var(--duration-base);
+}
+
+.btn[data-active] {
+	border-color: var(--v2-bg-primary-inverted);
+	background: var(--v2-bg-primary-inverted);
+	color: var(--v2-text-primary-inverted);
+	box-shadow: none;
 }
 
 .btn:disabled {
-	opacity: 0.4;
+	opacity: 1;
 	cursor: default;
 }
 
 @media (hover: hover) and (pointer: fine) {
-	.btn:hover:not(:disabled) {
+	.btn[data-active]:hover:not(:disabled) {
 		opacity: 0.85;
 	}
 }

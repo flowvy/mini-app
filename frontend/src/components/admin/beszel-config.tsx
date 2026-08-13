@@ -8,16 +8,14 @@ import type { AdminSettings } from "../../types/admin-settings.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { FormSaveButton } from "../ui/form-save-button.tsx";
-import {
-	FormInlineInput,
-	FormRow,
-	FormRowSeparator,
-	FormSectionCard,
-	FormSectionFooter,
-	FormSectionHeader,
-} from "../ui/form-section.tsx";
+import { FormField, FormFieldInput } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
-import styles from "./provider-config.module.css";
+import {
+	SettingsDivider,
+	SettingsFields,
+	SettingsPanel,
+	SettingsStatusRow,
+} from "./settings-surface.tsx";
 
 interface BeszelConfigProps {
 	settings: AdminSettings;
@@ -51,66 +49,67 @@ export const BeszelConfig: FC<BeszelConfigProps> = ({ settings }) => {
 	};
 
 	const connection = testMutation.data;
-	const connectionColor = connection?.ok
-		? "var(--v2-text-positive)"
-		: connection?.error
-			? "var(--v2-text-negative)"
-			: "var(--v2-text-secondary)";
 	const connectionText = connection?.ok
 		? t("settings.beszel.connected")
 		: connection?.error
 			? t("settings.beszel.testError")
 			: t("settings.beszel.notTested");
+	const connectionTone = connection?.ok ? "positive" : connection?.error ? "negative" : "default";
 
 	return (
-		<div className={ss.page}>
+		<div className={ss.formPage}>
 			{saveFailed && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
-			<FormSectionHeader>{t("settings.beszel.connectionSection")}</FormSectionHeader>
-			<FormSectionCard>
-				<FormRow label={t("settings.beszel.urlLabel")}>
-					<FormInlineInput
-						value={url}
-						onChange={(value) => {
-							setUrl(value);
-							setSaved(false);
-							testMutation.reset();
-						}}
-						placeholder={t("settings.beszel.urlPlaceholder")}
-						mono
-						type="url"
-					/>
-				</FormRow>
-				<FormRowSeparator />
-				<FormRow label={t("settings.beszel.credentialsLabel")}>
-					<span
-						className={styles.statusText}
-						style={{
-							color: settings.beszelCredentialsConfigured
-								? "var(--v2-text-positive)"
-								: "var(--v2-text-negative)",
-						}}
+			<SettingsPanel title={t("settings.beszel.connectionSection")}>
+				<SettingsFields>
+					<FormField
+						label={t("settings.beszel.urlLabel")}
+						htmlFor="beszel-url"
+						hint={t("settings.beszel.connectionHint")}
 					>
-						{settings.beszelCredentialsConfigured
+						<FormFieldInput
+							id="beszel-url"
+							type="url"
+							inputMode="url"
+							value={url}
+							onChange={(event) => {
+								setUrl(event.target.value);
+								setSaved(false);
+								testMutation.reset();
+							}}
+							placeholder={t("settings.beszel.urlPlaceholder")}
+							autoCapitalize="none"
+							autoCorrect="off"
+							spellCheck={false}
+						/>
+					</FormField>
+				</SettingsFields>
+				<SettingsDivider />
+				<SettingsStatusRow
+					label={t("settings.beszel.credentialsLabel")}
+					status={
+						settings.beszelCredentialsConfigured
 							? t("settings.beszel.credentialsConfigured")
-							: t("settings.beszel.credentialsMissing")}
-					</span>
-				</FormRow>
-				<FormRowSeparator />
-				<FormRow label={t("settings.beszel.statusLabel")}>
-					<span className={styles.statusText} style={{ color: connectionColor }}>
-						{connectionText}
-					</span>
-					<ActionBtn
-						onClick={() => testMutation.mutate({ url })}
-						loading={testMutation.isPending}
-						variant="action"
-						size="sm"
-					>
-						{t("settings.beszel.test")}
-					</ActionBtn>
-				</FormRow>
-			</FormSectionCard>
-			<FormSectionFooter>{t("settings.beszel.connectionHint")}</FormSectionFooter>
+							: t("settings.beszel.credentialsMissing")
+					}
+					tone={settings.beszelCredentialsConfigured ? "positive" : "negative"}
+				/>
+				<SettingsDivider />
+				<SettingsStatusRow
+					label={t("settings.beszel.statusLabel")}
+					status={connectionText}
+					tone={connectionTone}
+					action={
+						<ActionBtn
+							onClick={() => testMutation.mutate({ url })}
+							loading={testMutation.isPending}
+							variant="action"
+							size="md"
+						>
+							{t("settings.beszel.test")}
+						</ActionBtn>
+					}
+				/>
+			</SettingsPanel>
 			{testMutation.isError && <InlineFeedback>{t("settings.beszel.testError")}</InlineFeedback>}
 
 			<FormSaveButton

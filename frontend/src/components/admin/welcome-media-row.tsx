@@ -10,6 +10,7 @@ const ACCEPT = ".jpg,.jpeg,.png,.webp,.gif,.mp4";
 interface WelcomeMediaRowProps {
 	fileName: string;
 	mediaType: string;
+	description: string;
 	isDefault: boolean;
 	uploading: boolean;
 	onPickFile: (file: File) => void;
@@ -19,6 +20,7 @@ interface WelcomeMediaRowProps {
 export const WelcomeMediaRow: FC<WelcomeMediaRowProps> = ({
 	fileName,
 	mediaType,
+	description,
 	isDefault,
 	uploading,
 	onPickFile,
@@ -41,11 +43,7 @@ export const WelcomeMediaRow: FC<WelcomeMediaRowProps> = ({
 				<MediaIcon size={16} className={ms.icon} />
 				<div className={ms.info}>
 					<span className={ms.fileName}>{fileName}</span>
-					<span className={ms.fileType}>
-						{mediaType === "photo"
-							? t("settings.welcome.mediaType.photo")
-							: t("settings.welcome.mediaType.animation")}
-					</span>
+					<span className={ms.fileType}>{description}</span>
 				</div>
 				<div className={ms.actions}>
 					<ActionBtn

@@ -1,28 +1,44 @@
 /* ── Page container ── */
 
-.page {
+.page,
+.formPage {
+	display: flex;
+	flex-direction: column;
+	gap: var(--layout-section-gap);
 	padding: 16px;
 	padding-bottom: 96px;
 }
 
-/* ── Headers ── */
-
-.header {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	margin-bottom: 16px;
-}
-
-.headerIcon {
-	color: var(--v2-icon-secondary);
+.formPage {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 760px;
+	margin-inline: auto;
 }
 
 .providerRow {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
-	padding: 11px 14px 12px;
+	padding: 11px 14px 14px;
+}
+
+.providerTitleRow {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.providerIcon {
+	display: grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+	flex: 0 0 32px;
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: 10px;
+	background: var(--v2-bg-secondary);
+	color: var(--v2-icon-secondary);
 }
 
 .providerHeading {
@@ -33,70 +49,12 @@
 
 .providerLabel {
 	font-size: 13px;
+	font-weight: 600;
 	color: var(--v2-text-primary);
 }
 
 .providerDescription {
 	font-size: 10.5px;
+	line-height: 1.4;
 	color: var(--v2-text-secondary);
-}
-
-/* ── Tool row (drill-down) ── */
-
-.toolRow {
-	all: unset;
-	box-sizing: border-box;
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 10px 14px;
-	gap: 16px;
-	width: 100%;
-	text-align: left;
-	cursor: pointer;
-	font-family: inherit;
-	color: var(--v2-text-secondary);
-}
-
-.toolRowLeft {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	min-width: 0;
-}
-
-.toolRowLabel {
-	font-size: 12.5px;
-	font-weight: 500;
-	color: var(--v2-text-primary);
-}
-
-.toolRowDesc {
-	font-size: 10.5px;
-	color: var(--v2-text-secondary);
-}
-
-.toolRowRight {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	flex-shrink: 0;
-}
-
-.toolRowChevron {
-	color: var(--v2-text-tertiary);
-	display: flex;
-}
-
-/* ── Value badges (used by SettingsToolRow) ── */
-
-.rowValue {
-	font-size: 12px;
-	font-family: var(--font-mono);
-	color: var(--v2-text-secondary);
-}
-
-.rowValuePositive {
-	font-size: 10.5px;
-	color: var(--v2-text-positive);
 }

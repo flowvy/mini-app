@@ -1,5 +1,6 @@
 import { useBlocker } from "@tanstack/react-router";
 /** Welcome Message sub-screen — text, media file upload, button text, save. */
+import { BadgeInfo } from "lucide-react";
 import { type FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
@@ -9,15 +10,9 @@ import ss from "../../pages/admin/settings.module.css";
 import type { AdminSettings, WelcomeMediaUpload } from "../../types/admin-settings.ts";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { FormSaveButton } from "../ui/form-save-button.tsx";
-import {
-	FormInlineInput,
-	FormRow,
-	FormSectionCard,
-	FormSectionFooter,
-	FormSectionHeader,
-	FormTextarea,
-} from "../ui/form-section.tsx";
+import { FormField, FormFieldInput, FormFieldTextarea } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
+import { SettingsFields, SettingsInlineNotice, SettingsPanel } from "./settings-surface.tsx";
 import { WelcomeMediaRow } from "./welcome-media-row.tsx";
 
 const prefix = isMockAuth ? "/debug/admin/settings" : "/admin/settings";
@@ -57,6 +52,12 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 		? (mediaFileName ?? t("settings.welcome.mediaCustomName"))
 		: (settings.welcomeMediaUrl ?? t("settings.welcome.mediaDefaultName"));
 	const displayType = mediaType ?? "animation";
+	const mediaDescription =
+		isDefault && !mediaDirty
+			? t("settings.welcome.mediaHint")
+			: displayType === "photo"
+				? t("settings.welcome.mediaType.photo")
+				: t("settings.welcome.mediaType.animation");
 
 	useEffect(() => {
 		if (saved) {
@@ -107,50 +108,58 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 	};
 
 	return (
-		<div className={ss.page}>
+		<div className={ss.formPage}>
 			{feedbackError && <InlineFeedback>{feedbackError}</InlineFeedback>}
-			<FormSectionHeader>{t("settings.welcome.messageSection")}</FormSectionHeader>
-			<FormSectionCard>
-				<FormTextarea
-					value={text}
-					onChange={(v) => {
-						setText(v);
-						setSaved(false);
-					}}
-					placeholder={t("settings.welcome.messagePlaceholder")}
-				/>
-			</FormSectionCard>
-			<FormSectionFooter>{t("settings.welcome.messageHint")}</FormSectionFooter>
-
-			<FormSectionHeader>{t("settings.welcome.mediaSection")}</FormSectionHeader>
-			<FormSectionCard>
-				<WelcomeMediaRow
-					fileName={displayName}
-					mediaType={displayType}
-					isDefault={isDefault && !mediaDirty}
-					uploading={uploading}
-					onPickFile={handlePickFile}
-					onReset={handleReset}
-				/>
-			</FormSectionCard>
-			<FormSectionFooter>{t("settings.welcome.mediaHint")}</FormSectionFooter>
-
-			<FormSectionHeader>{t("settings.welcome.buttonSection")}</FormSectionHeader>
-			<FormSectionCard>
-				<FormRow label={t("settings.welcome.buttonTextLabel")}>
-					<FormInlineInput
-						value={buttonText}
-						onChange={(v) => {
-							setButtonText(v);
-							setSaved(false);
-						}}
-						placeholder={t("settings.welcome.buttonTextPlaceholder")}
-					/>
-				</FormRow>
-			</FormSectionCard>
-			<FormSectionFooter>{t("settings.welcome.buttonHint")}</FormSectionFooter>
-
-			<FormSectionFooter warning>{t("settings.welcome.premiumWarning")}</FormSectionFooter>
+			<SettingsPanel title={t("settings.welcome.contentSection")}>
+				<SettingsFields>
+					<FormField
+						label={t("settings.welcome.messageLabel")}
+						htmlFor="welcome-message"
+						notice={
+							<SettingsInlineNotice icon={<BadgeInfo size={13} aria-hidden="true" />}>
+								{t("settings.welcome.premiumWarning")}
+							</SettingsInlineNotice>
+						}
+					>
+						<FormFieldTextarea
+							id="welcome-message"
+							value={text}
+							onChange={(event) => {
+								setText(event.target.value);
+								setSaved(false);
+							}}
+							placeholder={t("settings.welcome.messagePlaceholder")}
+							rows={4}
+						/>
+					</FormField>
+					<FormField label={t("settings.welcome.mediaSection")}>
+						<WelcomeMediaRow
+							fileName={displayName}
+							mediaType={displayType}
+							description={mediaDescription}
+							isDefault={isDefault && !mediaDirty}
+							uploading={uploading}
+							onPickFile={handlePickFile}
+							onReset={handleReset}
+						/>
+					</FormField>
+					<FormField
+						label={t("settings.welcome.buttonTextLabel")}
+						htmlFor="welcome-button-text"
+						hint={t("settings.welcome.buttonHint")}
+					>
+						<FormFieldInput
+							id="welcome-button-text"
+							value={buttonText}
+							onChange={(event) => {
+								setButtonText(event.target.value);
+								setSaved(false);
+							}}
+							placeholder={t("settings.welcome.buttonTextPlaceholder")}
+						/>
+					</FormField>
+				</SettingsFields>
+			</SettingsPanel>
 
 			<FormSaveButton
 				dirty={dirty && !saved}

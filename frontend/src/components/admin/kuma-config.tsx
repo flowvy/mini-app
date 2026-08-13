@@ -10,16 +10,14 @@ import type { AdminSettings } from "../../types/admin-settings.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { FormSaveButton } from "../ui/form-save-button.tsx";
-import {
-	FormInlineInput,
-	FormRow,
-	FormRowSeparator,
-	FormSectionCard,
-	FormSectionFooter,
-	FormSectionHeader,
-} from "../ui/form-section.tsx";
+import { FormField, FormFieldInput } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
-import styles from "./provider-config.module.css";
+import {
+	SettingsDivider,
+	SettingsFields,
+	SettingsPanel,
+	SettingsStatusRow,
+} from "./settings-surface.tsx";
 
 interface KumaConfigProps {
 	settings: AdminSettings;
@@ -64,64 +62,72 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings }) => {
 	};
 
 	const connStatus = testMutation.data;
-	const connColor = connStatus?.ok
-		? "var(--v2-text-positive)"
-		: connStatus?.error
-			? "var(--v2-text-negative)"
-			: "var(--v2-text-secondary)";
 	const connText = connStatus?.ok
 		? t("settings.kuma.connected")
 		: connStatus?.error
 			? t("settings.kuma.testError")
 			: t("settings.kuma.notTested");
+	const connTone = connStatus?.ok ? "positive" : connStatus?.error ? "negative" : "default";
 
 	return (
-		<div className={ss.page}>
+		<div className={ss.formPage}>
 			{saveFailed && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
-			<FormSectionHeader>{t("settings.kuma.connectionSection")}</FormSectionHeader>
-			<FormSectionCard>
-				<FormRow label={t("settings.kuma.urlLabel")}>
-					<FormInlineInput
-						value={url}
-						onChange={(v) => {
-							setUrl(v);
-							setSaved(false);
-							testMutation.reset();
-						}}
-						placeholder={t("settings.kuma.urlPlaceholder")}
-						mono
-						type="url"
-					/>
-				</FormRow>
-				<FormRowSeparator />
-				<FormRow label={t("settings.kuma.slugLabel")}>
-					<FormInlineInput
-						value={slug}
-						onChange={(v) => {
-							setSlug(v);
-							setSaved(false);
-							testMutation.reset();
-						}}
-						placeholder={t("settings.kuma.slugPlaceholder")}
-						mono
-					/>
-				</FormRow>
-				<FormRowSeparator />
-				<FormRow label={t("settings.kuma.statusLabel")}>
-					<span className={styles.statusText} style={{ color: connColor }}>
-						{connText}
-					</span>
-					<ActionBtn
-						onClick={() => testMutation.mutate({ url, slug })}
-						loading={testMutation.isPending}
-						variant="action"
-						size="sm"
+			<SettingsPanel title={t("settings.kuma.connectionSection")}>
+				<SettingsFields>
+					<FormField
+						label={t("settings.kuma.urlLabel")}
+						htmlFor="kuma-url"
+						hint={t("settings.kuma.connectionHint")}
 					>
-						{t("settings.kuma.test")}
-					</ActionBtn>
-				</FormRow>
-			</FormSectionCard>
-			<FormSectionFooter>{t("settings.kuma.connectionHint")}</FormSectionFooter>
+						<FormFieldInput
+							id="kuma-url"
+							type="url"
+							inputMode="url"
+							value={url}
+							onChange={(event) => {
+								setUrl(event.target.value);
+								setSaved(false);
+								testMutation.reset();
+							}}
+							placeholder={t("settings.kuma.urlPlaceholder")}
+							autoCapitalize="none"
+							autoCorrect="off"
+							spellCheck={false}
+						/>
+					</FormField>
+					<FormField label={t("settings.kuma.slugLabel")} htmlFor="kuma-slug">
+						<FormFieldInput
+							id="kuma-slug"
+							value={slug}
+							onChange={(event) => {
+								setSlug(event.target.value);
+								setSaved(false);
+								testMutation.reset();
+							}}
+							placeholder={t("settings.kuma.slugPlaceholder")}
+							autoCapitalize="none"
+							autoCorrect="off"
+							spellCheck={false}
+						/>
+					</FormField>
+				</SettingsFields>
+				<SettingsDivider />
+				<SettingsStatusRow
+					label={t("settings.kuma.statusLabel")}
+					status={connText}
+					tone={connTone}
+					action={
+						<ActionBtn
+							onClick={() => testMutation.mutate({ url, slug })}
+							loading={testMutation.isPending}
+							variant="action"
+							size="md"
+						>
+							{t("settings.kuma.test")}
+						</ActionBtn>
+					}
+				/>
+			</SettingsPanel>
 			{testMutation.isError && <InlineFeedback>{t("settings.kuma.testError")}</InlineFeedback>}
 
 			<FormSaveButton
