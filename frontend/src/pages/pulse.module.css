@@ -18,11 +18,7 @@
 
 /* Incidents empty */
 .incidentsEmpty {
-	margin-top: 0;
 	padding: 12px 14px;
-	background: var(--v2-bg-primary);
-	border: 1px solid var(--v2-border-tertiary);
-	border-radius: var(--radius-md);
 	text-align: center;
 }
 
@@ -32,17 +28,7 @@
 }
 
 .incidents {
-	margin-top: 0;
-	padding: 12px 14px;
-	background: var(--v2-bg-primary);
-	border: 1px solid var(--v2-border-tertiary);
-	border-radius: var(--radius-md);
-}
-
-.incidents h2 {
-	margin: 0 0 10px;
-	font-size: 12px;
-	color: var(--v2-text-secondary);
+	padding: 4px 14px;
 }
 
 .incident {

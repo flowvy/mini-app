@@ -3,7 +3,7 @@
  */
 import type { FC } from "react";
 import type { PulseGroup as PulseGroupType } from "../../types/pulse.ts";
-import { FormRowSeparator, FormSectionCard, FormSectionHeader } from "../ui/form-section.tsx";
+import { FormRowSeparator, FormSection, FormSectionCard } from "../ui/form-section.tsx";
 import { MonitorRow } from "./monitor-row.tsx";
 
 interface MonitorGroupProps {
@@ -12,8 +12,7 @@ interface MonitorGroupProps {
 
 export const MonitorGroup: FC<MonitorGroupProps> = ({ group }) => {
 	return (
-		<div>
-			<FormSectionHeader>{group.name}</FormSectionHeader>
+		<FormSection title={group.name}>
 			<FormSectionCard>
 				{group.monitors.map((m, i) => (
 					<div key={m.id}>
@@ -22,6 +21,6 @@ export const MonitorGroup: FC<MonitorGroupProps> = ({ group }) => {
 					</div>
 				))}
 			</FormSectionCard>
-		</div>
+		</FormSection>
 	);
 };

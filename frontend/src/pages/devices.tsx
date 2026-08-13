@@ -2,6 +2,7 @@ import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DeviceRow } from "../components/devices/device-row.tsx";
 import { ErrorState } from "../components/ui/error-state.tsx";
+import { FormSection, FormSectionCard } from "../components/ui/form-section.tsx";
 import { PageLoading } from "../components/ui/page-loading.tsx";
 import { useDeleteAllDevices, useDeleteDevice, useDevices } from "../hooks/use-devices.ts";
 import { formatRatio } from "../lib/format.ts";
@@ -57,56 +58,59 @@ export const Devices: FC = () => {
 					{t("devices.removeError")}
 				</p>
 			)}
-			{limit !== null && (
-				<div className={styles.counter}>
-					<span className={styles.counterUsed}>{formatRatio(devices.length, limit)}</span>
-				</div>
-			)}
-
-			{devices.length > 0 ? (
-				<div className={styles.sectionBody}>
-					{devices.map((device, i) => (
-						<div key={device.hwid}>
-							<DeviceRow
-								device={device}
-								isConfirming={confirmHwid === device.hwid}
-								onConfirm={() => {
-									setMutationError(false);
-									setConfirmHwid(device.hwid);
-								}}
-								onCancel={() => {
-									setMutationError(false);
-									setConfirmHwid(null);
-								}}
-								onDelete={() => handleDelete(device.hwid)}
-								isDeleting={deleteDevice.isPending && confirmHwid === device.hwid}
-							/>
-							{i < devices.length - 1 && <div className={styles.divider} />}
+			<FormSection
+				title={t("devices.section")}
+				action={
+					limit !== null ? (
+						<span className={styles.counter}>{formatRatio(devices.length, limit)}</span>
+					) : undefined
+				}
+			>
+				<FormSectionCard>
+					{devices.length > 0 ? (
+						devices.map((device, i) => (
+							<div key={device.hwid}>
+								<DeviceRow
+									device={device}
+									isConfirming={confirmHwid === device.hwid}
+									onConfirm={() => {
+										setMutationError(false);
+										setConfirmHwid(device.hwid);
+									}}
+									onCancel={() => {
+										setMutationError(false);
+										setConfirmHwid(null);
+									}}
+									onDelete={() => handleDelete(device.hwid)}
+									isDeleting={deleteDevice.isPending && confirmHwid === device.hwid}
+								/>
+								{i < devices.length - 1 && <div className={styles.divider} />}
+							</div>
+						))
+					) : (
+						<div className={styles.empty}>
+							<svg
+								width="44"
+								height="44"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="1"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								className={styles.emptyIcon}
+								role="img"
+								aria-label={t("devices.empty.ariaLabel")}
+							>
+								<rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+								<line x1="12" y1="18" x2="12.01" y2="18" />
+							</svg>
+							<span className={styles.emptyTitle}>{t("devices.empty.title")}</span>
+							<span className={styles.emptyDesc}>{t("devices.empty.desc")}</span>
 						</div>
-					))}
-				</div>
-			) : (
-				<div className={styles.empty}>
-					<svg
-						width="44"
-						height="44"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth="1"
-						strokeLinecap="round"
-						strokeLinejoin="round"
-						className={styles.emptyIcon}
-						role="img"
-						aria-label={t("devices.empty.ariaLabel")}
-					>
-						<rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
-						<line x1="12" y1="18" x2="12.01" y2="18" />
-					</svg>
-					<span className={styles.emptyTitle}>{t("devices.empty.title")}</span>
-					<span className={styles.emptyDesc}>{t("devices.empty.desc")}</span>
-				</div>
-			)}
+					)}
+				</FormSectionCard>
+			</FormSection>
 
 			{devices.length > 1 && !confirmAll && (
 				<button

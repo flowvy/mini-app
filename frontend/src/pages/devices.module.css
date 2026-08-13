@@ -16,35 +16,10 @@
 }
 
 .counter {
-	display: flex;
-	align-items: baseline;
-	gap: 1px;
 	font-family: var(--font-mono);
-}
-
-.counterUsed {
-	font-size: 18px;
-	font-weight: 700;
-	color: var(--v2-bg-positive-primary);
-}
-
-.counterSep {
-	font-size: 13px;
-	color: var(--v2-text-tertiary);
-	margin: 0 2px;
-}
-
-.counterTotal {
-	font-size: 13px;
-	color: var(--v2-text-tertiary);
-}
-
-/* Section body */
-.sectionBody {
-	background: var(--v2-bg-primary);
-	border: 1px solid var(--v2-border-tertiary);
-	border-radius: var(--radius-md);
-	overflow: hidden;
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--v2-text-positive);
 }
 
 .divider {

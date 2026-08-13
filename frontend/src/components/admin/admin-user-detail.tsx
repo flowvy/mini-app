@@ -13,7 +13,7 @@ import {
 	isUnlimitedExpiryISO,
 } from "../../lib/format.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
-import { FormRowSeparator, FormSectionCard, FormSectionHeader } from "../ui/form-section.tsx";
+import { FormRowSeparator, FormSection, FormSectionCard } from "../ui/form-section.tsx";
 import styles from "./admin-user-detail.module.css";
 
 interface AdminUserDetailProps {
@@ -52,84 +52,88 @@ export const AdminUserDetail: FC<AdminUserDetailProps> = ({ user }) => {
 	);
 
 	return (
-		<div>
-			<FormSectionHeader>{t("admin.userDetail.referrals")}</FormSectionHeader>
-			<FormSectionCard>
-				<Row label={t("admin.userDetail.invitedUsers")} value={String(user.invitedCount)} mono />
-			</FormSectionCard>
+		<div className={styles.sections}>
+			<FormSection title={t("admin.userDetail.referrals")}>
+				<FormSectionCard>
+					<Row label={t("admin.userDetail.invitedUsers")} value={String(user.invitedCount)} mono />
+				</FormSectionCard>
+			</FormSection>
 
-			<FormSectionHeader>{t("admin.userDetail.accountInfo")}</FormSectionHeader>
-			<FormSectionCard>
-				<Row label={t("admin.userDetail.created")} value={formatDateISO(user.createdAt)} mono />
-				<FormRowSeparator />
-				<Row
-					label={t("admin.userDetail.expires")}
-					value={
-						isUnlimitedExpiryISO(user.expireAt)
-							? t("admin.userDetail.expiresUnlimited")
-							: formatDateISO(user.expireAt)
-					}
-					mono
-				/>
-				<FormRowSeparator />
-				<Row label={t("admin.userDetail.email")} value={user.email} mono muted={!user.email} />
-				<FormRowSeparator />
-				<Row
-					label={t("admin.userDetail.telegramId")}
-					value={user.telegramId ? String(user.telegramId) : null}
-					mono
-				/>
-				<FormRowSeparator />
-				<Row
-					label={t("admin.userDetail.devices")}
-					value={
-						isUnlimitedDevices(user.hwidDeviceLimit)
-							? t("admin.userDetail.devicesUnlimited")
-							: t("admin.userDetail.devicesCount", { n: user.hwidDeviceLimit })
-					}
-					mono
-				/>
-				<FormRowSeparator />
-				<Row label={t("admin.userDetail.tag")} value={user.tag} muted={!user.tag} />
-				<FormRowSeparator />
-				<Row
-					label={t("admin.userDetail.description")}
-					value={user.description}
-					muted={!user.description}
-				/>
-			</FormSectionCard>
+			<FormSection title={t("admin.userDetail.accountInfo")}>
+				<FormSectionCard>
+					<Row label={t("admin.userDetail.created")} value={formatDateISO(user.createdAt)} mono />
+					<FormRowSeparator />
+					<Row
+						label={t("admin.userDetail.expires")}
+						value={
+							isUnlimitedExpiryISO(user.expireAt)
+								? t("admin.userDetail.expiresUnlimited")
+								: formatDateISO(user.expireAt)
+						}
+						mono
+					/>
+					<FormRowSeparator />
+					<Row label={t("admin.userDetail.email")} value={user.email} mono muted={!user.email} />
+					<FormRowSeparator />
+					<Row
+						label={t("admin.userDetail.telegramId")}
+						value={user.telegramId ? String(user.telegramId) : null}
+						mono
+					/>
+					<FormRowSeparator />
+					<Row
+						label={t("admin.userDetail.devices")}
+						value={
+							isUnlimitedDevices(user.hwidDeviceLimit)
+								? t("admin.userDetail.devicesUnlimited")
+								: t("admin.userDetail.devicesCount", { n: user.hwidDeviceLimit })
+						}
+						mono
+					/>
+					<FormRowSeparator />
+					<Row label={t("admin.userDetail.tag")} value={user.tag} muted={!user.tag} />
+					<FormRowSeparator />
+					<Row
+						label={t("admin.userDetail.description")}
+						value={user.description}
+						muted={!user.description}
+					/>
+				</FormSectionCard>
+			</FormSection>
 
-			<FormSectionHeader>{t("admin.userDetail.squads")}</FormSectionHeader>
-			<FormSectionCard>
-				<Row
-					label={t("admin.userDetail.internal")}
-					value={internalSquads || null}
-					muted={!internalSquads}
-				/>
-				<FormRowSeparator />
-				<Row
-					label={t("admin.userDetail.external")}
-					value={user.externalSquadName}
-					muted={!user.externalSquadName}
-				/>
-			</FormSectionCard>
+			<FormSection title={t("admin.userDetail.squads")}>
+				<FormSectionCard>
+					<Row
+						label={t("admin.userDetail.internal")}
+						value={internalSquads || null}
+						muted={!internalSquads}
+					/>
+					<FormRowSeparator />
+					<Row
+						label={t("admin.userDetail.external")}
+						value={user.externalSquadName}
+						muted={!user.externalSquadName}
+					/>
+				</FormSectionCard>
+			</FormSection>
 
-			<FormSectionHeader>{t("admin.userDetail.connection")}</FormSectionHeader>
-			<FormSectionCard>
-				<Row
-					label={t("admin.userDetail.firstConnected")}
-					value={formatDateISO(ut.firstConnectedAt)}
-					mono
-					muted={!ut.firstConnectedAt}
-				/>
-				<FormRowSeparator />
-				<Row
-					label={t("admin.userDetail.lastSeen")}
-					value={ut.onlineAt ? formatLastSeen(ut.onlineAt) : null}
-					mono
-					muted={!ut.onlineAt}
-				/>
-			</FormSectionCard>
+			<FormSection title={t("admin.userDetail.connection")}>
+				<FormSectionCard>
+					<Row
+						label={t("admin.userDetail.firstConnected")}
+						value={formatDateISO(ut.firstConnectedAt)}
+						mono
+						muted={!ut.firstConnectedAt}
+					/>
+					<FormRowSeparator />
+					<Row
+						label={t("admin.userDetail.lastSeen")}
+						value={ut.onlineAt ? formatLastSeen(ut.onlineAt) : null}
+						mono
+						muted={!ut.onlineAt}
+					/>
+				</FormSectionCard>
+			</FormSection>
 		</div>
 	);
 };

@@ -12,6 +12,11 @@
 	animation: tabContentReveal 120ms ease-out;
 }
 
+.sectionStack {
+	display: grid;
+	gap: var(--layout-section-gap);
+}
+
 @keyframes tabContentReveal {
 	from {
 		opacity: 0.55;

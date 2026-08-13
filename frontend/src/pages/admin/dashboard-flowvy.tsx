@@ -2,12 +2,13 @@ import { DashboardKpiGrid } from "../../components/admin/dashboard-kpi-grid.tsx"
 import type { KpiItem } from "../../components/admin/dashboard-kpi-grid.tsx";
 import {
 	FormRowSeparator,
+	FormSection,
 	FormSectionCard,
-	FormSectionHeader,
 } from "../../components/ui/form-section.tsx";
 import { formatMemory, formatPositiveNumber, formatUptime } from "../../lib/format.ts";
 import type { DashboardResponse } from "../../types/dashboard.ts";
 import { Row } from "./dashboard-rows.tsx";
+import styles from "./dashboard.module.css";
 
 export function FlowvyContent({
 	data,
@@ -40,64 +41,68 @@ export function FlowvyContent({
 	];
 
 	return (
-		<div>
+		<div className={styles.sectionStack}>
 			<DashboardKpiGrid items={kpis} />
 
-			<FormSectionHeader>{t("admin.dashboard.flowvy.users")}</FormSectionHeader>
-			<FormSectionCard>
-				<Row label={t("admin.dashboard.flowvy.total")} value={users.totalUsers} />
-				<FormRowSeparator />
-				<Row
-					label={t("admin.dashboard.flowvy.registeredToday")}
-					value={formatPositiveNumber(users.newToday)}
-					accent="var(--v2-text-positive)"
-				/>
-				<FormRowSeparator />
-				<Row
-					label={t("admin.dashboard.flowvy.registeredWeek")}
-					value={formatPositiveNumber(users.newThisWeek)}
-				/>
-			</FormSectionCard>
+			<FormSection title={t("admin.dashboard.flowvy.users")}>
+				<FormSectionCard>
+					<Row label={t("admin.dashboard.flowvy.total")} value={users.totalUsers} />
+					<FormRowSeparator />
+					<Row
+						label={t("admin.dashboard.flowvy.registeredToday")}
+						value={formatPositiveNumber(users.newToday)}
+						accent="var(--v2-text-positive)"
+					/>
+					<FormRowSeparator />
+					<Row
+						label={t("admin.dashboard.flowvy.registeredWeek")}
+						value={formatPositiveNumber(users.newThisWeek)}
+					/>
+				</FormSectionCard>
+			</FormSection>
 
-			<FormSectionHeader>{t("admin.dashboard.flowvy.activity")}</FormSectionHeader>
-			<FormSectionCard>
-				<Row label={t("admin.dashboard.flowvy.active1h")} value={users.active1H} />
-				<FormRowSeparator />
-				<Row label={t("admin.dashboard.flowvy.active24h")} value={users.active24H} />
-			</FormSectionCard>
+			<FormSection title={t("admin.dashboard.flowvy.activity")}>
+				<FormSectionCard>
+					<Row label={t("admin.dashboard.flowvy.active1h")} value={users.active1H} />
+					<FormRowSeparator />
+					<Row label={t("admin.dashboard.flowvy.active24h")} value={users.active24H} />
+				</FormSectionCard>
+			</FormSection>
 
-			<FormSectionHeader>{t("admin.dashboard.flowvy.requests")}</FormSectionHeader>
-			<FormSectionCard>
-				<Row
-					label={t("admin.dashboard.flowvy.totalRequests")}
-					value={requests.totalRequests.toLocaleString()}
-				/>
-				<FormRowSeparator />
-				<Row
-					label={t("admin.dashboard.flowvy.todayRequests")}
-					value={requests.todayRequests.toLocaleString()}
-				/>
-			</FormSectionCard>
+			<FormSection title={t("admin.dashboard.flowvy.requests")}>
+				<FormSectionCard>
+					<Row
+						label={t("admin.dashboard.flowvy.totalRequests")}
+						value={requests.totalRequests.toLocaleString()}
+					/>
+					<FormRowSeparator />
+					<Row
+						label={t("admin.dashboard.flowvy.todayRequests")}
+						value={requests.todayRequests.toLocaleString()}
+					/>
+				</FormSectionCard>
+			</FormSection>
 
-			<FormSectionHeader>{t("admin.dashboard.flowvy.system")}</FormSectionHeader>
-			<FormSectionCard>
-				<Row
-					label={t("admin.dashboard.flowvy.cpu")}
-					value={t("admin.dashboard.flowvy.cores", { n: system.cpuCores })}
-				/>
-				<FormRowSeparator />
-				<Row
-					label={t("admin.dashboard.flowvy.memory")}
-					value={formatMemory(system.memoryUsed, system.memoryTotal)}
-				/>
-				<FormRowSeparator />
-				<Row
-					label={t("admin.dashboard.flowvy.uptimeLabel")}
-					value={formatUptime(system.uptimeSeconds)}
-				/>
-				<FormRowSeparator />
-				<Row label={t("admin.dashboard.flowvy.versionLabel")} value={system.version} />
-			</FormSectionCard>
+			<FormSection title={t("admin.dashboard.flowvy.system")}>
+				<FormSectionCard>
+					<Row
+						label={t("admin.dashboard.flowvy.cpu")}
+						value={t("admin.dashboard.flowvy.cores", { n: system.cpuCores })}
+					/>
+					<FormRowSeparator />
+					<Row
+						label={t("admin.dashboard.flowvy.memory")}
+						value={formatMemory(system.memoryUsed, system.memoryTotal)}
+					/>
+					<FormRowSeparator />
+					<Row
+						label={t("admin.dashboard.flowvy.uptimeLabel")}
+						value={formatUptime(system.uptimeSeconds)}
+					/>
+					<FormRowSeparator />
+					<Row label={t("admin.dashboard.flowvy.versionLabel")} value={system.version} />
+				</FormSectionCard>
+			</FormSection>
 		</div>
 	);
 }

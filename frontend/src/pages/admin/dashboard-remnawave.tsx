@@ -3,8 +3,8 @@ import { DashboardKpiGrid } from "../../components/admin/dashboard-kpi-grid.tsx"
 import type { KpiItem } from "../../components/admin/dashboard-kpi-grid.tsx";
 import {
 	FormRowSeparator,
+	FormSection,
 	FormSectionCard,
-	FormSectionHeader,
 } from "../../components/ui/form-section.tsx";
 import { formatMemory, formatTraffic, formatUptime } from "../../lib/format.ts";
 import type { DashboardResponse } from "../../types/dashboard.ts";
@@ -50,107 +50,111 @@ export function RemnawaveContent({
 	];
 
 	return (
-		<div>
+		<div className={styles.sectionStack}>
 			<DashboardKpiGrid items={kpis} />
 
-			<FormSectionHeader>{t("admin.dashboard.remnawave.usersByStatus")}</FormSectionHeader>
-			<FormSectionCard>
-				<StatusRow
-					label={t("admin.userStatus.active")}
-					value={rw.users.statusCounts.ACTIVE}
-					dot="var(--v2-text-positive)"
-				/>
-				<FormRowSeparator />
-				<StatusRow
-					label={t("admin.userStatus.disabled")}
-					value={rw.users.statusCounts.DISABLED}
-					dot="var(--v2-text-secondary)"
-				/>
-				<FormRowSeparator />
-				<StatusRow
-					label={t("admin.userStatus.limited")}
-					value={rw.users.statusCounts.LIMITED}
-					dot="var(--v2-text-warning)"
-				/>
-				<FormRowSeparator />
-				<StatusRow
-					label={t("admin.userStatus.expired")}
-					value={rw.users.statusCounts.EXPIRED}
-					dot="var(--v2-text-negative)"
-				/>
-				{rw.users.statusCounts.UNKNOWN > 0 && (
-					<>
-						<FormRowSeparator />
-						<StatusRow
-							label={t("admin.userStatus.unknown")}
-							value={rw.users.statusCounts.UNKNOWN}
-							dot="var(--v2-text-secondary)"
-						/>
-					</>
-				)}
-			</FormSectionCard>
+			<FormSection title={t("admin.dashboard.remnawave.usersByStatus")}>
+				<FormSectionCard>
+					<StatusRow
+						label={t("admin.userStatus.active")}
+						value={rw.users.statusCounts.ACTIVE}
+						dot="var(--v2-text-positive)"
+					/>
+					<FormRowSeparator />
+					<StatusRow
+						label={t("admin.userStatus.disabled")}
+						value={rw.users.statusCounts.DISABLED}
+						dot="var(--v2-text-secondary)"
+					/>
+					<FormRowSeparator />
+					<StatusRow
+						label={t("admin.userStatus.limited")}
+						value={rw.users.statusCounts.LIMITED}
+						dot="var(--v2-text-warning)"
+					/>
+					<FormRowSeparator />
+					<StatusRow
+						label={t("admin.userStatus.expired")}
+						value={rw.users.statusCounts.EXPIRED}
+						dot="var(--v2-text-negative)"
+					/>
+					{rw.users.statusCounts.UNKNOWN > 0 && (
+						<>
+							<FormRowSeparator />
+							<StatusRow
+								label={t("admin.userStatus.unknown")}
+								value={rw.users.statusCounts.UNKNOWN}
+								dot="var(--v2-text-secondary)"
+							/>
+						</>
+					)}
+				</FormSectionCard>
+			</FormSection>
 
-			<FormSectionHeader>{t("admin.dashboard.remnawave.online")}</FormSectionHeader>
-			<FormSectionCard>
-				<Row
-					label={t("admin.dashboard.remnawave.now")}
-					value={rw.onlineStats.onlineNow}
-					accent="var(--v2-text-positive)"
-				/>
-				<FormRowSeparator />
-				<Row label={t("admin.dashboard.remnawave.last24h")} value={rw.onlineStats.lastDay} />
-				<FormRowSeparator />
-				<Row label={t("admin.dashboard.remnawave.last7d")} value={rw.onlineStats.lastWeek} />
-				<FormRowSeparator />
-				<Row
-					label={t("admin.dashboard.remnawave.neverConnected")}
-					value={rw.onlineStats.neverOnline}
-					muted
-				/>
-			</FormSectionCard>
+			<FormSection title={t("admin.dashboard.remnawave.online")}>
+				<FormSectionCard>
+					<Row
+						label={t("admin.dashboard.remnawave.now")}
+						value={rw.onlineStats.onlineNow}
+						accent="var(--v2-text-positive)"
+					/>
+					<FormRowSeparator />
+					<Row label={t("admin.dashboard.remnawave.last24h")} value={rw.onlineStats.lastDay} />
+					<FormRowSeparator />
+					<Row label={t("admin.dashboard.remnawave.last7d")} value={rw.onlineStats.lastWeek} />
+					<FormRowSeparator />
+					<Row
+						label={t("admin.dashboard.remnawave.neverConnected")}
+						value={rw.onlineStats.neverOnline}
+						muted
+					/>
+				</FormSectionCard>
+			</FormSection>
 
-			<FormSectionHeader>{t("admin.dashboard.remnawave.bandwidth")}</FormSectionHeader>
-			<FormSectionCard>
-				<DashboardBandwidthRow
-					label="admin.dashboard.remnawave.bwToday"
-					{...bw.bandwidthLastTwoDays}
-				/>
-				<FormRowSeparator />
-				<DashboardBandwidthRow
-					label="admin.dashboard.remnawave.bw7d"
-					{...bw.bandwidthLastSevenDays}
-				/>
-				<FormRowSeparator />
-				<DashboardBandwidthRow
-					label="admin.dashboard.remnawave.bw30d"
-					{...bw.bandwidthLast30Days}
-				/>
-				<FormRowSeparator />
-				<DashboardBandwidthRow
-					label="admin.dashboard.remnawave.bwMonth"
-					{...bw.bandwidthCalendarMonth}
-				/>
-				<FormRowSeparator />
-				<DashboardBandwidthRow
-					label="admin.dashboard.remnawave.bwYear"
-					{...bw.bandwidthCurrentYear}
-				/>
-			</FormSectionCard>
+			<FormSection title={t("admin.dashboard.remnawave.bandwidth")}>
+				<FormSectionCard>
+					<DashboardBandwidthRow
+						label="admin.dashboard.remnawave.bwToday"
+						{...bw.bandwidthLastTwoDays}
+					/>
+					<FormRowSeparator />
+					<DashboardBandwidthRow
+						label="admin.dashboard.remnawave.bw7d"
+						{...bw.bandwidthLastSevenDays}
+					/>
+					<FormRowSeparator />
+					<DashboardBandwidthRow
+						label="admin.dashboard.remnawave.bw30d"
+						{...bw.bandwidthLast30Days}
+					/>
+					<FormRowSeparator />
+					<DashboardBandwidthRow
+						label="admin.dashboard.remnawave.bwMonth"
+						{...bw.bandwidthCalendarMonth}
+					/>
+					<FormRowSeparator />
+					<DashboardBandwidthRow
+						label="admin.dashboard.remnawave.bwYear"
+						{...bw.bandwidthCurrentYear}
+					/>
+				</FormSectionCard>
+			</FormSection>
 
-			<FormSectionHeader>{t("admin.dashboard.remnawave.system")}</FormSectionHeader>
-			<FormSectionCard>
-				<Row
-					label={t("admin.dashboard.remnawave.cpu")}
-					value={t("admin.dashboard.remnawave.cores", { n: rw.cpu.cores })}
-				/>
-				<FormRowSeparator />
-				<Row
-					label={t("admin.dashboard.remnawave.memory")}
-					value={formatMemory(rw.memory.used, rw.memory.total)}
-				/>
-				<FormRowSeparator />
-				<Row label={t("admin.dashboard.remnawave.uptimeLabel")} value={formatUptime(rw.uptime)} />
-			</FormSectionCard>
+			<FormSection title={t("admin.dashboard.remnawave.system")}>
+				<FormSectionCard>
+					<Row
+						label={t("admin.dashboard.remnawave.cpu")}
+						value={t("admin.dashboard.remnawave.cores", { n: rw.cpu.cores })}
+					/>
+					<FormRowSeparator />
+					<Row
+						label={t("admin.dashboard.remnawave.memory")}
+						value={formatMemory(rw.memory.used, rw.memory.total)}
+					/>
+					<FormRowSeparator />
+					<Row label={t("admin.dashboard.remnawave.uptimeLabel")} value={formatUptime(rw.uptime)} />
+				</FormSectionCard>
+			</FormSection>
 		</div>
 	);
 }

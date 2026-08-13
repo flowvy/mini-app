@@ -1,19 +1,37 @@
-/* ── Section Header ── */
+/* ── Shared attached section ── */
 
-.header {
-	margin: 0;
-	padding-top: var(--layout-section-gap);
-	padding-bottom: 6px;
-	padding-left: 14px;
-	font-size: 11px;
-	font-weight: 600;
-	color: var(--v2-text-secondary);
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
+.section {
+	display: grid;
+	min-width: 0;
 }
 
-.header:first-child {
-	padding-top: 0;
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	min-height: 29px;
+	padding: 5px 14px;
+	border: 1px solid var(--v2-border-tertiary);
+	border-bottom: 0;
+	border-radius: var(--radius-md) var(--radius-md) 0 0;
+	background: color-mix(in srgb, var(--v2-bg-tertiary) 50%, transparent);
+}
+
+.header h2 {
+	min-width: 0;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.2;
+	color: var(--v2-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.sectionAction {
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
 }
 
 /* ── Section Footer ── */
@@ -37,6 +55,11 @@
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-md);
 	overflow: hidden;
+}
+
+.section > .card {
+	border-top: 1px solid var(--v2-border-tertiary);
+	border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
 /* ── Row ── */
@@ -91,6 +114,11 @@
 	font-weight: 400;
 	line-height: 1.45;
 	color: var(--v2-text-secondary);
+}
+
+.fieldNotice {
+	min-width: 0;
+	margin-top: 2px;
 }
 
 .inputShell {

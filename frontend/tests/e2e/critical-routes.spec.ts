@@ -7,13 +7,39 @@ const SECTION_GAP = 8;
 async function expectDirectSectionGap(heading: Locator): Promise<void> {
 	const gap = await heading.evaluate((element) => {
 		const previous = element.previousElementSibling;
-		if (!previous) throw new Error("Section heading has no preceding content");
-		const paddingTop = Number.parseFloat(getComputedStyle(element).paddingTop);
-		return (
-			element.getBoundingClientRect().top + paddingTop - previous.getBoundingClientRect().bottom
-		);
+		if (previous) {
+			const paddingTop = Number.parseFloat(getComputedStyle(element).paddingTop);
+			return (
+				element.getBoundingClientRect().top + paddingTop - previous.getBoundingClientRect().bottom
+			);
+		}
+		const section = element.closest("section");
+		const previousSection = section?.previousElementSibling;
+		if (!section || !previousSection) throw new Error("Section heading has no preceding content");
+		return section.getBoundingClientRect().top - previousSection.getBoundingClientRect().bottom;
 	});
 	expect(gap).toBeCloseTo(SECTION_GAP, 1);
+}
+
+async function expectAttachedSection(heading: Locator): Promise<void> {
+	const geometry = await heading.evaluate((element) => {
+		const section = element.closest("section");
+		const header = element.parentElement;
+		const card = header?.nextElementSibling;
+		if (!section || !header || !card) throw new Error("Attached section structure is incomplete");
+		return {
+			gap: card.getBoundingClientRect().top - header.getBoundingClientRect().bottom,
+			headerTopRadius: getComputedStyle(header).borderTopLeftRadius,
+			headerBottomRadius: getComputedStyle(header).borderBottomLeftRadius,
+			cardTopRadius: getComputedStyle(card).borderTopLeftRadius,
+			cardBottomRadius: getComputedStyle(card).borderBottomLeftRadius,
+		};
+	});
+	expect(geometry.gap).toBeCloseTo(0, 1);
+	expect(geometry.headerTopRadius).not.toBe("0px");
+	expect(geometry.headerBottomRadius).toBe("0px");
+	expect(geometry.cardTopRadius).toBe("0px");
+	expect(geometry.cardBottomRadius).not.toBe("0px");
 }
 
 test("user routes render deterministic success states", async ({ page, mockApi: _mock }) => {
@@ -48,52 +74,56 @@ test("user and admin pages share one external vertical rhythm", async ({
 	await page.evaluate(() => document.fonts.ready);
 
 	const gaps = await accountHeading.evaluate((heading) => {
-		const details = heading.parentElement;
+		const accountSection = heading.closest("section");
+		const details = accountSection?.parentElement;
 		const home = details?.parentElement;
 		const inviteCard = details?.previousElementSibling;
 		const heroCard = inviteCard?.previousElementSibling;
-		const accountCard = heading.nextElementSibling;
-		const profileHeading = accountCard?.nextElementSibling;
+		const profileSection = accountSection?.nextElementSibling;
 
-		if (!home || !inviteCard || !heroCard || !accountCard || !profileHeading) {
+		if (!home || !inviteCard || !heroCard || !accountSection || !profileSection) {
 			throw new Error("Home section structure is incomplete");
 		}
-
-		const contentTop = (element: Element) => {
-			const style = getComputedStyle(element);
-			return element.getBoundingClientRect().top + Number.parseFloat(style.paddingTop);
-		};
 
 		return {
 			heroToInvite:
 				inviteCard.getBoundingClientRect().top - heroCard.getBoundingClientRect().bottom,
-			inviteToAccount: contentTop(heading) - inviteCard.getBoundingClientRect().bottom,
-			accountToProfile: contentTop(profileHeading) - accountCard.getBoundingClientRect().bottom,
+			inviteToAccount:
+				accountSection.getBoundingClientRect().top - inviteCard.getBoundingClientRect().bottom,
+			accountToProfile:
+				profileSection.getBoundingClientRect().top - accountSection.getBoundingClientRect().bottom,
 		};
 	});
 
 	expect(gaps.heroToInvite).toBeCloseTo(SECTION_GAP, 1);
 	expect(gaps.inviteToAccount).toBeCloseTo(gaps.heroToInvite, 1);
 	expect(gaps.accountToProfile).toBeCloseTo(gaps.heroToInvite, 1);
+	await expectAttachedSection(accountHeading);
 
 	await page.goto("/devices");
 	const devicesGap = await page.getByText("1 / 5", { exact: true }).evaluate((counter) => {
-		const card = counter.parentElement?.nextElementSibling;
-		if (!card) throw new Error("Devices card is missing");
-		return card.getBoundingClientRect().top - counter.parentElement.getBoundingClientRect().bottom;
+		const header = counter.parentElement?.parentElement;
+		const card = header?.nextElementSibling;
+		if (!header || !card) throw new Error("Devices section is missing");
+		return card.getBoundingClientRect().top - header.getBoundingClientRect().bottom;
 	});
-	expect(devicesGap).toBeCloseTo(SECTION_GAP, 1);
+	expect(devicesGap).toBeCloseTo(0, 1);
+	await expectAttachedSection(page.getByRole("heading", { name: "Connected devices" }));
 
 	await page.goto("/pulse");
 	const coreHeading = page.getByRole("heading", { name: "Core" });
 	const pulseGap = await coreHeading.evaluate((heading) => {
-		const groups = heading.parentElement?.parentElement;
+		const group = heading.closest("section");
+		const groups = group?.parentElement;
 		const banner = groups?.previousElementSibling;
-		if (!groups || !banner) throw new Error("Pulse section structure is incomplete");
-		const paddingTop = Number.parseFloat(getComputedStyle(heading).paddingTop);
-		return heading.getBoundingClientRect().top + paddingTop - banner.getBoundingClientRect().bottom;
+		if (!group || !groups || !banner) throw new Error("Pulse section structure is incomplete");
+		return group.getBoundingClientRect().top - banner.getBoundingClientRect().bottom;
 	});
 	expect(pulseGap).toBeCloseTo(SECTION_GAP, 1);
+	await expectAttachedSection(coreHeading);
+	const incidentsHeading = page.getByRole("heading", { name: "Incidents" });
+	await expectDirectSectionGap(incidentsHeading);
+	await expectAttachedSection(incidentsHeading);
 
 	await page.goto("/admin/dashboard");
 	const dashboardTabs = page.getByRole("tablist", { name: "Dashboard view" });
@@ -104,7 +134,9 @@ test("user and admin pages share one external vertical rhythm", async ({
 	});
 	expect(dashboardGap).toBeCloseTo(SECTION_GAP, 1);
 	await page.getByRole("tab", { name: "Flowvy Mini-App" }).click();
-	await expectDirectSectionGap(page.getByRole("heading", { name: "Users" }));
+	const usersHeading = page.getByRole("heading", { name: "Users" });
+	await expectDirectSectionGap(usersHeading);
+	await expectAttachedSection(usersHeading);
 
 	await page.goto("/admin/users");
 	const usersGap = await page.getByRole("textbox", { name: "Search users" }).evaluate((input) => {
@@ -118,13 +150,16 @@ test("user and admin pages share one external vertical rhythm", async ({
 	await page.goto("/admin/users/1");
 	const invitations = page.getByRole("heading", { name: "Invitations" });
 	const detailGap = await invitations.evaluate((heading) => {
-		const details = heading.parentElement;
+		const invitationSection = heading.closest("section");
+		const details = invitationSection?.parentElement;
 		const hero = details?.previousElementSibling;
-		if (!details || !hero) throw new Error("Admin user detail structure is incomplete");
-		const paddingTop = Number.parseFloat(getComputedStyle(heading).paddingTop);
-		return heading.getBoundingClientRect().top + paddingTop - hero.getBoundingClientRect().bottom;
+		if (!invitationSection || !details || !hero) {
+			throw new Error("Admin user detail structure is incomplete");
+		}
+		return invitationSection.getBoundingClientRect().top - hero.getBoundingClientRect().bottom;
 	});
 	expect(detailGap).toBeCloseTo(SECTION_GAP, 1);
+	await expectAttachedSection(invitations);
 
 	await page.goto("/admin/settings");
 	await expectDirectSectionGap(page.getByRole("heading", { name: "Flowvy Mini-App" }));
@@ -132,22 +167,26 @@ test("user and admin pages share one external vertical rhythm", async ({
 	await page.goto("/admin/settings/access");
 	const profiles = page.getByRole("heading", { name: "Access profiles" });
 	const accessGap = await profiles.evaluate((heading) => {
-		const profilesSection = heading.parentElement?.parentElement;
+		const profilesSection = heading.closest("section");
 		const policySection = profilesSection?.previousElementSibling;
 		if (!profilesSection || !policySection) {
 			throw new Error("Access settings structure is incomplete");
 		}
-		const paddingTop = Number.parseFloat(getComputedStyle(heading).paddingTop);
 		return (
-			heading.getBoundingClientRect().top +
-			paddingTop -
-			policySection.getBoundingClientRect().bottom
+			profilesSection.getBoundingClientRect().top - policySection.getBoundingClientRect().bottom
 		);
 	});
 	expect(accessGap).toBeCloseTo(SECTION_GAP, 1);
 
 	await page.goto("/admin/settings/welcome");
-	await expectDirectSectionGap(page.getByRole("heading", { name: "Media" }));
+	await expect(page.getByRole("heading", { name: "Content" })).toBeVisible();
+	const welcomeSaveGap = await page.getByRole("button", { name: "Save" }).evaluate((button) => {
+		const wrapper = button.parentElement;
+		const section = wrapper?.previousElementSibling;
+		if (!wrapper || !section) throw new Error("Welcome save structure is incomplete");
+		return wrapper.getBoundingClientRect().top - section.getBoundingClientRect().bottom;
+	});
+	expect(welcomeSaveGap).toBeCloseTo(SECTION_GAP, 1);
 
 	await page.goto("/admin/settings/beszel");
 	const saveGap = await page.getByRole("button", { name: "Save" }).evaluate((button) => {
@@ -182,21 +221,78 @@ test("admin routes render deterministic success and placeholder states", async (
 	await expect(page.getByText("Integrations")).toBeVisible();
 	await expect(page.getByText("Remnawave", { exact: true })).toBeVisible();
 	await expect(page.getByText("Registration & Access")).toBeVisible();
+	for (const brand of ["uptime-kuma", "beszel", "remnawave", "flowvy"]) {
+		await expect(page.locator(`svg[data-service-brand="${brand}"]`)).toHaveCount(1);
+	}
+	const iconTreatments = await Promise.all(
+		[
+			page.locator('[data-settings-icon="pulse"]'),
+			page.locator('svg[data-service-brand="uptime-kuma"]').locator(".."),
+		].map((icon) =>
+			icon.evaluate((element) => {
+				const style = getComputedStyle(element);
+				return [style.backgroundColor, style.borderColor, style.color];
+			}),
+		),
+	);
+	expect(iconTreatments[0]).toEqual(iconTreatments[1]);
 	const miniAppCard = page
-		.getByText("Flowvy Mini-App", { exact: true })
-		.locator("xpath=following-sibling::*[1]");
+		.getByRole("heading", { name: "Flowvy Mini-App" })
+		.locator("xpath=ancestor::section[1]");
 	await expect(miniAppCard.getByText("Identity", { exact: true })).toBeVisible();
 	await expect(miniAppCard.getByText("Registration & Access", { exact: true })).toBeVisible();
 	await expect(page.getByText("Branding", { exact: true })).not.toBeVisible();
+	for (const [path, title] of [
+		["/admin/settings/kuma", "Connection"],
+		["/admin/settings/beszel", "Connection"],
+		["/admin/settings/branding", "Identity"],
+		["/admin/settings/welcome", "Content"],
+		["/admin/settings/access", "Registration"],
+	] as const) {
+		await page.goto(path);
+		await expect
+			.poll(() =>
+				page.getByRole("heading", { name: title }).evaluate((element) => {
+					const groupHeader = element.parentElement;
+					const surface = groupHeader?.parentElement;
+					return {
+						borderBottom: groupHeader ? getComputedStyle(groupHeader).borderBottomWidth : "0px",
+						overflow: surface ? getComputedStyle(surface).overflow : "visible",
+					};
+				}),
+			)
+			.toEqual({ borderBottom: "1px", overflow: "hidden" });
+	}
 
 	await page.goto("/admin/settings/access");
 	await expect(page.getByText("Service mode")).toBeVisible();
+	const profilesPanel = page
+		.getByRole("heading", { name: "Access profiles" })
+		.locator("xpath=ancestor::section[1]");
+	await expect(profilesPanel.getByRole("button", { name: "Create profile" })).toBeVisible();
+	await expect(
+		profilesPanel.getByText(/Define access, limits, and provider options/),
+	).toBeVisible();
 	await expect(page.getByRole("button", { name: "Back" })).toHaveCount(0);
 
 	await page.goto("/admin/settings/beszel");
 	await expect(page.getByText("Hub URL", { exact: true })).toBeVisible();
 	await expect(page.getByText("Configured on server")).toBeVisible();
 	await expect(page.getByRole("button", { name: "Back" })).toHaveCount(0);
+
+	await page.goto("/admin/settings/welcome");
+	await expect(page.getByText("Default media", { exact: true })).toBeVisible();
+	await expect(page.getByLabel("Greeting text")).toHaveAttribute(
+		"placeholder",
+		"HTML is supported. Use {{ app_name }} for the app name.",
+	);
+	await expect(
+		page.getByText("Animation (MP4/GIF) or photo sent with /start command.", { exact: true }),
+	).toBeVisible();
+	await expect(page.getByText("Animation", { exact: true })).toHaveCount(0);
+	const premiumNotice = page.getByRole("note");
+	await expect(premiumNotice).toContainText("Custom emoji require Telegram Premium");
+	await expect(premiumNotice).toBeVisible();
 
 	await page.goto("/admin/broadcast");
 	await expect(page.getByText("Coming soon")).toBeVisible();
@@ -208,17 +304,20 @@ test("detail screens rely on Telegram Back instead of duplicate in-content heade
 	mockApi: _mock,
 }) => {
 	const detailScreens = [
-		{ path: "/admin/settings/kuma", marker: "URL" },
-		{ path: "/admin/settings/beszel", marker: "Hub URL" },
-		{ path: "/admin/settings/branding", marker: "App Name" },
-		{ path: "/admin/settings/welcome", marker: "Message" },
-		{ path: "/admin/settings/access", marker: "Service mode" },
-		{ path: "/admin/users/1", marker: "alice" },
+		{ path: "/admin/settings/kuma", marker: "URL", title: "Uptime Kuma" },
+		{ path: "/admin/settings/beszel", marker: "Hub URL", title: "Beszel" },
+		{ path: "/admin/settings/branding", marker: "App name", title: "Identity" },
+		{ path: "/admin/settings/welcome", marker: "Content", title: "Welcome" },
+		{ path: "/admin/settings/access", marker: "Service mode", title: "Access" },
+		{ path: "/admin/users/1", marker: "alice", title: null },
 	] as const;
 
 	for (const screen of detailScreens) {
 		await page.goto(screen.path);
 		await expect(page.getByText(screen.marker, { exact: true }).first()).toBeVisible();
+		if (screen.title) {
+			await expect(page.getByRole("banner").getByText(screen.title, { exact: true })).toBeVisible();
+		}
 		await expect(page.getByRole("button", { name: "Back" })).toHaveCount(0);
 	}
 });

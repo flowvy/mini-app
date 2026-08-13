@@ -7,17 +7,31 @@ import {
 	type SelectHTMLAttributes,
 	type TextareaHTMLAttributes,
 	forwardRef,
+	useId,
 } from "react";
 import { dismissKeyboardOnEnter } from "../../lib/keyboard.ts";
 import styles from "./form-section.module.css";
 
-interface FormSectionHeaderProps {
-	children: string;
+interface FormSectionProps {
+	title: string;
+	action?: ReactNode;
+	children: ReactNode;
 }
 
-export const FormSectionHeader: FC<FormSectionHeaderProps> = ({ children }) => (
-	<h2 className={styles.header}>{children}</h2>
-);
+/** Shared attached header + content surface for named Mini App sections. */
+export const FormSection: FC<FormSectionProps> = ({ title, action, children }) => {
+	const headingId = useId();
+
+	return (
+		<section className={styles.section} aria-labelledby={headingId}>
+			<div className={styles.header}>
+				<h2 id={headingId}>{title}</h2>
+				{action && <div className={styles.sectionAction}>{action}</div>}
+			</div>
+			{children}
+		</section>
+	);
+};
 
 interface FormSectionFooterProps {
 	children: ReactNode;
@@ -57,11 +71,12 @@ interface FormFieldProps {
 	label: string;
 	htmlFor?: string;
 	hint?: ReactNode;
+	notice?: ReactNode;
 	children: ReactNode;
 }
 
 /** Stacked field used by full-width editor forms. */
-export const FormField: FC<FormFieldProps> = ({ label, htmlFor, hint, children }) => (
+export const FormField: FC<FormFieldProps> = ({ label, htmlFor, hint, notice, children }) => (
 	<div className={styles.field}>
 		{htmlFor ? (
 			<label className={styles.fieldLabel} htmlFor={htmlFor}>
@@ -72,6 +87,7 @@ export const FormField: FC<FormFieldProps> = ({ label, htmlFor, hint, children }
 		)}
 		{children}
 		{hint && <small className={styles.fieldHint}>{hint}</small>}
+		{notice && <div className={styles.fieldNotice}>{notice}</div>}
 	</div>
 );
 
