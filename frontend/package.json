@@ -24,6 +24,7 @@
 		"@tanstack/react-router": "^1.168.10",
 		"@tanstack/react-virtual": "^3.13.23",
 		"@telegram-apps/sdk-react": "^3.0.0",
+		"@zumer/snapdom": "2.24.1",
 		"geist": "^1.7.0",
 		"i18next": "^26.0.3",
 		"i18next-resources-to-backend": "^1.2.1",

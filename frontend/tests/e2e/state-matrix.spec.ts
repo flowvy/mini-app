@@ -121,9 +121,107 @@ test("device confirmations support cancel, failure, and successful remove-all", 
 	await page.getByRole("button", { name: "Remove all devices" }).click();
 	await page.getByRole("button", { name: "Remove", exact: true }).click();
 	await expect(page.getByText("No devices", { exact: true })).toBeVisible();
+	await expect(page.locator('[data-flowvy-dust-overlay="true"]')).toHaveCount(0);
 	await expect(
 		page.getByText("Connect a device with your subscription to see it here"),
 	).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+});
+
+test("remove-all gives every device its own staggered dust layer", async ({ page, mockApi }) => {
+	await page.emulateMedia({ reducedMotion: "no-preference" });
+	const twoDevices = {
+		devices: [
+			mockData.devices.devices[0],
+			{
+				...mockData.devices.devices[0],
+				hwid: "device-2",
+				platform: "windows",
+				deviceModel: "Workstation",
+			},
+		],
+		total: 2,
+		limit: 2,
+	};
+	mockApi.mock("GET", "/api/me/devices", [
+		{ body: twoDevices },
+		{ delayMs: 1200, body: { devices: [], total: 0, limit: 2 } },
+	]);
+	mockApi.mock("DELETE", "/api/me/devices", { status: 204, delayMs: 120 });
+
+	await page.goto("/devices");
+	await page.getByRole("button", { name: "Remove all devices" }).click();
+	const deleteResponse = page.waitForResponse(
+		(response) =>
+			response.request().method() === "DELETE" &&
+			new URL(response.url()).pathname === "/api/me/devices",
+	);
+	await page.getByRole("button", { name: "Remove", exact: true }).click();
+	await deleteResponse;
+
+	await expect(page.locator('[data-state="removing"][data-effect="dust"]')).toHaveCount(2, {
+		timeout: 400,
+	});
+	await expect(page.locator('[data-flowvy-dust-overlay="true"]')).toHaveCount(2);
+	const dustLayers = page.locator("[data-flowvy-dust-layer]");
+	await expect(dustLayers).toHaveCount(24);
+	const animatedProperties = await dustLayers.first().evaluate((layer) => {
+		const animation = layer.getAnimations()[0];
+		return animation?.effect instanceof KeyframeEffect
+			? animation.effect.getKeyframes().flatMap((frame) => Object.keys(frame))
+			: [];
+	});
+	expect(animatedProperties).toContain("transform");
+	expect(animatedProperties).toContain("opacity");
+	expect(animatedProperties).not.toContain("filter");
+	await expect(page.getByText("No devices", { exact: true })).toBeVisible({ timeout: 2500 });
+	await assertNoHorizontalOverflow(page);
+});
+
+test("successful device removal collapses without waiting for the devices refetch", async ({
+	page,
+	mockApi,
+}) => {
+	await page.emulateMedia({ reducedMotion: "no-preference" });
+	const twoDevices = {
+		devices: [
+			mockData.devices.devices[0],
+			{
+				...mockData.devices.devices[0],
+				hwid: "device-2",
+				platform: "windows",
+				deviceModel: "Workstation",
+			},
+		],
+		total: 2,
+		limit: 2,
+	};
+	mockApi.mock("GET", "/api/me/devices", [
+		{ body: twoDevices },
+		{
+			delayMs: 1200,
+			body: { devices: [twoDevices.devices[1]], total: 1, limit: 2 },
+		},
+	]);
+	mockApi.mock("DELETE", "/api/me/devices/device-1", { status: 204, delayMs: 120 });
+
+	await page.goto("/devices");
+	await page.getByRole("button", { name: "Delete device" }).first().click();
+	const deleteResponse = page.waitForResponse(
+		(response) =>
+			response.request().method() === "DELETE" &&
+			new URL(response.url()).pathname === "/api/me/devices/device-1",
+	);
+	await page.getByRole("button", { name: "Remove", exact: true }).click();
+	await deleteResponse;
+
+	const removingDevice = page.locator('[data-state="removing"][data-effect="dust"]');
+	await expect(removingDevice).toHaveCount(1, { timeout: 300 });
+	await expect(page.locator('[data-flowvy-dust-overlay="true"]')).toHaveCount(1);
+	await expect(page.getByText("Pixel 8", { exact: true })).toBeHidden();
+	await expect(page.getByText("Pixel 8", { exact: true })).toHaveCount(0, { timeout: 1200 });
+	await expect(page.getByText("Workstation", { exact: true })).toBeVisible();
+	await expect(page.getByText("1 / 2", { exact: true })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
 

@@ -1,12 +1,14 @@
-import { type FC, useState } from "react";
+import { type AnimationEvent, type FC, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DeviceRow } from "../components/devices/device-row.tsx";
 import { ErrorState } from "../components/ui/error-state.tsx";
 import { FormSection, FormSectionCard } from "../components/ui/form-section.tsx";
 import { PageLoading } from "../components/ui/page-loading.tsx";
 import { useDeleteAllDevices, useDeleteDevice, useDevices } from "../hooks/use-devices.ts";
+import { type PreparedDustEffect, prepareDustEffect } from "../lib/dust-effect.ts";
 import { formatRatio } from "../lib/format.ts";
-import { hapticNotification } from "../lib/haptics.ts";
+import { hapticImpact, hapticNotification } from "../lib/haptics.ts";
+import type { DeviceData } from "../types/devices.ts";
 import styles from "./devices.module.css";
 
 export const Devices: FC = () => {
@@ -17,6 +19,40 @@ export const Devices: FC = () => {
 	const [confirmHwid, setConfirmHwid] = useState<string | null>(null);
 	const [confirmAll, setConfirmAll] = useState(false);
 	const [mutationError, setMutationError] = useState(false);
+	const [renderedDevices, setRenderedDevices] = useState<DeviceData[]>([]);
+	const [removingHwids, setRemovingHwids] = useState<Set<string>>(() => new Set());
+	const [dustHwids, setDustHwids] = useState<Set<string>>(() => new Set());
+	const [isBulkRemoving, setIsBulkRemoving] = useState(false);
+	const removingHwidsRef = useRef<Set<string>>(new Set());
+	const rowElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
+
+	useLayoutEffect(() => {
+		const incomingDevices = data?.devices ?? [];
+		setRenderedDevices((currentDevices) => {
+			if (removingHwidsRef.current.size === 0) {
+				return incomingDevices;
+			}
+
+			const incomingByHwid = new Map(
+				incomingDevices.map((device) => [device.hwid, device] as const),
+			);
+			const nextDevices = currentDevices.flatMap((device) => {
+				const incomingDevice = incomingByHwid.get(device.hwid);
+				if (incomingDevice) {
+					incomingByHwid.delete(device.hwid);
+					return [incomingDevice];
+				}
+				return removingHwidsRef.current.has(device.hwid) ? [device] : [];
+			});
+
+			for (const device of incomingDevices) {
+				if (incomingByHwid.has(device.hwid)) {
+					nextDevices.push(device);
+				}
+			}
+			return nextDevices;
+		});
+	}, [data]);
 
 	if (isPending) {
 		return <PageLoading />;
@@ -26,28 +62,93 @@ export const Devices: FC = () => {
 		return <ErrorState onAction={refetch} />;
 	}
 
-	const devices = data?.devices ?? [];
 	const limit = data?.limit ?? null;
+
+	const prepareRemoval = (hwids: string[]) =>
+		Promise.all(
+			hwids.map(async (hwid) => ({
+				hwid,
+				effect: await prepareDustEffect(rowElementsRef.current.get(hwid)),
+			})),
+		);
+
+	const cancelRemovalEffects = (
+		preparedEffects: Promise<Array<{ hwid: string; effect: PreparedDustEffect | null }>>,
+	) => {
+		void preparedEffects.then((effects) => {
+			for (const { effect } of effects) effect?.cancel();
+		});
+	};
+
+	const startRemoval = async (
+		hwids: string[],
+		bulk: boolean,
+		preparedEffects: Promise<Array<{ hwid: string; effect: PreparedDustEffect | null }>>,
+	) => {
+		for (const hwid of hwids) {
+			removingHwidsRef.current.add(hwid);
+		}
+		const effects = await preparedEffects;
+		const nextDustHwids = new Set(effects.flatMap(({ hwid, effect }) => (effect ? [hwid] : [])));
+		setDustHwids((currentHwids) => new Set([...currentHwids, ...nextDustHwids]));
+		setRemovingHwids(new Set(removingHwidsRef.current));
+		setIsBulkRemoving(bulk);
+		window.requestAnimationFrame(() => {
+			hapticImpact("medium");
+			for (const [index, { effect }] of effects.entries()) {
+				effect?.start(bulk ? Math.min(index * 34, 136) : 0);
+			}
+		});
+		for (const [index, hwid] of hwids.entries()) {
+			window.setTimeout(() => finishRemoval(hwid), 850 + (bulk ? Math.min(index * 34, 136) : 0));
+		}
+	};
+
+	const finishRemoval = (hwid: string) => {
+		if (!removingHwidsRef.current.has(hwid)) return;
+		removingHwidsRef.current.delete(hwid);
+		setRenderedDevices((devices) => devices.filter((device) => device.hwid !== hwid));
+		setRemovingHwids(new Set(removingHwidsRef.current));
+		if (removingHwidsRef.current.size === 0) {
+			setIsBulkRemoving(false);
+			setDustHwids(new Set());
+		}
+	};
+
+	const handleRemovalAnimationEnd = (hwid: string, event: AnimationEvent<HTMLDivElement>) => {
+		if (event.target === event.currentTarget) finishRemoval(hwid);
+	};
 
 	const handleDelete = (hwid: string) => {
 		setMutationError(false);
+		const preparedEffects = prepareRemoval([hwid]);
 		deleteDevice.mutate(hwid, {
 			onSuccess: () => {
-				hapticNotification("success");
 				setConfirmHwid(null);
+				void startRemoval([hwid], false, preparedEffects);
 			},
-			onError: () => setMutationError(true),
+			onError: () => {
+				cancelRemovalEffects(preparedEffects);
+				hapticNotification("error");
+				setMutationError(true);
+			},
 		});
 	};
 
 	const handleDeleteAll = () => {
 		setMutationError(false);
+		const hwids = renderedDevices.map((device) => device.hwid);
+		const preparedEffects = prepareRemoval(hwids);
 		deleteAll.mutate(undefined, {
 			onSuccess: () => {
-				hapticNotification("success");
 				setConfirmAll(false);
+				void startRemoval(hwids, true, preparedEffects);
 			},
-			onError: () => setMutationError(true),
+			onError: () => {
+				cancelRemovalEffects(preparedEffects);
+				hapticNotification("error");
+				setMutationError(true);
+			},
 		});
 	};
 
@@ -62,31 +163,58 @@ export const Devices: FC = () => {
 				title={t("devices.section")}
 				action={
 					limit !== null ? (
-						<span className={styles.counter}>{formatRatio(devices.length, limit)}</span>
+						<span className={styles.counter}>{formatRatio(renderedDevices.length, limit)}</span>
 					) : undefined
 				}
 			>
 				<FormSectionCard>
-					{devices.length > 0 ? (
-						devices.map((device, i) => (
-							<div key={device.hwid}>
-								<DeviceRow
-									device={device}
-									isConfirming={confirmHwid === device.hwid}
-									onConfirm={() => {
-										setMutationError(false);
-										setConfirmHwid(device.hwid);
-									}}
-									onCancel={() => {
-										setMutationError(false);
-										setConfirmHwid(null);
-									}}
-									onDelete={() => handleDelete(device.hwid)}
-									isDeleting={deleteDevice.isPending && confirmHwid === device.hwid}
-								/>
-								{i < devices.length - 1 && <div className={styles.divider} />}
-							</div>
-						))
+					{renderedDevices.length > 0 ? (
+						renderedDevices.map((device, i) => {
+							const isRemoving = removingHwids.has(device.hwid);
+							const hasDustEffect = dustHwids.has(device.hwid);
+							return (
+								<div
+									key={device.hwid}
+									className={`${styles.devicePresence} ${
+										isRemoving ? styles.devicePresenceRemoving : ""
+									} ${hasDustEffect ? styles.devicePresenceDust : ""}`}
+									style={
+										isRemoving && isBulkRemoving
+											? { animationDelay: `${Math.min(i * 34, 136)}ms` }
+											: undefined
+									}
+									inert={isRemoving}
+									aria-hidden={isRemoving}
+									data-state={isRemoving ? "removing" : "idle"}
+									data-effect={hasDustEffect ? "dust" : "fallback"}
+									onAnimationEnd={(event) => handleRemovalAnimationEnd(device.hwid, event)}
+								>
+									<div
+										className={styles.devicePresenceInner}
+										ref={(element) => {
+											if (element) rowElementsRef.current.set(device.hwid, element);
+											else rowElementsRef.current.delete(device.hwid);
+										}}
+									>
+										<DeviceRow
+											device={device}
+											isConfirming={confirmHwid === device.hwid && !isRemoving}
+											onConfirm={() => {
+												setMutationError(false);
+												setConfirmHwid(device.hwid);
+											}}
+											onCancel={() => {
+												setMutationError(false);
+												setConfirmHwid(null);
+											}}
+											onDelete={() => handleDelete(device.hwid)}
+											isDeleting={deleteDevice.isPending && confirmHwid === device.hwid}
+										/>
+										{i < renderedDevices.length - 1 && <div className={styles.divider} />}
+									</div>
+								</div>
+							);
+						})
 					) : (
 						<div className={styles.empty}>
 							<svg
@@ -112,7 +240,7 @@ export const Devices: FC = () => {
 				</FormSectionCard>
 			</FormSection>
 
-			{devices.length > 1 && !confirmAll && (
+			{renderedDevices.length > 1 && !confirmAll && removingHwids.size === 0 && (
 				<button
 					type="button"
 					className={styles.dangerBtn}
@@ -129,7 +257,7 @@ export const Devices: FC = () => {
 			{confirmAll && (
 				<div className={styles.confirmBar}>
 					<span className={styles.confirmBarText}>
-						{t("devices.confirmAll", { n: devices.length })}
+						{t("devices.confirmAll", { n: renderedDevices.length })}
 					</span>
 					<div className={styles.confirmBarActions}>
 						<button
