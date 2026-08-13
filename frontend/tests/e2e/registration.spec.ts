@@ -329,6 +329,19 @@ test("registered user can copy and share a reusable personal invite", async ({
 	await expect(page.getByText("Invite friends")).toBeVisible();
 	await expect(page.getByText("FVY-2345-6789-ABCD-EFGH-JKMN")).toBeVisible();
 	await expect(page.getByLabel("Registered through your invite")).toContainText("3");
+	const copyAction = page.getByText("Copy", { exact: true });
+	const copyColors = await copyAction.evaluate((element) => {
+		const neutralProbe = document.createElement("span");
+		neutralProbe.style.color = "var(--v2-text-secondary)";
+		document.body.append(neutralProbe);
+		const colors = {
+			action: getComputedStyle(element).color,
+			neutral: getComputedStyle(neutralProbe).color,
+		};
+		neutralProbe.remove();
+		return colors;
+	});
+	expect(copyColors.action).toBe(copyColors.neutral);
 
 	await page.getByRole("button", { name: /FVY-2345/ }).click();
 	await expect(page.getByText("Copied", { exact: true })).toBeVisible();

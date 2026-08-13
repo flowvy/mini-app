@@ -73,7 +73,7 @@
 	align-items: center;
 	gap: 5px;
 	font: 600 10px / 1 var(--font-family);
-	color: var(--v2-text-positive);
+	color: var(--v2-text-secondary);
 }
 
 .notice {
