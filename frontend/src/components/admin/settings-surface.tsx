@@ -15,11 +15,13 @@ export const SettingsSection: FC<SettingsSectionProps> = ({ title, action, child
 
 	return (
 		<section className={styles.section} aria-labelledby={headingId}>
-			<div className={styles.sectionHeading}>
-				<h2 id={headingId}>{title}</h2>
-				{action && <div className={styles.sectionAction}>{action}</div>}
+			<div className={styles.surface}>
+				<div className={styles.sectionHeading}>
+					<h2 id={headingId}>{title}</h2>
+					{action && <div className={styles.sectionAction}>{action}</div>}
+				</div>
+				{children}
 			</div>
-			<div className={styles.surface}>{children}</div>
 		</section>
 	);
 };

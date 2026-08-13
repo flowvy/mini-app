@@ -162,6 +162,20 @@ test("user and admin pages share one external vertical rhythm", async ({
 	await expectAttachedSection(invitations);
 
 	await page.goto("/admin/settings");
+	for (const title of ["Integrations", "Flowvy Mini-App", "System"]) {
+		await expect
+			.poll(() =>
+				page.getByRole("heading", { name: title }).evaluate((element) => {
+					const groupHeader = element.parentElement;
+					const surface = groupHeader?.parentElement;
+					return {
+						borderBottom: groupHeader ? getComputedStyle(groupHeader).borderBottomWidth : "0px",
+						overflow: surface ? getComputedStyle(surface).overflow : "visible",
+					};
+				}),
+			)
+			.toEqual({ borderBottom: "1px", overflow: "hidden" });
+	}
 	await expectDirectSectionGap(page.getByRole("heading", { name: "Flowvy Mini-App" }));
 
 	await page.goto("/admin/settings/access");
