@@ -1,7 +1,7 @@
 # Текущее состояние Flowvy
 
-Последняя полная проверка: **2026-08-11**
-Проверенное текущее состояние: **рабочее дерево `dev` поверх `e73256f`**
+Последняя полная проверка: **2026-08-13**
+Проверенное текущее состояние: **рабочее дерево `dev` поверх `7da10bf`**
 Последний полный baseline: **`dd3b5c8`** (`dev`, 2026-08-04)
 Стадия: **незавершённый MVP; production readiness не подтверждена**
 
@@ -67,6 +67,25 @@
 - Пользовательские маршруты Home, Devices, Pulse и Support.
 - Admin dashboard, список/карточка пользователя, действия, выбор Pulse source, отдельные
   Kuma/Beszel/branding/welcome/access settings и Broadcast route.
+- Admin settings используют один settings-specific composition layer для section headers,
+  navigation/status/fact rows, notices и field groups. Overview группирует integrations,
+  Flowvy Mini-App и system facts; вложенные Kuma/Beszel/Identity/Welcome/Access маршруты используют
+  contained panels с внутренними group headers, одинаковым field/status/save rhythm и читаемой
+  максимальной шириной на desktop. Общий semantic `FormSection` распространяет attached-header
+  композицию на именованные секции Home details, Devices, Pulse groups/incidents, Admin dashboard и
+  Admin user detail; внешний 8px rhythm задаётся ровно один раз контейнером страницы. Access profile
+  открывается через native `dialog.showModal()` в browser top layer: compact viewport получает
+  полноэкранный task surface без app header/tab bar, а desktop — центрированный dialog с dimmed inert
+  контекстом. Отдельные header/body/footer, focus trap, `Escape` и возврат focus на фактический trigger
+  проверены в Chromium/WebKit.
+- Uptime Kuma, Beszel, Remnawave и Flowvy в Settings используют локальные монохромные brand marks в
+  одинаковых нейтральных icon tiles; Pulse source тоже нейтрален и не маскируется под positive status.
+  Welcome собран в одну content surface: premium constraint показан компактным inline warning у
+  Greeting text, HTML/app-name подсказка перенесена в placeholder самого textarea, а формат
+  MP4/GIF/photo описывает строку `Default media`. Создание access profile
+  запускается из profiles surface: contextual action row для списка и один `Create profile` CTA в
+  empty state; create/edit dialog различает title и submit action, provider fields остаются под
+  `Advanced` disclosure.
 - Неизвестный пользователь видит брендированный open/invite-only onboarding; успешная регистрация
   обновляет Query cache и открывает приложение без reload.
 - На Home есть персональный invite code, число прямых приглашений, копирование с feedback и
@@ -231,7 +250,9 @@ registration/frontend/dev изменений проверена Full gate 2026-0
 diff-применимые static/unit/build/docs проверки и 44-case UI-матрицу на четырёх проектах.
 Унификация page-level вертикального ритма проверена 2026-08-12 отдельной полной frontend-матрицей.
 Новый layered SegmentedControl проверен 2026-08-13 полной 204-case frontend-матрицей и отдельным
-ручным просмотром affected light/dark evidence.
+ручным просмотром affected light/dark evidence. Единая система Settings и Access dialog затем
+прошли полный repository gate и 208-case browser matrix 2026-08-13; affected light/dark evidence
+проверены на mobile, small-mobile и desktop.
 
 | Область | Команда | Результат |
 |---|---|---|
@@ -277,6 +298,12 @@ diff-применимые static/unit/build/docs проверки и 44-case UI-
 | Xray terminology visual evidence | access policy screenshots at 320x568 and 1280x900 | `No proxy access` просмотрен вручную в light/dark; текст помещается, контраст и геометрия сохранены |
 | Unified page rhythm | changed-file Biome, `pnpm typecheck`, `pnpm test`, `pnpm build`, full Playwright all projects | общий внешний gap 8px проверен на user/admin routes; 33 unit и 204/204 browser scenarios прошли; 112 route/theme/viewport screenshots просмотрены вручную, overflow и serious Axe checks зелёные. Общий `pnpm lint` отдельно остаётся красным на трёх предшествовавших format findings вне этого изменения |
 | Layered segmented controls | changed-file Biome, `pnpm typecheck`, `pnpm test`, `pnpm build`, `PLAYWRIGHT_PORT=5214; pnpm test:e2e:all` | 33 unit и 204/204 browser scenarios прошли на 430x932, 320x568, iPhone 13/WebKit и 1280x900; tabs/radiogroup semantics, arrow focus, sliding/reduced motion, overflow, serious Axe и mutations зелёные; dashboard/settings/access evidence вручную просмотрены в light/dark |
+| Settings UI full gate | `scripts/verify.ps1 -Scope Changed`; `scripts/verify.ps1 -Scope Full` | 177 frontend files linted, typecheck/build, 33 unit и 52 mobile browser scenarios passed; 315 backend tests, 53 Remnawave contract tests, one-head/fresh/downgrade/re-upgrade/drift migrations и docs passed |
+| Settings all-project UI matrix | `PLAYWRIGHT_PORT=5221; pnpm exec playwright test --workers=4` | 208/208 passed на 430x932, 320x568, iPhone 13/WebKit и 1280x900; nested route titles, pointer scrolling, focus trap/return, serious Axe, overflow, console/network и mutation/error states зелёные |
+| Settings brand/spacing polish | `PLAYWRIGHT_PORT=5224; scripts/verify.ps1 -Scope Full`; `PLAYWRIGHT_PORT=5225; pnpm exec playwright test --workers=4` | Full repository gate и 208/208 browser scenarios прошли; нейтральный Pulse, четыре локальных brand marks, единый nested rhythm и упрощённый Welcome покрыты deterministic assertions |
+| Settings visual evidence | deterministic Playwright screenshots + manual inspection | Overview, Kuma, Beszel, Identity, Welcome, Access policy и access editor просмотрены в light/dark на mobile/small-mobile/desktop; brand tiles, hierarchy, hint placement, contrast, wrapping, dialog scroll/footer и bottom chrome визуально согласованы |
+| Nested Settings composition | `PLAYWRIGHT_PORT=5233; pnpm exec playwright test --workers=4`; `PLAYWRIGHT_PORT=5234; scripts/verify.ps1 -Scope Full` | 216/216 passed на mobile Chromium, small-mobile Chromium, iOS WebKit и desktop Chromium; Full repository gate пройден; contained panels, responsive form width, contextual empty/list creation, distinct create dialog, Premium inline warning, focus/keyboard/Axe/overflow/error states зелёные |
+| Global sections и top-layer Access editor | `PLAYWRIGHT_PORT=4179; pnpm exec playwright test --workers=4`; `PLAYWRIGHT_PORT=4180; scripts/verify.ps1 -Scope Full` | 216/216 browser scenarios; Full gate: 315 backend, 53 Remnawave contract, migrations/drift, 33 frontend unit, production build, 54 mobile E2E и docs. Attached headers и единый 8px rhythm проверены на Home/Devices/Pulse/Admin; native `:modal`, compact full-screen bounds, desktop centering, focus/Escape/Axe и Greeting placeholder зелёные |
 
 ## Следующее действие
 
