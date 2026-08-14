@@ -61,6 +61,10 @@ Alembic загружает отдельный `MigrationSettings`, содерж�
 authenticated events и entitlement decisions сохраняются, admin UI показывает `Planning only`, но
 Remnawave mutation не выполняется. Переключатель намеренно server-only и не находится в Mini App.
 
+Для безопасной локальной проверки полного digital-product lifecycle из корня используется
+`.\scripts\verify-tribute-entitlements.ps1`. Команда работает только с disposable test PostgreSQL и
+stateful fake Remnawave, не читает runtime key и не выполняет внешние provider requests.
+
 Параметры worker:
 
 - `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED` — запускает lifespan worker; при `true` startup также

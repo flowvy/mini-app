@@ -493,14 +493,21 @@ ledger replay применяет только более поздние applied 
 переводят operation в `Needs review`. Неизвестный Telegram ID никогда не создаёт пользователя и не
 обходит registration policy.
 
+Development smoke `scripts/verify-tribute-entitlements.ps1` проверяет весь документированный
+digital-product путь через production FastAPI/Dishka/PostgreSQL boundary: подписанный purchase,
+exact duplicate, единственный grant с absolute `expireAt`, подписанный refund, duplicate refund и
+единственную compensation. Provider представлен stateful fake с тем же version-neutral update
+request; поэтому smoke воспроизводим и не обращается к Tribute либо Remnawave по сети.
+
 У Tribute не найден официальный sandbox, test hostname/credential или health endpoint. Операторский
 интерфейс отправляет отдельный подписанный test-ping: exact JSON object с единственным bounded string
 полем `test_event`, без `name/created_at/sent_at/payload`. Flowvy проверяет тот же HMAC до parse,
 валидирует отдельную strict schema, отвечает `200` и не сохраняет ping в inbox. Контракт подтверждён
 2026-08-14 реальной контролируемой отправкой: Tribute показал success, server зафиксировал один `200`,
 а число inbox rows осталось нулевым. OpenAPI указывает только production origin. Автотесты используют
-MockTransport и Playwright fixtures; реальный платёж или self-payment не нужны как smoke. Live API
-check и штатную тестовую доставку может инициировать только оператор явно настроенной интеграции.
+MockTransport, PostgreSQL-backed fake provider и Playwright fixtures; реальный платёж или
+self-payment не являются development smoke. Live API check и штатную тестовую доставку может
+инициировать только оператор явно настроенной интеграции.
 
 Provider-neutral rule design дополнительно сверялся 2026-08-13 с primary Stripe pricing/
 entitlements документацией только как архитектурный reference: Tribute contract из неё не

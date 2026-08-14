@@ -32,6 +32,17 @@ uv run --frozen pytest -m "not integration" -q
 uv run --frozen pytest -q
 ```
 
+Узкий сквозной smoke Tribute запускается из корня и не использует реальные provider credentials:
+
+```powershell
+.\scripts\verify-tribute-entitlements.ps1
+```
+
+Команда поднимает только disposable PostgreSQL test service и запускает один production-boundary
+fixture: HMAC-signed digital-product purchase, exact duplicate, durable grant, absolute-expiry fake
+Remnawave mutation, HMAC-signed refund, duplicate refund и compensation. Реальные Tribute и
+Remnawave endpoints не вызываются.
+
 `tests/conftest.py` автоматически маркирует тесты с fixtures `engine` или `session` как
 `integration`. Они используют отдельную PostgreSQL database/user `test:test`; SQLite не является
 заменой. Remnawave, Kuma, Beszel, Tribute, Telegram, clock и transport должны быть fake/mock.
@@ -49,6 +60,9 @@ payload/signature/username. Entitlement tests отдельно доказыва�
 одной digital purchase, review-only donation/subscription, unknown-user fail closed, rule/profile
 snapshots, refund before/after grant, replay более поздних ещё не refunded grants, per-user worker
 serialization, absolute-target reconciliation после timeout и отсутствие второго provider mutation.
+Отдельный end-to-end fixture связывает эти границы через production FastAPI route и Dishka session:
+после duplicate purchase/refund в PostgreSQL остаются ровно две semantic operations, fake provider
+получает один grant и одну compensation, а local subscription возвращается к исходному expiry.
 Commerce fixtures отдельно проверяют conditional rule validation, active-profile gate,
 CRUD, no-match/fixed/volume preview и целочисленные 500/1000/3500/4000 RUB boundaries без webhook
 или access side effect. Media tests сканируют ложный declared size и действительно читают aiogram `InputFile`

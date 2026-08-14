@@ -1,7 +1,7 @@
 # Текущее состояние Flowvy
 
 Последняя полная проверка: **2026-08-14**; последний change-aware gate: **2026-08-14**
-Проверенное текущее состояние: **`dev` с Tribute entitlement ledger и admin activity journal**
+Проверенное текущее состояние: **`dev` с Tribute entitlement ledger, admin journal и E2E fixture**
 Последний полный baseline: **`dd3b5c8`** (`dev`, 2026-08-04)
 Стадия: **незавершённый MVP; production readiness не подтверждена**
 
@@ -47,6 +47,10 @@
   absolute `expireAt` через official version-aware update-user contract и reconciles timeout без
   повторного продления. Refund replay сохраняет более поздние ещё не возвращённые grants; конфликт
   или неполная история останавливаются в review.
+- Детерминированный `scripts/verify-tribute-entitlements.ps1` проводит production HTTP/Dishka/
+  PostgreSQL path через подписанные purchase/refund payloads официальной формы, exact duplicates,
+  grant и compensation. Stateful fake Remnawave подтверждает два absolute-expiry update без сети;
+  runtime executor остаётся выключенным.
 - Явная открытая/invite-only регистрация: `/api/me` не создаёт полностью неизвестного пользователя
   чтением, но безопасно импортирует exact provider-only Remnawave match; onboarding работает
   одинаково из Mini App и бота.
@@ -407,16 +411,16 @@ Tribute показал success, endpoint вернул `200`, inbox осталс�
 | Global mobile input/loading UX | `PLAYWRIGHT_PORT=5314; scripts/verify.ps1 -Scope Changed`; focused all-project Playwright matrix and visual evidence | Changed gate: 293 service-free backend tests, Ruff, 37 frontend unit, lint/typecheck/build, 69 mobile smoke и docs passed. Дополнительно 72/72 affected browser scenarios прошли на 430x932, 320x568, iPhone/WebKit и desktop Chromium. Active-control reveal, deferred footer/tab return, сохранённая button activation, CSS spinner без SVG/backing box, Axe/contrast, overflow, console/network guards зелёные; Tribute Settings и pending Save просмотрены в light/dark |
 | Tribute observe-only webhook inbox | focused HTTP/repository suites; `PLAYWRIGHT_PORT=5321; scripts/verify.ps1 -Scope Full`; live test-ping; follow-up full backend и `scripts/verify.ps1 -Scope Changed` | 51/51 focused и 383/383 current backend passed; Changed gate — 328 service-free, Ruff/docs. Исходный Full gate прошёл one-head, zero/previous-head upgrade, downgrade/re-upgrade/drift, 53 Remnawave contract, frontend lint/typecheck, 37 unit, production build и 69 mobile E2E. Controlled Tribute test подтвердил strict 64-hex signature и отдельный `test_event`: endpoint `200`, inbox 0 rows, без commerce/access side effect |
 | Tribute entitlement ledger и admin activity | focused contract/concurrency suites; `PLAYWRIGHT_PORT=5188; pnpm exec playwright test tests/e2e/tribute.spec.ts --workers=4`; `PLAYWRIGHT_PORT=5196; scripts/verify.ps1 -Scope Full` | Focused webhook/executor 43 passed, commerce/provider/planner/executor/Remnawave selection 59 passed; отдельная executor concurrency suite 8/8 подтвердила сериализацию операций одного пользователя. Full gate: one-head/upgrade/downgrade/re-upgrade/drift, 402 backend, 55 Remnawave contract, Ruff, frontend lint/typecheck, 37 unit, production build, 71 mobile browser и docs passed. Tribute all-project matrix 52/52 прошла на 430x932, 320x568, iPhone/WebKit и desktop; activity loading/empty/populated/error/retry, admin allow-list, Axe/overflow/console/network зелёные. Mobile dark и desktop light evidence просмотрены. Executor default off; live payment/provider mutation не вызывались |
+| Tribute digital-product E2E fixture | `scripts/verify-tribute-entitlements.ps1`; `PLAYWRIGHT_PORT=5198; scripts/verify.ps1 -Scope Full` | Focused production-boundary smoke 1/1 прошёл: signed purchase/refund, exact duplicates, две semantic operations, один absolute grant и одна compensation через stateful fake Remnawave, local expiry восстановлен. Full gate: migrations/drift, 403 backend, 55 Remnawave contract, Ruff, frontend lint/typecheck, 37 unit, production build, 71 browser и docs passed. Реальные Tribute/Remnawave endpoints не вызывались; executor runtime default не менялся |
 
 ## Следующее действие
 
-Следующий Tribute slice — не расширять auto-delivery догадками, а подготовить один controlled
-digital-product end-to-end fixture на отдельной безопасной provider identity: purchase → pending
-plan → absolute grant → duplicate retry → refund compensation. До него executor остаётся выключенным
-и callback URL не публикуется. Для donation/subscription сначала нужен официальный unique payment
-identifier либо иной документированный provider contract; без него эти события остаются операторским
-journal-only review. После controlled fixture отдельно проектируются operator retry/resolve flow,
-alerts/metrics и production rollout/rollback runbook.
+Следующий Tribute slice — operator retry/resolve flow для `Needs review`, alerts/metrics и отдельный
+production rollout/rollback runbook. Executor остаётся выключенным и callback URL не публикуется.
+Контролируемый live digital-product purchase/refund возможен только после явного выбора изолированной
+provider identity и товара; deterministic fixture уже покрывает тот же production-boundary path без
+сети. Для donation/subscription сначала нужен официальный unique payment identifier либо иной
+документированный provider contract; без него эти события остаются operator journal-only review.
 
 Отдельно остаются безопасный Broadcast, live Remnawave 3.x, Kuma и первый подтверждённый удалённый
 CI run.
