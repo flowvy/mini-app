@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from flowvy.api.routes.debug import check_debug
 from flowvy.schemas.commerce import (
@@ -14,17 +14,30 @@ from flowvy.schemas.commerce import (
     CommerceRulePreviewResponse,
     CommerceRuleResponse,
 )
+from flowvy.schemas.tribute_webhooks import EntitlementOperationListResponse
 from flowvy.services.commerce import (
     CommerceRuleError,
     CommerceRuleNotFoundError,
     CommerceRuleService,
 )
+from flowvy.services.entitlements import EntitlementJournalService
 
 router = APIRouter(
     prefix="/api/debug/admin/commerce",
     tags=["debug-admin-commerce"],
     route_class=DishkaRoute,
 )
+
+
+@router.get("/operations", response_model=EntitlementOperationListResponse)
+async def list_entitlement_operations(
+    request: Request,
+    service: FromDishka[EntitlementJournalService],
+    limit: int = Query(default=20, ge=1, le=100),
+) -> EntitlementOperationListResponse:
+    """Return deterministic local journal data in explicit debug mode."""
+    check_debug(request)
+    return await service.list_recent(limit)
 
 
 def _error(exc: CommerceRuleError) -> HTTPException:

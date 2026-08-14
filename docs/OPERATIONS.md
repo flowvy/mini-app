@@ -55,6 +55,30 @@ Alembic загружает отдельный `MigrationSettings`, содерж�
 сохранение legacy Kuma-enabled настройки при переходе к Pulse provider selector и drift, затем
 удаляет её; CI делает zero-to-head на ephemeral PostgreSQL.
 
+## Tribute entitlement worker
+
+Безопасный runtime default — `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED=false`. В этом режиме
+authenticated events и entitlement decisions сохраняются, admin UI показывает `Planning only`, но
+Remnawave mutation не выполняется. Переключатель намеренно server-only и не находится в Mini App.
+
+Параметры worker:
+
+- `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED` — запускает lifespan worker; при `true` startup также
+  требует полный `REMNAWAVE_URL`/`REMNAWAVE_API_TOKEN`;
+- `TRIBUTE_ENTITLEMENT_WORKER_INTERVAL_SECONDS` — пауза пустой очереди, default 10 секунд;
+- `TRIBUTE_ENTITLEMENT_LEASE_SECONDS` — после этого interrupted `processing` возвращается в retry,
+  default 120 секунд;
+- `TRIBUTE_ENTITLEMENT_MAX_ATTEMPTS` — предел transient provider attempts, default 5.
+
+Остановка/перезапуск процесса не удаляет очередь. Stale lease возвращается в retry, а сохранённый
+absolute target позволяет сначала reconciliate provider state и не повторять уже применённое
+продление. Для временной остановки side effects выключают gate и штатно перезапускают backend;
+pending/retry/review history сохраняется. Не редактируйте ledger вручную: operator retry/resolve API
+пока отсутствует, а неоднозначные операции должны оставаться `Needs review` для отдельного
+контролируемого разбора. Включение worker на production-like target требует отдельной проверки
+backup/rollback, одного контролируемого digital-product fixture и наблюдения журнала; текущий MVP не
+имеет готового production rollout runbook.
+
 ## Cloudflare Tunnel
 
 `scripts/tunnel-up.ps1 -ConfirmPublic` принимает только backend с недоступными debug routes,

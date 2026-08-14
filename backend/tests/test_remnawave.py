@@ -8,7 +8,11 @@ from urllib.parse import parse_qs, urlparse
 import httpx
 import pytest
 
-from flowvy.schemas.remnawave import RemnawaveCreateUserRequest, RemnawaveUserData
+from flowvy.schemas.remnawave import (
+    RemnawaveCreateUserRequest,
+    RemnawaveUpdateUserRequest,
+    RemnawaveUserData,
+)
 from flowvy.services.remnawave import RemnawaveClient, RemnawaveError
 
 FAKE_USER = {
@@ -119,6 +123,55 @@ def _make_client(
         token="test-token",
         http=http,
     )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("version", "raw_user", "identity_field", "identity"),
+    [
+        ("2.8.1", FAKE_USER, "uuid", FAKE_USER["uuid"]),
+        ("3.1.0", FAKE_USER_3, "id", 42),
+    ],
+)
+async def test_update_user_access_uses_official_version_identity_and_absolute_expiry(
+    version: str,
+    raw_user: dict[str, object],
+    identity_field: str,
+    identity: object,
+) -> None:
+    target = "2026-09-15T12:00:00Z"
+    http = AsyncMock()
+    http.get = AsyncMock(return_value=_metadata(version))
+    http.patch = AsyncMock(
+        return_value=_make_response(
+            {"response": {**raw_user, "expireAt": target, "updatedAt": target}},
+        ),
+    )
+    client = RemnawaveClient(
+        base_url="https://panel.example.com",
+        token="test-token",
+        http=http,
+    )
+    user = RemnawaveUserData.from_raw(raw_user)
+    request = RemnawaveUpdateUserRequest(
+        status="ACTIVE",
+        traffic_limit_bytes=0,
+        traffic_limit_strategy="NO_RESET",
+        expire_at=target,
+        hwid_device_limit=2,
+        active_internal_squads=[],
+    )
+
+    updated = await client.update_user_access(user, request)
+
+    assert updated.expire_at.isoformat() == "2026-09-15T12:00:00+00:00"
+    body = http.patch.await_args.kwargs["json"]
+    assert body[identity_field] == identity
+    assert body["expireAt"] == target
+    assert body["status"] == "ACTIVE"
+    assert "telegramId" not in body
+    other_identity = "id" if identity_field == "uuid" else "uuid"
+    assert other_identity not in body
 
 
 @pytest.mark.asyncio

@@ -44,10 +44,18 @@
 .panelHeading {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
 	min-height: 29px;
 	padding: 5px 14px;
 	border-bottom: 1px solid var(--v2-border-tertiary);
 	background: color-mix(in srgb, var(--v2-bg-tertiary) 50%, transparent);
+}
+
+.panelAction {
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
 }
 
 .panelHeading h2 {

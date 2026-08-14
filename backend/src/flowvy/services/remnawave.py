@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import re
 import uuid
+from typing import Literal
 from urllib.parse import quote, urlencode
 
 import httpx
@@ -16,6 +17,7 @@ from flowvy.schemas.remnawave import (
     RemnawaveDevice,
     RemnawaveSubInfo,
     RemnawaveSubInfoUser,
+    RemnawaveUpdateUserRequest,
     RemnawaveUserData,
     RemnawaveUsersPage,
 )
@@ -97,6 +99,23 @@ class RemnawaveClient:
         data = self._unwrap_response(resp)
         if not isinstance(data, dict):
             raise RemnawaveError(502, "Provider returned an invalid action response")
+        return data
+
+    async def _patch(self, path: str, body: dict) -> dict:
+        """Send PATCH request, unwrap one response object."""
+        try:
+            resp = await self._http.patch(
+                f"{self._base}{path}",
+                headers=self._headers(),
+                json=body,
+            )
+        except httpx.TimeoutException as exc:
+            raise RemnawaveError(504, "Provider request timed out", retryable=True) from exc
+        except httpx.RequestError as exc:
+            raise RemnawaveError(502, "Provider connection failed", retryable=True) from exc
+        data = self._unwrap_response(resp)
+        if not isinstance(data, dict):
+            raise RemnawaveError(502, "Provider returned an invalid update response")
         return data
 
     async def _delete(self, path: str) -> None:
@@ -254,6 +273,35 @@ class RemnawaveClient:
         if user.telegram_id != request.telegram_id or user.username != request.username:
             raise RemnawaveError(502, "Unexpected create-user response")
         return user
+
+    async def update_user_access(
+        self,
+        user: RemnawaveUserData,
+        request: RemnawaveUpdateUserRequest,
+    ) -> RemnawaveUserData:
+        """Apply one documented absolute user state for Remnawave 2.8/3.1."""
+        if await self._api_major() >= 3:
+            identity_field: Literal["id", "uuid"] = "id"
+            identity: int | str = user.provider_id
+        else:
+            if user.uuid is None:
+                raise RemnawaveError(502, "Legacy user UUID is unavailable")
+            identity_field = "uuid"
+            identity = user.uuid
+        data = await self._patch(
+            "/api/users",
+            request.to_provider_payload(
+                identity_field=identity_field,
+                identity=identity,
+            ),
+        )
+        try:
+            updated = RemnawaveUserData.from_raw(data)
+        except (KeyError, TypeError, ValueError, ValidationError) as exc:
+            raise RemnawaveError(502, "Unexpected update-user response") from exc
+        if updated.provider_id != user.provider_id or updated.telegram_id != user.telegram_id:
+            raise RemnawaveError(502, "Unexpected update-user response")
+        return updated
 
     async def get_users_by_telegram_id(
         self,

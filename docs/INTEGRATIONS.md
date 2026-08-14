@@ -402,17 +402,18 @@ Hub URL и credentials в артефакты/логи не выводились.
 
 ## Tribute: первый платёжный provider
 
-Текущий реализованный scope — admin configuration, безопасная проверка server-side API key и
-observe-only webhook inbox. Ни один из этих flows не исполняет commerce rule и не меняет доступ.
-Секрет задаётся как `TRIBUTE_API_KEY`, хранится в environment и никогда не возвращается frontend,
-БД или Redis. `POST /api/admin/settings/tribute/test` через fixed-origin client выполняет один
-`GET https://tribute.tg/api/v1/products?page=1&size=1`. Это read-only API check, а не тестовый
-платёж: он не создаёт order, subscription, donation, purchase или refund. Client не следует
-redirects, игнорирует proxy environment, имеет конечный timeout, ограничивает response body и
-валидирует JSON до success.
+Реализованный scope включает admin configuration, безопасную проверку server-side API key,
+аутентифицированный webhook inbox, долговечный entitlement ledger/outbox, операторский журнал и
+feature-gated executor для однозначных покупок цифровых товаров. Секрет задаётся как
+`TRIBUTE_API_KEY`, хранится в environment и никогда не возвращается frontend, БД или Redis.
+`POST /api/admin/settings/tribute/test` через fixed-origin client выполняет один read-only
+`GET https://tribute.tg/api/v1/products?page=1&size=1`; он не создаёт payment, subscription,
+donation, purchase или refund. Client запрещает redirects и proxy environment, ограничивает время,
+размер ответа и принимает success только после schema validation.
 
 Admin Settings выделяет Payments отдельно от взаимоисключающего Pulse provider selector. Tribute
-экран показывает credential presence, API-check state и provider-neutral access automation для:
+экран показывает credential presence, API-check state, состояние executor, provider-neutral access
+automation и последние allow-listed операции для:
 
 - subscriptions: `new_subscription`, `renewed_subscription`, `cancelled_subscription`; типы
   `regular`, `gift`, `trial`, причём gift/trial при продлении становятся regular;
@@ -434,18 +435,18 @@ Automation rule состоит из source match, duration calculator и interna
 `3500 RUB / 365 days` дают 30, 60, 365 и 417 дней для 500, 1000, 3500 и 4000 RUB, но это только
 admin-authored/test fixture. Repository не seed-ит такие суммы.
 
-Flowvy принимает подписанный envelope на `POST /api/webhooks/tribute`, но намеренно не публикует
-этот callback URL в UI. Endpoint доступен только при непустом `TRIBUTE_API_KEY`, требует точный
+Flowvy принимает подписанный envelope на `POST /api/webhooks/tribute`, но не публикует callback URL
+в UI. Endpoint доступен только при непустом `TRIBUTE_API_KEY`, требует точный
 `application/json` и `trbt-signature`, ограничивает raw body 64 KiB, проверяет подпись до JSON parse,
 принимает `sent_at` не старше 25 часов с допуском 5 минут в будущее и строго валидирует
-`name/created_at/sent_at/payload`. Webhook contract использует HMAC-SHA256 от raw body тем же API
-key. Актуальный
-официальный Markdown 2026-08-14 документирует exponential retries примерно 24 часа:
+`name/created_at/sent_at/payload`. Для известных event family payload проходит отдельную typed
+schema с официальными обязательными полями; неизвестные additive поля не сохраняются. Webhook
+contract использует HMAC-SHA256 от raw body тем же API key. Актуальный официальный Markdown,
+проверенный 2026-08-14, документирует retries примерно 24 часа:
 5m/15m/30m/1h/2h/4h/8h/8h, но не даёт event ID для subscription/donation и не описывает
 encoding подписи, key scopes/rotation или отдельный timestamp header. Текущий verifier принимает
 64-символьный hexadecimal SHA-256 digest без учёта регистра. Этот encoding подтверждён 2026-08-14
-штатной контролируемой тестовой доставкой Tribute; наличие рабочего endpoint само по себе всё ещё не
-является разрешением включать entitlement side effects или постоянно менять действующий webhook.
+штатной контролируемой тестовой доставкой Tribute.
 
 PostgreSQL inbox хранит SHA-256 точного raw body как `delivery_key`, event family/status, provider
 timestamps и только допустимые нормализованные Telegram/payment/item identifiers, сумму в integer
@@ -456,11 +457,41 @@ minor units, валюту и payment mode. Raw body, signature и username не 
 `TRIBUTE_WEBHOOK_MAX_AGE_SECONDS`, `TRIBUTE_WEBHOOK_FUTURE_TOLERANCE_SECONDS`,
 `TRIBUTE_WEBHOOK_MAX_BODY_BYTES` и `TRIBUTE_WEBHOOK_RETENTION_DAYS`.
 
-Exact-body dedupe не является semantic payment idempotency: повторно сформированный provider event
-может иметь другой body, а один transaction/purchase identifier ещё не описан для всех event family.
-Поэтому inbox не зависит от commerce/user/Remnawave services и не выполняет entitlement side
-effect. Identity reconciliation, semantic idempotency key для каждого event family, rule/profile
-snapshot, абсолютный target expiry и refund compensation остаются отдельным executor slice.
+После нового inbox insert planner в той же PostgreSQL transaction создаёт не provider side effect,
+а одну durable decision в `entitlement_operations`. Exact-body dedupe остаётся transport-level
+защитой; semantic idempotency задаётся отдельно и только там, где её прямо подтверждает Tribute:
+
+| Event family | Semantic identity | Поведение Flowvy |
+|---|---|---|
+| `new_digital_product` | документированный уникальный `purchase_id` | при существующем active Flowvy user, одной Remnawave link, enabled exact-item rule и active profile создаётся один `pending` grant со snapshots |
+| `digital_product_refunded` | `purchase_id` исходной покупки | queued grant отменяется без provider call; applied grant получает отдельную compensating refund operation |
+| donation events | `donation_request_id` описан как ID запроса, не отдельного платежа | `review / semantic_identity_unverified`, без access mutation |
+| subscription events | `subscription_id`/`period_id` не заявлены уникальной identity отдельного платежа | `review / semantic_identity_unverified`, без access mutation |
+| cancellation events | cancellation, а не refund | `review / cancellation_is_not_refund`; уже оплаченный access не отзывается |
+| неизвестное событие | отсутствует | безопасный audit-only `review`, без mutation |
+
+Ledger хранит provider semantic key, source/root operation, безопасный reason code, локальные
+identity, сумму, rule/access-profile IDs и их immutable snapshots, calculation base, абсолютный
+target/provider expiry, attempts/lease и applied timestamps. Уникальный semantic-key index не даёт
+создать вторую операцию одной покупки; transaction-level advisory lock по user и partial unique
+processing guard не дают одновременно обрабатывать две операции одного пользователя.
+`GET /api/admin/commerce/operations` требует актуального active admin, отдаёт newest-first не более
+100 allow-listed строк и не раскрывает raw payload, signature, transaction ID или snapshots.
+
+Executor запускается только при `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED=true`; безопасный default —
+`false`, поэтому обычный runtime остаётся в режиме `Planning only`. Worker забирает due operation
+через `FOR UPDATE SKIP LOCKED`, освобождает DB transaction до network I/O и повторно проверяет live
+Remnawave numeric ID и Telegram identity. Для grant он один раз сохраняет absolute `expireAt`,
+затем применяет documented `PATCH /api/users`: Remnawave 2.8.1 использует `uuid`, 3.1.0 — numeric
+`id`. Timeout/restart не добавляет срок повторно: retry сначала читает provider и признаёт operation
+applied, если там уже сохранённый target. Внешнее изменение expiry останавливает execution с
+`provider_state_conflict`.
+
+Refund не вычитает дни из «сейчас». Он начинает с сохранённой базы исходной покупки и в порядке
+ledger replay применяет только более поздние applied grants, у которых ещё нет applied refund.
+Неполная история, несовпадение provider state или необходимость отозвать уже истёкший доступ
+переводят operation в `Needs review`. Неизвестный Telegram ID никогда не создаёт пользователя и не
+обходит registration policy.
 
 У Tribute не найден официальный sandbox, test hostname/credential или health endpoint. Операторский
 интерфейс отправляет отдельный подписанный test-ping: exact JSON object с единственным bounded string
@@ -472,17 +503,16 @@ MockTransport и Playwright fixtures; реальный платёж или self-
 check и штатную тестовую доставку может инициировать только оператор явно настроенной интеграции.
 
 Provider-neutral rule design дополнительно сверялся 2026-08-13 с primary Stripe pricing/
-entitlements документацией: provider prices не являются internal entitlements, а volume и graduated
-tiers должны различаться явно. Flowvy реализует только volume semantics, нужную текущему UX, и не
-называет её graduated:
+entitlements документацией только как архитектурный reference: Tribute contract из неё не
+выводится. Provider prices не являются internal entitlements, а volume и graduated tiers должны
+различаться явно. Flowvy реализует только volume semantics, нужную текущему UX:
 
 - https://docs.stripe.com/products-prices/pricing-models
 - https://docs.stripe.com/subscriptions/pricing-models/tiered-pricing
 - https://docs.stripe.com/billing/entitlements
 
-Primary evidence, повторно проверено 2026-08-14: русская Wiki revision `CMk0YDiolSYBsE89s7Fs`,
-generated 2026-08-04; ранее прочитанный OpenAPI `3.1.0`, Tribute API `1.0.0`, единственный server
-`https://tribute.tg/api/v1`.
+Primary evidence повторно проверено 2026-08-14: Tribute API OpenAPI `1.0.0`, единственный server
+`https://tribute.tg/api/v1`; Remnawave official backend tags `2.8.1` и `3.1.0`.
 
 - [Tribute API authorization](https://wiki.tribute.tg/ru/api-dokumentaciya) — создание key и
   обязательный header `Api-Key`.
@@ -497,9 +527,11 @@ generated 2026-08-04; ранее прочитанный OpenAPI `3.1.0`, Tribute
 - [Donation request](https://wiki.tribute.tg/ru/for-content-creators/donations/donation-request) и
   [regular donations](https://wiki.tribute.tg/ru/for-content-creators/donations/regulyarnye-donaty)
   — one-off/recurring/anonymous behavior; публичного donation catalog endpoint нет.
-- [Canonical Russian OpenAPI](https://tribute.tg/api/v1/openapi/ru) — ранее зафиксированные
-  required/optional поля и enum differences; 2026-08-14 endpoint дважды не отдал полный документ
-  за 60/120 секунд, поэтому неизвестные webhook payload fields не стали обязательными.
+- [Canonical Russian OpenAPI](https://tribute.tg/api/v1/openapi/ru) — required/optional payload
+  fields, unique/idempotent digital-product `purchase_id` и связь refund с исходной покупкой.
+- [Remnawave backend 2.8.1](https://github.com/remnawave/backend/tree/2.8.1) и
+  [3.1.0](https://github.com/remnawave/backend/tree/3.1.0) — version-specific update-user identity и
+  абсолютный `expireAt`.
 
 ## Правила изменения контракта
 

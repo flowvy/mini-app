@@ -7,6 +7,7 @@ import ss from "../../pages/admin/settings.module.css";
 import type { AdminSettings } from "../../types/admin-settings.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
+import { CommerceActivity } from "./commerce-activity.tsx";
 import { CommerceRulesConfig } from "./commerce-rules-config.tsx";
 import {
 	SettingsDivider,
@@ -84,13 +85,25 @@ export const TributeConfig: FC<TributeConfigProps> = ({ settings }) => {
 			{checkFailed && <InlineFeedback>{t("settings.tribute.testError")}</InlineFeedback>}
 
 			<CommerceRulesConfig />
+			<CommerceActivity />
 
 			<SettingsPanel title={t("settings.tribute.deliverySection")}>
 				<SettingsStatusRow
 					label={t("settings.tribute.receiverLabel")}
-					status={t("settings.tribute.nextPhase")}
-					tone="warning"
+					status={t("settings.tribute.receiverActive")}
+					tone="positive"
 					description={t("settings.tribute.receiverHint")}
+				/>
+				<SettingsDivider />
+				<SettingsStatusRow
+					label={t("settings.tribute.executorLabel")}
+					status={
+						settings.tributeEntitlementExecutionEnabled
+							? t("settings.tribute.executorEnabled")
+							: t("settings.tribute.executorDisabled")
+					}
+					tone={settings.tributeEntitlementExecutionEnabled ? "positive" : "warning"}
+					description={t("settings.tribute.executorHint")}
 				/>
 				<SettingsDivider />
 				<SettingsStatusRow

@@ -17,8 +17,11 @@ class TributeWebhookEventRepository(BaseRepository[TributeWebhookEvent]):
 
     model = TributeWebhookEvent
 
-    async def record_once(self, event: TributeWebhookInboxInput) -> bool:
-        """Insert one exact delivery, returning false for a replay."""
+    async def record_once(
+        self,
+        event: TributeWebhookInboxInput,
+    ) -> TributeWebhookEvent | None:
+        """Insert one exact delivery, returning none for a replay."""
         stmt = (
             insert(TributeWebhookEvent)
             .values(
@@ -39,10 +42,10 @@ class TributeWebhookEventRepository(BaseRepository[TributeWebhookEvent]):
             .on_conflict_do_nothing(
                 constraint="uq_tribute_webhook_events_delivery_key",
             )
-            .returning(TributeWebhookEvent.id)
+            .returning(TributeWebhookEvent)
         )
         result = await self._session.execute(stmt)
-        return result.scalar_one_or_none() is not None
+        return result.scalars().one_or_none()
 
     async def delete_received_before(
         self,

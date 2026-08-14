@@ -6,6 +6,7 @@ import datetime
 import hashlib
 import hmac
 import json
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
@@ -19,6 +20,7 @@ from flowvy.api.routes.tribute_webhooks import (
 )
 from flowvy.config import Settings
 from flowvy.repositories.tribute_webhook_event import TributeWebhookEventRepository
+from flowvy.services.entitlements import TributeEntitlementPlanner
 from flowvy.services.tribute_webhook_inbox import TributeWebhookInboxService
 
 SECRET = "tribute-test-key"
@@ -54,6 +56,7 @@ def _payload_bytes(
         if payload is not None
         else {
             "product_id": 456,
+            "product_name": "Access",
             "amount": 500,
             "currency": "rub",
             "trb_user_id": "must-not-be-persisted",
@@ -61,6 +64,9 @@ def _payload_bytes(
             "telegram_username": "must-not-be-persisted",
             "purchase_id": 78901,
             "transaction_id": 234567,
+            "purchase_created_at": (sent_at - datetime.timedelta(seconds=2))
+            .isoformat()
+            .replace("+00:00", "Z"),
         },
     }
     body.update(extra or {})
@@ -108,8 +114,10 @@ def _request(
 
 def _service(*, created: bool = True) -> tuple[TributeWebhookInboxService, AsyncMock]:
     repo = AsyncMock(spec=TributeWebhookEventRepository)
-    repo.record_once = AsyncMock(return_value=created)
-    return TributeWebhookInboxService(repo), repo
+    repo.record_once = AsyncMock(return_value=SimpleNamespace(id=1) if created else None)
+    planner = AsyncMock(spec=TributeEntitlementPlanner)
+    planner.plan = AsyncMock()
+    return TributeWebhookInboxService(repo, planner), repo
 
 
 @pytest.mark.asyncio
@@ -369,6 +377,37 @@ async def test_invalid_normalized_field_is_rejected_without_persistence(
         datetime.datetime.now(datetime.UTC),
         payload=payload,
     )
+    service, repo = _service()
+
+    response = await receive_tribute_webhook(
+        _request(body, signature=_signature(body)),
+        _settings(),
+        service,
+    )
+
+    assert response.status_code == 400
+    repo.record_once.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_cancelled_subscription_requires_documented_cancel_reason() -> None:
+    now = datetime.datetime.now(datetime.UTC)
+    payload = {
+        "subscription_name": "Access",
+        "subscription_id": 12,
+        "period_id": 34,
+        "period": "monthly",
+        "price": 500,
+        "amount": 500,
+        "currency": "RUB",
+        "user_id": 56,
+        "trb_user_id": "tribute-user",
+        "telegram_user_id": 123,
+        "channel_id": 78,
+        "channel_name": "Channel",
+        "expires_at": (now + datetime.timedelta(days=30)).isoformat(),
+    }
+    body = _payload_bytes(now, name="cancelled_subscription", payload=payload)
     service, repo = _service()
 
     response = await receive_tribute_webhook(

@@ -49,6 +49,7 @@ test("Tribute onboarding is a separate payment-provider route with stable naviga
 	await expect(page.getByRole("banner").getByText("Tribute", { exact: true })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Access automation" })).toBeVisible();
 	await expect(page.getByText("No automation rules", { exact: true })).toBeVisible();
+	await expect(page.getByText("No events yet", { exact: true })).toBeVisible();
 
 	await page.goBack();
 	await expect(page).toHaveURL(/\/admin\/settings$/);
@@ -88,8 +89,9 @@ test("Tribute setup and provider failures remain explicit without fake payment r
 	await expect(page.getByText("Missing on server", { exact: true })).toBeVisible();
 	await expect(page.getByText(/Set TRIBUTE_API_KEY/)).toBeVisible();
 	await expect(page.getByRole("button", { name: "Check API" })).toBeDisabled();
-	await expect(page.getByText("Next phase", { exact: true })).toBeVisible();
-	await expect(page.getByText(/Keep any existing external receiver unchanged/)).toBeVisible();
+	await expect(page.getByText("Authenticated", { exact: true })).toBeVisible();
+	await expect(page.getByText("Planning only", { exact: true })).toBeVisible();
+	await expect(page.getByText(/unique payment identity/)).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 
 	mockApi.seedSettings({ tributeCredentialsConfigured: true });
@@ -124,7 +126,7 @@ test("admin creates and previews flexible donation amount bands without executin
 	await page.getByRole("button", { name: "Preview", exact: true }).click();
 	await expect(page.getByText("417 access days", { exact: true })).toBeVisible();
 	await expect(page.getByText(/Matched threshold:/)).toContainText("3,500");
-	await expect(page.getByText(/Configure now, execute later/)).toBeVisible();
+	await expect(page.getByText(/Digital-product purchases can be planned/)).toBeVisible();
 	expect(mockApi.calls).not.toContain("PUT /api/debug/admin/commerce/rules");
 
 	await page.getByRole("button", { name: "Create rule" }).click();
@@ -137,6 +139,81 @@ test("admin creates and previews flexible donation amount bands without executin
 
 	await page.reload();
 	await expect(page.getByText("Donation access", { exact: true })).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+});
+
+test("payment activity exposes loading, failure recovery, and a safe empty state", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.mock("GET", "/api/debug/admin/commerce/operations", [
+		{ status: 503, body: { detail: "private activity diagnostic" } },
+		{ status: 503, body: { detail: "private activity diagnostic" } },
+		{ delayMs: 600, body: { operations: [], hasMore: false } },
+	]);
+	await page.goto("/admin/settings/tribute");
+
+	await expect(page.getByRole("alert")).toContainText("Could not load payment activity");
+	await expect(page.getByText("private activity diagnostic")).toHaveCount(0);
+	await page.getByRole("button", { name: "Retry", exact: true }).click();
+	await expect(page.getByText("Loading recent payment activity…", { exact: true })).toBeVisible();
+	await expect(page.getByText("No events yet", { exact: true })).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+});
+
+test("payment activity renders allow-listed applied and review outcomes", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.mock("GET", "/api/debug/admin/commerce/operations", {
+		body: {
+			operations: [
+				{
+					id: "20000000-0000-4000-8000-000000000001",
+					eventName: "new_digital_product",
+					operationKind: "grant",
+					status: "applied",
+					reasonCode: null,
+					providerCreatedAt: "2026-08-14T10:00:00Z",
+					telegramUserId: 123456789,
+					externalItemId: "456",
+					amountMinor: 50000,
+					currency: "RUB",
+					durationDays: 30,
+					targetExpiry: "2026-09-14T10:00:00Z",
+					attemptCount: 1,
+					createdAt: "2026-08-14T10:00:01Z",
+				},
+				{
+					id: "20000000-0000-4000-8000-000000000002",
+					eventName: "new_donation",
+					operationKind: "review",
+					status: "review",
+					reasonCode: "semantic_identity_unverified",
+					providerCreatedAt: "2026-08-14T09:00:00Z",
+					telegramUserId: null,
+					externalItemId: "12",
+					amountMinor: 100000,
+					currency: "RUB",
+					durationDays: null,
+					targetExpiry: null,
+					attemptCount: 0,
+					createdAt: "2026-08-14T09:00:01Z",
+				},
+			],
+			hasMore: true,
+		},
+	});
+	await page.goto("/admin/settings/tribute");
+
+	await expect(page.getByText("Digital product 456 purchased", { exact: true })).toBeVisible();
+	await expect(page.getByText("Applied", { exact: true })).toBeVisible();
+	await expect(page.getByText("One-time donation", { exact: true })).toBeVisible();
+	await expect(page.getByText("Needs review", { exact: true })).toBeVisible();
+	await expect(page.getByText(/does not document a unique ID/)).toBeVisible();
+	await expect(
+		page.getByText("Showing the 20 most recent operations.", { exact: true }),
+	).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
 

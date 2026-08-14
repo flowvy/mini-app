@@ -190,7 +190,8 @@ test("capture Tribute settings in configured and setup states", async ({
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
 		await expect(page.getByText("Configured on server", { exact: true })).toBeVisible();
-		await expect(page.getByText("Next phase", { exact: true })).toBeVisible();
+		await expect(page.getByText("Planning only", { exact: true })).toBeVisible();
+		await expect(page.getByRole("heading", { name: "Payment activity" })).toBeVisible();
 		await assertNoHorizontalOverflow(page);
 		await page.screenshot({
 			path: testInfo.outputPath(`admin-settings-tribute-${colorScheme}.png`),

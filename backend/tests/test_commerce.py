@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import hashlib
 import hmac
 import json
@@ -19,6 +20,7 @@ from flowvy.api.factory import create_app
 from flowvy.models.user import UserRole
 from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.commerce_rule import CommerceRuleRepository
+from flowvy.repositories.entitlement_operation import EntitlementOperationRepository
 from flowvy.repositories.user import UserRepository
 from flowvy.schemas.commerce import (
     AmountBand,
@@ -142,6 +144,77 @@ async def test_authenticated_preview_route_accepts_reported_camel_case_draft(
             "unitDays": 30,
         },
     }
+
+
+@pytest.mark.asyncio
+async def test_entitlement_journal_requires_admin_and_returns_only_allow_listed_fields(
+    engine: AsyncEngine,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    admin_id = 123_457
+    monkeypatch.setenv("ADMIN_TELEGRAM_IDS", str(admin_id))
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    created_at = datetime.datetime.now(datetime.UTC).replace(microsecond=0)
+    async with factory() as session:
+        await UserRepository(session).create(
+            id=admin_id,
+            username="admin",
+            full_name="Test Admin",
+            role=UserRole.ADMIN,
+        )
+        operation = await EntitlementOperationRepository(session).create(
+            provider="tribute",
+            semantic_key="digital_product:purchase:route-test",
+            event_name="new_digital_product",
+            operation_kind="grant",
+            status="pending",
+            provider_created_at=created_at,
+            telegram_user_id=admin_id,
+            purchase_id="route-test",
+            transaction_id="must-not-be-returned",
+            external_item_id="456",
+            amount_minor=50_000,
+            currency="RUB",
+            duration_days=30,
+            rule_snapshot={"private": "must-not-be-returned"},
+            profile_snapshot={"private": "must-not-be-returned"},
+        )
+        operation_id = str(operation.id)
+        await session.commit()
+
+    app = create_app()
+    async with AsyncClient(
+        transport=ASGITransport(app=app),  # type: ignore[arg-type]
+        base_url="http://test",
+    ) as client:
+        unauthorized = await client.get("/api/admin/commerce/operations")
+        response = await client.get(
+            "/api/admin/commerce/operations?limit=1",
+            headers={"Authorization": f"tma {_admin_init_data(admin_id)}"},
+        )
+
+    assert unauthorized.status_code == 401
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["hasMore"] is False
+    assert payload["operations"] == [
+        {
+            "id": operation_id,
+            "eventName": "new_digital_product",
+            "operationKind": "grant",
+            "status": "pending",
+            "reasonCode": None,
+            "providerCreatedAt": created_at.isoformat().replace("+00:00", "Z"),
+            "telegramUserId": admin_id,
+            "externalItemId": "456",
+            "amountMinor": 50_000,
+            "currency": "RUB",
+            "durationDays": 30,
+            "targetExpiry": None,
+            "attemptCount": 0,
+            "createdAt": payload["operations"][0]["createdAt"],
+        },
+    ]
 
 
 @pytest.mark.asyncio

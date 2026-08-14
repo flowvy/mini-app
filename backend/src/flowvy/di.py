@@ -17,11 +17,13 @@ from sqlalchemy.ext.asyncio import (
 from flowvy.config import Settings
 from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.commerce_rule import CommerceRuleRepository
+from flowvy.repositories.entitlement_operation import EntitlementOperationRepository
 from flowvy.repositories.invite import InviteRepository
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.user import UserRepository
 from flowvy.services.commerce import CommerceRuleService
+from flowvy.services.entitlements import EntitlementJournalService
 from flowvy.services.registration import RegistrationAdminService, RegistrationService
 from flowvy.services.remnawave import RemnawaveClient
 from flowvy.services.user import UserService
@@ -93,6 +95,14 @@ class RepositoryProvider(Provider):
         return CommerceRuleRepository(session)
 
     @provide(scope=Scope.REQUEST)
+    def get_entitlement_operation_repo(
+        self,
+        session: AsyncSession,
+    ) -> EntitlementOperationRepository:
+        """Create entitlement-operation repository bound to current session."""
+        return EntitlementOperationRepository(session)
+
+    @provide(scope=Scope.REQUEST)
     def get_subscription_repo(
         self,
         session: AsyncSession,
@@ -129,6 +139,14 @@ class ServiceProvider(Provider):
     ) -> CommerceRuleService:
         """Create side-effect-free commerce-rule administration service."""
         return CommerceRuleService(rules, profiles)
+
+    @provide(scope=Scope.REQUEST)
+    def get_entitlement_journal_service(
+        self,
+        operations: EntitlementOperationRepository,
+    ) -> EntitlementJournalService:
+        """Create the read-only administrator entitlement journal."""
+        return EntitlementJournalService(operations)
 
     @provide(scope=Scope.REQUEST)
     def get_registration_service(

@@ -123,11 +123,12 @@ timeout, повторный exact lookup завершает локальную �
 
 ### Данные и кэш
 
-PostgreSQL хранит пользователей, подписки, access profiles, один публичный invite code на пользователя,
-прямую attribution в `users.invited_by_id`, singleton provider settings, историю bot metrics и
-принятые Remnawave webhook events. Код не является authentication credential; доступ задаёт общий
-registration profile. Код хранится в БД, потому что владелец может посмотреть и переслать его снова.
-Alembic migrations образуют одну линейную цепочку.
+PostgreSQL хранит пользователей, подписки, access profiles, commerce rules, Tribute inbox и
+entitlement operations, один публичный invite code на пользователя, прямую attribution в
+`users.invited_by_id`, singleton provider settings, историю bot metrics и принятые Remnawave webhook
+events. Код не является authentication credential; доступ задаёт общий registration profile. Код
+хранится в БД, потому что владелец может посмотреть и переслать его снова. Alembic migrations
+образуют одну линейную цепочку.
 
 Redis используется для:
 
@@ -171,23 +172,23 @@ Kuma использует публичный status-page contract. Beszel авт
 redirect/proxy запрет, ограниченное тело и безопасное error mapping. Private Docker/LAN origins
 требуют отдельного точного allow-list для каждого provider.
 
-### Tribute payments administration и observe-only inbox
+### Tribute payments и durable entitlement pipeline
 
-Текущий Tribute slice включает admin configuration, проверку API access и отдельный observe-only
-webhook inbox. Секрет
+Tribute integration включает admin configuration, проверку API access, authenticated webhook inbox,
+durable planner/ledger, операторский журнал и выключенный по умолчанию provider executor. Секрет
 `TRIBUTE_API_KEY` хранится только в server environment. Fixed-origin client обращается только к
 `https://tribute.tg/api/v1/products?page=1&size=1`, запрещает redirects/proxy environment,
 ограничивает timeout/body и валидирует минимальную JSON-схему. Ни платеж, ни возврат, ни provider
 mutation при проверке не создаются.
 
 Frontend выделяет Payments в отдельную Settings section и показывает credential presence,
-read-only API check и persisted automation rules для donations, subscriptions и digital products.
+read-only API check, persisted automation rules и последние allow-listed ledger operations.
 Rule сопоставляет provider/source conditions с внутренним access profile, но не является provider
 product/price. `fixed` задаёт постоянное число дней, а `volume` выбирает максимальный подходящий
 порог и целочисленно вычисляет `floor(amount_minor * unit_days / unit_amount_minor)` для всей суммы.
 Calculated days явно переопределяют default validity выбранного access profile; traffic/device/
 squad/tag/provider options переиспользуются. `extend` означает будущую базу
-`max(now, current_expiry)`, `replace` — `now`; сам executor в текущем slice отсутствует.
+`max(now, current_expiry)`, `replace` — `now`.
 
 PostgreSQL `commerce_rules` хранит provider-neutral match/action columns и schema-validated JSONB
 calculator payload. Admin-only CRUD повторно проверяет active access profile. Draft preview
@@ -199,22 +200,35 @@ major currency units, но wire/storage используют integer minor units
 freshness и timestamp consistency. PostgreSQL `tribute_webhook_events` атомарно подавляет точные
 повторы по SHA-256 body и хранит только нормализованные metadata без raw payload/signature/username;
 неизвестный безопасный event записывается как `ignored`. Общий retention worker пакетно удаляет
-inbox после server-configured 90 дней. Service graph receiver содержит только dedicated repository:
-он не может обратиться к commerce, user, registration или Remnawave service.
+inbox после server-configured 90 дней. После нового inbox insert planner в той же DB transaction
+создаёт одну `entitlement_operations` decision: это durable outbox write без внешнего HTTP call.
+
+Автоматический pending plan допускается только для digital-product purchase/refund, где Tribute
+документирует уникальный `purchase_id`. Donation/subscription events не имеют доказанной identity
+отдельного платежа и становятся review-only; cancellation не трактуется как refund. Planner требует
+существующего active Flowvy user, одну локальную Remnawave link, enabled exact rule и active profile,
+после чего сохраняет immutable rule/profile snapshots. Неизвестный Telegram ID не создаёт user.
+
+Если server-only feature gate включён, отдельная lifespan task забирает due rows через
+`FOR UPDATE SKIP LOCKED`, но не держит DB transaction во время Remnawave HTTP. Перед mutation она
+сверяет live provider/Telegram identity, сохраняет absolute target expiry и применяет version-aware
+`PATCH /api/users`. Retry сначала reconciles target и поэтому не продлевает доступ второй раз после
+неопределённого timeout. Refund является отдельной compensating operation: target пересчитывается
+из исходной базы и более поздних ещё не возвращённых grants. Любая неоднозначность переводится в
+review вместо overwrite. Одновременно исполняется не более одной операции пользователя.
 
 Отдельный подписанный `test_event` ping проходит strict test schema, возвращает `200` и не пишет
 inbox; его 64-hex signature contract подтверждён controlled delivery 2026-08-14. Callback URL в UI
-намеренно отсутствует: документация Tribute всё ещё не фиксирует универсальную semantic event
-identity, а production event shapes не подтверждены live payment. Identity reconciliation,
-entitlement ledger/executor, refund compensation и checkout остаются следующим backend/product
-этапом.
+намеренно отсутствует. Provider execution требует отдельного server flag и по умолчанию выключен;
+checkout и автоматизация donation/subscription остаются вне текущего безопасного контракта.
 
 ### Webhooks и Telegram bot
 
 Remnawave webhook доступен только при непустом shared secret. Валидное событие сохраняется в
-PostgreSQL и инвалидирует dashboard/Pulse cache по scope/event. Tribute webhook использует отдельный
-observe-only inbox и не имеет side effects. Для обоих contracts signature, freshness, replay,
-idempotency, payload size и retention проверяются до/после сохранения в соответствующей границе.
+PostgreSQL и инвалидирует dashboard/Pulse cache по scope/event. Tribute webhook синхронно выполняет
+только inbox/ledger writes; Remnawave side effect отделён durable outbox и feature gate. Для обоих
+contracts signature, freshness, replay, idempotency, payload size и retention проверяются до/после
+сохранения в соответствующей границе.
 
 Aiogram dispatcher содержит обычный `/start` flow, ручной ввод invite code и отправку welcome
 template/media. `/start` не является referral transport и не разбирает `ref_` payload: приглашение

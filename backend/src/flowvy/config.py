@@ -82,6 +82,10 @@ class Settings(BaseSettings):
         le=1_048_576,
     )
     tribute_webhook_retention_days: int = Field(default=90, ge=1, le=365)
+    tribute_entitlement_execution_enabled: bool = False
+    tribute_entitlement_worker_interval_seconds: int = Field(default=10, ge=1, le=300)
+    tribute_entitlement_lease_seconds: int = Field(default=120, ge=30, le=3600)
+    tribute_entitlement_max_attempts: int = Field(default=5, ge=1, le=20)
     debug: bool = False
     admin_telegram_ids: Annotated[list[int], NoDecode] = []
 
@@ -169,5 +173,18 @@ class Settings(BaseSettings):
             raise ValueError(msg)
         if not self.telegram_webhook_secret:
             msg = "TELEGRAM_WEBHOOK_SECRET is required when WEBHOOK_URL is configured"
+            raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def validate_tribute_executor_configuration(self) -> Settings:
+        """Do not enable provider mutations without one complete target."""
+        if not self.tribute_entitlement_execution_enabled:
+            return self
+        if not self.remnawave_url.strip() or not self.remnawave_api_token.strip():
+            msg = (
+                "REMNAWAVE_URL and REMNAWAVE_API_TOKEN are required when "
+                "TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED is true"
+            )
             raise ValueError(msg)
         return self

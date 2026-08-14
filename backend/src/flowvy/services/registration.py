@@ -33,6 +33,10 @@ from flowvy.schemas.registration import (
     UserInviteResponse,
 )
 from flowvy.schemas.remnawave import RemnawaveCreateUserRequest, RemnawaveUserData
+from flowvy.services.access_profile_snapshot import (
+    access_profile_input,
+    access_profile_snapshot,
+)
 from flowvy.services.remnawave import RemnawaveClient, RemnawaveError
 from flowvy.services.user import UserService
 
@@ -129,35 +133,14 @@ def format_invite_code(code: str) -> str:
     return prefix + "-" + "-".join(suffix[index : index + 4] for index in range(0, len(suffix), 4))
 
 
-def _profile_input(profile: AccessProfile) -> AccessProfileInput:
-    return AccessProfileInput(
-        name=profile.name,
-        description=profile.description,
-        validity_mode=profile.validity_mode,  # type: ignore[arg-type]
-        validity_days=profile.validity_days,
-        fixed_expire_at=profile.fixed_expire_at,
-        traffic_limit_bytes=profile.traffic_limit_bytes,
-        traffic_limit_strategy=profile.traffic_limit_strategy,  # type: ignore[arg-type]
-        hwid_device_limit=profile.hwid_device_limit,
-        tag=profile.tag,
-        status=profile.status,  # type: ignore[arg-type]
-        internal_squad_uuids=[uuid.UUID(item) for item in profile.internal_squad_uuids],
-        external_squad_uuid=profile.external_squad_uuid,
-    )
-
-
 def _profile_response(profile: AccessProfile) -> AccessProfileResponse:
     return AccessProfileResponse(
-        **_profile_input(profile).model_dump(),
+        **access_profile_input(profile).model_dump(),
         id=profile.id,
         is_active=profile.is_active,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
     )
-
-
-def _profile_snapshot(profile: AccessProfile) -> dict[str, object]:
-    return _profile_input(profile).model_dump(mode="json")
 
 
 class RegistrationAdminService:
@@ -535,7 +518,7 @@ class RegistrationService:
         profile = await self._profiles.get_active(profile_id)
         if profile is None:
             raise RegistrationUnavailableError
-        return _profile_snapshot(profile)
+        return access_profile_snapshot(profile)
 
     async def _ensure_user_invite(self, user_id: int) -> Invite:
         existing = await self._invites.get_by_owner(user_id)

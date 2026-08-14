@@ -42,15 +42,20 @@ credential isolation и 1m/20m Pulse mapping. Tribute fixtures проверяю�
 products request, server-only key, auth/non-2xx, timeout, oversized/malformed/schema-drift response
 без сети. Отдельный Tribute webhook suite строит HMAC локальным placeholder key и проверяет
 fail-closed missing key/signature, content type, raw/declared size, strict envelope, timestamp window,
-malformed normalized fields, отдельный authenticated `test_event` ping без persistence, safe
-schema-shape diagnostics без values, ignored unknown event, exact replay, конкурентный DB duplicate
-и retention без raw payload/signature/username или внешних side effects. Commerce fixtures отдельно
-проверяют conditional rule validation, active-profile gate,
+malformed normalized fields, typed documented event payloads, обязательный cancellation reason,
+отдельный authenticated `test_event` ping без persistence, safe schema-shape diagnostics без values,
+ignored unknown event, exact replay, конкурентный DB duplicate и retention без raw
+payload/signature/username. Entitlement tests отдельно доказывают semantic dedupe разных deliveries
+одной digital purchase, review-only donation/subscription, unknown-user fail closed, rule/profile
+snapshots, refund before/after grant, replay более поздних ещё не refunded grants, per-user worker
+serialization, absolute-target reconciliation после timeout и отсутствие второго provider mutation.
+Commerce fixtures отдельно проверяют conditional rule validation, active-profile gate,
 CRUD, no-match/fixed/volume preview и целочисленные 500/1000/3500/4000 RUB boundaries без webhook
 или access side effect. Media tests сканируют ложный declared size и действительно читают aiogram `InputFile`
 chunks. Remnawave tests
 используют locked 2.8.1/3.0.0/3.1.0 response fixtures: проверяют выбор route/body, metadata version,
-cursor stream, UUID-less 3.x user, `204`, ownership и safe future-major failure. Они отдельно
+cursor stream, UUID-less 3.x user, version-specific 2.8.1/3.1.0 update identity, absolute
+`expireAt`, `204`, ownership и safe future-major failure. Они отдельно
 доказывают, что upstream body/extra dashboard fields не проходят в BFF. Ни один из этих suites не
 должен использовать значения из `.env`.
 
@@ -91,6 +96,7 @@ pnpm test:e2e:live  # существующие dev-up frontend/backend и реа
 тест. Матрица покрывает auth/role, loading/empty/error/malformed/retry, device mutation, Pulse,
 dashboard/users/settings, выбор Kuma/Beszel, Tribute credential/API-check states без секретов,
 commerce-rule empty/create/edit/toggle/delete/save failure, fixed/volume preview/no-match,
+payment-activity loading/empty/populated/error/retry и безопасные applied/review reason codes,
 раскрытие focused input внутри visual viewport, непрерывный touch-editing lifecycle при закрытии
 клавиатуры, loading spinner без SVG backing box, light-mode axe, overflow и визуальные evidence
 screenshots.

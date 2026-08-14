@@ -42,8 +42,8 @@ async def test_delivery_key_is_atomic_and_payload_free(session: AsyncSession) ->
     first = await repo.record_once(_event("a" * 64, timestamp))
     second = await repo.record_once(_event("a" * 64, timestamp))
 
-    assert first is True
-    assert second is False
+    assert first is not None
+    assert second is None
     stored = await session.scalar(select(TributeWebhookEvent))
     assert stored is not None
     assert stored.delivery_key == "a" * 64
@@ -64,7 +64,7 @@ async def test_two_concurrent_deliveries_record_exactly_once(
                 _event("b" * 64, timestamp),
             )
             await session.commit()
-            return created
+            return created is not None
 
     first, second = await asyncio.gather(record(), record())
 

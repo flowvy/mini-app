@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from redis.asyncio import Redis
 
+from flowvy.config import Settings
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.schemas.provider_settings import (
     BeszelTestResponse,
@@ -36,6 +37,7 @@ class ProviderSettingsService:
         beszel: BeszelClient,
         tribute: TributeClient,
         redis: Redis,
+        config: Settings,
     ) -> None:
         self._repo = repo
         self._remnawave = remnawave
@@ -43,6 +45,7 @@ class ProviderSettingsService:
         self._beszel = beszel
         self._tribute = tribute
         self._redis = redis
+        self._config = config
 
     async def get(self) -> ProviderSettingsResponse:
         """Return current settings with system info."""
@@ -55,6 +58,9 @@ class ProviderSettingsService:
             beszel_url=row.beszel_url,
             beszel_credentials_configured=self._beszel.credentials_configured,
             tribute_credentials_configured=self._tribute.credentials_configured,
+            tribute_entitlement_execution_enabled=(
+                self._config.tribute_entitlement_execution_enabled
+            ),
             app_name=row.app_name,
             logo_url=row.logo_url,
             welcome_text=row.welcome_text,

@@ -2,7 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiDelete, apiGet, apiPost, apiPut } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";
 import { isMockAuth } from "../lib/runtime.ts";
-import type { CommerceRule, CommerceRuleInput, CommerceRulePreview } from "../types/commerce.ts";
+import type {
+	CommerceRule,
+	CommerceRuleInput,
+	CommerceRulePreview,
+	EntitlementOperationList,
+} from "../types/commerce.ts";
 
 const prefix = isMockAuth ? "/debug/admin/commerce" : "/admin/commerce";
 
@@ -10,6 +15,13 @@ export function useCommerceRules() {
 	return useQuery({
 		queryKey: queryKeys.commerceRules("tribute"),
 		queryFn: () => apiGet<CommerceRule[]>(`${prefix}/rules?provider=tribute`),
+	});
+}
+
+export function useEntitlementOperations() {
+	return useQuery({
+		queryKey: queryKeys.entitlementOperations,
+		queryFn: () => apiGet<EntitlementOperationList>(`${prefix}/operations?limit=20`),
 	});
 }
 

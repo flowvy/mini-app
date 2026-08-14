@@ -7,6 +7,7 @@ export interface AdminSettings {
 	beszelUrl: string | null;
 	beszelCredentialsConfigured: boolean;
 	tributeCredentialsConfigured: boolean;
+	tributeEntitlementExecutionEnabled: boolean;
 	appName: string | null;
 	logoUrl: string | null;
 	welcomeText: string | null;

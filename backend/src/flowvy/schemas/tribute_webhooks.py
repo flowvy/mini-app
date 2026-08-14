@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator, model_validator
+
+from flowvy.schemas.base import CamelModel
 
 
 class TributeWebhookTestEnvelope(BaseModel):
@@ -49,6 +51,128 @@ class TributeWebhookEnvelope(BaseModel):
         return self
 
 
+class _TributePayload(BaseModel):
+    """Strict documented field types while allowing additive provider fields."""
+
+    model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
+
+
+class TributeSubscriptionPayload(_TributePayload):
+    subscription_name: str
+    subscription_id: int = Field(gt=0, strict=True)
+    period_id: int = Field(gt=0, strict=True)
+    period: Literal["monthly", "quarterly", "yearly"]
+    price: int = Field(ge=0, strict=True)
+    amount: int = Field(ge=0, strict=True)
+    currency: str = Field(min_length=3, max_length=3)
+    user_id: int = Field(strict=True)
+    trb_user_id: str
+    telegram_user_id: int = Field(gt=0, strict=True)
+    channel_id: int = Field(strict=True)
+    channel_name: str
+    expires_at: datetime.datetime
+    type: Literal["regular", "gift", "trial"] | None = None
+    cancel_reason: str | None = None
+
+    @field_validator("expires_at")
+    @classmethod
+    def require_aware_expiry(cls, value: datetime.datetime) -> datetime.datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("Tribute subscription expiry must include a timezone")
+        return value.astimezone(datetime.UTC)
+
+
+class TributePaidSubscriptionPayload(TributeSubscriptionPayload):
+    type: Literal["regular", "gift", "trial"]
+
+
+class TributeCancelledSubscriptionPayload(TributeSubscriptionPayload):
+    cancel_reason: str = Field(min_length=1)
+
+
+class TributeDonationPayload(_TributePayload):
+    donation_request_id: int = Field(gt=0, strict=True)
+    donation_name: str
+    period: str
+    amount: int = Field(ge=0, strict=True)
+    currency: str = Field(min_length=3, max_length=3)
+    anonymously: StrictBool
+    web_app_link: str
+    user_id: int | None = Field(default=None, strict=True)
+    trb_user_id: str | None = None
+    telegram_user_id: int | None = Field(default=None, gt=0, strict=True)
+
+
+class TributeOneTimeDonationPayload(TributeDonationPayload):
+    period: Literal["once"]
+
+
+class TributeRecurringDonationPayload(TributeDonationPayload):
+    period: Literal["monthly", "quarterly", "yearly"]
+
+
+class TributeDigitalProductPayload(_TributePayload):
+    product_id: int = Field(gt=0, strict=True)
+    product_name: str
+    amount: int = Field(ge=0, strict=True)
+    currency: str = Field(min_length=3, max_length=3)
+    user_id: int | None = Field(default=None, strict=True)
+    trb_user_id: str | None = None
+    telegram_user_id: int | None = Field(default=None, gt=0, strict=True)
+    purchase_id: int = Field(gt=0, strict=True)
+    transaction_id: int = Field(gt=0, strict=True)
+    purchase_created_at: datetime.datetime | None = None
+    refund_reason: str | None = None
+    refunded_at: datetime.datetime | None = None
+
+    @field_validator("purchase_created_at", "refunded_at")
+    @classmethod
+    def normalize_optional_timestamp(
+        cls,
+        value: datetime.datetime | None,
+    ) -> datetime.datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("Tribute product timestamp must include a timezone")
+        return value.astimezone(datetime.UTC)
+
+
+class TributeNewDigitalProductPayload(TributeDigitalProductPayload):
+    purchase_created_at: datetime.datetime
+
+
+class TributeDigitalProductRefundPayload(TributeDigitalProductPayload):
+    refund_reason: str
+    refunded_at: datetime.datetime
+
+
+class EntitlementOperationResponse(CamelModel):
+    """Allow-listed operator journal row; no raw provider payload is exposed."""
+
+    id: str
+    event_name: str
+    operation_kind: Literal["grant", "refund", "review"]
+    status: Literal["pending", "processing", "retry", "applied", "review", "cancelled"]
+    reason_code: str | None
+    provider_created_at: datetime.datetime
+    telegram_user_id: int | None
+    external_item_id: str | None
+    amount_minor: int | None
+    currency: str | None
+    duration_days: int | None
+    target_expiry: datetime.datetime | None
+    attempt_count: int
+    created_at: datetime.datetime
+
+
+class EntitlementOperationListResponse(CamelModel):
+    """Bounded newest-first journal page."""
+
+    operations: list[EntitlementOperationResponse]
+    has_more: bool
+
+
 @dataclass(frozen=True, slots=True)
 class TributeWebhookInboxInput:
     """Minimal provider metadata allowed into the durable observe-only inbox."""
@@ -66,3 +190,21 @@ class TributeWebhookInboxInput:
     amount_minor: int | None
     currency: str | None
     payment_mode: str | None
+
+
+__all__ = [
+    "EntitlementOperationListResponse",
+    "EntitlementOperationResponse",
+    "TributeCancelledSubscriptionPayload",
+    "TributeDigitalProductPayload",
+    "TributeDigitalProductRefundPayload",
+    "TributeDonationPayload",
+    "TributeNewDigitalProductPayload",
+    "TributeOneTimeDonationPayload",
+    "TributePaidSubscriptionPayload",
+    "TributeRecurringDonationPayload",
+    "TributeSubscriptionPayload",
+    "TributeWebhookEnvelope",
+    "TributeWebhookInboxInput",
+    "TributeWebhookTestEnvelope",
+]

@@ -28,11 +28,12 @@ export const SettingsSection: FC<SettingsSectionProps> = ({ title, action, child
 
 interface SettingsPanelProps {
 	title: string;
+	action?: ReactNode;
 	children: ReactNode;
 }
 
 /** Contained form surface used by nested Settings routes. */
-export const SettingsPanel: FC<SettingsPanelProps> = ({ title, children }) => {
+export const SettingsPanel: FC<SettingsPanelProps> = ({ title, action, children }) => {
 	const headingId = useId();
 
 	return (
@@ -40,6 +41,7 @@ export const SettingsPanel: FC<SettingsPanelProps> = ({ title, children }) => {
 			<div className={styles.surface}>
 				<div className={styles.panelHeading}>
 					<h2 id={headingId}>{title}</h2>
+					{action && <div className={styles.panelAction}>{action}</div>}
 				</div>
 				{children}
 			</div>

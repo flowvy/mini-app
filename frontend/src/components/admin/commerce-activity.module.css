@@ -1,0 +1,25 @@
+.state {
+	margin: 0;
+	padding: 16px 14px;
+	font-size: 11px;
+	line-height: 1.45;
+	color: var(--v2-text-secondary);
+}
+
+.error {
+	display: grid;
+	gap: 10px;
+	padding: 12px 14px;
+}
+
+.error > button {
+	justify-self: start;
+}
+
+.more {
+	margin: 0;
+	padding: 10px 14px;
+	font-size: 10.5px;
+	line-height: 1.4;
+	color: var(--v2-text-tertiary);
+}

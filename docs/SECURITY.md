@@ -45,23 +45,29 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
   наличия credential. Интеграция использует отдельного пользователя с ролью `readonly`.
 - Tribute API key хранится только в server environment; frontend получает лишь признак наличия.
   Read-only check использует fixed HTTPS origin, не следует redirects, не доверяет proxy environment,
-  ограничивает тело и не возвращает upstream body. Observe-only `/api/webhooks/tribute` закрыт при
+  ограничивает тело и не возвращает upstream body. `/api/webhooks/tribute` закрыт при
   пустом key, проверяет `trbt-signature` над ограниченным raw body до JSON parse, временное окно,
   strict envelope и exact replay. Реальная controlled test delivery подтвердила 64-hex encoding;
-  отдельный bounded `test_event` ping получает `200` без persistence или side effects. Текущий UI не
-  публикует callback URL до появления безопасного executor.
+  отдельный bounded `test_event` ping получает `200` без persistence или side effects. Callback URL
+  в UI не публикуется.
 - Commerce-rule CRUD требует актуального active admin и повторно проверяет active access profile
   перед каждым save. Draft preview не пишет БД и не вызывает provider/user mutations. Money приходит
   и хранится как bounded integer minor units; bands, currency, commerce/payment shape, duration и
   priority schema-validated, а calculator JSONB никогда не принимается напрямую в ORM.
-- Сохранённое правило и запись Tribute inbox не являются разрешением выдать доступ: receiver
-  работает observe-only, а executor отсутствует. Будущий executor должен отдельно reconcile
-  identity, сформировать semantic idempotency key, сделать ledger write и только затем применить
-  snapshot rule/profile.
-- Успешная аутентификация Tribute webhook разрешает только минимальную durable запись и exact-body
-  дедупликацию, но не user/access/provider mutation. Callback URL нельзя показывать оператору до
-  появления entitlement ledger и подтверждения event-family payload shapes; execution требует
-  semantic idempotency и повторной проверки identity/rule/profile.
+- Успешная аутентификация Tribute webhook разрешает только inbox/ledger transaction. HTTP request
+  не выполняет Remnawave mutation. Unique semantic key используется только для document-confirmed
+  digital-product `purchase_id`; donation/subscription не получают выдуманную idempotency identity
+  и остаются review-only. Cancellation не считается refund.
+- Pending grant содержит immutable rule/profile snapshots, но executor запускается только при
+  server-only `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED=true`; default — `false`. Перед каждым provider
+  call worker повторно проверяет live Remnawave/Telegram identity, работает с absolute expiry,
+  reconciles неопределённый timeout и останавливается при внешнем изменении состояния. Один user не
+  имеет двух одновременных processing operations.
+- Refund — отдельная compensating operation по исходному `purchase_id`. Она replay-ит только более
+  поздние applied и ещё не refunded grants; неполная история или потенциальный отзыв уже истёкшего
+  доступа закрываются в review. Webhook никогда не создаёт нового Flowvy/Remnawave user.
+- Admin activity API требует актуального active admin и возвращает только allow-listed journal
+  projection без raw payload/signature, transaction ID, rule/profile snapshots и provider secrets.
 - Upload ограничивается при streaming, до полного чтения в память; type/size проверяются server-side.
 - Unknown provider status/enum обрабатывается безопасно, а не считается активным.
 - Все внешние calls имеют finite timeout, bounded concurrency и безопасное error mapping.

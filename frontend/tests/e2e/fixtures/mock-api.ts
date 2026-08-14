@@ -8,6 +8,7 @@ export const mockData = {
 		beszelUrl: "https://monitor.example.test",
 		beszelCredentialsConfigured: true,
 		tributeCredentialsConfigured: true,
+		tributeEntitlementExecutionEnabled: false,
 		appName: "Flowvy",
 		logoUrl: null,
 		welcomeText: "Welcome to Flowvy",
@@ -261,6 +262,10 @@ async function handleApi(
 	}
 	if (method === "GET" && path === "/api/debug/admin/commerce/rules") {
 		await reply(route, { body: state.commerceRules });
+		return;
+	}
+	if (method === "GET" && path === "/api/debug/admin/commerce/operations") {
+		await reply(route, { body: { operations: [], hasMore: false } });
 		return;
 	}
 	if (method === "POST" && path === "/api/debug/admin/commerce/rules") {

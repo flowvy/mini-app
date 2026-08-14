@@ -117,9 +117,18 @@ class BffServiceProvider(Provider):
         beszel: BeszelClient,
         tribute: TributeClient,
         redis: Redis,
+        settings: Settings,
     ) -> ProviderSettingsService:
         """Create provider settings service."""
-        return ProviderSettingsService(repo, remnawave, kuma, beszel, tribute, redis)
+        return ProviderSettingsService(
+            repo,
+            remnawave,
+            kuma,
+            beszel,
+            tribute,
+            redis,
+            settings,
+        )
 
     @provide(scope=Scope.REQUEST)
     def get_admin_users_service(

@@ -3,6 +3,14 @@ export type CommerceType = "donation" | "subscription" | "digital_product";
 export type PaymentMode = "any" | "one_time" | "recurring";
 export type CalculationType = "fixed" | "volume";
 export type GrantMode = "extend" | "replace";
+export type EntitlementOperationKind = "grant" | "refund" | "review";
+export type EntitlementOperationStatus =
+	| "pending"
+	| "processing"
+	| "retry"
+	| "applied"
+	| "review"
+	| "cancelled";
 
 export interface AmountBand {
 	fromAmountMinor: number;
@@ -34,6 +42,28 @@ export interface CommerceRulePreview {
 	matched: boolean;
 	durationDays: number | null;
 	matchedBand: AmountBand | null;
+}
+
+export interface EntitlementOperation {
+	id: string;
+	eventName: string;
+	operationKind: EntitlementOperationKind;
+	status: EntitlementOperationStatus;
+	reasonCode: string | null;
+	providerCreatedAt: string;
+	telegramUserId: number | null;
+	externalItemId: string | null;
+	amountMinor: number | null;
+	currency: string | null;
+	durationDays: number | null;
+	targetExpiry: string | null;
+	attemptCount: number;
+	createdAt: string;
+}
+
+export interface EntitlementOperationList {
+	operations: EntitlementOperation[];
+	hasMore: boolean;
 }
 
 export function commerceRuleInput(rule: CommerceRule): CommerceRuleInput {

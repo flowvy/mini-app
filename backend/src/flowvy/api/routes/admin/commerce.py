@@ -14,17 +14,29 @@ from flowvy.schemas.commerce import (
     CommerceRulePreviewResponse,
     CommerceRuleResponse,
 )
+from flowvy.schemas.tribute_webhooks import EntitlementOperationListResponse
 from flowvy.services.commerce import (
     CommerceRuleError,
     CommerceRuleNotFoundError,
     CommerceRuleService,
 )
+from flowvy.services.entitlements import EntitlementJournalService
 
 router = APIRouter(
     prefix="/api/admin/commerce",
     tags=["admin-commerce"],
     route_class=DishkaRoute,
 )
+
+
+@router.get("/operations", response_model=EntitlementOperationListResponse)
+async def list_entitlement_operations(
+    _admin: CurrentAdmin,
+    service: FromDishka[EntitlementJournalService],
+    limit: int = Query(default=20, ge=1, le=100),
+) -> EntitlementOperationListResponse:
+    """Return a bounded allow-listed payment processing journal."""
+    return await service.list_recent(limit)
 
 
 def _commerce_error(exc: CommerceRuleError) -> HTTPException:

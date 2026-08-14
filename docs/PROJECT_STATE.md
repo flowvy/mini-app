@@ -1,7 +1,7 @@
 # Текущее состояние Flowvy
 
 Последняя полная проверка: **2026-08-14**; последний change-aware gate: **2026-08-14**
-Проверенное текущее состояние: **рабочее дерево `dev` поверх `b63a6ba`**
+Проверенное текущее состояние: **`dev` с Tribute entitlement ledger и admin activity journal**
 Последний полный baseline: **`dd3b5c8`** (`dev`, 2026-08-04)
 Стадия: **незавершённый MVP; production readiness не подтверждена**
 
@@ -28,13 +28,25 @@
   environment proxy и передачи upstream diagnostics клиенту.
 - Provider-neutral `commerce_rules` сопоставляют Tribute donation/subscription/digital-product с
   active access profile. Fixed или volume calculator использует integer minor units; draft preview
-  не пишет БД. Priority, enabled state и extend/replace policy сохраняются, но ни один executor пока
-  эти правила не читает и пользовательский access не изменяет.
-- Отдельный `POST /api/webhooks/tribute` реализует observe-only inbox: при настроенном server-only
+  не пишет БД. Тот же canonical calculator используется planner. Priority, enabled state и
+  extend/replace policy сохраняются вместе с immutable rule/profile snapshots в entitlement plan.
+- Отдельный `POST /api/webhooks/tribute` реализует authenticated inbox: при настроенном server-only
   key проверяет raw-body HMAC до strict JSON parsing, 64-KiB limit, 25-часовую freshness с 5-минутным
   future tolerance и атомарно подавляет exact-body replay. PostgreSQL хранит только нормализованные
-  metadata без raw body/signature/username, общий worker очищает их через 90 дней. Receiver не имеет
-  commerce/user/Remnawave dependency и не выдаёт доступ.
+  metadata без raw body/signature/username, общий worker очищает их через 90 дней. Известные event
+  family проходят отдельные typed payload schemas; planner в той же transaction создаёт durable
+  decision, но webhook request не выполняет Remnawave HTTP.
+- `entitlement_operations` является ledger/outbox с provider semantic key, source/root links,
+  локальной identity, безопасными reason codes, snapshots, absolute expiry и retry/lease state.
+  Digital-product purchase/refund использует документированный unique `purchase_id`; разные
+  deliveries одной покупки создают одну operation. Donations/subscriptions остаются review-only,
+  потому что Tribute не документирует unique identity отдельного платежа. Cancellation не считается
+  refund, неизвестный Telegram ID не создаёт пользователя.
+- Feature-gated executor по умолчанию выключен. При явном server-only включении он сериализует
+  операции одного пользователя, повторно проверяет live Remnawave/Telegram identity, применяет
+  absolute `expireAt` через official version-aware update-user contract и reconciles timeout без
+  повторного продления. Refund replay сохраняет более поздние ещё не возвращённые grants; конфликт
+  или неполная история останавливаются в review.
 - Явная открытая/invite-only регистрация: `/api/me` не создаёт полностью неизвестного пользователя
   чтением, но безопасно импортирует exact provider-only Remnawave match; onboarding работает
   одинаково из Mini App и бота.
@@ -96,8 +108,9 @@
   показывает server-side состояние API key, безопасный read-only API check и rule builder для
   донатов, подписок и цифровых товаров. Admin выбирает payment conditions, fixed/volume duration,
   active access profile, extend/replace, priority и enabled state; backend preview показывает
-  результат без save/access side effect. Observe-only receiver уже существует, но callback URL не
-  публикуется до появления безопасного executor.
+  результат без save/access side effect. Экран показывает `Planning only` либо включённое delivery
+  из server config и admin activity journal с loading/empty/error/retry/applied/review состояниями.
+  Raw payload/diagnostics не выводятся; callback URL в UI не публикуется.
 - Штатный подписанный Tribute test-ping подтверждён controlled delivery 2026-08-14: отдельный exact
   object с bounded `test_event` получает `200` после HMAC, не пишет inbox и не запускает commerce.
   Реальная доставка подтвердила ожидаемый 64-hex signature encoding без раскрытия тела или секрета.
@@ -203,11 +216,13 @@
 - Broadcast пока отображает `coming soon`; отправка рассылки не реализована.
 - Tribute receiver пока не получал реального payment event: существующий внешний webhook не изменён,
   а production event-family payload shapes подтверждены только официальной документацией и fixtures.
-  Signature и отдельный test-ping проверены live. Exact-body replay закрыт только для observe-only
-  inbox; нет semantic payment idempotency,
-  сопоставления события с пользователем, entitlement ledger/executor, checkout, обработки/возврата
-  платежей, выдачи, замены, продления либо отзыва access profile. Официальный Tribute sandbox/test
-  payment не документирован; API check подтверждает только read-only доступ.
+  Signature и отдельный test-ping проверены live. Semantic idempotency, planning, absolute grant и
+  refund compensation реализованы только для digital products по документированному `purchase_id`;
+  executor остаётся выключенным по default и не проверялся controlled live purchase/provider
+  mutation. Donation/subscription auto-delivery заблокирован отсутствием документированной unique
+  identity отдельного платежа. Checkout, operator resolve/retry API и подтверждённый rollback
+  production данных отсутствуют. Официальный Tribute sandbox/test payment не документирован; API
+  check подтверждает только read-only доступ.
 - Нет production deployment manifests, проверенных production runbooks и production-контура.
 - Нет component tests и integrated fake-backend suite; offline/network-loss поведение проверяется
   только на уровне перехваченных ошибок, а не реальным отключением браузера.
@@ -391,13 +406,17 @@ Tribute показал success, endpoint вернул `200`, inbox осталс�
 | Tribute preview runtime repair | authenticated FastAPI regression; retained-initData unit; `PLAYWRIGHT_PORT=5294; pnpm exec playwright test tests/e2e/tribute.spec.ts --workers=4`; `PLAYWRIGHT_PORT=5295; scripts/verify.ps1 -Scope Full` | Exact production payload возвращает 4 дня; first-read initData regression зелёный. Tribute 44/44 прошли на 430x932, 320x568, iPhone/WebKit и desktop; late preview auth, safe `401` copy, stale-error reset, explicit payment-unit labels, console/network/overflow и визуальный dark error state проверены. Full gate прошёл migrations/drift, 345 backend, 53 Remnawave contract, Ruff, frontend lint/typecheck, 37 unit, production build, 69 mobile E2E и docs. Стандартный dev перезапущен; local/public asset `index-j_XaGRQy.js` совпадает, readiness `200`, public debug `404` |
 | Global mobile input/loading UX | `PLAYWRIGHT_PORT=5314; scripts/verify.ps1 -Scope Changed`; focused all-project Playwright matrix and visual evidence | Changed gate: 293 service-free backend tests, Ruff, 37 frontend unit, lint/typecheck/build, 69 mobile smoke и docs passed. Дополнительно 72/72 affected browser scenarios прошли на 430x932, 320x568, iPhone/WebKit и desktop Chromium. Active-control reveal, deferred footer/tab return, сохранённая button activation, CSS spinner без SVG/backing box, Axe/contrast, overflow, console/network guards зелёные; Tribute Settings и pending Save просмотрены в light/dark |
 | Tribute observe-only webhook inbox | focused HTTP/repository suites; `PLAYWRIGHT_PORT=5321; scripts/verify.ps1 -Scope Full`; live test-ping; follow-up full backend и `scripts/verify.ps1 -Scope Changed` | 51/51 focused и 383/383 current backend passed; Changed gate — 328 service-free, Ruff/docs. Исходный Full gate прошёл one-head, zero/previous-head upgrade, downgrade/re-upgrade/drift, 53 Remnawave contract, frontend lint/typecheck, 37 unit, production build и 69 mobile E2E. Controlled Tribute test подтвердил strict 64-hex signature и отдельный `test_event`: endpoint `200`, inbox 0 rows, без commerce/access side effect |
+| Tribute entitlement ledger и admin activity | focused contract/concurrency suites; `PLAYWRIGHT_PORT=5188; pnpm exec playwright test tests/e2e/tribute.spec.ts --workers=4`; `PLAYWRIGHT_PORT=5196; scripts/verify.ps1 -Scope Full` | Focused webhook/executor 43 passed, commerce/provider/planner/executor/Remnawave selection 59 passed; отдельная executor concurrency suite 8/8 подтвердила сериализацию операций одного пользователя. Full gate: one-head/upgrade/downgrade/re-upgrade/drift, 402 backend, 55 Remnawave contract, Ruff, frontend lint/typecheck, 37 unit, production build, 71 mobile browser и docs passed. Tribute all-project matrix 52/52 прошла на 430x932, 320x568, iPhone/WebKit и desktop; activity loading/empty/populated/error/retry, admin allow-list, Axe/overflow/console/network зелёные. Mobile dark и desktop light evidence просмотрены. Executor default off; live payment/provider mutation не вызывались |
 
 ## Следующее действие
 
-Следующий отдельный slice — спроектировать identity reconciliation и idempotent entitlement
-ledger/executor со snapshot rule/profile, absolute target expiry и refund compensation. До любых
-access side effects нужно зафиксировать semantic identity каждого event family и доказать concurrent
-retry/recovery. Только после deterministic failure tests и controlled production-like fixture можно
-показывать callback URL в админском UX и планировать постоянное переключение Tribute.
+Следующий Tribute slice — не расширять auto-delivery догадками, а подготовить один controlled
+digital-product end-to-end fixture на отдельной безопасной provider identity: purchase → pending
+plan → absolute grant → duplicate retry → refund compensation. До него executor остаётся выключенным
+и callback URL не публикуется. Для donation/subscription сначала нужен официальный unique payment
+identifier либо иной документированный provider contract; без него эти события остаются операторским
+journal-only review. После controlled fixture отдельно проектируются operator retry/resolve flow,
+alerts/metrics и production rollout/rollback runbook.
+
 Отдельно остаются безопасный Broadcast, live Remnawave 3.x, Kuma и первый подтверждённый удалённый
 CI run.

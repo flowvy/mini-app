@@ -49,6 +49,7 @@ from flowvy.di_bff import BffServiceProvider
 from flowvy.di_bot import BotProvider
 from flowvy.di_dashboard import DashboardProvider
 from flowvy.di_webhooks import WebhooksProvider
+from flowvy.services.entitlement_executor import EntitlementExecutor, run_entitlement_executor
 from flowvy.services.metrics_collector import run_metrics_collector
 from flowvy.services.remnawave import RemnawaveClient
 from flowvy.services.webhook_retention import run_webhook_retention
@@ -116,13 +117,25 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             settings.remnawave_webhook_cleanup_batch_size,
         ),
     )
+    entitlement_task: asyncio.Task[None] | None = None
+    if settings.tribute_entitlement_execution_enabled:
+        remnawave = await container.get(RemnawaveClient)
+        entitlement_task = asyncio.create_task(
+            run_entitlement_executor(
+                EntitlementExecutor(sm, remnawave, settings),
+                settings.tribute_entitlement_worker_interval_seconds,
+            ),
+        )
 
     try:
         yield
     finally:
-        for task in (metrics_task, webhook_retention_task):
+        background_tasks = [metrics_task, webhook_retention_task]
+        if entitlement_task is not None:
+            background_tasks.append(entitlement_task)
+        for task in background_tasks:
             task.cancel()
-        for task in (metrics_task, webhook_retention_task):
+        for task in background_tasks:
             with suppress(asyncio.CancelledError):
                 await task
 

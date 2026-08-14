@@ -10,6 +10,7 @@ import pytest
 from pydantic import ValidationError
 
 from flowvy.api.routes.users import build_user_response
+from flowvy.config import Settings
 from flowvy.schemas.provider_settings import (
     BeszelTestRequest,
     KumaTestRequest,
@@ -58,7 +59,15 @@ def _service(
     redis = AsyncMock()
     redis.delete = AsyncMock(return_value=1)
     return (
-        ProviderSettingsService(repo, remnawave, kuma, beszel, tribute, redis),
+        ProviderSettingsService(
+            repo,
+            remnawave,
+            kuma,
+            beszel,
+            tribute,
+            redis,
+            Settings(_env_file=None),
+        ),
         kuma,
         beszel,
         redis,

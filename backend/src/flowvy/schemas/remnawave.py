@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.alias_generators import to_camel
@@ -35,6 +36,33 @@ class RemnawaveCreateUserRequest(BaseModel):
     def to_provider_payload(self) -> dict[str, object]:
         """Serialize exactly the supported provider request fields."""
         return self.model_dump(by_alias=True, exclude_none=True, mode="json")
+
+
+class RemnawaveUpdateUserRequest(BaseModel):
+    """Version-neutral supported fields for the official update-user contract."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    status: Literal["ACTIVE", "DISABLED"] | None = None
+    traffic_limit_bytes: int | None = Field(default=None, ge=0)
+    traffic_limit_strategy: str | None = None
+    expire_at: datetime
+    description: str | None = None
+    tag: str | None = None
+    hwid_device_limit: int | None = Field(default=None, ge=0)
+    active_internal_squads: list[uuid.UUID] | None = None
+    external_squad_uuid: uuid.UUID | None = None
+
+    def to_provider_payload(
+        self,
+        *,
+        identity_field: Literal["id", "uuid"],
+        identity: int | str,
+    ) -> dict[str, object]:
+        """Serialize one absolute update with the detected version identity."""
+        payload = self.model_dump(by_alias=True, exclude_none=True, mode="json")
+        payload[identity_field] = identity
+        return payload
 
 
 class RemnawaveUserTraffic(BaseModel):
