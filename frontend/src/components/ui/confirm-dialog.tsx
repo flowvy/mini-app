@@ -17,6 +17,8 @@ interface ConfirmDialogProps {
 	confirmLabel: string;
 	cancelLabel: string;
 	confirmVariant?: "confirm" | "danger";
+	confirmLoading?: boolean;
+	confirmDisabled?: boolean;
 	onConfirm: () => void;
 	onCancel: () => void;
 	returnFocusRef?: RefObject<HTMLElement | null>;
@@ -29,6 +31,8 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 	confirmLabel,
 	cancelLabel,
 	confirmVariant = "confirm",
+	confirmLoading = false,
+	confirmDisabled = false,
 	onConfirm,
 	onCancel,
 	returnFocusRef,
@@ -47,25 +51,24 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 		closeRef.current?.focus();
 		return () => {
 			if (modal?.open) modal.close();
+			const target = returnFocusRef?.current ?? fallbackFocusRef.current;
+			const restoreFocus = () => {
+				const liveTarget = returnFocusRef?.current ?? target;
+				if (liveTarget?.isConnected) liveTarget.focus();
+			};
+			restoreFocus();
+			window.requestAnimationFrame(restoreFocus);
 		};
-	}, [open]);
-
-	const restoreTriggerFocus = () => {
-		const target = returnFocusRef?.current ?? fallbackFocusRef.current;
-		window.setTimeout(() => {
-			const liveTarget = returnFocusRef?.current ?? target;
-			if (liveTarget?.isConnected) liveTarget.focus();
-		}, 50);
-	};
+	}, [open, returnFocusRef]);
 
 	const cancel = () => {
+		if (confirmLoading) return;
 		onCancel();
-		restoreTriggerFocus();
 	};
 
 	const confirm = () => {
+		if (confirmLoading || confirmDisabled) return;
 		onConfirm();
-		restoreTriggerFocus();
 	};
 
 	if (!open) return null;
@@ -113,6 +116,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 					type="button"
 					className={styles.closeBtn}
 					onClick={cancel}
+					disabled={confirmLoading}
 					aria-label={t("common.confirmDialog.closeLabel")}
 				>
 					<X size={16} />
@@ -123,6 +127,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 				<ActionBtn
 					variant="ghost"
 					size="md"
+					disabled={confirmLoading}
 					onClick={() => {
 						hapticImpact("light");
 						cancel();
@@ -133,6 +138,8 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 				<ActionBtn
 					variant={confirmVariant}
 					size="md"
+					loading={confirmLoading}
+					disabled={confirmDisabled}
 					onClick={() => {
 						hapticNotification("warning");
 						confirm();

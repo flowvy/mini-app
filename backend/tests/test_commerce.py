@@ -213,8 +213,82 @@ async def test_entitlement_journal_requires_admin_and_returns_only_allow_listed_
             "targetExpiry": None,
             "attemptCount": 0,
             "createdAt": payload["operations"][0]["createdAt"],
+            "availableActions": [],
+            "lastAction": None,
         },
     ]
+
+
+@pytest.mark.asyncio
+async def test_entitlement_action_route_requires_admin_and_returns_safe_transition(
+    engine: AsyncEngine,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    admin_id = 123_458
+    monkeypatch.setenv("ADMIN_TELEGRAM_IDS", str(admin_id))
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with factory() as session:
+        await UserRepository(session).create(
+            id=admin_id,
+            username="admin",
+            full_name="Test Admin",
+            role=UserRole.ADMIN,
+        )
+        operation = await EntitlementOperationRepository(session).create(
+            provider="tribute",
+            semantic_key="digital_product:purchase:route-action-test",
+            event_name="new_digital_product",
+            operation_kind="grant",
+            status="review",
+            reason_code="provider_unavailable",
+            provider_created_at=datetime.datetime.now(datetime.UTC),
+            telegram_user_id=admin_id,
+            user_id=admin_id,
+            remnawave_user_id=42,
+            purchase_id="route-action-test",
+            external_item_id="456",
+            amount_minor=50_000,
+            currency="RUB",
+            duration_days=30,
+        )
+        operation_id = str(operation.id)
+        await session.commit()
+
+    app = create_app()
+    async with AsyncClient(
+        transport=ASGITransport(app=app),  # type: ignore[arg-type]
+        base_url="http://test",
+    ) as client:
+        unauthorized = await client.post(
+            f"/api/admin/commerce/operations/{operation_id}/actions",
+            json={"requestId": str(uuid.uuid4()), "action": "retry", "note": None},
+        )
+        response = await client.post(
+            f"/api/admin/commerce/operations/{operation_id}/actions",
+            headers={"Authorization": f"tma {_admin_init_data(admin_id)}"},
+            json={"requestId": str(uuid.uuid4()), "action": "retry", "note": None},
+        )
+        conflict = await client.post(
+            f"/api/admin/commerce/operations/{operation_id}/actions",
+            headers={"Authorization": f"tma {_admin_init_data(admin_id)}"},
+            json={
+                "requestId": str(uuid.uuid4()),
+                "action": "resolve",
+                "note": "Too late for a different decision.",
+            },
+        )
+
+    assert unauthorized.status_code == 401
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "retry"
+    assert body["reasonCode"] == "operator_retry_queued"
+    assert body["availableActions"] == []
+    assert body["lastAction"]["action"] == "retry"
+    assert body["lastAction"]["note"] is None
+    assert "transactionId" not in body
+    assert "actorTelegramId" not in body["lastAction"]
+    assert conflict.status_code == 409
 
 
 @pytest.mark.asyncio

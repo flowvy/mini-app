@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import datetime
+import uuid
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator, model_validator
 
@@ -147,13 +148,29 @@ class TributeDigitalProductRefundPayload(TributeDigitalProductPayload):
     refunded_at: datetime.datetime
 
 
+class EntitlementOperatorActionResponse(CamelModel):
+    """Safe latest-action context shown in the administrator journal."""
+
+    action: Literal["retry", "resolve"]
+    note: str | None
+    created_at: datetime.datetime
+
+
 class EntitlementOperationResponse(CamelModel):
     """Allow-listed operator journal row; no raw provider payload is exposed."""
 
     id: str
     event_name: str
     operation_kind: Literal["grant", "refund", "review"]
-    status: Literal["pending", "processing", "retry", "applied", "review", "cancelled"]
+    status: Literal[
+        "pending",
+        "processing",
+        "retry",
+        "applied",
+        "review",
+        "resolved",
+        "cancelled",
+    ]
     reason_code: str | None
     provider_created_at: datetime.datetime
     telegram_user_id: int | None
@@ -164,6 +181,32 @@ class EntitlementOperationResponse(CamelModel):
     target_expiry: datetime.datetime | None
     attempt_count: int
     created_at: datetime.datetime
+    available_actions: list[Literal["retry", "resolve"]]
+    last_action: EntitlementOperatorActionResponse | None = None
+
+
+class EntitlementOperatorActionInput(CamelModel):
+    """Idempotent administrator decision for one review operation."""
+
+    request_id: uuid.UUID
+    action: Literal["retry", "resolve"]
+    note: str | None = Field(default=None, max_length=500)
+
+    @field_validator("note")
+    @classmethod
+    def normalize_note(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+    @model_validator(mode="after")
+    def validate_action_note(self) -> Self:
+        if self.action == "resolve" and self.note is None:
+            raise ValueError("Resolve requires an operator note")
+        if self.action == "retry" and self.note is not None:
+            raise ValueError("Retry does not accept an operator note")
+        return self
 
 
 class EntitlementOperationListResponse(CamelModel):
@@ -195,6 +238,8 @@ class TributeWebhookInboxInput:
 __all__ = [
     "EntitlementOperationListResponse",
     "EntitlementOperationResponse",
+    "EntitlementOperatorActionInput",
+    "EntitlementOperatorActionResponse",
     "TributeCancelledSubscriptionPayload",
     "TributeDigitalProductPayload",
     "TributeDigitalProductRefundPayload",

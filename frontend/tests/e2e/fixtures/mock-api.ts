@@ -1,4 +1,29 @@
 import { type Page, type Route, test as base, expect } from "@playwright/test";
+import type { EntitlementOperation } from "../../../src/types/commerce.ts";
+
+export function entitlementOperation(
+	overrides: Partial<EntitlementOperation> = {},
+): EntitlementOperation {
+	return {
+		id: "20000000-0000-4000-8000-000000000001",
+		eventName: "new_digital_product",
+		operationKind: "grant",
+		status: "applied",
+		reasonCode: null,
+		providerCreatedAt: "2026-08-14T10:00:00Z",
+		telegramUserId: 123456789,
+		externalItemId: "456",
+		amountMinor: 50000,
+		currency: "RUB",
+		durationDays: 30,
+		targetExpiry: "2026-09-14T10:00:00Z",
+		attemptCount: 1,
+		createdAt: "2026-08-14T10:00:01Z",
+		availableActions: [],
+		lastAction: null,
+		...overrides,
+	};
+}
 
 export const mockData = {
 	settings: {

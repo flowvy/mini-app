@@ -1,4 +1,10 @@
-import { assertNoHorizontalOverflow, expect, mockData, test } from "./fixtures/mock-api.ts";
+import {
+	assertNoHorizontalOverflow,
+	entitlementOperation,
+	expect,
+	mockData,
+	test,
+} from "./fixtures/mock-api.ts";
 
 const screens = [
 	{ name: "home", path: "/", marker: "Account Info" },
@@ -207,6 +213,64 @@ test("capture Tribute settings in configured and setup states", async ({
 		path: testInfo.outputPath("admin-settings-tribute-setup.png"),
 		animations: "disabled",
 	});
+});
+
+test("capture Tribute operator review actions and safe resolution dialog", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	mockApi.mock("GET", "/api/debug/admin/commerce/operations", {
+		body: {
+			operations: [
+				entitlementOperation({
+					status: "review",
+					reasonCode: "provider_unavailable",
+					availableActions: ["retry", "resolve"],
+				}),
+			],
+			hasMore: false,
+		},
+	});
+
+	for (const viewport of [
+		{ name: "small-mobile", width: 320, height: 568 },
+		{ name: "mobile", width: 430, height: 932 },
+		{ name: "desktop", width: 1280, height: 900 },
+	] as const) {
+		for (const colorScheme of ["light", "dark"] as const) {
+			await page.setViewportSize(viewport);
+			await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+			await page.goto("/admin/settings/tribute");
+			await page.evaluate((theme) => {
+				document.documentElement.setAttribute("data-theme", theme);
+			}, colorScheme);
+			const retryButton = page.getByRole("button", { name: "Retry", exact: true });
+			const resolveButton = page.getByRole("button", { name: "Resolve", exact: true });
+			await expect(retryButton).toBeVisible();
+			await expect(resolveButton).toBeVisible();
+			await resolveButton.evaluate((element) => element.scrollIntoView({ block: "center" }));
+			await assertNoHorizontalOverflow(page);
+			await page.screenshot({
+				path: testInfo.outputPath(
+					`admin-settings-tribute-review-${viewport.name}-${colorScheme}.png`,
+				),
+				animations: "disabled",
+			});
+
+			await resolveButton.click();
+			await expect(
+				page.getByRole("dialog", { name: "Resolve without changing access?" }),
+			).toBeVisible();
+			await assertNoHorizontalOverflow(page);
+			await page.screenshot({
+				path: testInfo.outputPath(
+					`admin-settings-tribute-resolve-${viewport.name}-${colorScheme}.png`,
+				),
+				animations: "disabled",
+			});
+			await page.getByRole("button", { name: "Close" }).click();
+		}
+	}
 });
 
 test("capture the flexible Tribute donation rule editor", async ({ page, mockApi }, testInfo) => {

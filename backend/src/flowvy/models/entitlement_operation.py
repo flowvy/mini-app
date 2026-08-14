@@ -37,7 +37,8 @@ class EntitlementOperation(Base):
             name="ck_entitlement_operations_kind",
         ),
         CheckConstraint(
-            "status IN ('pending', 'processing', 'retry', 'applied', 'review', 'cancelled')",
+            "status IN "
+            "('pending', 'processing', 'retry', 'applied', 'review', 'resolved', 'cancelled')",
             name="ck_entitlement_operations_status",
         ),
         CheckConstraint(

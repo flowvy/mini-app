@@ -14,13 +14,21 @@ from flowvy.schemas.commerce import (
     CommerceRulePreviewResponse,
     CommerceRuleResponse,
 )
-from flowvy.schemas.tribute_webhooks import EntitlementOperationListResponse
+from flowvy.schemas.tribute_webhooks import (
+    EntitlementOperationListResponse,
+    EntitlementOperationResponse,
+    EntitlementOperatorActionInput,
+)
 from flowvy.services.commerce import (
     CommerceRuleError,
     CommerceRuleNotFoundError,
     CommerceRuleService,
 )
-from flowvy.services.entitlements import EntitlementJournalService
+from flowvy.services.entitlements import (
+    EntitlementJournalService,
+    EntitlementOperationConflictError,
+    EntitlementOperationNotFoundError,
+)
 
 router = APIRouter(
     prefix="/api/admin/commerce",
@@ -37,6 +45,30 @@ async def list_entitlement_operations(
 ) -> EntitlementOperationListResponse:
     """Return a bounded allow-listed payment processing journal."""
     return await service.list_recent(limit)
+
+
+@router.post(
+    "/operations/{operation_id}/actions",
+    response_model=EntitlementOperationResponse,
+)
+async def act_on_entitlement_operation(
+    operation_id: uuid.UUID,
+    payload: EntitlementOperatorActionInput,
+    admin: CurrentAdmin,
+    service: FromDishka[EntitlementJournalService],
+) -> EntitlementOperationResponse:
+    """Apply one audited, idempotent administrator review decision."""
+    try:
+        return await service.act(
+            operation_id,
+            payload,
+            actor_user_id=admin.user.id,
+            actor_telegram_id=admin.user.id,
+        )
+    except EntitlementOperationNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    except EntitlementOperationConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
 
 
 def _commerce_error(exc: CommerceRuleError) -> HTTPException:

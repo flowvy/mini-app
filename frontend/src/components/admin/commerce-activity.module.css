@@ -16,10 +16,48 @@
 	justify-self: start;
 }
 
+.feedback {
+	padding: 12px 14px 0;
+}
+
+.feedback:focus-visible {
+	border-radius: 8px;
+	outline: 2px solid var(--v2-border-focus);
+	outline-offset: 2px;
+}
+
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 6px;
+}
+
+.decisionBody {
+	display: grid;
+	gap: 14px;
+}
+
+.decisionBody > p {
+	margin: 0;
+}
+
 .more {
 	margin: 0;
 	padding: 10px 14px;
 	font-size: 10.5px;
 	line-height: 1.4;
 	color: var(--v2-text-tertiary);
+}
+
+@media (max-width: 420px) {
+	.actionableRow {
+		align-items: stretch;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.actions {
+		justify-content: flex-start;
+	}
 }

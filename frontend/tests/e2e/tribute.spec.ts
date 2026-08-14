@@ -1,5 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
-import { assertNoHorizontalOverflow, expect, mockData, test } from "./fixtures/mock-api.ts";
+import {
+	assertNoHorizontalOverflow,
+	entitlementOperation,
+	expect,
+	mockData,
+	test,
+} from "./fixtures/mock-api.ts";
 
 async function installVisualViewportMock(page: import("@playwright/test").Page) {
 	await page.addInitScript(() => {
@@ -168,38 +174,21 @@ test("payment activity renders allow-listed applied and review outcomes", async 
 	mockApi.mock("GET", "/api/debug/admin/commerce/operations", {
 		body: {
 			operations: [
-				{
-					id: "20000000-0000-4000-8000-000000000001",
-					eventName: "new_digital_product",
-					operationKind: "grant",
-					status: "applied",
-					reasonCode: null,
-					providerCreatedAt: "2026-08-14T10:00:00Z",
-					telegramUserId: 123456789,
-					externalItemId: "456",
-					amountMinor: 50000,
-					currency: "RUB",
-					durationDays: 30,
-					targetExpiry: "2026-09-14T10:00:00Z",
-					attemptCount: 1,
-					createdAt: "2026-08-14T10:00:01Z",
-				},
-				{
+				entitlementOperation(),
+				entitlementOperation({
 					id: "20000000-0000-4000-8000-000000000002",
 					eventName: "new_donation",
 					operationKind: "review",
 					status: "review",
 					reasonCode: "semantic_identity_unverified",
-					providerCreatedAt: "2026-08-14T09:00:00Z",
 					telegramUserId: null,
 					externalItemId: "12",
 					amountMinor: 100000,
-					currency: "RUB",
 					durationDays: null,
 					targetExpiry: null,
 					attemptCount: 0,
-					createdAt: "2026-08-14T09:00:01Z",
-				},
+					availableActions: ["resolve"],
+				}),
 			],
 			hasMore: true,
 		},
@@ -214,6 +203,127 @@ test("payment activity renders allow-listed applied and review outcomes", async 
 	await expect(
 		page.getByText("Showing the 20 most recent operations.", { exact: true }),
 	).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+});
+
+test("admin resolution is explicit, audited, idempotent across retry, and returns focus", async ({
+	page,
+	mockApi,
+	browserName,
+}) => {
+	const operation = entitlementOperation({
+		operationKind: "review",
+		status: "review",
+		reasonCode: "semantic_identity_unverified",
+		availableActions: ["resolve"],
+	});
+	const resolved = entitlementOperation({
+		...operation,
+		status: "resolved",
+		reasonCode: "operator_resolved",
+		availableActions: [],
+		lastAction: {
+			action: "resolve",
+			note: "Verified in the provider dashboard",
+			createdAt: "2026-08-14T10:05:00Z",
+		},
+	});
+	mockApi.mock("GET", "/api/debug/admin/commerce/operations", [
+		{ body: { operations: [operation], hasMore: false } },
+		{ body: { operations: [resolved], hasMore: false } },
+	]);
+	mockApi.mock("POST", /\/api\/debug\/admin\/commerce\/operations\/[^/]+\/actions$/, [
+		{ status: 503, body: { detail: "private operator diagnostic" } },
+		{ body: resolved },
+	]);
+	const requests: Array<Record<string, unknown>> = [];
+	page.on("request", (request) => {
+		if (request.method() === "POST" && new URL(request.url()).pathname.endsWith("/actions")) {
+			requests.push(request.postDataJSON() as Record<string, unknown>);
+		}
+	});
+
+	await page.goto("/admin/settings/tribute");
+	const resolveButton = page.getByRole("button", { name: "Resolve", exact: true });
+	await resolveButton.click();
+	const dialog = page.getByRole("dialog", { name: "Resolve without changing access?" });
+	await expect(dialog).toBeVisible();
+	await expect(dialog.getByRole("button", { name: "Resolve", exact: true })).toBeDisabled();
+	const accessibility = await new AxeBuilder({ page }).analyze();
+	expect(
+		accessibility.violations.filter((violation) =>
+			["serious", "critical"].includes(violation.impact ?? ""),
+		),
+	).toEqual([]);
+	await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+	if (browserName !== "webkit") await expect(resolveButton).toBeFocused();
+
+	await resolveButton.click();
+	await page.getByLabel("Resolution note").fill("  Verified in the provider dashboard  ");
+	const confirm = dialog.getByRole("button", { name: "Resolve", exact: true });
+	await confirm.click();
+	await expect(dialog.getByRole("alert")).toContainText("Could not save this decision");
+	await expect(page.getByLabel("Resolution note")).toHaveAttribute("readonly", "");
+	await expect(page.getByText("private operator diagnostic")).toHaveCount(0);
+	await confirm.click();
+
+	await expect(dialog).toHaveCount(0);
+	await expect(page.getByRole("status")).toContainText(
+		"The review was resolved without changing access.",
+	);
+	await expect(page.getByText("Resolved", { exact: true })).toBeVisible();
+	await expect(page.getByText(/Resolution: Verified in the provider dashboard/)).toBeVisible();
+	expect(requests).toHaveLength(2);
+	expect(requests[0]).toMatchObject({
+		action: "resolve",
+		note: "Verified in the provider dashboard",
+	});
+	expect(requests[1]).toEqual(requests[0]);
+	if (browserName !== "webkit") await expect(page.getByRole("status").locator("..")).toBeFocused();
+	await assertNoHorizontalOverflow(page);
+});
+
+test("provider failures expose only the server-approved retry and resolve decisions", async ({
+	page,
+	mockApi,
+}) => {
+	const operation = entitlementOperation({
+		operationKind: "grant",
+		status: "review",
+		reasonCode: "provider_unavailable",
+		availableActions: ["retry", "resolve"],
+	});
+	const retried = entitlementOperation({
+		...operation,
+		status: "retry",
+		reasonCode: "operator_retry_queued",
+		availableActions: [],
+		lastAction: {
+			action: "retry",
+			note: null,
+			createdAt: "2026-08-14T10:05:00Z",
+		},
+	});
+	mockApi.mock("GET", "/api/debug/admin/commerce/operations", [
+		{ body: { operations: [operation], hasMore: false } },
+		{ body: { operations: [retried], hasMore: false } },
+	]);
+	mockApi.mock("POST", /\/api\/debug\/admin\/commerce\/operations\/[^/]+\/actions$/, {
+		body: retried,
+	});
+
+	await page.goto("/admin/settings/tribute");
+	await expect(page.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Resolve", exact: true })).toBeVisible();
+	await page.getByRole("button", { name: "Retry", exact: true }).click();
+	const dialog = page.getByRole("dialog", { name: "Queue another provider attempt?" });
+	await expect(dialog).toContainText(
+		"Automatic delivery is currently off. This attempt will stay queued",
+	);
+	await dialog.getByRole("button", { name: "Queue retry", exact: true }).click();
+	await expect(page.getByRole("status")).toContainText("The provider retry was queued.");
+	await expect(page.getByText("Retry scheduled", { exact: true })).toBeVisible();
+	await expect(page.getByText("An administrator queued another attempt.")).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
 

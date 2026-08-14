@@ -85,7 +85,7 @@ export const TributeConfig: FC<TributeConfigProps> = ({ settings }) => {
 			{checkFailed && <InlineFeedback>{t("settings.tribute.testError")}</InlineFeedback>}
 
 			<CommerceRulesConfig />
-			<CommerceActivity />
+			<CommerceActivity executionEnabled={settings.tributeEntitlementExecutionEnabled} />
 
 			<SettingsPanel title={t("settings.tribute.deliverySection")}>
 				<SettingsStatusRow

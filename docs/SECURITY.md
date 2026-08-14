@@ -68,6 +68,12 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
   доступа закрываются в review. Webhook никогда не создаёт нового Flowvy/Remnawave user.
 - Admin activity API требует актуального active admin и возвращает только allow-listed journal
   projection без raw payload/signature, transaction ID, rule/profile snapshots и provider secrets.
+- Operator action API повторно использует тот же active-admin boundary, вычисляет eligibility на
+  backend и сериализует operation/request UUID в PostgreSQL transaction. Только
+  `review/provider_unavailable` можно retry; resolve требует bounded note и никогда не меняет
+  provider access. Append-only audit хранит actor Telegram ID отдельно от nullable user FK и
+  previous state, но frontend видит только action/note/time. Request UUID нельзя переиспользовать
+  для другой operation, actor, action или note.
 - Upload ограничивается при streaming, до полного чтения в память; type/size проверяются server-side.
 - Unknown provider status/enum обрабатывается безопасно, а не считается активным.
 - Все внешние calls имеют finite timeout, bounded concurrency и безопасное error mapping.

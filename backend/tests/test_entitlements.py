@@ -14,6 +14,9 @@ from flowvy.models.entitlement_operation import EntitlementOperation
 from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.commerce_rule import CommerceRuleRepository
 from flowvy.repositories.entitlement_operation import EntitlementOperationRepository
+from flowvy.repositories.entitlement_operation_action import (
+    EntitlementOperationActionRepository,
+)
 from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.tribute_webhook_event import TributeWebhookEventRepository
 from flowvy.repositories.user import UserRepository
@@ -250,6 +253,7 @@ async def test_admin_journal_projection_excludes_snapshots_and_provider_payload(
 
     result = await EntitlementJournalService(
         EntitlementOperationRepository(session),
+        EntitlementOperationActionRepository(session),
     ).list_recent(20)
 
     assert result.has_more is False

@@ -6,7 +6,9 @@ import type {
 	CommerceRule,
 	CommerceRuleInput,
 	CommerceRulePreview,
+	EntitlementOperation,
 	EntitlementOperationList,
+	EntitlementOperatorActionInput,
 } from "../types/commerce.ts";
 
 const prefix = isMockAuth ? "/debug/admin/commerce" : "/admin/commerce";
@@ -22,6 +24,29 @@ export function useEntitlementOperations() {
 	return useQuery({
 		queryKey: queryKeys.entitlementOperations,
 		queryFn: () => apiGet<EntitlementOperationList>(`${prefix}/operations?limit=20`),
+	});
+}
+
+export function useActOnEntitlementOperation() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({ id, input }: { id: string; input: EntitlementOperatorActionInput }) =>
+			apiPost<EntitlementOperation>(`${prefix}/operations/${id}/actions`, input),
+		onSuccess: (operation) => {
+			queryClient.setQueryData<EntitlementOperationList>(
+				queryKeys.entitlementOperations,
+				(current) =>
+					current
+						? {
+								...current,
+								operations: current.operations.map((item) =>
+									item.id === operation.id ? operation : item,
+								),
+							}
+						: current,
+			);
+			void queryClient.invalidateQueries({ queryKey: queryKeys.entitlementOperations });
+		},
 	});
 }
 

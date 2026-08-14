@@ -196,6 +196,16 @@ calculator payload. Admin-only CRUD повторно проверяет active a
 major currency units, но wire/storage используют integer minor units; floating-point не участвует
 в entitlement calculation.
 
+Для `review` backend сам вычисляет допустимые operator actions. Только terminal
+`provider_unavailable` можно вернуть в `retry`; любую review operation можно закрыть как
+`resolved` с обязательной заметкой, причём resolve не меняет provider access. Admin mutation
+блокирует operation через `SELECT ... FOR UPDATE`, сериализует client request UUID transaction-level
+advisory lock и в той же transaction пишет append-only `entitlement_operation_actions` с actor и
+предыдущим состоянием. Повтор того же request UUID возвращает уже записанный результат; иной
+payload или устаревшее действие получает conflict. Activity projection показывает только
+server-computed actions и последнюю безопасную audit-запись без actor identity и внутренних
+snapshots.
+
 `POST /api/webhooks/tribute` проверяет HMAC-SHA256 над ограниченным raw body до strict JSON parsing,
 freshness и timestamp consistency. PostgreSQL `tribute_webhook_events` атомарно подавляет точные
 повторы по SHA-256 body и хранит только нормализованные metadata без raw payload/signature/username;

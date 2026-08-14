@@ -77,9 +77,19 @@ stateful fake Remnawave, не читает runtime key и не выполняе�
 Остановка/перезапуск процесса не удаляет очередь. Stale lease возвращается в retry, а сохранённый
 absolute target позволяет сначала reconciliate provider state и не повторять уже применённое
 продление. Для временной остановки side effects выключают gate и штатно перезапускают backend;
-pending/retry/review history сохраняется. Не редактируйте ledger вручную: operator retry/resolve API
-пока отсутствует, а неоднозначные операции должны оставаться `Needs review` для отдельного
-контролируемого разбора. Включение worker на production-like target требует отдельной проверки
+pending/retry/review history сохраняется. Ledger вручную не редактируют. В Admin → Settings →
+Tribute → Payment activity backend предлагает только допустимые решения:
+
+- `Retry` существует только для исчерпавшего автоматические попытки `provider_unavailable`. Он
+  ставит ту же idempotent operation в очередь, не сбрасывает счётчик попыток и при выключенном gate
+  остаётся queued без Remnawave mutation;
+- `Resolve` требует понятную заметку и закрывает review без изменения доступа. Это не ручной grant,
+  revoke или подтверждение provider state.
+
+Каждый submit содержит новый client request UUID. UI повторяет тот же UUID после неопределённой
+HTTP-ошибки, backend блокирует operation и сохраняет одну append-only action с actor и previous
+state. После первой реальной operator action migration downgrade намеренно прекращается, чтобы не
+потерять audit trail. Включение worker на production-like target требует отдельной проверки
 backup/rollback, одного контролируемого digital-product fixture и наблюдения журнала; текущий MVP не
 имеет готового production rollout runbook.
 

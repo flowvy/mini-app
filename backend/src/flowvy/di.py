@@ -18,6 +18,9 @@ from flowvy.config import Settings
 from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.commerce_rule import CommerceRuleRepository
 from flowvy.repositories.entitlement_operation import EntitlementOperationRepository
+from flowvy.repositories.entitlement_operation_action import (
+    EntitlementOperationActionRepository,
+)
 from flowvy.repositories.invite import InviteRepository
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.repositories.subscription import SubscriptionRepository
@@ -103,6 +106,14 @@ class RepositoryProvider(Provider):
         return EntitlementOperationRepository(session)
 
     @provide(scope=Scope.REQUEST)
+    def get_entitlement_operation_action_repo(
+        self,
+        session: AsyncSession,
+    ) -> EntitlementOperationActionRepository:
+        """Create entitlement operator-action repository bound to this request."""
+        return EntitlementOperationActionRepository(session)
+
+    @provide(scope=Scope.REQUEST)
     def get_subscription_repo(
         self,
         session: AsyncSession,
@@ -144,9 +155,10 @@ class ServiceProvider(Provider):
     def get_entitlement_journal_service(
         self,
         operations: EntitlementOperationRepository,
+        actions: EntitlementOperationActionRepository,
     ) -> EntitlementJournalService:
-        """Create the read-only administrator entitlement journal."""
-        return EntitlementJournalService(operations)
+        """Create the administrator entitlement journal and action service."""
+        return EntitlementJournalService(operations, actions)
 
     @provide(scope=Scope.REQUEST)
     def get_registration_service(

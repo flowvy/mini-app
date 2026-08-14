@@ -476,7 +476,18 @@ target/provider expiry, attempts/lease и applied timestamps. Уникальны
 создать вторую операцию одной покупки; transaction-level advisory lock по user и partial unique
 processing guard не дают одновременно обрабатывать две операции одного пользователя.
 `GET /api/admin/commerce/operations` требует актуального active admin, отдаёт newest-first не более
-100 allow-listed строк и не раскрывает raw payload, signature, transaction ID или snapshots.
+100 allow-listed строк и не раскрывает raw payload, signature, transaction ID или snapshots. Для
+каждой строки backend добавляет только актуальные `availableActions` и безопасную последнюю
+operator action. `POST /api/admin/commerce/operations/{operation_id}/actions` принимает client
+request UUID, `retry` либо `resolve` и не доверяет frontend eligibility:
+
+- `retry` доступен только для `review / provider_unavailable`, переводит operation обратно в
+  очередь без сброса attempt history и не вызывает Remnawave внутри HTTP request;
+- `resolve` доступен для любой review operation, требует заметку 1–500 символов и закрывает review
+  без grant, extend, replace, revoke или refund;
+- operation row и request UUID сериализуются PostgreSQL locks, а отдельная append-only
+  `entitlement_operation_actions` сохраняет actor, previous state и note. Одинаковый request UUID
+  идемпотентен, несовпадающий reuse или устаревшее действие возвращает conflict.
 
 Executor запускается только при `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED=true`; безопасный default —
 `false`, поэтому обычный runtime остаётся в режиме `Planning only`. Worker забирает due operation
@@ -539,6 +550,13 @@ Primary evidence повторно проверено 2026-08-14: Tribute API Ope
 - [Remnawave backend 2.8.1](https://github.com/remnawave/backend/tree/2.8.1) и
   [3.1.0](https://github.com/remnawave/backend/tree/3.1.0) — version-specific update-user identity и
   абсолютный `expireAt`.
+- [PostgreSQL current row-level locks](https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-ROWS)
+  — `FOR UPDATE` удерживает конкурентное изменение строки до конца transaction.
+- [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html)
+  — attributable chronological audit trail для operator transactions.
+- [WAI-ARIA modal dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) и
+  [W3C G199](https://www.w3.org/WAI/WCAG21/Techniques/general/G199) — modal focus lifecycle и явный
+  submit-result feedback.
 
 ## Правила изменения контракта
 

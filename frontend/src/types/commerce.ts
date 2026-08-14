@@ -4,12 +4,14 @@ export type PaymentMode = "any" | "one_time" | "recurring";
 export type CalculationType = "fixed" | "volume";
 export type GrantMode = "extend" | "replace";
 export type EntitlementOperationKind = "grant" | "refund" | "review";
+export type EntitlementOperatorAction = "retry" | "resolve";
 export type EntitlementOperationStatus =
 	| "pending"
 	| "processing"
 	| "retry"
 	| "applied"
 	| "review"
+	| "resolved"
 	| "cancelled";
 
 export interface AmountBand {
@@ -59,11 +61,23 @@ export interface EntitlementOperation {
 	targetExpiry: string | null;
 	attemptCount: number;
 	createdAt: string;
+	availableActions: EntitlementOperatorAction[];
+	lastAction: {
+		action: EntitlementOperatorAction;
+		note: string | null;
+		createdAt: string;
+	} | null;
 }
 
 export interface EntitlementOperationList {
 	operations: EntitlementOperation[];
 	hasMore: boolean;
+}
+
+export interface EntitlementOperatorActionInput {
+	requestId: string;
+	action: EntitlementOperatorAction;
+	note: string | null;
 }
 
 export function commerceRuleInput(rule: CommerceRule): CommerceRuleInput {

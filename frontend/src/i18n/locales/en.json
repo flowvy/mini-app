@@ -1,6 +1,7 @@
 {
 	"common": {
 		"retry": "Retry",
+		"cancel": "Cancel",
 		"errorState": {
 			"load": {
 				"title": "Unable to load data",
@@ -458,6 +459,7 @@
 					"retry": "Retry scheduled",
 					"applied": "Applied",
 					"review": "Needs review",
+					"resolved": "Resolved",
 					"cancelled": "Cancelled"
 				},
 				"event": {
@@ -502,7 +504,27 @@
 					"provider_unavailable": "Provider delivery failed after the retry limit.",
 					"provider_rejected": "The provider rejected this access update.",
 					"worker_interrupted": "A previous delivery attempt was interrupted and safely requeued.",
+					"operator_retry_queued": "An administrator queued one additional provider attempt.",
+					"operator_resolved": "An administrator closed this review without changing access.",
 					"unknown": "Automatic processing stopped for a safe review."
+				},
+				"action": {
+					"retry": "Retry",
+					"resolve": "Resolve",
+					"retryTitle": "Queue another provider attempt?",
+					"retryBody": "Flowvy will make one more idempotent provider attempt using the stored plan and current identity checks.",
+					"retryBodyDisabled": "Automatic delivery is currently off. This attempt will stay queued until it is enabled on the server.",
+					"retryConfirm": "Queue retry",
+					"resolveTitle": "Resolve without changing access?",
+					"resolveBody": "This closes the review only. Flowvy will not grant, extend, replace, or revoke provider access.",
+					"resolveConfirm": "Resolve",
+					"noteLabel": "Resolution note",
+					"noteHint": "Required for the audit trail · 500 characters maximum",
+					"error": "Could not save this decision. Review the current state and try again.",
+					"retrySuccess": "The provider retry was queued.",
+					"resolveSuccess": "The review was resolved without changing access.",
+					"retryAudit": "An administrator queued another attempt.",
+					"resolvedNote": "Resolution: {{note}}"
 				}
 			}
 		},

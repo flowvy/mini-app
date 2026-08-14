@@ -5,6 +5,8 @@
 	box-sizing: border-box;
 	width: min(360px, calc(100% - 24px));
 	max-width: 100%;
+	height: fit-content;
+	max-height: calc(100dvh - 24px);
 	margin: auto;
 	background: var(--v2-floor-0);
 	border-radius: var(--radius-lg);
@@ -57,7 +59,9 @@
 }
 
 .body {
+	min-height: 0;
 	padding: 18px;
+	overflow-y: auto;
 	font-size: 13px;
 	color: var(--v2-text-secondary);
 	line-height: 1.5;
@@ -80,6 +84,7 @@
 	.modal {
 		inset: auto 8px max(8px, var(--tg-viewport-safe-area-inset-bottom, 0px));
 		width: auto;
+		max-height: calc(100dvh - max(16px, var(--tg-viewport-safe-area-inset-bottom, 0px)));
 		border-radius: 18px;
 		margin: 0;
 	}

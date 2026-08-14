@@ -5,6 +5,7 @@ from flowvy.models.base import Base
 from flowvy.models.bot_metrics import BotMetricsHistory
 from flowvy.models.commerce_rule import CommerceRule
 from flowvy.models.entitlement_operation import EntitlementOperation
+from flowvy.models.entitlement_operation_action import EntitlementOperationAction
 from flowvy.models.invite import Invite
 from flowvy.models.provider_settings import ProviderSettings
 from flowvy.models.subscription import Subscription, SubscriptionStatus
@@ -19,6 +20,7 @@ __all__ = [
     "BotMetricsHistory",
     "CommerceRule",
     "EntitlementOperation",
+    "EntitlementOperationAction",
     "Invite",
     "ProviderSettings",
     "Subscription",

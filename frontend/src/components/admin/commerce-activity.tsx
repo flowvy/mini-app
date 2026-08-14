@@ -1,10 +1,20 @@
 import { RefreshCw } from "lucide-react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useEntitlementOperations } from "../../hooks/use-commerce-rules.ts";
+import {
+	useActOnEntitlementOperation,
+	useEntitlementOperations,
+} from "../../hooks/use-commerce-rules.ts";
 import { formatDateISO } from "../../lib/format.ts";
 import { formatMinorMoney } from "../../lib/money.ts";
-import type { EntitlementOperation, EntitlementOperationStatus } from "../../types/commerce.ts";
+import type {
+	EntitlementOperation,
+	EntitlementOperationStatus,
+	EntitlementOperatorAction,
+} from "../../types/commerce.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
+import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
+import { FormField, FormFieldTextarea } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import styles from "./commerce-activity.module.css";
 import { SettingsDivider, SettingsPanel, SettingsStatusRow } from "./settings-surface.tsx";
@@ -17,6 +27,7 @@ const STATUS_TONE: Record<EntitlementOperationStatus, ActivityTone> = {
 	retry: "warning",
 	applied: "positive",
 	review: "warning",
+	resolved: "default",
 	cancelled: "default",
 };
 
@@ -26,6 +37,7 @@ const STATUS_KEYS: Record<EntitlementOperationStatus, string> = {
 	retry: "settings.tribute.activity.status.retry",
 	applied: "settings.tribute.activity.status.applied",
 	review: "settings.tribute.activity.status.review",
+	resolved: "settings.tribute.activity.status.resolved",
 	cancelled: "settings.tribute.activity.status.cancelled",
 };
 
@@ -74,9 +86,21 @@ const REASON_KEYS: Record<string, string> = {
 	provider_unavailable: "settings.tribute.activity.reason.provider_unavailable",
 	provider_rejected: "settings.tribute.activity.reason.provider_rejected",
 	worker_interrupted: "settings.tribute.activity.reason.worker_interrupted",
+	operator_retry_queued: "settings.tribute.activity.reason.operator_retry_queued",
+	operator_resolved: "settings.tribute.activity.reason.operator_resolved",
 };
 
 const UNKNOWN_REASON_KEY = "settings.tribute.activity.reason.unknown";
+
+const ACTION_LABEL_KEYS: Record<EntitlementOperatorAction, string> = {
+	retry: "settings.tribute.activity.action.retry",
+	resolve: "settings.tribute.activity.action.resolve",
+};
+
+const ACTION_SUCCESS_KEYS: Record<EntitlementOperatorAction, string> = {
+	retry: "settings.tribute.activity.action.retrySuccess",
+	resolve: "settings.tribute.activity.action.resolveSuccess",
+};
 
 function operationDescription(
 	operation: EntitlementOperation,
@@ -102,66 +126,204 @@ function operationDescription(
 	if (operation.reasonCode) {
 		details.unshift(t(REASON_KEYS[operation.reasonCode] ?? UNKNOWN_REASON_KEY));
 	}
+	if (operation.lastAction?.action === "resolve" && operation.lastAction.note) {
+		details.unshift(
+			t("settings.tribute.activity.action.resolvedNote", {
+				note: operation.lastAction.note,
+			}),
+		);
+	} else if (operation.lastAction?.action === "retry") {
+		details.unshift(t("settings.tribute.activity.action.retryAudit"));
+	}
 	return details.join(" · ");
 }
 
-export function CommerceActivity() {
+interface PendingDecision {
+	operation: EntitlementOperation;
+	action: EntitlementOperatorAction;
+	requestId: string;
+}
+
+interface CommerceActivityProps {
+	executionEnabled: boolean;
+}
+
+export function CommerceActivity({ executionEnabled }: CommerceActivityProps) {
 	const { t } = useTranslation();
 	const activity = useEntitlementOperations();
+	const actionMutation = useActOnEntitlementOperation();
+	const feedbackRef = useRef<HTMLDivElement>(null);
+	const [decision, setDecision] = useState<PendingDecision | null>(null);
+	const [note, setNote] = useState("");
+	const [successAction, setSuccessAction] = useState<EntitlementOperatorAction | null>(null);
+
+	const openDecision = (operation: EntitlementOperation, action: EntitlementOperatorAction) => {
+		actionMutation.reset();
+		setNote("");
+		setSuccessAction(null);
+		setDecision({ operation, action, requestId: crypto.randomUUID() });
+	};
+
+	const closeDecision = () => {
+		if (actionMutation.isPending) return;
+		actionMutation.reset();
+		setDecision(null);
+		setNote("");
+	};
+
+	const confirmDecision = () => {
+		if (!decision) return;
+		actionMutation.mutate(
+			{
+				id: decision.operation.id,
+				input: {
+					requestId: decision.requestId,
+					action: decision.action,
+					note: decision.action === "resolve" ? note.trim() : null,
+				},
+			},
+			{
+				onSuccess: () => {
+					setSuccessAction(decision.action);
+					setDecision(null);
+					setNote("");
+				},
+			},
+		);
+	};
+
+	const decisionIsResolve = decision?.action === "resolve";
+	const confirmDisabled = decisionIsResolve && note.trim().length === 0;
 
 	return (
-		<SettingsPanel
-			title={t("settings.tribute.activity.section")}
-			action={
-				<ActionBtn
-					variant="action"
-					size="sm"
-					loading={activity.isFetching && !activity.isPending}
-					onClick={() => void activity.refetch()}
-				>
-					<RefreshCw size={13} aria-hidden="true" /> {t("settings.tribute.activity.refresh")}
-				</ActionBtn>
-			}
-		>
-			{activity.isPending && (
-				<output className={styles.state} aria-live="polite">
-					{t("settings.tribute.activity.loading")}
-				</output>
-			)}
-			{activity.isError && (
-				<div className={styles.error}>
-					<InlineFeedback>{t("settings.tribute.activity.loadError")}</InlineFeedback>
-					<ActionBtn variant="action" size="sm" onClick={() => void activity.refetch()}>
-						{t("common.retry")}
+		<>
+			<SettingsPanel
+				title={t("settings.tribute.activity.section")}
+				action={
+					<ActionBtn
+						variant="action"
+						size="sm"
+						loading={activity.isFetching && !activity.isPending}
+						onClick={() => void activity.refetch()}
+					>
+						<RefreshCw size={13} aria-hidden="true" /> {t("settings.tribute.activity.refresh")}
 					</ActionBtn>
-				</div>
-			)}
-			{activity.data?.operations.length === 0 && (
-				<SettingsStatusRow
-					label={t("settings.tribute.activity.recent")}
-					status={t("settings.tribute.activity.empty")}
-					description={t("settings.tribute.activity.emptyHint")}
-				/>
-			)}
-			{activity.data?.operations.map((operation, index) => (
-				<div key={operation.id}>
-					{index > 0 && <SettingsDivider />}
+				}
+			>
+				{successAction && (
+					<div ref={feedbackRef} className={styles.feedback} tabIndex={-1}>
+						<InlineFeedback tone="success">{t(ACTION_SUCCESS_KEYS[successAction])}</InlineFeedback>
+					</div>
+				)}
+				{activity.isPending && (
+					<output className={styles.state} aria-live="polite">
+						{t("settings.tribute.activity.loading")}
+					</output>
+				)}
+				{activity.isError && (
+					<div className={styles.error}>
+						<InlineFeedback>{t("settings.tribute.activity.loadError")}</InlineFeedback>
+						<ActionBtn variant="action" size="sm" onClick={() => void activity.refetch()}>
+							{t("common.retry")}
+						</ActionBtn>
+					</div>
+				)}
+				{activity.data?.operations.length === 0 && (
 					<SettingsStatusRow
-						label={t(EVENT_KEYS[operation.eventName] ?? UNKNOWN_EVENT_KEY, {
-							item: operation.externalItemId,
-						})}
-						status={t(STATUS_KEYS[operation.status])}
-						tone={STATUS_TONE[operation.status]}
-						description={operationDescription(operation, t)}
+						label={t("settings.tribute.activity.recent")}
+						status={t("settings.tribute.activity.empty")}
+						description={t("settings.tribute.activity.emptyHint")}
 					/>
+				)}
+				{activity.data?.operations.map((operation, index) => (
+					<div key={operation.id}>
+						{index > 0 && <SettingsDivider />}
+						<SettingsStatusRow
+							className={operation.availableActions.length ? styles.actionableRow : undefined}
+							label={t(EVENT_KEYS[operation.eventName] ?? UNKNOWN_EVENT_KEY, {
+								item: operation.externalItemId,
+							})}
+							status={t(STATUS_KEYS[operation.status])}
+							tone={STATUS_TONE[operation.status]}
+							description={operationDescription(operation, t)}
+							action={
+								operation.availableActions.length ? (
+									<div className={styles.actions}>
+										{operation.availableActions.map((action) => (
+											<ActionBtn
+												key={action}
+												variant="action"
+												size="sm"
+												onClick={() => openDecision(operation, action)}
+											>
+												{t(ACTION_LABEL_KEYS[action])}
+											</ActionBtn>
+										))}
+									</div>
+								) : undefined
+							}
+						/>
+					</div>
+				))}
+				{activity.data?.hasMore && (
+					<>
+						<SettingsDivider />
+						<p className={styles.more}>{t("settings.tribute.activity.more")}</p>
+					</>
+				)}
+			</SettingsPanel>
+
+			<ConfirmDialog
+				open={decision !== null}
+				title={t(
+					decisionIsResolve
+						? "settings.tribute.activity.action.resolveTitle"
+						: "settings.tribute.activity.action.retryTitle",
+				)}
+				confirmLabel={t(
+					decisionIsResolve
+						? "settings.tribute.activity.action.resolveConfirm"
+						: "settings.tribute.activity.action.retryConfirm",
+				)}
+				cancelLabel={t("common.cancel")}
+				confirmLoading={actionMutation.isPending}
+				confirmDisabled={confirmDisabled}
+				returnFocusRef={feedbackRef}
+				onCancel={closeDecision}
+				onConfirm={confirmDecision}
+			>
+				<div className={styles.decisionBody}>
+					<p>
+						{t(
+							decisionIsResolve
+								? "settings.tribute.activity.action.resolveBody"
+								: executionEnabled
+									? "settings.tribute.activity.action.retryBody"
+									: "settings.tribute.activity.action.retryBodyDisabled",
+						)}
+					</p>
+					{decisionIsResolve && (
+						<FormField
+							label={t("settings.tribute.activity.action.noteLabel")}
+							htmlFor="entitlement-resolution-note"
+							hint={t("settings.tribute.activity.action.noteHint")}
+						>
+							<FormFieldTextarea
+								id="entitlement-resolution-note"
+								value={note}
+								onChange={(event) => setNote(event.target.value)}
+								maxLength={500}
+								rows={4}
+								disabled={actionMutation.isPending}
+								readOnly={actionMutation.isError}
+							/>
+						</FormField>
+					)}
+					{actionMutation.isError && (
+						<InlineFeedback>{t("settings.tribute.activity.action.error")}</InlineFeedback>
+					)}
 				</div>
-			))}
-			{activity.data?.hasMore && (
-				<>
-					<SettingsDivider />
-					<p className={styles.more}>{t("settings.tribute.activity.more")}</p>
-				</>
-			)}
-		</SettingsPanel>
+			</ConfirmDialog>
+		</>
 	);
 }

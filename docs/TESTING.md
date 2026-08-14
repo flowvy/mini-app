@@ -60,6 +60,10 @@ payload/signature/username. Entitlement tests отдельно доказыва�
 одной digital purchase, review-only donation/subscription, unknown-user fail closed, rule/profile
 snapshots, refund before/after grant, replay более поздних ещё не refunded grants, per-user worker
 serialization, absolute-target reconciliation после timeout и отсутствие второго provider mutation.
+Operator-action tests дополнительно проверяют server-computed eligibility, обязательную bounded
+resolve note, retry без сброса attempt history, повтор одного request UUID без второй audit row,
+запрет reuse для другого решения и конкурентные retry/resolve под operation row lock. HTTP fixture
+проверяет active-admin boundary, safe projection и `409` для stale action.
 Отдельный end-to-end fixture связывает эти границы через production FastAPI route и Dishka session:
 после duplicate purchase/refund в PostgreSQL остаются ровно две semantic operations, fake provider
 получает один grant и одну compensation, а local subscription возвращается к исходному expiry.
@@ -111,6 +115,8 @@ pnpm test:e2e:live  # существующие dev-up frontend/backend и реа
 dashboard/users/settings, выбор Kuma/Beszel, Tribute credential/API-check states без секретов,
 commerce-rule empty/create/edit/toggle/delete/save failure, fixed/volume preview/no-match,
 payment-activity loading/empty/populated/error/retry и безопасные applied/review reason codes,
+server-approved operator retry/resolve, обязательную resolution note, dialog cancel/focus,
+mutation failure с повтором того же request UUID, success feedback и resolved/retry audit copy,
 раскрытие focused input внутри visual viewport, непрерывный touch-editing lifecycle при закрытии
 клавиатуры, loading spinner без SVG backing box, light-mode axe, overflow и визуальные evidence
 screenshots.

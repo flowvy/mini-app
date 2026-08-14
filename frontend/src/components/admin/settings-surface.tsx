@@ -130,6 +130,7 @@ interface SettingsStatusRowProps {
 	tone?: SettingsTone;
 	description?: string;
 	action?: ReactNode;
+	className?: string;
 }
 
 export const SettingsStatusRow: FC<SettingsStatusRowProps> = ({
@@ -138,8 +139,9 @@ export const SettingsStatusRow: FC<SettingsStatusRowProps> = ({
 	tone = "default",
 	description,
 	action,
+	className,
 }) => (
-	<div className={styles.statusRow}>
+	<div className={`${styles.statusRow} ${className ?? ""}`}>
 		<div className={styles.statusCopy}>
 			<span className={styles.statusLabel}>{label}</span>
 			<span className={styles.statusValue} data-tone={tone}>
