@@ -120,7 +120,15 @@
   результат без save/access side effect. Экран показывает `Planning only` либо включённое delivery
   из server config и admin activity journal с loading/empty/error/retry/applied/review/resolved
   состояниями. Доступные Retry/Resolve приходят с backend; подтверждение удерживает modal при
-  ошибке, возвращает focus и явно сообщает результат. Raw payload/diagnostics не выводятся;
+  ошибке, а успех обновляет саму operation row без отдельного дублирующего success-блока. Cancel
+  возвращает focus на trigger, успешное terminal action — на сохранившуюся operation row одним
+  `requestAnimationFrame` без прокрутки. Touch-submit сначала закрывает software keyboard и удерживает
+  modal в busy-state, пока shared VisualViewport lifecycle не подтвердит восстановление viewport;
+  native dialog закрывается через `useLayoutEffect` до следующей отрисовки согласно
+  [официальной рекомендации React](https://react.dev/reference/react/useEffect#my-effect-does-something-visual-and-i-see-a-flicker-before-it-runs),
+  проверенной 2026-08-14. Диалог сначала фокусирует статический заголовок и следует
+  [WAI-ARIA Modal Dialog Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/), проверенному
+  2026-08-14. Обновлённая строка остаётся polite live-region. Raw payload/diagnostics не выводятся;
   callback URL в UI не публикуется.
 - Штатный подписанный Tribute test-ping подтверждён controlled delivery 2026-08-14: отдельный exact
   object с bounded `test_event` получает `200` после HMAC, не пишет inbox и не запускает commerce.
@@ -421,7 +429,7 @@ Tribute показал success, endpoint вернул `200`, inbox осталс�
 | Tribute entitlement ledger и admin activity | focused contract/concurrency suites; `PLAYWRIGHT_PORT=5188; pnpm exec playwright test tests/e2e/tribute.spec.ts --workers=4`; `PLAYWRIGHT_PORT=5196; scripts/verify.ps1 -Scope Full` | Focused webhook/executor 43 passed, commerce/provider/planner/executor/Remnawave selection 59 passed; отдельная executor concurrency suite 8/8 подтвердила сериализацию операций одного пользователя. Full gate: one-head/upgrade/downgrade/re-upgrade/drift, 402 backend, 55 Remnawave contract, Ruff, frontend lint/typecheck, 37 unit, production build, 71 mobile browser и docs passed. Tribute all-project matrix 52/52 прошла на 430x932, 320x568, iPhone/WebKit и desktop; activity loading/empty/populated/error/retry, admin allow-list, Axe/overflow/console/network зелёные. Mobile dark и desktop light evidence просмотрены. Executor default off; live payment/provider mutation не вызывались |
 | Tribute digital-product E2E fixture | `scripts/verify-tribute-entitlements.ps1`; `PLAYWRIGHT_PORT=5198; scripts/verify.ps1 -Scope Full` | Focused production-boundary smoke 1/1 прошёл: signed purchase/refund, exact duplicates, две semantic operations, один absolute grant и одна compensation через stateful fake Remnawave, local expiry восстановлен. Full gate: migrations/drift, 403 backend, 55 Remnawave contract, Ruff, frontend lint/typecheck, 37 unit, production build, 71 browser и docs passed. Реальные Tribute/Remnawave endpoints не вызывались; executor runtime default не менялся |
 | Tribute operator review workflow | 32 focused backend tests; `PLAYWRIGHT_PORT=5201; pnpm exec playwright test tests/e2e/tribute.spec.ts --workers=4`; deterministic visual evidence; `PLAYWRIGHT_PORT=5202; scripts/verify.ps1 -Scope Full` | Append-only actor audit, request UUID idempotency, row-lock concurrency, retry eligibility, required resolve note, safe API projection и stale conflict прошли. Tribute all-project matrix 60/60 зелёная на 430x932, 320x568, iPhone/WebKit и desktop; 12 action/dialog screenshots просмотрены в light/dark на 320/430/1280 px. Full gate: one-head/upgrade/downgrade/re-upgrade/drift, 410 backend, 55 Remnawave contract, Ruff, frontend lint/typecheck, 37 unit, production build, 74 mobile browser и docs passed. Executor остаётся выключенным; реальные Tribute/Remnawave endpoints не вызывались |
-
+| Tribute operator feedback/focus polish | full Tribute all-project Playwright, focused shared-confirm matrix, deterministic keyboard transition/post-resolve evidence; frontend lint/type/unit/build | Tribute 63 passed и 1 desktop-only keyboard case штатно skipped на 430x932, 320x568, iOS WebKit и desktop; shared-confirm 16/16. Touch Resolve удерживает native dialog до VisualViewport restoration, закрывает его до paint, не раскрывает сжатую подложку и сохраняет `scrollY`; success отражается только в operation row. Четыре keyboard-transition и шесть post-resolve light/dark screenshots на 320/430/1280 px просмотрены вручную. Lint, 37 unit tests и production build прошли |
 ## Следующее действие
 
 Следующий Tribute slice — alerts/metrics и отдельный production rollout/rollback runbook. Executor

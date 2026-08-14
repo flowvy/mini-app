@@ -5,6 +5,7 @@ import {
 	mockData,
 	test,
 } from "./fixtures/mock-api.ts";
+import { installVisualViewportMock, setTestVisualViewport } from "./fixtures/visual-viewport.ts";
 
 const screens = [
 	{ name: "home", path: "/", marker: "Account Info" },
@@ -219,17 +220,30 @@ test("capture Tribute operator review actions and safe resolution dialog", async
 	page,
 	mockApi,
 }, testInfo) => {
-	mockApi.mock("GET", "/api/debug/admin/commerce/operations", {
-		body: {
-			operations: [
-				entitlementOperation({
-					status: "review",
-					reasonCode: "provider_unavailable",
-					availableActions: ["retry", "resolve"],
-				}),
-			],
-			hasMore: false,
+	await installVisualViewportMock(page);
+	const reviewOperation = entitlementOperation({
+		status: "review",
+		reasonCode: "provider_unavailable",
+		availableActions: ["retry", "resolve"],
+	});
+	const resolvedOperation = entitlementOperation({
+		...reviewOperation,
+		status: "resolved",
+		reasonCode: "operator_resolved",
+		availableActions: [],
+		lastAction: {
+			action: "resolve",
+			note: "Verified in Tribute",
+			createdAt: "2026-08-14T10:05:00Z",
 		},
+	});
+	const operationReplies = Array.from({ length: 6 }, () => [
+		{ body: { operations: [reviewOperation], hasMore: false } },
+		{ body: { operations: [resolvedOperation], hasMore: false } },
+	]).flat();
+	mockApi.mock("GET", "/api/debug/admin/commerce/operations", operationReplies);
+	mockApi.mock("POST", /\/api\/debug\/admin\/commerce\/operations\/[^/]+\/actions$/, {
+		body: resolvedOperation,
 	});
 
 	for (const viewport of [
@@ -258,9 +272,10 @@ test("capture Tribute operator review actions and safe resolution dialog", async
 			});
 
 			await resolveButton.click();
-			await expect(
-				page.getByRole("dialog", { name: "Resolve without changing access?" }),
-			).toBeVisible();
+			const resolutionDialog = page.getByRole("dialog", {
+				name: "Resolve without changing access?",
+			});
+			await expect(resolutionDialog).toBeVisible();
 			await assertNoHorizontalOverflow(page);
 			await page.screenshot({
 				path: testInfo.outputPath(
@@ -268,7 +283,37 @@ test("capture Tribute operator review actions and safe resolution dialog", async
 				),
 				animations: "disabled",
 			});
-			await page.getByRole("button", { name: "Close" }).click();
+			const resolutionNote = page.getByLabel("Resolution note");
+			await resolutionNote.fill("Verified in Tribute");
+			await resolutionNote.focus();
+			const touchInput = await page.evaluate(
+				() => window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
+			);
+			const keyboardViewport = viewport.width <= 430 && touchInput;
+			if (keyboardViewport) {
+				await setTestVisualViewport(page, Math.max(240, viewport.height - 300));
+			}
+			await resolutionDialog.getByRole("button", { name: "Resolve", exact: true }).click();
+			const resolvedEntry = page.getByRole("article").filter({ hasText: "Resolved" });
+			if (keyboardViewport) {
+				await expect(resolvedEntry.getByText("Resolved", { exact: true })).toBeVisible();
+				await expect(resolutionDialog).toBeVisible();
+				await page.screenshot({
+					path: testInfo.outputPath(
+						`admin-settings-tribute-resolving-keyboard-${viewport.name}-${colorScheme}.png`,
+					),
+					animations: "disabled",
+				});
+				await setTestVisualViewport(page, viewport.height);
+			}
+			await expect(resolutionDialog).toHaveCount(0);
+			await expect(resolvedEntry).toBeFocused();
+			await page.screenshot({
+				path: testInfo.outputPath(
+					`admin-settings-tribute-resolved-${viewport.name}-${colorScheme}.png`,
+				),
+				animations: "disabled",
+			});
 		}
 	}
 });

@@ -3,10 +3,12 @@
  * Header with title + close button, body, footer with action buttons.
  */
 import { X } from "lucide-react";
-import { type FC, type ReactNode, type RefObject, useEffect, useRef } from "react";
+import { type FC, type ReactNode, type RefObject, useId, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { hapticImpact, hapticNotification } from "../../lib/haptics.ts";
+import { hideVirtualKeyboard } from "../../lib/telegram.ts";
+import { isEditableControl } from "../../lib/visual-viewport.ts";
 import { ActionBtn } from "./action-btn.tsx";
 import styles from "./confirm-dialog.module.css";
 
@@ -38,26 +40,31 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 	returnFocusRef,
 }) => {
 	const { t } = useTranslation();
+	const titleId = useId();
 	const modalRef = useRef<HTMLDialogElement>(null);
-	const closeRef = useRef<HTMLButtonElement>(null);
+	const titleRef = useRef<HTMLHeadingElement>(null);
 	const fallbackFocusRef = useRef<HTMLElement | null>(null);
+	const restoreFocusFrameRef = useRef<number | null>(null);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (!open) return;
+		if (restoreFocusFrameRef.current !== null) {
+			window.cancelAnimationFrame(restoreFocusFrameRef.current);
+			restoreFocusFrameRef.current = null;
+		}
 		fallbackFocusRef.current =
 			document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		const modal = modalRef.current;
 		if (modal && !modal.open) modal.showModal();
-		closeRef.current?.focus();
+		titleRef.current?.focus();
 		return () => {
 			if (modal?.open) modal.close();
 			const target = returnFocusRef?.current ?? fallbackFocusRef.current;
-			const restoreFocus = () => {
+			restoreFocusFrameRef.current = window.requestAnimationFrame(() => {
+				restoreFocusFrameRef.current = null;
 				const liveTarget = returnFocusRef?.current ?? target;
-				if (liveTarget?.isConnected) liveTarget.focus();
-			};
-			restoreFocus();
-			window.requestAnimationFrame(restoreFocus);
+				if (liveTarget?.isConnected) liveTarget.focus({ preventScroll: true });
+			});
 		};
 	}, [open, returnFocusRef]);
 
@@ -71,13 +78,20 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 		onConfirm();
 	};
 
+	const dismissFocusedEditor = () => {
+		const focused = document.activeElement;
+		if (isEditableControl(focused) && modalRef.current?.contains(focused)) {
+			hideVirtualKeyboard(focused);
+		}
+	};
+
 	if (!open) return null;
 
 	return createPortal(
 		<dialog
 			ref={modalRef}
 			className={styles.modal}
-			aria-label={title}
+			aria-labelledby={titleId}
 			aria-modal="true"
 			onClick={(event) => {
 				if (event.target === modalRef.current) cancel();
@@ -96,6 +110,14 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 				if (focusable.length === 0) return;
 				const first = focusable[0];
 				const last = focusable[focusable.length - 1];
+				if (
+					!(document.activeElement instanceof HTMLElement) ||
+					!focusable.includes(document.activeElement)
+				) {
+					event.preventDefault();
+					(event.shiftKey ? last : first).focus();
+					return;
+				}
 				if (event.shiftKey && document.activeElement === first) {
 					event.preventDefault();
 					last.focus();
@@ -110,9 +132,10 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 			}}
 		>
 			<div className={styles.header}>
-				<span className={styles.title}>{title}</span>
+				<h2 id={titleId} ref={titleRef} className={styles.title} tabIndex={-1}>
+					{title}
+				</h2>
 				<button
-					ref={closeRef}
 					type="button"
 					className={styles.closeBtn}
 					onClick={cancel}
@@ -128,6 +151,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 					variant="ghost"
 					size="md"
 					disabled={confirmLoading}
+					onPointerDown={dismissFocusedEditor}
 					onClick={() => {
 						hapticImpact("light");
 						cancel();
@@ -140,6 +164,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 					size="md"
 					loading={confirmLoading}
 					disabled={confirmDisabled}
+					onPointerDown={dismissFocusedEditor}
 					onClick={() => {
 						hapticNotification("warning");
 						confirm();

@@ -1,10 +1,11 @@
 import { RefreshCw } from "lucide-react";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	useActOnEntitlementOperation,
 	useEntitlementOperations,
 } from "../../hooks/use-commerce-rules.ts";
+import { useTouchEditing } from "../../hooks/use-touch-editing.ts";
 import { formatDateISO } from "../../lib/format.ts";
 import { formatMinorMoney } from "../../lib/money.ts";
 import type {
@@ -97,11 +98,6 @@ const ACTION_LABEL_KEYS: Record<EntitlementOperatorAction, string> = {
 	resolve: "settings.tribute.activity.action.resolve",
 };
 
-const ACTION_SUCCESS_KEYS: Record<EntitlementOperatorAction, string> = {
-	retry: "settings.tribute.activity.action.retrySuccess",
-	resolve: "settings.tribute.activity.action.resolveSuccess",
-};
-
 function operationDescription(
 	operation: EntitlementOperation,
 	t: ReturnType<typeof useTranslation>["t"],
@@ -152,21 +148,39 @@ export function CommerceActivity({ executionEnabled }: CommerceActivityProps) {
 	const { t } = useTranslation();
 	const activity = useEntitlementOperations();
 	const actionMutation = useActOnEntitlementOperation();
-	const feedbackRef = useRef<HTMLDivElement>(null);
+	const touchEditing = useTouchEditing();
+	const touchEditingRef = useRef(touchEditing);
+	touchEditingRef.current = touchEditing;
+	const returnFocusRef = useRef<HTMLElement>(null);
+	const operationFocusRef = useRef<HTMLElement>(null);
 	const [decision, setDecision] = useState<PendingDecision | null>(null);
 	const [note, setNote] = useState("");
-	const [successAction, setSuccessAction] = useState<EntitlementOperatorAction | null>(null);
+	const [closingAfterSuccess, setClosingAfterSuccess] = useState(false);
 
-	const openDecision = (operation: EntitlementOperation, action: EntitlementOperatorAction) => {
+	useLayoutEffect(() => {
+		if (!closingAfterSuccess || touchEditing) return;
+		setClosingAfterSuccess(false);
+		setDecision(null);
+		setNote("");
+	}, [closingAfterSuccess, touchEditing]);
+
+	const openDecision = (
+		operation: EntitlementOperation,
+		action: EntitlementOperatorAction,
+		trigger: HTMLButtonElement,
+	) => {
 		actionMutation.reset();
 		setNote("");
-		setSuccessAction(null);
+		setClosingAfterSuccess(false);
+		returnFocusRef.current = trigger;
+		operationFocusRef.current = trigger.closest<HTMLElement>("[data-entitlement-operation]");
 		setDecision({ operation, action, requestId: crypto.randomUUID() });
 	};
 
 	const closeDecision = () => {
-		if (actionMutation.isPending) return;
+		if (actionMutation.isPending || closingAfterSuccess) return;
 		actionMutation.reset();
+		setClosingAfterSuccess(false);
 		setDecision(null);
 		setNote("");
 	};
@@ -184,9 +198,13 @@ export function CommerceActivity({ executionEnabled }: CommerceActivityProps) {
 			},
 			{
 				onSuccess: () => {
-					setSuccessAction(decision.action);
-					setDecision(null);
-					setNote("");
+					returnFocusRef.current = operationFocusRef.current;
+					if (touchEditingRef.current) {
+						setClosingAfterSuccess(true);
+					} else {
+						setDecision(null);
+						setNote("");
+					}
 				},
 			},
 		);
@@ -210,11 +228,6 @@ export function CommerceActivity({ executionEnabled }: CommerceActivityProps) {
 					</ActionBtn>
 				}
 			>
-				{successAction && (
-					<div ref={feedbackRef} className={styles.feedback} tabIndex={-1}>
-						<InlineFeedback tone="success">{t(ACTION_SUCCESS_KEYS[successAction])}</InlineFeedback>
-					</div>
-				)}
 				{activity.isPending && (
 					<output className={styles.state} aria-live="polite">
 						{t("settings.tribute.activity.loading")}
@@ -236,7 +249,14 @@ export function CommerceActivity({ executionEnabled }: CommerceActivityProps) {
 					/>
 				)}
 				{activity.data?.operations.map((operation, index) => (
-					<div key={operation.id}>
+					<article
+						key={operation.id}
+						className={styles.operation}
+						data-entitlement-operation
+						tabIndex={-1}
+						aria-live="polite"
+						aria-atomic="true"
+					>
 						{index > 0 && <SettingsDivider />}
 						<SettingsStatusRow
 							className={operation.availableActions.length ? styles.actionableRow : undefined}
@@ -254,7 +274,7 @@ export function CommerceActivity({ executionEnabled }: CommerceActivityProps) {
 												key={action}
 												variant="action"
 												size="sm"
-												onClick={() => openDecision(operation, action)}
+												onClick={(event) => openDecision(operation, action, event.currentTarget)}
 											>
 												{t(ACTION_LABEL_KEYS[action])}
 											</ActionBtn>
@@ -263,7 +283,7 @@ export function CommerceActivity({ executionEnabled }: CommerceActivityProps) {
 								) : undefined
 							}
 						/>
-					</div>
+					</article>
 				))}
 				{activity.data?.hasMore && (
 					<>
@@ -286,9 +306,9 @@ export function CommerceActivity({ executionEnabled }: CommerceActivityProps) {
 						: "settings.tribute.activity.action.retryConfirm",
 				)}
 				cancelLabel={t("common.cancel")}
-				confirmLoading={actionMutation.isPending}
+				confirmLoading={actionMutation.isPending || closingAfterSuccess}
 				confirmDisabled={confirmDisabled}
-				returnFocusRef={feedbackRef}
+				returnFocusRef={returnFocusRef}
 				onCancel={closeDecision}
 				onConfirm={confirmDecision}
 			>
@@ -314,7 +334,7 @@ export function CommerceActivity({ executionEnabled }: CommerceActivityProps) {
 								onChange={(event) => setNote(event.target.value)}
 								maxLength={500}
 								rows={4}
-								disabled={actionMutation.isPending}
+								disabled={actionMutation.isPending || closingAfterSuccess}
 								readOnly={actionMutation.isError}
 							/>
 						</FormField>

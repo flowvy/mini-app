@@ -6,41 +6,7 @@ import {
 	mockData,
 	test,
 } from "./fixtures/mock-api.ts";
-
-async function installVisualViewportMock(page: import("@playwright/test").Page) {
-	await page.addInitScript(() => {
-		class TestVisualViewport extends EventTarget {
-			private overriddenHeight: number | null = null;
-			offsetTop = 0;
-
-			get height() {
-				return this.overriddenHeight ?? window.innerHeight;
-			}
-
-			set height(value: number) {
-				this.overriddenHeight = value;
-			}
-
-			get width() {
-				return window.innerWidth;
-			}
-		}
-
-		const viewport = new TestVisualViewport();
-		Object.defineProperty(window, "visualViewport", {
-			configurable: true,
-			value: viewport,
-		});
-		Object.defineProperty(window, "__setTestVisualViewport", {
-			configurable: true,
-			value: (height: number, offsetTop = 0) => {
-				viewport.height = height;
-				viewport.offsetTop = offsetTop;
-				viewport.dispatchEvent(new Event("resize"));
-			},
-		});
-	});
-}
+import { installVisualViewportMock, setTestVisualViewport } from "./fixtures/visual-viewport.ts";
 
 test("Tribute onboarding is a separate payment-provider route with stable navigation", async ({
 	page,
@@ -248,6 +214,10 @@ test("admin resolution is explicit, audited, idempotent across retry, and return
 	await resolveButton.click();
 	const dialog = page.getByRole("dialog", { name: "Resolve without changing access?" });
 	await expect(dialog).toBeVisible();
+	await expect(
+		dialog.getByRole("heading", { name: "Resolve without changing access?" }),
+	).toBeFocused();
+	await expect(dialog.getByRole("button", { name: "Close" })).not.toBeFocused();
 	await expect(dialog.getByRole("button", { name: "Resolve", exact: true })).toBeDisabled();
 	const accessibility = await new AxeBuilder({ page }).analyze();
 	expect(
@@ -265,21 +235,24 @@ test("admin resolution is explicit, audited, idempotent across retry, and return
 	await expect(dialog.getByRole("alert")).toContainText("Could not save this decision");
 	await expect(page.getByLabel("Resolution note")).toHaveAttribute("readonly", "");
 	await expect(page.getByText("private operator diagnostic")).toHaveCount(0);
+	const scrollBeforeResolve = await page.evaluate(() => window.scrollY);
 	await confirm.click();
 
 	await expect(dialog).toHaveCount(0);
-	await expect(page.getByRole("status")).toContainText(
-		"The review was resolved without changing access.",
-	);
-	await expect(page.getByText("Resolved", { exact: true })).toBeVisible();
-	await expect(page.getByText(/Resolution: Verified in the provider dashboard/)).toBeVisible();
+	const resolvedEntry = page.getByRole("article").filter({ hasText: "Resolved" });
+	await expect(resolvedEntry).toBeFocused();
+	await expect(resolvedEntry.getByText("Resolved", { exact: true })).toBeVisible();
+	await expect(
+		resolvedEntry.getByText(/Resolution: Verified in the provider dashboard/),
+	).toBeVisible();
+	await expect(page.getByText("The review was resolved without changing access.")).toHaveCount(0);
+	await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollBeforeResolve);
 	expect(requests).toHaveLength(2);
 	expect(requests[0]).toMatchObject({
 		action: "resolve",
 		note: "Verified in the provider dashboard",
 	});
 	expect(requests[1]).toEqual(requests[0]);
-	if (browserName !== "webkit") await expect(page.getByRole("status").locator("..")).toBeFocused();
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -320,10 +293,105 @@ test("provider failures expose only the server-approved retry and resolve decisi
 	await expect(dialog).toContainText(
 		"Automatic delivery is currently off. This attempt will stay queued",
 	);
+	const scrollBeforeRetry = await page.evaluate(() => window.scrollY);
 	await dialog.getByRole("button", { name: "Queue retry", exact: true }).click();
-	await expect(page.getByRole("status")).toContainText("The provider retry was queued.");
-	await expect(page.getByText("Retry scheduled", { exact: true })).toBeVisible();
-	await expect(page.getByText("An administrator queued another attempt.")).toBeVisible();
+	const retryEntry = page.getByRole("article").filter({ hasText: "Retry scheduled" });
+	await expect(retryEntry).toBeFocused();
+	await expect(retryEntry.getByText("Retry scheduled", { exact: true })).toBeVisible();
+	await expect(retryEntry.getByText("An administrator queued another attempt.")).toBeVisible();
+	await expect(page.getByText("The provider retry was queued.")).toHaveCount(0);
+	await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollBeforeRetry);
+	await assertNoHorizontalOverflow(page);
+});
+
+test("resolution closes the native dialog before paint while the keyboard viewport restores", async ({
+	page,
+	mockApi,
+}) => {
+	await installVisualViewportMock(page);
+	const operation = entitlementOperation({
+		operationKind: "review",
+		status: "review",
+		reasonCode: "semantic_identity_unverified",
+		availableActions: ["resolve"],
+	});
+	const resolved = entitlementOperation({
+		...operation,
+		status: "resolved",
+		reasonCode: "operator_resolved",
+		availableActions: [],
+		lastAction: {
+			action: "resolve",
+			note: "Verified in Tribute",
+			createdAt: "2026-08-14T10:05:00Z",
+		},
+	});
+	mockApi.mock("GET", "/api/debug/admin/commerce/operations", [
+		{ body: { operations: [operation], hasMore: false } },
+		{ body: { operations: [resolved], hasMore: false } },
+	]);
+	mockApi.mock("POST", /\/api\/debug\/admin\/commerce\/operations\/[^/]+\/actions$/, {
+		body: resolved,
+		delayMs: 120,
+	});
+
+	await page.goto("/admin/settings/tribute");
+	const touchInput = await page.evaluate(
+		() => window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
+	);
+	test.skip(!touchInput, "Software-keyboard viewport lifecycle applies only to touch clients");
+	await page.getByRole("button", { name: "Resolve", exact: true }).click();
+	const dialog = page.getByRole("dialog", { name: "Resolve without changing access?" });
+	const note = page.getByLabel("Resolution note");
+	await note.fill("Verified in Tribute");
+	await note.focus();
+	const restoredViewportHeight = await page.evaluate(() => window.innerHeight);
+	const keyboardViewportHeight = Math.max(240, restoredViewportHeight - 300);
+	await setTestVisualViewport(page, keyboardViewportHeight);
+	const navigation = page.getByRole("navigation", { includeHidden: true });
+	await expect(navigation).toHaveAttribute("aria-hidden", "true");
+
+	await page.evaluate(() => {
+		const nativeDialog = document.querySelector("dialog");
+		if (!nativeDialog) throw new Error("Expected an open native dialog");
+		const record = { observed: false, openAtRemoval: null as boolean | null };
+		const observer = new MutationObserver(() => {
+			if (nativeDialog.isConnected) return;
+			record.observed = true;
+			record.openAtRemoval = nativeDialog.open;
+			observer.disconnect();
+		});
+		observer.observe(document.body, { childList: true, subtree: true });
+		Object.defineProperty(window, "__dialogRemovalRecord", {
+			configurable: true,
+			value: record,
+		});
+	});
+
+	await dialog.getByRole("button", { name: "Resolve", exact: true }).click();
+	await expect(page.getByText("Resolved", { exact: true })).toBeVisible();
+	await expect(dialog).toBeVisible();
+	await expect(dialog.getByRole("button", { name: "Resolve", exact: true })).toHaveAttribute(
+		"aria-busy",
+		"true",
+	);
+	await expect(navigation).toHaveAttribute("aria-hidden", "true");
+
+	await setTestVisualViewport(page, restoredViewportHeight);
+	await expect(dialog).toHaveCount(0);
+	await expect
+		.poll(() =>
+			page.evaluate(
+				() =>
+					(
+						window as typeof window & {
+							__dialogRemovalRecord: { observed: boolean; openAtRemoval: boolean | null };
+						}
+					).__dialogRemovalRecord,
+			),
+		)
+		.toEqual({ observed: true, openAtRemoval: false });
+	await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -416,13 +484,7 @@ test("rule editor reveals focused inputs and keeps actions hidden through keyboa
 	await expect(focusedInput).toHaveValue("500");
 	const restoredViewportHeight = await page.evaluate(() => window.innerHeight);
 	const keyboardViewportHeight = Math.max(240, restoredViewportHeight - 300);
-	await page.evaluate((height) => {
-		(
-			window as typeof window & {
-				__setTestVisualViewport: (height: number, offsetTop?: number) => void;
-			}
-		).__setTestVisualViewport(height);
-	}, keyboardViewportHeight);
+	await setTestVisualViewport(page, keyboardViewportHeight);
 	const touchInput = await page.evaluate(
 		() => window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
 	);
@@ -444,13 +506,7 @@ test("rule editor reveals focused inputs and keeps actions hidden through keyboa
 			"aria-hidden",
 			"true",
 		);
-		await page.evaluate((height) => {
-			(
-				window as typeof window & {
-					__setTestVisualViewport: (height: number, offsetTop?: number) => void;
-				}
-			).__setTestVisualViewport(height);
-		}, restoredViewportHeight);
+		await setTestVisualViewport(page, restoredViewportHeight);
 	} else {
 		await expect(footer).toBeVisible();
 		await focusedInput.blur();

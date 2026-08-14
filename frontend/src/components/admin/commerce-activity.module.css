@@ -16,14 +16,8 @@
 	justify-self: start;
 }
 
-.feedback {
-	padding: 12px 14px 0;
-}
-
-.feedback:focus-visible {
-	border-radius: 8px;
-	outline: 2px solid var(--v2-border-focus);
-	outline-offset: 2px;
+.operation {
+	outline: none;
 }
 
 .actions {

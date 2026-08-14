@@ -32,9 +32,11 @@
 }
 
 .title {
+	margin: 0;
 	font-size: 14px;
 	font-weight: 700;
 	color: var(--v2-text-primary);
+	outline: none;
 }
 
 .closeBtn {

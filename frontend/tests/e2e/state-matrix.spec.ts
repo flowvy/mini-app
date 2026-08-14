@@ -417,7 +417,8 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 	await page.evaluate(() => window.history.back());
 	const dialog = page.getByRole("dialog", { name: "Discard changes?" });
 	await expect(dialog).toBeVisible();
-	await expect(page.getByRole("button", { name: "Close" })).toBeFocused();
+	await expect(dialog.getByRole("heading", { name: "Discard changes?" })).toBeFocused();
+	await expect(page.getByRole("button", { name: "Close" })).not.toBeFocused();
 	await page.keyboard.press("Shift+Tab");
 	await expect(page.getByRole("button", { name: "Discard" })).toBeFocused();
 	await page.keyboard.press("Escape");
