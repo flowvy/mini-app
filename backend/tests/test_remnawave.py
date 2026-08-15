@@ -669,6 +669,9 @@ async def test_get_devices_accepts_2_8_numeric_owner_contract() -> None:
     assert len(devices) == 1
     assert devices[0].user_id == FAKE_USER["id"]
     assert devices[0].user_uuid is None
+    assert devices[0].user_agent == "test-agent"
+    assert devices[0].request_ip == "192.0.2.1"
+    assert devices[0].updated_at.isoformat() == "2026-01-02T00:00:00+00:00"
 
 
 @pytest.mark.asyncio

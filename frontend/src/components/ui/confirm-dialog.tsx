@@ -21,6 +21,8 @@ interface ConfirmDialogProps {
 	confirmVariant?: "confirm" | "danger";
 	confirmLoading?: boolean;
 	confirmDisabled?: boolean;
+	initialFocus?: "title" | "cancel";
+	alert?: boolean;
 	onConfirm: () => void;
 	onCancel: () => void;
 	returnFocusRef?: RefObject<HTMLElement | null>;
@@ -35,14 +37,18 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 	confirmVariant = "confirm",
 	confirmLoading = false,
 	confirmDisabled = false,
+	initialFocus = "title",
+	alert = false,
 	onConfirm,
 	onCancel,
 	returnFocusRef,
 }) => {
 	const { t } = useTranslation();
 	const titleId = useId();
+	const descriptionId = useId();
 	const modalRef = useRef<HTMLDialogElement>(null);
 	const titleRef = useRef<HTMLHeadingElement>(null);
+	const cancelButtonRef = useRef<HTMLButtonElement>(null);
 	const fallbackFocusRef = useRef<HTMLElement | null>(null);
 	const restoreFocusFrameRef = useRef<number | null>(null);
 
@@ -56,7 +62,8 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 			document.activeElement instanceof HTMLElement ? document.activeElement : null;
 		const modal = modalRef.current;
 		if (modal && !modal.open) modal.showModal();
-		titleRef.current?.focus();
+		if (initialFocus === "cancel") cancelButtonRef.current?.focus();
+		else titleRef.current?.focus();
 		return () => {
 			if (modal?.open) modal.close();
 			const target = returnFocusRef?.current ?? fallbackFocusRef.current;
@@ -66,7 +73,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 				if (liveTarget?.isConnected) liveTarget.focus({ preventScroll: true });
 			});
 		};
-	}, [open, returnFocusRef]);
+	}, [initialFocus, open, returnFocusRef]);
 
 	const cancel = () => {
 		if (confirmLoading) return;
@@ -91,7 +98,9 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 		<dialog
 			ref={modalRef}
 			className={styles.modal}
+			role={alert ? "alertdialog" : undefined}
 			aria-labelledby={titleId}
+			aria-describedby={alert ? descriptionId : undefined}
 			aria-modal="true"
 			onClick={(event) => {
 				if (event.target === modalRef.current) cancel();
@@ -145,9 +154,12 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 					<X size={16} />
 				</button>
 			</div>
-			<div className={styles.body}>{children}</div>
+			<div id={descriptionId} className={styles.body}>
+				{children}
+			</div>
 			<div className={styles.footer}>
 				<ActionBtn
+					ref={cancelButtonRef}
 					variant="ghost"
 					size="md"
 					disabled={confirmLoading}

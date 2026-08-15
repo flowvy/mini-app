@@ -129,7 +129,10 @@ class DevicesService:
                     platform=d.platform,
                     os_version=d.os_version,
                     device_model=d.device_model,
+                    user_agent=d.user_agent,
+                    request_ip=d.request_ip,
                     created_at=int(d.created_at.timestamp()),
+                    updated_at=int(d.updated_at.timestamp()),
                 )
                 for d in devices
             ],

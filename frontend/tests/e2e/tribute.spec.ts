@@ -201,7 +201,7 @@ test("admin saves per-subscription payment links without creating a payment", as
 	await page.getByLabel("Supporter").fill(" https://t.me/tribute/app?startapp=subscription_12 ");
 	await page.getByRole("button", { name: "Save payment links", exact: true }).click();
 
-	await expect(page.getByText("Payment links saved.", { exact: true })).toBeVisible();
+	await expect(page.getByText("Payment links saved", { exact: true })).toBeVisible();
 	expect(patches).toEqual([
 		{
 			tributeSubscriptionUrls: {
@@ -274,7 +274,7 @@ test("payment link catalog failure retries safely and preserves unavailable mapp
 	await expect(page.getByLabel("Supporter")).toBeVisible();
 	await legacy.fill("");
 	await page.getByRole("button", { name: "Save payment links", exact: true }).click();
-	await expect(page.getByText("Payment links saved.", { exact: true })).toBeVisible();
+	await expect(page.getByText("Payment links saved", { exact: true })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -537,7 +537,7 @@ test("payment activity renders allow-listed applied and review outcomes", async 
 	await expect(page.getByText("Needs review", { exact: true })).toBeVisible();
 	await expect(page.getByText(/does not document a unique ID/)).toBeVisible();
 	await expect(
-		page.getByText("Showing the 20 most recent operations.", { exact: true }),
+		page.getByText("Showing the 20 most recent operations", { exact: true }),
 	).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 	await page.getByRole("heading", { name: "Payment activity" }).evaluate((element) => {
@@ -678,7 +678,7 @@ test("provider failures expose only the server-approved retry and resolve decisi
 	const retryEntry = page.getByRole("article").filter({ hasText: "Retry scheduled" });
 	await expect(retryEntry).toBeFocused();
 	await expect(retryEntry.getByText("Retry scheduled", { exact: true })).toBeVisible();
-	await expect(retryEntry.getByText("An administrator queued another attempt.")).toBeVisible();
+	await expect(retryEntry.getByText("An administrator queued another attempt")).toBeVisible();
 	await expect(page.getByText("The provider retry was queued.")).toHaveCount(0);
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(scrollBeforeRetry);
 	await assertNoHorizontalOverflow(page);
@@ -1290,12 +1290,12 @@ test("Home reports confirmed subscription access without guessing cancellation s
 	await expect(activeCard).toBeVisible();
 	await expect(
 		activeCard.getByText(
-			"Your paid access is available until the date below. Billing and cancellation are managed in Tribute.",
+			"Your paid access is available until the date below. Billing and cancellation are managed in Tribute",
 		),
 	).toBeVisible();
 	await expect(
 		activeCard.getByText(
-			"If you cancel in Tribute, Northstar Proxy will update this card when the paid period ends and Tribute sends the change.",
+			"If you cancel in Tribute, Northstar Proxy will update this card when the paid period ends and Tribute sends the change",
 		),
 	).toBeVisible();
 	await expect(page.getByRole("button", { name: "Manage in Tribute" })).toBeVisible();
@@ -1303,7 +1303,7 @@ test("Home reports confirmed subscription access without guessing cancellation s
 	await expect(page.getByRole("heading", { name: "Other subscription options" })).toBeVisible();
 	await expect(
 		page.getByText(
-			"You can choose another subscription after your current paid period ends on Sep 14, 2026.",
+			"You can choose another subscription after your current paid period ends on Sep 14, 2026",
 		),
 	).toBeVisible();
 	const yearlyButton = page.getByRole("button", { name: /Yearly sponsor access/ });
@@ -1371,10 +1371,10 @@ test("Home derives recurring billing UX from a recurring donation webhook lifecy
 
 	await page.goto("/");
 	await expect(page.getByRole("heading", { name: "Sponsor access is active" })).toBeVisible();
-	await expect(page.getByText("Your paid access is available until the date below.")).toBeVisible();
+	await expect(page.getByText("Your paid access is available until the date below")).toBeVisible();
 	await expect(
 		page.getByText(
-			"If you turn off auto-donation, Northstar Proxy will reflect the change when the paid period ends.",
+			"If you turn off auto-donation, Northstar Proxy will reflect the change when the paid period ends",
 		),
 	).toBeVisible();
 	await expect(page.getByRole("button", { name: "Manage auto-donation in Tribute" })).toBeVisible();

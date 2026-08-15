@@ -213,6 +213,7 @@ class RemnawaveDevice(BaseModel):
     os_version: str | None = None
     device_model: str | None = None
     user_agent: str | None = None
+    request_ip: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -234,6 +235,7 @@ class RemnawaveDevice(BaseModel):
             os_version=raw.get("osVersion"),
             device_model=raw.get("deviceModel"),
             user_agent=raw.get("userAgent"),
+            request_ip=raw.get("requestIp"),
             created_at=raw["createdAt"],
             updated_at=raw["updatedAt"],
         )

@@ -14,7 +14,7 @@ test("authentication retry and direct admin denial are explicit", async ({
 	await page.goto("/");
 	await expect(page.getByRole("heading", { name: "Unable to sign in" })).toBeVisible();
 	await expect(page.getByRole("alert")).toContainText(
-		"Authentication could not be completed. Reopen the Mini App or try again.",
+		"Authentication could not be completed. Reopen the Mini App or try again",
 	);
 
 	await page.evaluate(() => localStorage.removeItem("flowvy:mock-auth"));
@@ -49,7 +49,7 @@ test("stable authentication codes use localized copy instead of backend diagnost
 	await page.goto("/");
 	const errorState = page.getByRole("alert");
 	await expect(errorState).toContainText(
-		"This account is disabled. Contact support if you think this is a mistake.",
+		"This account is disabled. Contact support if you think this is a mistake",
 	);
 	await expect(errorState).not.toContainText("Raw backend account diagnostic");
 });
@@ -106,26 +106,93 @@ test("device confirmations support cancel, failure, and successful remove-all", 
 	});
 
 	await page.goto("/devices");
-	await page.getByRole("button", { name: "Delete device" }).first().click();
-	await page.getByRole("button", { name: "Cancel" }).click();
-	await expect(page.getByRole("button", { name: "Delete device" }).first()).toBeVisible();
+	const firstDeleteButton = page.getByRole("button", { name: "Delete device" }).first();
+	const firstDeviceName = page.getByText("Pixel 8", { exact: true });
+	const firstAddedDate = page.locator("time").first();
+	const [nameBefore, addedBefore] = await Promise.all([
+		firstDeviceName.boundingBox(),
+		firstAddedDate.boundingBox(),
+	]);
+	await firstDeleteButton.click();
+	const deviceDialog = page.getByRole("alertdialog", { name: "Remove device?" });
+	await expect(deviceDialog).toBeVisible();
+	await expect(
+		deviceDialog.getByText("Pixel 8 will be removed from your connected devices"),
+	).toBeVisible();
+	await expect(deviceDialog.getByRole("heading", { name: "Remove device?" })).toBeFocused();
+	const [nameAfter, addedAfter] = await Promise.all([
+		firstDeviceName.boundingBox(),
+		firstAddedDate.boundingBox(),
+	]);
+	expect(nameAfter).toEqual(nameBefore);
+	expect(addedAfter).toEqual(addedBefore);
+	const [addedDateBox, updatedLabelBox] = await Promise.all([
+		firstAddedDate.boundingBox(),
+		page.getByText("Updated", { exact: true }).first().boundingBox(),
+	]);
+	expect((addedDateBox?.x ?? 0) + (addedDateBox?.width ?? 0)).toBeLessThan(updatedLabelBox?.x ?? 0);
+	const accessibility = await new AxeBuilder({ page }).analyze();
+	expect(accessibility.violations).toEqual([]);
+	await page.keyboard.press("Escape");
+	await expect(deviceDialog).toHaveCount(0);
+	await expect(firstDeleteButton).toBeFocused();
 
-	await page.getByRole("button", { name: "Delete device" }).first().click();
-	await page.getByRole("button", { name: "Remove", exact: true }).first().click();
+	await firstDeleteButton.click();
+	await deviceDialog.getByRole("button", { name: "Remove", exact: true }).click();
 	await expect(page.getByRole("alert")).toContainText("Could not remove the device");
-	await expect(page.getByRole("button", { name: "Cancel" }).first()).toBeVisible();
+	await expect(deviceDialog.getByRole("button", { name: "Cancel" })).toBeVisible();
 
-	await page.getByRole("button", { name: "Cancel" }).first().click();
+	await deviceDialog.getByRole("button", { name: "Cancel" }).click();
 	await page.getByRole("button", { name: "Remove all devices" }).click();
-	await page.getByRole("button", { name: "Cancel" }).click();
+	const removeAllDialog = page.getByRole("alertdialog", { name: "Remove all 2 devices?" });
+	await expect(
+		removeAllDialog.getByRole("heading", { name: "Remove all 2 devices?" }),
+	).toBeFocused();
+	await removeAllDialog.getByRole("button", { name: "Cancel" }).click();
 	await page.getByRole("button", { name: "Remove all devices" }).click();
-	await page.getByRole("button", { name: "Remove", exact: true }).click();
+	await removeAllDialog.getByRole("button", { name: "Remove all", exact: true }).click();
 	await expect(page.getByText("No devices", { exact: true })).toBeVisible();
 	await expect(page.locator('[data-flowvy-dust-overlay="true"]')).toHaveCount(0);
 	await expect(
 		page.getByText("Connect a device with your subscription to see it here"),
 	).toBeVisible();
 	await assertNoHorizontalOverflow(page);
+});
+
+test("device details use OS logos and compact provider metadata", async ({ page, mockApi }) => {
+	const platforms = ["android", "ios", "macos", "windows", "linux"] as const;
+	const devices = platforms.map((platform, index) => ({
+		...mockData.devices.devices[0],
+		hwid: `device-${index + 1}`,
+		platform,
+		deviceModel: `${platform} device`,
+		osVersion: `DO-NOT-RENDER-${index}`,
+		userAgent:
+			index === 0
+				? "A-very-long-synthetic-client-user-agent/1.0 (compatible; deterministic browser layout regression; no real device data)"
+				: null,
+		requestIp: index === 0 ? "2001:db8::42" : null,
+	}));
+	mockApi.mock("GET", "/api/me/devices", {
+		body: { devices, total: devices.length, limit: 5 },
+	});
+
+	await page.goto("/devices");
+	for (const name of ["Android", "iOS", "macOS", "Windows", "Linux"]) {
+		await expect(page.getByRole("img", { name })).toBeVisible();
+	}
+	await expect(page.getByText("DO-NOT-RENDER-0", { exact: true })).toHaveCount(0);
+	await expect(
+		page.getByText(
+			"A-very-long-synthetic-client-user-agent/1.0 (compatible; deterministic browser layout regression; no real device data)",
+			{ exact: true },
+		),
+	).toHaveCount(0);
+	await expect(page.getByText("2001:db8::42", { exact: true })).toBeVisible();
+	await expect(page.getByText("Not reported", { exact: true })).toHaveCount(4);
+	await assertNoHorizontalOverflow(page);
+	const result = await new AxeBuilder({ page }).analyze();
+	expect(result.violations).toEqual([]);
 });
 
 test("remove-all gives every device its own staggered dust layer", async ({ page, mockApi }) => {
@@ -156,7 +223,7 @@ test("remove-all gives every device its own staggered dust layer", async ({ page
 			response.request().method() === "DELETE" &&
 			new URL(response.url()).pathname === "/api/me/devices",
 	);
-	await page.getByRole("button", { name: "Remove", exact: true }).click();
+	await page.getByRole("button", { name: "Remove all", exact: true }).click();
 	await deleteResponse;
 
 	await expect(page.locator('[data-state="removing"][data-effect="dust"]')).toHaveCount(2, {
@@ -282,7 +349,7 @@ test("page data failures share one retryable error state", async ({ page, mockAp
 		await page.goto(path);
 		const errorState = page.getByRole("alert");
 		await expect(errorState.getByRole("heading", { name: "Unable to load data" })).toBeVisible();
-		await expect(errorState).toContainText("Something went wrong. Please try again.");
+		await expect(errorState).toContainText("Something went wrong. Please try again");
 		await expect(errorState.getByRole("button", { name: "Retry" })).toBeVisible();
 	}
 });
@@ -407,7 +474,7 @@ test("users support empty search, missing detail, and failed actions", async ({
 	await page.goto("/admin/users/1");
 	await page.getByRole("button", { name: "Disable", exact: true }).click();
 	await expect(page.getByRole("dialog", { name: "Disable user?" })).toBeVisible();
-	await expect(page.getByRole("dialog")).toContainText("alice will lose proxy access.");
+	await expect(page.getByRole("dialog")).toContainText("alice will lose proxy access");
 	await page.getByRole("button", { name: "Disable", exact: true }).last().click();
 	await expect(page.getByRole("alert")).toContainText("The action failed");
 	await assertNoHorizontalOverflow(page);
@@ -444,7 +511,7 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 	await page.getByRole("button", { name: "Test" }).click();
 	await expect(page.getByRole("alert")).toContainText("Connection test failed");
 	await page.getByRole("button", { name: "Save" }).click();
-	await expect(page.getByText("Could not save changes. Try again.")).toBeVisible();
+	await expect(page.getByText("Could not save changes. Try again")).toBeVisible();
 
 	mockApi.mock("POST", "/api/debug/admin/settings/welcome-media", [
 		{ status: 413, body: { detail: "Too large" } },
@@ -480,7 +547,7 @@ test("provider identity updates the user experience without a reload", async ({
 	await page.getByRole("link", { name: "Home" }).click();
 	const share = page.getByRole("link", { name: "Share in Telegram" });
 	const shareUrl = new URL((await share.getAttribute("href")) ?? "");
-	expect(shareUrl.searchParams.get("text")).toContain("Join me on Northstar Proxy.");
+	expect(shareUrl.searchParams.get("text")).toContain("Join me on Northstar Proxy");
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -490,7 +557,7 @@ test("support stays an in-app feature placeholder without an external action", a
 }) => {
 	await page.goto("/support");
 	const support = page.getByRole("region", { name: "Support" });
-	await expect(support.getByText("In-app support is coming soon.")).toBeVisible();
+	await expect(support.getByText("In-app support is coming soon")).toBeVisible();
 	await expect(support.getByRole("link")).toHaveCount(0);
 	await assertNoHorizontalOverflow(page);
 });
@@ -602,7 +669,7 @@ test("unconfigured Pulse source opens setup without an invalid save", async ({ p
 	await provider.getByRole("radio", { name: "Beszel", exact: true }).click();
 	await expect(page).toHaveURL(/\/admin\/settings\/beszel$/);
 	await expect(page.getByRole("heading", { name: "Connection" })).toBeVisible();
-	await expect(page.getByText("Could not save changes. Try again.")).toHaveCount(0);
+	await expect(page.getByText("Could not save changes. Try again")).toHaveCount(0);
 });
 
 test("Beszel settings show missing credentials and a recoverable test failure", async ({

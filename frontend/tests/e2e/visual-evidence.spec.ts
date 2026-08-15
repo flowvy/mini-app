@@ -11,7 +11,7 @@ const screens = [
 	{ name: "home", path: "/", marker: "Account Info" },
 	{ name: "devices", path: "/devices", marker: "Pixel 8" },
 	{ name: "pulse", path: "/pulse", marker: "All systems operational" },
-	{ name: "support", path: "/support", marker: "In-app support is coming soon." },
+	{ name: "support", path: "/support", marker: "In-app support is coming soon" },
 	{ name: "admin-dashboard", path: "/admin/dashboard", marker: "Remnawave unavailable" },
 	{ name: "admin-users", path: "/admin/users", marker: "alice" },
 	{ name: "admin-user-detail", path: "/admin/users/1", marker: "alice" },
@@ -115,6 +115,38 @@ test("capture deterministic visual evidence for key screens", async ({
 				animations: "disabled",
 			});
 		}
+	}
+});
+
+test("capture compact device metadata in light and dark themes", async ({
+	page,
+	mockApi: _mock,
+}, testInfo) => {
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/devices");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await expect(page.getByRole("img", { name: "Android" })).toBeVisible();
+		await expect(page.getByText("Happ/3.11.1 (Android; Pixel 8)", { exact: true })).toHaveCount(0);
+		await expect(page.getByText("192.0.2.42", { exact: true })).toBeVisible();
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`device-details-${colorScheme}.png`),
+			animations: "disabled",
+		});
+
+		await page.getByRole("button", { name: "Delete device" }).click();
+		const dialog = page.getByRole("alertdialog", { name: "Remove device?" });
+		await expect(dialog).toBeVisible();
+		await expect(dialog.getByRole("heading", { name: "Remove device?" })).toBeFocused();
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`device-remove-confirmation-${colorScheme}.png`),
+			animations: "disabled",
+		});
+		await dialog.getByRole("button", { name: "Cancel" }).click();
 	}
 });
 
@@ -592,7 +624,7 @@ test("capture the in-app support placeholder in light and dark themes", async ({
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
 		await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
-		await expect(page.getByText("In-app support is coming soon.")).toBeVisible();
+		await expect(page.getByText("In-app support is coming soon")).toBeVisible();
 		await assertNoHorizontalOverflow(page);
 		await page.screenshot({
 			path: testInfo.outputPath(`support-placeholder-${colorScheme}.png`),

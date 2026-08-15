@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import locale from "../../src/i18n/locales/en.json";
 
 const sourceRoot = resolve(import.meta.dirname, "../../src");
+const localeRoot = resolve(sourceRoot, "i18n/locales");
 
 function sourceFiles(directory: string): string[] {
 	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -18,6 +19,14 @@ function flattenKeys(value: unknown, prefix = ""): string[] {
 	if (typeof value !== "object" || value === null) return [prefix];
 	return Object.entries(value).flatMap(([key, child]) =>
 		flattenKeys(child, prefix ? `${prefix}.${key}` : key),
+	);
+}
+
+function flattenStrings(value: unknown, prefix = ""): Array<{ key: string; value: string }> {
+	if (typeof value === "string") return [{ key: prefix, value }];
+	if (typeof value !== "object" || value === null) return [];
+	return Object.entries(value).flatMap(([key, child]) =>
+		flattenStrings(child, prefix ? `${prefix}.${key}` : key),
 	);
 }
 
@@ -121,6 +130,21 @@ describe("English UI copy catalog", () => {
 				}
 				visit(source);
 				return matches;
+			});
+
+		expect(findings).toEqual([]);
+	});
+});
+
+describe("Locale UI punctuation", () => {
+	it("does not end compact interface copy with a period", () => {
+		const findings = readdirSync(localeRoot)
+			.filter((file) => extname(file) === ".json")
+			.flatMap((file) => {
+				const catalog: unknown = JSON.parse(readFileSync(join(localeRoot, file), "utf8"));
+				return flattenStrings(catalog)
+					.filter(({ value }) => /(?<!\.)\.$/u.test(value.trim()))
+					.map(({ key, value }) => `${file}:${key} ${JSON.stringify(value)}`);
 			});
 
 		expect(findings).toEqual([]);

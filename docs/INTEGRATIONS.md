@@ -217,11 +217,18 @@ legacy-запись при первом ответе 3.x. Конфликт дв�
 Device service перед чтением/удалением всегда заново подтверждает provider owner. HWID response в
 2.7.4 связывает устройство через `userUuid`, а 2.8.1/3.x — через числовой `userId`; Flowvy принимает
 официальную форму текущего ответа и сверяет её с только что найденным пользователем. Отсутствующий или
-несовпадающий owner закрывает операцию. Email endpoint в 2.x возвращает массив, потому что поле не
-уникально; Flowvy exact-фильтрует его и останавливается при нескольких совпадениях. Все path
-parameters percent-encoded одним segment. Timeout/network/non-2xx/malformed/envelope ошибки
-преобразуются в безопасные сообщения без raw response body; production routes не возвращают
-`exc.detail`.
+несовпадающий owner закрывает операцию. После этой проверки BFF публикует allow-listed device metadata:
+`platform`, `osVersion`, `deviceModel`, `userAgent`, `requestIp`, `createdAt` и `updatedAt`.
+`requestIp` — сохранённый Remnawave адрес запроса устройства, а не обещание текущего IP; nullable
+metadata получает явный frontend fallback. Devices UI показывает название и monochrome glyph ОС из
+`platform`, но не подменяет ОС значением `osVersion`. Контракт повторно сверён 2026-08-15 с official
+2.8.1/3.1.0 schemas и [HWID documentation](https://docs.rw/features/hwid-device-limit/): кроме HWID,
+идентифицирующие client headers optional. Метаданные не сохраняются Flowvy и не логируются.
+
+Email endpoint в 2.x возвращает массив, потому что поле не уникально; Flowvy exact-фильтрует его и
+останавливается при нескольких совпадениях. Все path parameters percent-encoded одним segment.
+Timeout/network/non-2xx/malformed/envelope ошибки преобразуются в безопасные сообщения без raw
+response body; production routes не возвращают `exc.detail`.
 
 Dashboard больше не проксирует произвольный provider JSON. `GetStatsResponseDto` и
 `GetBandwidthStatsResponseDto` проходят allow-list Pydantic projection; additive поля отбрасываются,
@@ -234,7 +241,10 @@ Email и dashboard contract дополнительно сверены 2026-08-02
 - [Official 2.7.4 email command](https://github.com/remnawave/backend/blob/2.7.4/libs/contract/commands/users/get-by/get-user-by-email.command.ts)
   фиксирует `response: z.array(ExtendedUsersSchema)`.
 - [Official 2.8.1 HWID device schema](https://github.com/remnawave/backend/blob/2.8.1/libs/contract/models/hwid-user-device.schema.ts)
-  фиксирует числовой `userId` в device response.
+  фиксирует числовой `userId` и nullable `platform`, `osVersion`, `deviceModel`, `userAgent`,
+  `requestIp` в device response, а также обязательные `createdAt`/`updatedAt`.
+- [Official 3.1.0 HWID device schema](https://github.com/remnawave/backend/blob/3.1.0/libs/contract/models/hwid-user-device.schema.ts)
+  сохраняет тот же используемый Flowvy metadata contract.
 - [Official 2.8.1 device-list command](https://github.com/remnawave/backend/blob/2.8.1/libs/contract/commands/hwid/get-user-hwid-devices.command.ts)
   фиксирует envelope `total` + `devices`; проверен exact tag commit
   `ba51868149362d0b9ac0e23133d0532176ccb5a2`.

@@ -1,18 +1,13 @@
-import { Loader2 } from "lucide-react";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import { formatShortDate } from "../../lib/format.ts";
 import type { DeviceData } from "../../types/devices.ts";
 import styles from "./device-row.module.css";
-import { PlatformIcon } from "./platform-icon.tsx";
+import { PlatformIcon, getPlatformKind } from "./platform-icon.tsx";
 
 interface DeviceRowProps {
 	device: DeviceData;
-	isConfirming: boolean;
-	onConfirm: () => void;
-	onCancel: () => void;
-	onDelete: () => void;
-	isDeleting: boolean;
+	onDeleteRequest: (trigger: HTMLButtonElement) => void;
 }
 
 const FALLBACK_NAMES: Record<string, string> = {
@@ -31,24 +26,24 @@ const PLATFORM_LABELS: Record<string, string> = {
 	linux: "devices.platform.linux",
 };
 
-function getDeviceName(device: DeviceData, t: (key: string) => string): string {
+export function getDeviceName(device: DeviceData, t: (key: string) => string): string {
 	if (device.deviceModel) return device.deviceModel;
 	return t(FALLBACK_NAMES[device.platform?.toLowerCase() ?? ""] ?? "devices.fallback.unknown");
 }
 
 function getPlatformName(platform: string | null, t: (key: string) => string): string {
-	return t(PLATFORM_LABELS[platform?.toLowerCase() ?? ""] ?? "devices.platform.unknown");
+	const kind = getPlatformKind(platform);
+	if (kind) return t(PLATFORM_LABELS[kind]);
+	return platform?.trim() || t("devices.platform.unknown");
 }
 
-export const DeviceRow: FC<DeviceRowProps> = ({
-	device,
-	isConfirming,
-	onConfirm,
-	onCancel,
-	onDelete,
-	isDeleting,
-}) => {
+function isoTimestamp(unix: number): string {
+	return new Date(unix * 1000).toISOString();
+}
+
+export const DeviceRow: FC<DeviceRowProps> = ({ device, onDeleteRequest }) => {
 	const { t } = useTranslation();
+	const missing = t("devices.row.notReported");
 	return (
 		<div className={styles.row}>
 			<div className={styles.iconWrap}>
@@ -56,55 +51,51 @@ export const DeviceRow: FC<DeviceRowProps> = ({
 			</div>
 			<div className={styles.info}>
 				<span className={styles.name}>{getDeviceName(device, t)}</span>
-				<span className={styles.meta}>
-					{device.osVersion || getPlatformName(device.platform, t)}
-				</span>
-				<span className={styles.date}>
-					{t("devices.row.added", { date: formatShortDate(device.createdAt) })}
-				</span>
-			</div>
-			{isConfirming ? (
-				<div className={styles.confirmActions}>
-					<button
-						type="button"
-						className={styles.cancelBtn}
-						onClick={onCancel}
-						disabled={isDeleting}
-					>
-						{t("devices.cancel")}
-					</button>
-					<button
-						type="button"
-						className={styles.removeConfirmBtn}
-						onClick={onDelete}
-						disabled={isDeleting}
-					>
-						{isDeleting ? (
-							<Loader2 size={12} className={styles.spinner} />
-						) : (
-							t("devices.row.removeConfirm")
-						)}
-					</button>
+				<div className={styles.meta}>
+					<div className={`${styles.metaLine} ${styles.dateLine}`}>
+						<span className={styles.metaItem}>
+							<span className={styles.metaLabel}>{t("devices.row.added")}</span>
+							<time dateTime={isoTimestamp(device.createdAt)}>
+								{formatShortDate(device.createdAt)}
+							</time>
+						</span>
+						<span className={styles.metaItem}>
+							<span className={styles.metaLabel}>{t("devices.row.updated")}</span>
+							<time dateTime={isoTimestamp(device.updatedAt)}>
+								{formatShortDate(device.updatedAt)}
+							</time>
+						</span>
+					</div>
+					<div className={styles.metaLine}>
+						<span className={styles.metaItem}>{getPlatformName(device.platform, t)}</span>
+						<span className={styles.metaItem}>
+							<span className={styles.metaLabel}>{t("devices.row.ip")}</span>
+							<span className={styles.mono}>{device.requestIp || missing}</span>
+						</span>
+					</div>
 				</div>
-			) : (
-				<button type="button" className={styles.iconBtn} onClick={onConfirm}>
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						strokeWidth="1.8"
-						strokeLinecap="round"
-						strokeLinejoin="round"
-						role="img"
-						aria-label={t("devices.row.deleteLabel")}
-					>
-						<polyline points="3 6 5 6 21 6" />
-						<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-					</svg>
-				</button>
-			)}
+			</div>
+			<button
+				type="button"
+				className={styles.iconBtn}
+				onClick={(event) => onDeleteRequest(event.currentTarget)}
+			>
+				<svg
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="1.8"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					role="img"
+					aria-label={t("devices.row.deleteLabel")}
+				>
+					<polyline points="3 6 5 6 21 6" />
+					<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+				</svg>
+			</button>
 		</div>
 	);
 };

@@ -3,7 +3,10 @@ export interface DeviceData {
 	platform: string | null;
 	osVersion: string | null;
 	deviceModel: string | null;
+	userAgent: string | null;
+	requestIp: string | null;
 	createdAt: number;
+	updatedAt: number;
 }
 
 export interface DevicesResponse {

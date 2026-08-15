@@ -5,16 +5,6 @@
 	padding: 16px;
 }
 
-.mutationError {
-	margin: 0;
-	padding: 9px 12px;
-	border: 1px solid var(--v2-border-negative-secondary);
-	border-radius: var(--radius-sm);
-	background: var(--v2-bg-negative-secondary);
-	color: var(--v2-text-negative);
-	font-size: 12px;
-}
-
 .counter {
 	font-family: var(--font-mono);
 	font-size: 11px;
@@ -139,58 +129,16 @@
 	}
 }
 
-/* Confirm bar */
-.confirmBar {
-	margin-top: 0;
-	padding: 10px 14px;
-	border-radius: var(--radius-md);
+.confirmCopy {
+	margin: 0;
+}
+
+.confirmError {
+	margin: 12px 0 0;
+	padding: 9px 12px;
 	border: 1px solid var(--v2-border-negative-secondary);
+	border-radius: var(--radius-sm);
 	background: var(--v2-bg-negative-secondary);
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-}
-
-.confirmBarText {
-	font-size: 12px;
-	font-weight: 500;
 	color: var(--v2-text-negative);
-}
-
-.confirmBarActions {
-	display: flex;
-	gap: 8px;
-}
-
-.ghostBtn {
-	padding: 5.5px 10px;
-	border-radius: var(--radius-sm);
-	border: none;
-	background: transparent;
-	color: var(--v2-text-secondary);
-	font-size: 11px;
-	font-weight: 500;
-	cursor: pointer;
-	transition: color var(--duration-base), background-color var(--duration-base), opacity
-		var(--duration-base);
-	line-height: 1;
-}
-
-.fillDangerBtn {
-	padding: 5.5px 10px;
-	border-radius: var(--radius-sm);
-	border: none;
-	background: var(--v2-bg-negative-primary);
-	color: var(--v2-static-white);
-	font-size: 11px;
-	font-weight: 600;
-	cursor: pointer;
-	transition: color var(--duration-base), background-color var(--duration-base), opacity
-		var(--duration-base);
-	line-height: 1;
-}
-
-.fillDangerBtn:disabled {
-	opacity: 0.6;
-	cursor: not-allowed;
+	font-size: 12px;
 }

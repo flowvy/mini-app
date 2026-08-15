@@ -46,7 +46,7 @@ test("invite-only onboarding handles an invalid code and enters the app without 
 	await code.fill("FVY-WRONG-CODE");
 	await page.getByRole("button", { name: "Continue" }).click();
 	await expect(page.getByRole("alert")).toContainText(
-		"This invite code is invalid or no longer available.",
+		"This invite code is invalid or no longer available",
 	);
 
 	await code.fill("FVY-TEST-CODE-1");

@@ -50,7 +50,14 @@ test("user routes render deterministic success states", async ({ page, mockApi: 
 	await assertNoHorizontalOverflow(page);
 
 	await page.goto("/devices");
-	await expect(page.getByText("Pixel 8")).toBeVisible();
+	await expect(page.getByText("Pixel 8", { exact: true })).toBeVisible();
+	await expect(page.getByRole("img", { name: "Android" })).toBeVisible();
+	await expect(page.getByText("Android", { exact: true }).last()).toBeVisible();
+	await expect(page.getByText("Aug 1, 2026", { exact: true })).toBeVisible();
+	await expect(page.getByText("Aug 2, 2026", { exact: true })).toBeVisible();
+	await expect(page.getByText("Happ/3.11.1 (Android; Pixel 8)", { exact: true })).toHaveCount(0);
+	await expect(page.getByText("192.0.2.42", { exact: true })).toBeVisible();
+	await expect(page.getByText("15", { exact: true })).toHaveCount(0);
 	await assertNoHorizontalOverflow(page);
 
 	await page.goto("/pulse");
@@ -60,7 +67,7 @@ test("user routes render deterministic success states", async ({ page, mockApi: 
 
 	await page.goto("/support");
 	await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
-	await expect(page.getByText("In-app support is coming soon.")).toBeVisible();
+	await expect(page.getByText("In-app support is coming soon")).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -304,10 +311,10 @@ test("admin routes render deterministic success and placeholder states", async (
 	await expect(page.getByText("Default media", { exact: true })).toBeVisible();
 	await expect(page.getByLabel("Greeting text")).toHaveAttribute(
 		"placeholder",
-		"HTML is supported. Use {{ app_name }} for the app name.",
+		"HTML is supported. Use {{ app_name }} for the app name",
 	);
 	await expect(
-		page.getByText("Animation (MP4/GIF) or photo sent with /start command.", { exact: true }),
+		page.getByText("Animation (MP4/GIF) or photo sent with /start command", { exact: true }),
 	).toBeVisible();
 	await expect(page.getByText("Animation", { exact: true })).toHaveCount(0);
 	const premiumNotice = page.getByRole("note");

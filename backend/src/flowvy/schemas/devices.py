@@ -19,7 +19,10 @@ class DeviceResponse(BaseModel):
     platform: str | None
     os_version: str | None
     device_model: str | None
+    user_agent: str | None
+    request_ip: str | None
     created_at: int
+    updated_at: int
 
 
 class DevicesResponse(BaseModel):

@@ -70,6 +70,40 @@ async def test_read_accepts_matching_2_8_numeric_owner() -> None:
 
     assert response is not None
     assert response.total == 1
+    assert response.devices[0].user_agent == "test-agent"
+    assert response.devices[0].request_ip == "192.0.2.1"
+    assert response.devices[0].updated_at == 1_767_312_000
+    assert response.devices[0].model_dump(by_alias=True) == {
+        "hwid": "device-1",
+        "platform": "android",
+        "osVersion": "15",
+        "deviceModel": "Pixel 8",
+        "userAgent": "test-agent",
+        "requestIp": "192.0.2.1",
+        "createdAt": 1_767_225_600,
+        "updatedAt": 1_767_312_000,
+    }
+
+
+@pytest.mark.asyncio
+async def test_read_preserves_nullable_device_metadata() -> None:
+    service, remnawave, _ = _service([_user(FAKE_USER["uuid"])])
+    device = {
+        **FAKE_DEVICE_28,
+        "platform": None,
+        "osVersion": None,
+        "deviceModel": None,
+        "userAgent": None,
+        "requestIp": None,
+    }
+    remnawave.get_devices.return_value = [RemnawaveDevice.from_raw(device)]
+
+    response = await service.get_for_user(123456789)
+
+    assert response is not None
+    assert response.devices[0].platform is None
+    assert response.devices[0].user_agent is None
+    assert response.devices[0].request_ip is None
 
 
 @pytest.mark.asyncio

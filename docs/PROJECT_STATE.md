@@ -20,6 +20,9 @@
 - Проверка Telegram Mini App `initData`, синхронизация локального пользователя и admin-роли из
   `ADMIN_TELEGRAM_IDS`.
 - Пользовательские API для профиля, подписки, HWID-устройств и provider-neutral Pulse.
+- Device response после fresh Remnawave ownership check allow-list'ит `platform`, `osVersion`,
+  `deviceModel`, `userAgent`, nullable `requestIp`, `createdAt` и `updatedAt`; provider metadata не
+  сохраняется в Flowvy и не логируется.
 - Admin API для dashboard, пользователей, действий над пользователем, выбора Kuma/Beszel для Pulse,
   branding, welcome template/media, server-side Tribute API access check, persisted checkout
   destinations и commerce rules.
@@ -101,10 +104,17 @@
   контролем Telegram. Владелец подтвердил возврат в управляемую оконную панель; её компактный
   стартовый размер `384x694` задаёт сам Telegram Desktop, а все границы поддерживают resize.
 - Пользовательские маршруты Home, Devices, Pulse и Support.
+- Devices показывает monochrome logo glyph и название ОС из provider `platform`, а не `osVersion`;
+  под моделью двумя компактными строками доступны Added, Updated, ОС и IP. UA остаётся в
+  allow-listed BFF response, но не выводится в UI. Nullable metadata имеет явный `Not reported`,
+  unknown platform не угадывается, длинные значения не создают horizontal overflow.
 - Удаление одного или всех HWID-устройств на Devices больше не ждёт повторный provider refetch для
-  визуального завершения. После успешного `DELETE` pinned `@zumer/snapdom` 2.24.1 снимает строку в
-	локальный canvas, а 12 compositor-only слоёв распыляют её пиксели примерно за 0,8 с одновременно со
-	схлопыванием
+  визуального завершения. Подтверждение выполняется общим native `ConfirmDialog`/`alertdialog`, не
+  меняет геометрию device row и сначала фокусирует заголовок, не выделяя Cancel или destructive
+  action как заранее выбранный. После успешного `DELETE`
+  pinned `@zumer/snapdom` 2.24.1 снимает строку в
+  локальный canvas, а 12 compositor-only слоёв распыляют её пиксели примерно за 0,8 с одновременно со
+  схлопыванием
   списка; bulk-удаление использует короткий каскад. Server state продолжает сверяться через TanStack
   Query. Ошибка capture безопасно оставляет CSS fallback, а `prefers-reduced-motion` убирает
   движение. Подтверждённое исчезновение использует один Telegram medium impact, ошибка — error
@@ -203,7 +213,9 @@
   haptic, а `prefers-reduced-motion` отключает движение.
 - Query hooks, typed view models, i18next English locale, CSS Modules и светлая/тёмная тема на
   дизайн-токенах. Product-owned copy, форматирование и accessible names находятся в locale;
-  operator-owned identity/welcome и provider facts приходят как typed runtime data.
+  operator-owned identity/welcome и provider facts приходят как typed runtime data. Compact UI
+  copy не заканчивается точкой; internal punctuation, URL, версии, числа и provider-owned текст не
+  переписываются. Locale catalog test применяет это правило ко всем JSON-локалям.
 - Внешний вертикальный ритм пользовательских и admin-страниц использует единый design token 8px:
   карточки, заголовки секций, списки, feedback и save controls больше не задают отдельные
   page-level интервалы 12/16/20/22px. Геометрия закреплена browser regression на четырёх viewport,
@@ -236,7 +248,7 @@
   безопасного Quick Tunnel и проверки документации.
 - GitHub Actions CI с PostgreSQL/Redis, Ruff, Alembic, pytest, Biome/TypeScript/Vitest/build и
   Playwright Chromium smoke.
-- Десять Vitest unit файлов (43 теста), включая автоматический запрет неиспользуемых locale leaves,
+- Десять Vitest unit файлов (44 теста), включая автоматический запрет неиспользуемых locale leaves,
   прямого видимого JSX-copy, raw error message и неверной терминологии Xray-доступа;
   детерминированная Playwright state matrix на четырёх
   browser/viewport проектах и отдельный read-only live-smoke.
@@ -450,6 +462,8 @@ Tribute показал success, endpoint вернул `200`, inbox осталс�
 | Tribute controlled live monthly subscription | official subscriptions/webhooks OpenAPI `1.0.0`; live read-only catalog; real signed monthly payment; allow-listed DB/Remnawave reconciliation; 94 subscription/webhook/sponsor tests plus 21 executor/operator tests; controlled cancellation observation | Catalog currency lower-case drift нормализован на provider boundary; конкретная subscription подтвердила один monthly period. Published offer создал pending checkout, signed `new_subscription` подтвердил exact item, identified user, 100 RUB/month, `regular` и absolute expiry; checkout стал confirmed. Remnawave применил весь paid profile, но provider сохранил более грубую fractional timestamp precision, из-за чего strict comparison безопасно дал review. Millisecond normalization и manual Retry для идемпотентного `provider_state_mismatch` reconciled ту же operation как applied без второй оплаты/мутации. После отмены в Tribute немедленного cancellation webhook не было: paid grant/expiry остались корректны. Home теперь access-first подтверждает срок и Manage CTA, не утверждает auto-renew без provider evidence и branded note объясняет period-end update. Lifetime base restore запланирован на paid expiry. Raw webhook, secrets и identifiers не читались/не выводились. |
 | Tribute donation/subscription-only contract | focused 136 backend tests; migration verifier; donation production-boundary smoke; focused four-project Tribute matrix; `PLAYWRIGHT_PORT=5272; scripts/verify.ps1 -Scope Full`; standard Telegram-enabled dev restart | Runtime schemas, catalog, rules, checkout attribution, planner, frontend controls/copy and fixtures accept only donation/subscription; other signed events remain ignored audit metadata. Migration `y4z5a6b7c8d9` preserved audit, removed abandoned mutable configuration and replaced legacy provider-reference column names. Focused UI: 147 passed, 1 expected desktop-only keyboard skip; light/dark evidence inspected. Full gate: one-head/previous-head/zero-to-head/downgrade/re-upgrade/runtime inserts/drift, Ruff, 481 backend, 56 Remnawave contract, frontend lint/typecheck/43 unit/build, 97 Playwright and docs passed. Dev data was preserved; local/public health and frontend `200`, ready `200`, public debug `404`, zero invalid rule/checkout/event-family rows and zero startup error markers. |
 | Sponsor-offer unpublish repair | PostgreSQL repository regression; focused sponsor service suite; focused visibility Playwright; `PLAYWRIGHT_PORT=5275; scripts/verify.ps1 -Scope Changed` | Nullable offer snapshot now uses SQLAlchemy `JSONB(none_as_null=True)`, so published → Draft stores SQL `NULL` instead of invalid JSONB `null`. Focused backend 20/20 and focused browser 1/1 passed. Changed gate passed Ruff, 383 service-free backend tests, frontend lint/typecheck/43 unit/build, 98 mobile Playwright tests and docs; existing development data was preserved. |
+| Remnawave device metadata UI | official exact 2.8.1/3.1.0 schemas; `scripts\verify-contracts.ps1`; focused four-project Devices matrix; light/dark evidence; `PLAYWRIGHT_PORT=5339; scripts\verify.ps1 -Scope Full` | BFF allow-list `requestIp`/UA/Updated и platform-based OS glyphs подтверждены. Focused Devices matrix 20/20 прошла на 430x932, 320x568, iOS WebKit и desktop; Android/iOS/macOS/Windows/Linux, nullable/long metadata, deletion, Axe/overflow/console/network зелёные. Light/dark screenshots на 320/430 px просмотрены. Full gate: migrations/drift, Ruff, 483 backend, 56 pinned Remnawave contract, frontend lint/typecheck/43 unit/build, 100 mobile Playwright и docs passed. Реальный Remnawave не вызывался. |
+| Compact locale punctuation и neutral dialog focus | Apple HIG Alerts/Writing, Material Writing и Microsoft Style Guide; locale invariant; focused Devices matrix; full mobile Playwright | Во всех 189 English locale leaves удалена только финальная точка с сохранением internal punctuation; будущие JSON-локали покрыты catalog regression. Device confirmation фокусирует semantic heading, а не Cancel. Focused Devices 9/9 прошли на 430x932, 320x568 и iOS WebKit, шесть light/dark screenshots просмотрены; frontend lint/typecheck, 44 unit, build и полный mobile Playwright 100/100 зелёные. |
 ## Следующее действие
 
 Следующие live evidence зависят от внешнего события Tribute: фактический period-end

@@ -1,6 +1,7 @@
 import { type AnimationEvent, type FC, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DeviceRow } from "../components/devices/device-row.tsx";
+import { DeviceRow, getDeviceName } from "../components/devices/device-row.tsx";
+import { ConfirmDialog } from "../components/ui/confirm-dialog.tsx";
 import { ErrorState } from "../components/ui/error-state.tsx";
 import { FormSection, FormSectionCard } from "../components/ui/form-section.tsx";
 import { PageLoading } from "../components/ui/page-loading.tsx";
@@ -11,13 +12,14 @@ import { hapticImpact, hapticNotification } from "../lib/haptics.ts";
 import type { DeviceData } from "../types/devices.ts";
 import styles from "./devices.module.css";
 
+type RemovalConfirmation = { kind: "device"; hwid: string } | { kind: "all" };
+
 export const Devices: FC = () => {
 	const { t } = useTranslation();
 	const { devices: data, isPending, error, refetch } = useDevices();
 	const deleteDevice = useDeleteDevice();
 	const deleteAll = useDeleteAllDevices();
-	const [confirmHwid, setConfirmHwid] = useState<string | null>(null);
-	const [confirmAll, setConfirmAll] = useState(false);
+	const [confirmation, setConfirmation] = useState<RemovalConfirmation | null>(null);
 	const [mutationError, setMutationError] = useState(false);
 	const [renderedDevices, setRenderedDevices] = useState<DeviceData[]>([]);
 	const [removingHwids, setRemovingHwids] = useState<Set<string>>(() => new Set());
@@ -25,6 +27,7 @@ export const Devices: FC = () => {
 	const [isBulkRemoving, setIsBulkRemoving] = useState(false);
 	const removingHwidsRef = useRef<Set<string>>(new Set());
 	const rowElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
+	const confirmationTriggerRef = useRef<HTMLButtonElement | null>(null);
 
 	useLayoutEffect(() => {
 		const incomingDevices = data?.devices ?? [];
@@ -63,6 +66,10 @@ export const Devices: FC = () => {
 	}
 
 	const limit = data?.limit ?? null;
+	const confirmedDevice =
+		confirmation?.kind === "device"
+			? renderedDevices.find((device) => device.hwid === confirmation.hwid)
+			: undefined;
 
 	const prepareRemoval = (hwids: string[]) =>
 		Promise.all(
@@ -124,7 +131,7 @@ export const Devices: FC = () => {
 		const preparedEffects = prepareRemoval([hwid]);
 		deleteDevice.mutate(hwid, {
 			onSuccess: () => {
-				setConfirmHwid(null);
+				setConfirmation(null);
 				void startRemoval([hwid], false, preparedEffects);
 			},
 			onError: () => {
@@ -141,7 +148,7 @@ export const Devices: FC = () => {
 		const preparedEffects = prepareRemoval(hwids);
 		deleteAll.mutate(undefined, {
 			onSuccess: () => {
-				setConfirmAll(false);
+				setConfirmation(null);
 				void startRemoval(hwids, true, preparedEffects);
 			},
 			onError: () => {
@@ -154,11 +161,6 @@ export const Devices: FC = () => {
 
 	return (
 		<div className={styles.page}>
-			{mutationError && (
-				<p className={styles.mutationError} role="alert">
-					{t("devices.removeError")}
-				</p>
-			)}
 			<FormSection
 				title={t("devices.section")}
 				action={
@@ -198,17 +200,11 @@ export const Devices: FC = () => {
 									>
 										<DeviceRow
 											device={device}
-											isConfirming={confirmHwid === device.hwid && !isRemoving}
-											onConfirm={() => {
+											onDeleteRequest={(trigger) => {
+												confirmationTriggerRef.current = trigger;
 												setMutationError(false);
-												setConfirmHwid(device.hwid);
+												setConfirmation({ kind: "device", hwid: device.hwid });
 											}}
-											onCancel={() => {
-												setMutationError(false);
-												setConfirmHwid(null);
-											}}
-											onDelete={() => handleDelete(device.hwid)}
-											isDeleting={deleteDevice.isPending && confirmHwid === device.hwid}
 										/>
 										{i < renderedDevices.length - 1 && <div className={styles.divider} />}
 									</div>
@@ -240,47 +236,61 @@ export const Devices: FC = () => {
 				</FormSectionCard>
 			</FormSection>
 
-			{renderedDevices.length > 1 && !confirmAll && removingHwids.size === 0 && (
+			{renderedDevices.length > 1 && removingHwids.size === 0 && (
 				<button
 					type="button"
 					className={styles.dangerBtn}
-					onClick={() => {
-						hapticNotification("warning");
+					onClick={(event) => {
+						confirmationTriggerRef.current = event.currentTarget;
 						setMutationError(false);
-						setConfirmAll(true);
+						setConfirmation({ kind: "all" });
 					}}
 				>
 					{t("devices.removeAll")}
 				</button>
 			)}
 
-			{confirmAll && (
-				<div className={styles.confirmBar}>
-					<span className={styles.confirmBarText}>
-						{t("devices.confirmAll", { n: renderedDevices.length })}
-					</span>
-					<div className={styles.confirmBarActions}>
-						<button
-							type="button"
-							className={styles.ghostBtn}
-							onClick={() => {
-								setMutationError(false);
-								setConfirmAll(false);
-							}}
-						>
-							{t("devices.cancel")}
-						</button>
-						<button
-							type="button"
-							className={styles.fillDangerBtn}
-							onClick={handleDeleteAll}
-							disabled={deleteAll.isPending}
-						>
-							{deleteAll.isPending ? t("devices.removeLoading") : t("devices.remove")}
-						</button>
-					</div>
-				</div>
-			)}
+			<ConfirmDialog
+				open={confirmation !== null}
+				title={
+					confirmation?.kind === "all"
+						? t("devices.confirmAll", { n: renderedDevices.length })
+						: t("devices.confirmDeviceTitle")
+				}
+				confirmLabel={
+					confirmation?.kind === "all"
+						? t("devices.removeAllConfirm")
+						: t("devices.row.removeConfirm")
+				}
+				cancelLabel={t("devices.cancel")}
+				confirmVariant="danger"
+				confirmLoading={deleteDevice.isPending || deleteAll.isPending}
+				alert
+				returnFocusRef={confirmationTriggerRef}
+				onCancel={() => {
+					setMutationError(false);
+					setConfirmation(null);
+				}}
+				onConfirm={() => {
+					if (confirmation?.kind === "device") handleDelete(confirmation.hwid);
+					else if (confirmation?.kind === "all") handleDeleteAll();
+				}}
+			>
+				<p className={styles.confirmCopy}>
+					{confirmation?.kind === "all"
+						? t("devices.confirmAllBody", { n: renderedDevices.length })
+						: t("devices.confirmDeviceBody", {
+								name: confirmedDevice
+									? getDeviceName(confirmedDevice, t)
+									: t("devices.fallback.unknown"),
+							})}
+				</p>
+				{mutationError && (
+					<p className={styles.confirmError} role="alert">
+						{t("devices.removeError")}
+					</p>
+				)}
+			</ConfirmDialog>
 		</div>
 	);
 };
