@@ -14,8 +14,7 @@ record и быть идемпотентным при повторе HTTP-зап�
 
 ## Current state
 
-- Commit `bfe6706` добавил durable entitlement ledger/executor, commit `6920f9c` — сквозной
-  digital-product fixture.
+- Commit `bfe6706` добавил durable entitlement ledger/executor и сквозную provider fixture.
 - Activity journal сейчас read-only и показывает allow-listed status/reason, но не даёт оператору
   закрыть очередь.
 - Executor выключен по умолчанию; `review` никогда не исполняется автоматически.

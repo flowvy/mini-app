@@ -60,25 +60,65 @@ Alembic загружает отдельный `MigrationSettings`, содерж�
 Безопасный runtime default — `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED=false`. В этом режиме
 authenticated events и entitlement decisions сохраняются, admin UI показывает `Planning only`, но
 Remnawave mutation не выполняется. Переключатель намеренно server-only и не находится в Mini App.
+Identified donation имеет второй независимый безопасный default
+`TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED=false`: до controlled live evidence его derived
+fingerprint создаёт review, а не pending grant. Anonymous donation всегда остаётся review-only.
 
-Для безопасной локальной проверки полного digital-product lifecycle из корня используется
-`.\scripts\verify-tribute-entitlements.ps1`. Команда работает только с disposable test PostgreSQL и
-stateful fake Remnawave, не читает runtime key и не выполняет внешние provider requests.
+Для безопасной локальной проверки donation semantics из корня используется
+`.\scripts\verify-tribute-entitlements.ps1`. Команда работает только с disposable test PostgreSQL
+и fake credentials, не читает runtime key и не выполняет внешние provider requests. Fixture
+оставляет executor выключенным и проверяет signed HTTP intake, dedupe, planner decisions, bands и
+review paths.
 
 Параметры worker:
 
 - `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED` — запускает lifespan worker; при `true` startup также
   требует полный `REMNAWAVE_URL`/`REMNAWAVE_API_TOKEN`;
+- `TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED` — разрешает planner переводить доказанно
+  неанонимные donation events в очередь; включается только после controlled live fingerprint
+  evidence и не запускает worker самостоятельно;
 - `TRIBUTE_ENTITLEMENT_WORKER_INTERVAL_SECONDS` — пауза пустой очереди, default 10 секунд;
 - `TRIBUTE_ENTITLEMENT_LEASE_SECONDS` — после этого interrupted `processing` возвращается в retry,
   default 120 секунд;
 - `TRIBUTE_ENTITLEMENT_MAX_ATTEMPTS` — предел transient provider attempts, default 5.
+- `SPONSOR_CHECKOUT_PENDING_MINUTES` — срок одного локального redirect intent, default 30 минут,
+  допустимый диапазон 5–180. Это не provider payment timeout и не доказательство оплаты.
+
+Admin может сохранять sponsor offer как hidden draft при выключенном worker. Publish доступен только
+когда backend видит включённый executor, enabled commerce rule, active access profile и валидный
+Creator destination/catalog item. Для donation дополнительно нужен identified-donation flag. Home
+никогда не читает draft и не вызывает Tribute catalog; published offer использует frozen snapshot.
+
+Минимальный controlled rollout:
+
+1. Создать в Tribute subscription либо donation destination; donation использовать автоматически
+   только при принятом identity/fingerprint риске.
+2. Сохранить destination, создать и preview automation rule, затем создать hidden sponsor offer.
+3. Прогнать `verify-tribute-entitlements.ps1`, migration verifier и browser matrix. Убедиться, что
+   executor/identified-donation gates остаются в ожидаемом состоянии.
+4. Только по отдельному разрешению включить delivery на test target, опубликовать один offer и
+   выполнить одну реальную оплату тем же Telegram account. Redirect сам по себе не успех: должны
+   появиться authenticated inbox event, одна operation, confirmed checkout и applied access.
+5. Проверить duplicate delivery, exact expiry, cancellation и base restoration до расширения
+   rollout. Не создавать второй payment, пока Home показывает pending/provisioning/review.
+
+Creator contract не документирует failed-charge/retry или next-charge state. Их нельзя выводить из
+таймера checkout либо отсутствия webhook.
 
 Остановка/перезапуск процесса не удаляет очередь. Stale lease возвращается в retry, а сохранённый
 absolute target позволяет сначала reconciliate provider state и не повторять уже применённое
 продление. Для временной остановки side effects выключают gate и штатно перезапускают backend;
 pending/retry/review history сохраняется. Ledger вручную не редактируют. В Admin → Settings →
 Tribute → Payment activity backend предлагает только допустимые решения:
+
+- первый paid grant для active local user без Remnawave link выполняет exact Telegram lookup и
+  создаёт provider user только при доказанном miss; create timeout повторно проверяется чтением;
+- перед первым paid mutation создаётся один `entitlement_baselines` snapshot. Его нельзя править
+  вручную: scheduled `effective_access_restore` использует его для полного возврата base profile;
+- pending paid grant/refund блокирует due restore того же user. Новый applied paid state отменяет
+  предыдущую scheduled restore и ставит новую на актуальный paid expiry;
+- `provider_state_not_restorable`, `baseline_missing` и `provider_state_conflict` требуют
+  расследования; автоматический overwrite в этих состояниях не выполняется.
 
 - `Retry` существует только для исчерпавшего автоматические попытки `provider_unavailable`. Он
   ставит ту же idempotent operation в очередь, не сбрасывает счётчик попыток и при выключенном gate
@@ -88,10 +128,11 @@ Tribute → Payment activity backend предлагает только допу�
 
 Каждый submit содержит новый client request UUID. UI повторяет тот же UUID после неопределённой
 HTTP-ошибки, backend блокирует operation и сохраняет одну append-only action с actor и previous
-state. После первой реальной operator action migration downgrade намеренно прекращается, чтобы не
-потерять audit trail. Включение worker на production-like target требует отдельной проверки
-backup/rollback, одного контролируемого digital-product fixture и наблюдения журнала; текущий MVP не
-имеет готового production rollout runbook.
+state. После первой real baseline/restore записи или operator action соответствующий migration
+downgrade намеренно прекращается, чтобы не потерять effective-access либо audit history. Включение
+worker на production-like target требует отдельной проверки
+backup/rollback, одного контролируемого donation/subscription сценария и наблюдения журнала;
+текущий MVP не имеет готового production rollout runbook.
 
 ## Cloudflare Tunnel
 

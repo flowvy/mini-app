@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { DetailSection } from "../components/home/detail-section.tsx";
 import { HeroCard } from "../components/home/hero-card.tsx";
 import { InviteCard, InviteCardSkeleton } from "../components/home/invite-card.tsx";
+import { SponsorCard } from "../components/home/sponsor-card.tsx";
 import { ErrorState } from "../components/ui/error-state.tsx";
 import { Skeleton } from "../components/ui/skeleton.tsx";
 import { useSubscription } from "../hooks/use-subscription.ts";
@@ -49,6 +50,7 @@ export const Home: FC = () => {
 		return (
 			<div className={styles.page}>
 				<ErrorState onAction={refetch} />
+				<SponsorCard />
 				<InviteCard />
 			</div>
 		);
@@ -57,7 +59,8 @@ export const Home: FC = () => {
 	if (!subscription || (error instanceof ApiError && error.status === 404)) {
 		return (
 			<div className={styles.page}>
-				<p style={{ color: "var(--v2-text-secondary)" }}>{t("home.noSubscription")}</p>
+				<p className={styles.noSubscription}>{t("home.noSubscription")}</p>
+				<SponsorCard />
 				<InviteCard />
 			</div>
 		);
@@ -66,6 +69,7 @@ export const Home: FC = () => {
 	return (
 		<div className={styles.page}>
 			<HeroCard subscription={subscription} />
+			<SponsorCard />
 			<InviteCard />
 			<DetailSection subscription={subscription} />
 		</div>

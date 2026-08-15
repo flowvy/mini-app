@@ -17,12 +17,12 @@ import {
 	formatLastSeen,
 	formatResetStrategy,
 	formatTraffic,
-	getDaysLeftISO,
+	getDaysLeft,
 	getExpiryColorISO,
 	getTrafficColor,
 	getTrafficPercent,
 	isUnlimitedDevices,
-	isUnlimitedExpiryISO,
+	isUnlimitedExpiry,
 	isUnlimitedTraffic,
 } from "../../lib/format.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
@@ -51,10 +51,10 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 	const { t } = useTranslation();
 	const ut = user.userTraffic;
 	const unlTraffic = isUnlimitedTraffic(user.trafficLimitBytes);
-	const unlExpiry = isUnlimitedExpiryISO(user.expireAt);
+	const unlExpiry = isUnlimitedExpiry(user.expireAt);
 	const pct = unlTraffic ? 0 : getTrafficPercent(ut.usedTrafficBytes, user.trafficLimitBytes);
 	const fillColor = getTrafficColor(pct);
-	const daysLeft = getDaysLeftISO(user.expireAt);
+	const daysLeft = getDaysLeft(user.expireAt);
 	const expiryColor = unlExpiry ? undefined : getExpiryColorISO(daysLeft);
 
 	const [confirm, setConfirm] = useState<ActionDef | null>(null);

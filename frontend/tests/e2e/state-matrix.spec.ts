@@ -358,6 +358,22 @@ test("unknown Remnawave status is explicit and does not offer a status mutation"
 	expect(serious).toEqual([]);
 });
 
+test("lifetime expiry uses the shared no-expiry presentation in admin detail", async ({
+	page,
+	mockApi,
+}) => {
+	const lifetimeUser = {
+		...mockData.adminUser,
+		expireAt: "2099-12-31T23:59:59Z",
+	};
+	mockApi.mock("GET", "/api/debug/admin/users/1", { body: lifetimeUser });
+
+	await page.goto("/admin/users/1");
+	await expect(page.getByText("No expiry", { exact: true })).toBeVisible();
+	await expect(page.getByText("Jan 1, 2100", { exact: true })).toHaveCount(0);
+	await assertNoHorizontalOverflow(page);
+});
+
 test("users support empty search, missing detail, and failed actions", async ({
 	page,
 	mockApi,

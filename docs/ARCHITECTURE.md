@@ -82,7 +82,7 @@ REQUEST scope; provider commits или rollbacks транзакцию после
 Admin routes под `/api/admin` повторно получают текущего локального пользователя и проверяют его
 роль. Они отдают dashboard, полный/постраничный список пользователей, detail/actions и provider,
 branding/welcome settings. `POST /api/admin/settings/tribute/test` выполняет только фиксированный
-read-only запрос первой страницы products с server-side key; ключ в response не входит.
+read-only запрос subscriptions с server-side key; ключ в response не входит.
 `/api/admin/registration` управляет режимом, access profiles и live squad options. Admin Broadcast
 API в текущем коде отсутствует.
 
@@ -177,24 +177,68 @@ redirect/proxy запрет, ограниченное тело и безопас
 Tribute integration включает admin configuration, проверку API access, authenticated webhook inbox,
 durable planner/ledger, операторский журнал и выключенный по умолчанию provider executor. Секрет
 `TRIBUTE_API_KEY` хранится только в server environment. Fixed-origin client обращается только к
-`https://tribute.tg/api/v1/products?page=1&size=1`, запрещает redirects/proxy environment,
-ограничивает timeout/body и валидирует минимальную JSON-схему. Ни платеж, ни возврат, ни provider
-mutation при проверке не создаются.
+документированному read-only `https://tribute.tg/api/v1/subscriptions`, запрещает redirects/proxy
+environment, ограничивает timeout/body и валидирует provider schema. Connection check и admin
+catalog читают только subscription/period catalog. Ни платёж, ни возврат, ни provider mutation этим
+запросом не создаются.
 
 Frontend выделяет Payments в отдельную Settings section и показывает credential presence,
-read-only API check, persisted automation rules и последние allow-listed ledger operations.
+read-only API check, persisted payment destinations, automation rules, user-facing sponsor offers
+и последние allow-listed ledger operations.
+Admin-only BFF catalog нормализует subscriptions без API key или raw provider body; редактор
+выбирает точный `subscription_id` по названию и provider price, сохраняя совместимость с
+отсутствующим в текущем каталоге ID существующего правила. Так как subscriptions API не возвращает
+URL, singleton `provider_settings` хранит JSONB mapping
+`subscription_id → destination`. Donation destination и ожидаемая сумма принадлежат конкретному
+`sponsor_offer`, чтобы один публичный тариф всегда вёл по одной ссылке. Admin API принимает только
+нормализованный absolute HTTPS без credentials/fragment; URL не fetch-ится сервером. Mapping
+отсутствующего в текущем каталоге ID
+сохраняется до явного удаления, поэтому временный provider/catalog сбой не стирает настройку.
 Rule сопоставляет provider/source conditions с внутренним access profile, но не является provider
-product/price. `fixed` задаёт постоянное число дней, а `volume` выбирает максимальный подходящий
+тарифом. Donation использует `fixed` или `volume`: `fixed` задаёт постоянное число дней, а `volume`
+выбирает максимальный подходящий
 порог и целочисленно вычисляет `floor(amount_minor * unit_days / unit_amount_minor)` для всей суммы.
 Calculated days явно переопределяют default validity выбранного access profile; traffic/device/
-squad/tag/provider options переиспользуются. `extend` означает будущую базу
-`max(now, current_expiry)`, `replace` — `now`.
+squad/tag/provider options переиспользуются. `extend` означает будущую платную базу
+`max(now, latest_uncompensated_paid_expiry)`, а не registration/base expiry; `replace` — `now`.
+Subscription не вычисляет duration по amount:
+`provider_expiry` всегда берёт абсолютный подписанный Tribute `expires_at` и `replace` semantics.
 
 PostgreSQL `commerce_rules` хранит provider-neutral match/action columns и schema-validated JSONB
 calculator payload. Admin-only CRUD повторно проверяет active access profile. Draft preview
 выполняет тот же backend calculator, не сохраняет rule и не изменяет пользователя. Frontend вводит
 major currency units, но wire/storage используют integer minor units; floating-point не участвует
 в entitlement calculation.
+
+`sponsor_offers` является отдельным provider-neutral presentation layer поверх одного
+`commerce_rule`: title/description/order не дублируют payment calculation. Description является
+настраиваемым мотивационным текстом конкретного варианта на Home; системные pending/active/review
+сообщения остаются server-state copy и не маскируют факты оплаты. Скрытый draft можно
+сохранить без provider request. Снятие с публикации переводит immutable snapshot в SQL `NULL`,
+не запрашивает provider и сохраняет редактируемые поля; следующая публикация всегда строит новый
+проверенный snapshot. Публикация fail-closed требует включённого executor, enabled rule и
+active access profile; subscription повторно проверяется по Creator catalog, а checkout URL и
+provider-confirmed prices сохраняются immutable JSONB snapshot. Donation дополнительно
+требует собственную HTTPS destination, ожидаемые minor-unit сумму и payment mode, точный provider
+period для recurring и отдельный identified-donation rollout flag. Сумма обязана дать access через
+канонический calculator, а mode согласоваться с linked rule; правило `any` разрешает офферу выбрать
+ровно один публичный режим.
+Несколько публичных offers могут переиспользовать один гибкий rule; linked rule нельзя удалить,
+пока существует хотя бы один offer.
+
+Authenticated `GET /api/me/sponsor` не вызывает Tribute и возвращает единое server-computed
+состояние доступа/оплаты, допустимое primary action, точные paid/base expiry, pending checkout и
+только published ready offers. `POST /api/me/sponsor/checkouts` сериализует active local user,
+записывает один 30-minute local `sponsor_checkouts` intent с immutable offer snapshot и возвращает
+provider-hosted URL. Повтор того же offer переиспользует intent, другой offer получает conflict.
+Donation webhook подтверждает intent по единственному pending/expired intent того же Telegram user,
+event family/payment mode, времени не раньше intent и точным фактическим amount/currency/mode/period
+из frozen offer snapshot. Документированный `donation_request_id` сохраняется как provider fact, но не
+сравнивается с opaque `startapp`-ссылкой: Creator contract не даёт Flowvy их mapping. Для
+subscription exact provider item ID остаётся обязательным. Несовпавший donation intent закрывается
+и создаёт review без grant; совпавший intent передаёт planner точный `commerce_rule_id` оффера, а
+расчёт использует только signed payment fields. Этот POST не создаёт платёж у Tribute и не
+подтверждает доступ.
 
 Для `review` backend сам вычисляет допустимые operator actions. Только terminal
 `provider_unavailable` можно вернуть в `retry`; любую review operation можно закрыть как
@@ -208,29 +252,88 @@ snapshots.
 
 `POST /api/webhooks/tribute` проверяет HMAC-SHA256 над ограниченным raw body до strict JSON parsing,
 freshness и timestamp consistency. PostgreSQL `tribute_webhook_events` атомарно подавляет точные
-повторы по SHA-256 body и хранит только нормализованные metadata без raw payload/signature/username;
+повторы по SHA-256 body и хранит только нормализованные metadata, subscription `expires_at` и
+donation anonymity без raw payload/signature/username;
 неизвестный безопасный event записывается как `ignored`. Общий retention worker пакетно удаляет
-inbox после server-configured 90 дней. После нового inbox insert planner в той же DB transaction
+inbox после server-configured 90 дней. После нового inbox insert положительный payment event сначала
+сопоставляется с newest compatible pending/expired checkout, затем planner в той же DB transaction
 создаёт одну `entitlement_operations` decision: это durable outbox write без внешнего HTTP call.
+Subscription требует Telegram user, event family, exact external item и payment mode; donation
+использует bounded user/family/time/amount/currency/mode/period contract выше. Checkout
+становится `confirmed` только при полном совпадении, а Home показывает `provisioning` до applied provider operation либо
+`attention` при review. Если provider operation уже applied, а связь checkout отсутствует после
+прерванного старого delivery path, `GET /api/me/sponsor` повторяет тот же fail-closed match только по
+сохранённому authenticated event и восстанавливает связь без Tribute/Remnawave request. Browser
+redirect/return не участвует в подтверждении.
 
-Автоматический pending plan допускается только для digital-product purchase/refund, где Tribute
-документирует уникальный `purchase_id`. Donation/subscription events не имеют доказанной identity
-отдельного платежа и становятся review-only; cancellation не трактуется как refund. Planner требует
-существующего active Flowvy user, одну локальную Remnawave link, enabled exact rule и active profile,
-после чего сохраняет immutable rule/profile snapshots. Неизвестный Telegram ID не создаёт user.
+Subscription start/renewal вычисляет semantic state из subscription/user/absolute `expires_at`: повтор одного
+состояния не добавляет дни, cancellation не трактуется как refund. Recurring donation lifecycle
+вычисляется из нормализованных `period` и событий `new_donation`/`recurrent_donation`/
+`cancelled_donation`; первый и повторный платежи создают обычные duration grants, а отмена —
+идемпотентный resolved audit без provider mutation. Identified donation получает derived SHA-256
+fingerprint из нормализованных документированных полей, но pending plan разрешён только отдельным
+default-off server flag после controlled live evidence; anonymous/missing identity остаётся review.
+
+Текущее billing-состояние generic recurring donation нельзя перепроверить через Creator read API.
+Поэтому активный grant от такого платежа имеет отдельный sponsor-state
+`recurring_donation_active`: Home подтверждает оплаченный доступ до точной даты и отправляет
+пользователя управлять автодонатом в Tribute, но не утверждает, что следующее списание включено.
+Поддержка Tribute подтвердила 2026-08-14, что `cancelled_donation` приходит только в конце текущего
+оплаченного периода и Creator API не даёт read-state fallback. Поэтому до конца периода UI остаётся
+одинаковым и после пользовательской отмены; видимая нейтральная строка заранее объясняет это
+ограничение. Period-end cancellation переводит donation сразу в `recurring_expired`/base-access
+flow. `recurring_cancelled_active` и обещание известного subscription billing state применяются
+только к subscription contract.
+Planner требует существующего active Flowvy user, не более одной локальной
+Remnawave link, enabled exact rule и active profile, после чего сохраняет immutable rule/profile
+snapshots. Нулевая link допустима для первого paid grant; неизвестный Telegram ID по-прежнему не
+создаёт local user и не обходит registration/invite policy.
 
 Если server-only feature gate включён, отдельная lifespan task забирает due rows через
 `FOR UPDATE SKIP LOCKED`, но не держит DB transaction во время Remnawave HTTP. Перед mutation она
 сверяет live provider/Telegram identity, сохраняет absolute target expiry и применяет version-aware
-`PATCH /api/users`. Retry сначала reconciles target и поэтому не продлевает доступ второй раз после
-неопределённого timeout. Refund является отдельной compensating operation: target пересчитывается
-из исходной базы и более поздних ещё не возвращённых grants. Любая неоднозначность переводится в
-review вместо overwrite. Одновременно исполняется не более одной операции пользователя.
+`PATCH /api/users`. Если link ещё нет, exact Telegram lookup сначала исключает существующий/
+неоднозначный provider account, после чего documented `POST /api/users` создаёт первый paid access;
+неопределённый create timeout повторно проверяется только чтением, без слепого второго create.
+Retry reconciles полный запрошенный profile и target, поэтому не продлевает доступ второй раз.
+
+Перед первым paid mutation `entitlement_baselines` один раз фиксирует restorable registration/base
+state: provider identity, полный allow-listed access profile и expiry либо доказанное отсутствие
+access. Paid profile становится временным overlay даже поверх lifetime base; duration считается
+только от paid sources. После каждого applied grant/refund старая будущая restore-operation
+отменяется, а новая ставится на effective paid expiry. В срок она восстанавливает полный base
+profile либо переводит созданный только для оплаты account в `DISABLED`. Новая pending paid
+operation того же пользователя имеет приоритет над due restore. Refund пересчитывает оставшиеся
+uncompensated paid sources и тем же механизмом восстанавливает base. Нереставрируемый provider
+status, внешний state conflict или неполная история переводятся в review. Одновременно исполняется
+не более одной операции пользователя.
 
 Отдельный подписанный `test_event` ping проходит strict test schema, возвращает `200` и не пишет
 inbox; его 64-hex signature contract подтверждён controlled delivery 2026-08-14. Callback URL в UI
-намеренно отсутствует. Provider execution требует отдельного server flag и по умолчанию выключен;
-checkout и автоматизация donation/subscription остаются вне текущего безопасного контракта.
+намеренно отсутствует. Provider execution требует `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED` и по
+умолчанию выключен; identified-donation planning отдельно требует
+`TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED`, также default-off;
+
+Home storefront реализован поверх Creator-hosted destinations: subscription использует absolute
+`expires_at`, donation — configured donation destination с обязательным same-account/non-anonymous warning. Если signed donation имеет
+recurring `period`, Home связывает active/expired состояние с применённым grant. One-time active
+получает `Extend`; active subscription — `Manage in Tribute`; active recurring donation — точную
+дату, `Manage auto-donation in Tribute` и provider-timing note. Donation cancellation недоступна как
+отдельное paid-period состояние и после period-end event предлагает resume;
+pending/provisioning/review блокируют повторную оплату. Admission policy не
+обходится: endpoint требует уже существующего active local user. `Check payment status` обновляет
+server sponsor state и после него invalidates Home subscription query; one-time active скрывает
+pending controls и предлагает `Extend`, который раскрывает все опубликованные donation и
+subscription варианты. Сердце является индикатором: accent только при активном sponsor
+term, invite count остаётся нейтральным. Все user-facing упоминания приложения берут настроенный
+branding app name; Flowvy остаётся фиксированным именем только на административных поверхностях.
+
+Creator webhook не документирует failed-charge/retry event и next-charge state, поэтому storefront
+их не угадывает. Он показывает только доказанные Creator facts. Неподдерживаемые подписанные Tribute
+events сохраняются как `ignored` audit metadata и не создают checkout match, entitlement operation
+или provider mutation. Generic donation не получает additive mutation без отдельного semantic-risk
+решения; anonymous donation всегда review-only. Полная state matrix и rollout находятся в
+`plans/completed/2026-08-15-tribute-donation-subscription-only.md`.
 
 ### Webhooks и Telegram bot
 

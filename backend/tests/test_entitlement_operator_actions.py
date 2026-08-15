@@ -47,7 +47,7 @@ async def _seed_review(
     return await EntitlementOperationRepository(session).create(
         provider="tribute",
         semantic_key=f"operator-test:{uuid.uuid4()}",
-        event_name="new_digital_product",
+        event_name="new_donation",
         operation_kind="grant",
         status="review",
         reason_code=reason,
@@ -55,8 +55,7 @@ async def _seed_review(
         telegram_user_id=_ADMIN_ID,
         user_id=_ADMIN_ID,
         remnawave_user_id=42,
-        purchase_id="78901",
-        external_item_id="456",
+        external_item_id=None,
         amount_minor=500,
         currency="RUB",
         duration_days=30,
@@ -153,6 +152,30 @@ async def test_retry_is_idempotent_and_preserves_attempt_history(
     assert first.available_actions == []
     assert first.last_action is not None
     assert first.last_action.action == "retry"
+
+
+@pytest.mark.asyncio
+async def test_retry_is_offered_for_idempotent_provider_state_reconciliation(
+    session: AsyncSession,
+) -> None:
+    operation = await _seed_review(session, reason="provider_state_mismatch")
+    service = _service(session)
+
+    listed = await service.list_recent(20)
+    assert listed.operations[0].available_actions == ["retry", "resolve"]
+
+    result = await service.act(
+        operation.id,
+        EntitlementOperatorActionInput(
+            request_id=uuid.uuid4(),
+            action="retry",
+        ),
+        actor_user_id=_ADMIN_ID,
+        actor_telegram_id=_ADMIN_ID,
+    )
+
+    assert result.status == "retry"
+    assert result.reason_code == "operator_retry_queued"
 
 
 @pytest.mark.asyncio

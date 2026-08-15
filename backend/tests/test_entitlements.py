@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import asyncio
 import datetime
 import uuid
 
 import pytest
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from flowvy.models.entitlement_operation import EntitlementOperation
+from flowvy.models.sponsor_checkout import SponsorCheckout
 from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.commerce_rule import CommerceRuleRepository
 from flowvy.repositories.entitlement_operation import EntitlementOperationRepository
@@ -29,10 +27,13 @@ from flowvy.services.entitlements import EntitlementJournalService, TributeEntit
 def _event(
     delivery: str,
     *,
-    name: str = "new_digital_product",
-    family: str = "digital_product",
-    purchase_id: str | None = "78901",
+    name: str = "new_donation",
+    family: str = "donation",
     telegram_user_id: int | None = 123,
+    provider_expires_at: datetime.datetime | None = None,
+    is_anonymous: bool | None = None,
+    payment_mode: str | None = None,
+    provider_period: str | None = None,
 ) -> TributeWebhookInboxInput:
     now = datetime.datetime.now(datetime.UTC)
     return TributeWebhookInboxInput(
@@ -42,23 +43,34 @@ def _event(
         processing_status="observed",
         provider_created_at=now,
         provider_sent_at=now,
+        provider_expires_at=provider_expires_at,
+        is_anonymous=(False if family == "donation" else None)
+        if is_anonymous is None
+        else is_anonymous,
         telegram_user_id=telegram_user_id,
-        transaction_id="234567" if family == "digital_product" else None,
-        purchase_id=purchase_id,
-        external_item_id="456" if family == "digital_product" else "123",
+        external_item_id="123",
         amount_minor=50_000,
         currency="RUB",
-        payment_mode="one_time",
+        payment_mode=payment_mode
+        or (
+            "recurring" if family == "subscription" or name == "recurrent_donation" else "one_time"
+        ),
+        provider_period=provider_period,
     )
 
 
-def _planner(session: AsyncSession) -> TributeEntitlementPlanner:
+def _planner(
+    session: AsyncSession,
+    *,
+    identified_donation_automation_enabled: bool = True,
+) -> TributeEntitlementPlanner:
     return TributeEntitlementPlanner(
         EntitlementOperationRepository(session),
         CommerceRuleRepository(session),
         AccessProfileRepository(session),
         UserRepository(session),
         SubscriptionRepository(session),
+        identified_donation_automation_enabled=identified_donation_automation_enabled,
     )
 
 
@@ -68,18 +80,25 @@ async def _source(session: AsyncSession, event: TributeWebhookInboxInput):
     return source
 
 
-async def _seed_grant_contract(session: AsyncSession) -> uuid.UUID:
+async def _seed_grant_contract(
+    session: AsyncSession,
+    *,
+    commerce_type: str = "donation",
+    with_provider_access: bool = True,
+    payment_mode: str | None = None,
+) -> uuid.UUID:
     await UserRepository(session).create(
         id=123,
         username="test",
         full_name="Test User",
     )
-    await SubscriptionRepository(session).create(
-        user_id=123,
-        remnawave_user_id=42,
-        status="active",
-        expires_at=datetime.datetime.now() + datetime.timedelta(days=1),
-    )
+    if with_provider_access:
+        await SubscriptionRepository(session).create(
+            user_id=123,
+            remnawave_user_id=42,
+            status="active",
+            expires_at=datetime.datetime.now() + datetime.timedelta(days=1),
+        )
     profile = await AccessProfileRepository(session).create(
         name="Paid access",
         validity_mode="duration",
@@ -95,15 +114,16 @@ async def _seed_grant_contract(session: AsyncSession) -> uuid.UUID:
         AccessProfileRepository(session),
     ).create_rule(
         CommerceRuleInput(
-            name="Product access",
-            commerce_type="digital_product",
-            payment_mode="one_time",
-            external_item_id="456",
+            name="Sponsor access",
+            commerce_type=commerce_type,
+            payment_mode=payment_mode
+            or ("recurring" if commerce_type == "subscription" else "any"),
+            external_item_id="123" if commerce_type == "subscription" else None,
             currency="RUB",
-            calculation_type="fixed",
-            fixed_duration_days=30,
+            calculation_type=("provider_expiry" if commerce_type == "subscription" else "fixed"),
+            fixed_duration_days=None if commerce_type == "subscription" else 30,
             access_profile_id=profile.id,
-            grant_mode="extend",
+            grant_mode="replace" if commerce_type == "subscription" else "extend",
         ),
         admin_id=None,
     )
@@ -111,81 +131,210 @@ async def _seed_grant_contract(session: AsyncSession) -> uuid.UUID:
 
 
 @pytest.mark.asyncio
-async def test_documented_digital_purchase_creates_immutable_pending_plan(
+async def test_first_paid_access_is_planned_without_an_existing_provider_link(
     session: AsyncSession,
 ) -> None:
-    profile_id = await _seed_grant_contract(session)
-    event = _event("a" * 64)
+    await _seed_grant_contract(session, with_provider_access=False)
+    event = _event("9" * 64)
 
     operation = await _planner(session).plan(await _source(session, event), event)
 
     assert operation is not None
-    assert operation.semantic_key == "digital_product:purchase:78901"
-    assert operation.operation_kind == "grant"
     assert operation.status == "pending"
     assert operation.user_id == 123
-    assert operation.remnawave_user_id == 42
-    assert operation.duration_days == 30
-    assert operation.grant_mode == "extend"
-    assert operation.access_profile_id == profile_id
-    assert operation.rule_snapshot is not None
-    assert operation.profile_snapshot is not None
-    assert operation.profile_snapshot["traffic_limit_bytes"] == 0
-    assert "telegram_username" not in operation.profile_snapshot
-    assert operation.target_expiry is None
+    assert operation.telegram_user_id == 123
+    assert operation.remnawave_user_id is None
 
 
 @pytest.mark.asyncio
-async def test_two_distinct_deliveries_of_one_purchase_create_one_semantic_operation(
-    engine: AsyncEngine,
-) -> None:
-    factory = async_sessionmaker(engine, expire_on_commit=False)
-    async with factory() as session:
-        await _seed_grant_contract(session)
-        first_event = _event("b" * 64)
-        second_event = _event("c" * 64)
-        first_source = await _source(session, first_event)
-        second_source = await _source(session, second_event)
-        await session.commit()
-
-    async def plan(source_id: int, event: TributeWebhookInboxInput) -> bool:
-        async with factory() as session:
-            source = await TributeWebhookEventRepository(session).get_by_id(source_id)
-            assert source is not None
-            created = await _planner(session).plan(source, event)
-            await session.commit()
-            return created is not None
-
-    created = await asyncio.gather(
-        plan(first_source.id, first_event),
-        plan(second_source.id, second_event),
-    )
-
-    assert sorted(created) == [False, True]
-    async with factory() as session:
-        count = await session.scalar(select(func.count()).select_from(EntitlementOperation))
-    assert count == 1
-
-
-@pytest.mark.asyncio
-async def test_donation_is_journalled_without_unsafe_semantic_deduction(
+async def test_identified_donation_creates_one_deterministic_pending_plan(
     session: AsyncSession,
 ) -> None:
+    await _seed_grant_contract(session, commerce_type="donation")
     event = _event(
         "d" * 64,
         name="new_donation",
         family="donation",
-        purchase_id=None,
+    )
+
+    operation = await _planner(session).plan(await _source(session, event), event)
+
+    assert operation is not None
+    assert operation.operation_kind == "grant"
+    assert operation.status == "pending"
+    assert operation.reason_code is None
+    assert operation.semantic_key is not None
+    assert operation.semantic_key.startswith("donation:event:")
+    assert operation.duration_days == 30
+    assert operation.target_expiry is None
+
+
+@pytest.mark.asyncio
+async def test_initial_recurring_donation_uses_the_recurring_donation_rule(
+    session: AsyncSession,
+) -> None:
+    """A live-observed new_donation/monthly event is the first recurring payment."""
+    await _seed_grant_contract(
+        session,
+        commerce_type="donation",
+        payment_mode="recurring",
+    )
+    event = _event(
+        "1" * 64,
+        name="new_donation",
+        family="donation",
+        payment_mode="recurring",
+        provider_period="monthly",
+    )
+
+    operation = await _planner(session).plan(await _source(session, event), event)
+
+    assert operation is not None
+    assert operation.status == "pending"
+    assert operation.reason_code is None
+    assert operation.duration_days == 30
+
+
+@pytest.mark.asyncio
+async def test_donation_offer_schedule_mismatch_is_review_only_without_grant(
+    session: AsyncSession,
+) -> None:
+    await _seed_grant_contract(session, commerce_type="donation")
+    rule = (await CommerceRuleRepository(session).get_all())[0]
+    event = _event(
+        "4" * 64,
+        name="new_donation",
+        family="donation",
+        payment_mode="recurring",
+        provider_period="weekly",
+    )
+    checkout = SponsorCheckout(
+        id=uuid.UUID("44444444-4444-4444-8444-444444444444"),
+        user_id=123,
+        offer_id=None,
+        provider="tribute",
+        commerce_type="donation",
+        payment_mode="recurring",
+        external_item_id=None,
+        status="expired",
+        offer_snapshot={"commerce_rule_id": str(rule.id)},
+        expires_at=datetime.datetime.now(datetime.UTC),
+    )
+
+    operation = await _planner(session).plan(
+        await _source(session, event),
+        event,
+        sponsor_checkout=checkout,
+        sponsor_checkout_mismatch_reason="donation_offer_mismatch",
+    )
+
+    assert operation is not None
+    assert operation.operation_kind == "grant"
+    assert operation.status == "review"
+    assert operation.reason_code == "donation_offer_mismatch"
+    assert operation.duration_days is None
+
+
+@pytest.mark.asyncio
+async def test_recurring_donation_cancellation_is_resolved_audit_without_access_work(
+    session: AsyncSession,
+) -> None:
+    event = _event(
+        "0" * 64,
+        name="cancelled_donation",
+        family="donation",
+        payment_mode="recurring",
+        provider_period="monthly",
     )
 
     operation = await _planner(session).plan(await _source(session, event), event)
 
     assert operation is not None
     assert operation.operation_kind == "review"
-    assert operation.status == "review"
-    assert operation.reason_code == "semantic_identity_unverified"
-    assert operation.semantic_key is None
+    assert operation.status == "resolved"
+    assert operation.reason_code == "cancellation_is_not_refund"
+    assert operation.user_id is None
+    assert operation.remnawave_user_id is None
     assert operation.target_expiry is None
+    assert operation.semantic_key is not None
+    assert operation.semantic_key.startswith("payment:cancellation:")
+
+
+@pytest.mark.asyncio
+async def test_anonymous_donation_requires_manual_review_without_grant(
+    session: AsyncSession,
+) -> None:
+    await _seed_grant_contract(session, commerce_type="donation")
+    event = _event(
+        "5" * 64,
+        name="new_donation",
+        family="donation",
+        telegram_user_id=None,
+        is_anonymous=True,
+    )
+
+    operation = await _planner(session).plan(await _source(session, event), event)
+
+    assert operation is not None
+    assert operation.operation_kind == "grant"
+    assert operation.status == "review"
+    assert operation.reason_code == "anonymous_donation"
+    assert operation.semantic_key is not None
+
+
+@pytest.mark.asyncio
+async def test_identified_donation_remains_review_only_until_explicit_rollout(
+    session: AsyncSession,
+) -> None:
+    await _seed_grant_contract(session, commerce_type="donation")
+    event = _event(
+        "8" * 64,
+        name="new_donation",
+        family="donation",
+    )
+
+    operation = await _planner(
+        session,
+        identified_donation_automation_enabled=False,
+    ).plan(await _source(session, event), event)
+
+    assert operation is not None
+    assert operation.status == "review"
+    assert operation.reason_code == "donation_semantic_evidence_required"
+
+
+@pytest.mark.asyncio
+async def test_subscription_uses_tribute_absolute_expiry_and_deduplicates_state(
+    session: AsyncSession,
+) -> None:
+    await _seed_grant_contract(session, commerce_type="subscription")
+    expires_at = datetime.datetime.now(datetime.UTC).replace(microsecond=0) + datetime.timedelta(
+        days=30,
+    )
+    first = _event(
+        "6" * 64,
+        name="new_subscription",
+        family="subscription",
+        provider_expires_at=expires_at,
+    )
+    second = _event(
+        "7" * 64,
+        name="renewed_subscription",
+        family="subscription",
+        provider_expires_at=expires_at,
+    )
+
+    operation = await _planner(session).plan(await _source(session, first), first)
+    duplicate = await _planner(session).plan(await _source(session, second), second)
+
+    assert operation is not None
+    assert operation.operation_kind == "grant"
+    assert operation.status == "pending"
+    assert operation.duration_days is None
+    assert operation.grant_mode == "replace"
+    assert operation.target_expiry == expires_at
+    assert operation.semantic_key.startswith("subscription:state:")
+    assert duplicate is None
 
 
 @pytest.mark.asyncio
@@ -200,47 +349,6 @@ async def test_unknown_local_identity_never_creates_a_user_or_grant(
     assert operation.status == "review"
     assert operation.reason_code == "user_not_found"
     assert await UserRepository(session).get_by_id(999) is None
-
-
-@pytest.mark.asyncio
-async def test_refund_cancels_a_pending_grant_without_provider_work(
-    session: AsyncSession,
-) -> None:
-    await _seed_grant_contract(session)
-    purchase = _event("f" * 64)
-    grant = await _planner(session).plan(await _source(session, purchase), purchase)
-    assert grant is not None
-    refund = _event("1" * 64, name="digital_product_refunded")
-
-    compensation = await _planner(session).plan(await _source(session, refund), refund)
-
-    assert grant.status == "cancelled"
-    assert grant.reason_code == "refunded_before_apply"
-    assert compensation is not None
-    assert compensation.operation_kind == "refund"
-    assert compensation.status == "applied"
-    assert compensation.reason_code == "grant_cancelled_before_apply"
-    assert compensation.root_operation_id == grant.id
-
-
-@pytest.mark.asyncio
-async def test_refund_arriving_before_purchase_prevents_late_grant(
-    session: AsyncSession,
-) -> None:
-    await _seed_grant_contract(session)
-    refund = _event("2" * 64, name="digital_product_refunded")
-    compensation = await _planner(session).plan(await _source(session, refund), refund)
-    assert compensation is not None
-    assert compensation.reason_code == "refund_source_not_found"
-    purchase = _event("3" * 64)
-
-    grant = await _planner(session).plan(await _source(session, purchase), purchase)
-
-    assert grant is not None
-    assert grant.status == "cancelled"
-    assert grant.reason_code == "purchase_already_refunded"
-    assert compensation.status == "applied"
-    assert compensation.reason_code == "grant_cancelled_before_apply"
 
 
 @pytest.mark.asyncio

@@ -42,6 +42,39 @@
 	color: var(--v2-text-secondary);
 }
 
+.providerExpiry {
+	display: grid;
+	gap: 4px;
+	padding: 11px 12px;
+	border: 1px solid var(--v2-border-positive-secondary);
+	border-radius: var(--radius-sm);
+	background: var(--v2-bg-positive-quaternary);
+}
+
+.providerExpiry strong {
+	font-size: 12px;
+	color: var(--v2-text-primary);
+}
+
+.providerExpiry span {
+	font-size: 10.5px;
+	line-height: 1.5;
+	color: var(--v2-text-secondary);
+}
+
+.fieldNotice {
+	font-size: 10.5px;
+	line-height: 1.45;
+	color: var(--v2-text-secondary);
+}
+
+.catalogError {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 10px;
+}
+
 .band {
 	min-width: 0;
 	margin: 0;
@@ -178,6 +211,14 @@
 
 	.previewControls > button,
 	.addBand {
+		width: 100%;
+	}
+
+	.catalogError {
+		grid-template-columns: 1fr;
+	}
+
+	.catalogError > button {
 		width: 100%;
 	}
 }

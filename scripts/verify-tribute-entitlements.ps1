@@ -9,11 +9,12 @@ if ($LASTEXITCODE -ne 0) { throw "Disposable PostgreSQL test service is not read
 
 Push-Location (Join-Path $repoRoot "backend")
 try {
-    uv run --frozen pytest -q tests/test_tribute_digital_product_fixture.py
+    uv run --frozen pytest -q `
+        tests/test_tribute_donation_fixture.py
     if ($LASTEXITCODE -ne 0) { throw "Tribute entitlement fixture failed." }
 }
 finally {
     Pop-Location
 }
 
-Write-Host "Signed Tribute purchase, duplicate delivery, grant, refund, and compensation passed."
+Write-Host "Signed Tribute donation production-boundary fixture passed without live endpoints."

@@ -26,7 +26,7 @@ class CommerceRule(Base):
     __table_args__ = (
         CheckConstraint("provider IN ('tribute')", name="ck_commerce_rules_provider"),
         CheckConstraint(
-            "commerce_type IN ('donation', 'subscription', 'digital_product')",
+            "commerce_type IN ('donation', 'subscription')",
             name="ck_commerce_rules_commerce_type",
         ),
         CheckConstraint(
@@ -34,12 +34,18 @@ class CommerceRule(Base):
             name="ck_commerce_rules_payment_mode",
         ),
         CheckConstraint(
-            "calculation_type IN ('fixed', 'volume')",
+            "calculation_type IN ('fixed', 'volume', 'provider_expiry')",
             name="ck_commerce_rules_calculation_type",
         ),
         CheckConstraint(
             "grant_mode IN ('extend', 'replace')",
             name="ck_commerce_rules_grant_mode",
+        ),
+        CheckConstraint(
+            "(commerce_type = 'subscription' AND calculation_type = 'provider_expiry' "
+            "AND grant_mode = 'replace') OR "
+            "(commerce_type <> 'subscription' AND calculation_type <> 'provider_expiry')",
+            name="ck_commerce_rules_subscription_expiry",
         ),
         CheckConstraint("currency ~ '^[A-Z]{3}$'", name="ck_commerce_rules_currency"),
         CheckConstraint("priority BETWEEN 1 AND 10000", name="ck_commerce_rules_priority"),
@@ -49,14 +55,13 @@ class CommerceRule(Base):
         ),
         CheckConstraint(
             "(commerce_type = 'donation' AND external_item_id IS NULL) OR "
-            "(commerce_type IN ('subscription', 'digital_product') "
+            "(commerce_type = 'subscription' "
             "AND external_item_id IS NOT NULL)",
             name="ck_commerce_rules_external_item",
         ),
         CheckConstraint(
             "(commerce_type = 'donation') OR "
-            "(commerce_type = 'subscription' AND payment_mode = 'recurring') OR "
-            "(commerce_type = 'digital_product' AND payment_mode = 'one_time')",
+            "(commerce_type = 'subscription' AND payment_mode = 'recurring')",
             name="ck_commerce_rules_payment_shape",
         ),
         Index("ix_commerce_rules_provider_priority", "provider", "priority", "created_at"),

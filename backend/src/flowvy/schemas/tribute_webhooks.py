@@ -62,7 +62,7 @@ class TributeSubscriptionPayload(_TributePayload):
     subscription_name: str
     subscription_id: int = Field(gt=0, strict=True)
     period_id: int = Field(gt=0, strict=True)
-    period: Literal["monthly", "quarterly", "yearly"]
+    period: Literal["weekly", "monthly", "quarterly", "halfyearly", "yearly"]
     price: int = Field(ge=0, strict=True)
     amount: int = Field(ge=0, strict=True)
     currency: str = Field(min_length=3, max_length=3)
@@ -104,48 +104,23 @@ class TributeDonationPayload(_TributePayload):
     telegram_user_id: int | None = Field(default=None, gt=0, strict=True)
 
 
-class TributeOneTimeDonationPayload(TributeDonationPayload):
-    period: Literal["once"]
+class TributeNewDonationPayload(TributeDonationPayload):
+    """The first donation can start either a one-time or recurring schedule."""
+
+    period: Literal[
+        "once",
+        "onetime",
+        "one_time",
+        "weekly",
+        "monthly",
+        "quarterly",
+        "halfyearly",
+        "yearly",
+    ]
 
 
 class TributeRecurringDonationPayload(TributeDonationPayload):
-    period: Literal["monthly", "quarterly", "yearly"]
-
-
-class TributeDigitalProductPayload(_TributePayload):
-    product_id: int = Field(gt=0, strict=True)
-    product_name: str
-    amount: int = Field(ge=0, strict=True)
-    currency: str = Field(min_length=3, max_length=3)
-    user_id: int | None = Field(default=None, strict=True)
-    trb_user_id: str | None = None
-    telegram_user_id: int | None = Field(default=None, gt=0, strict=True)
-    purchase_id: int = Field(gt=0, strict=True)
-    transaction_id: int = Field(gt=0, strict=True)
-    purchase_created_at: datetime.datetime | None = None
-    refund_reason: str | None = None
-    refunded_at: datetime.datetime | None = None
-
-    @field_validator("purchase_created_at", "refunded_at")
-    @classmethod
-    def normalize_optional_timestamp(
-        cls,
-        value: datetime.datetime | None,
-    ) -> datetime.datetime | None:
-        if value is None:
-            return None
-        if value.tzinfo is None or value.utcoffset() is None:
-            raise ValueError("Tribute product timestamp must include a timezone")
-        return value.astimezone(datetime.UTC)
-
-
-class TributeNewDigitalProductPayload(TributeDigitalProductPayload):
-    purchase_created_at: datetime.datetime
-
-
-class TributeDigitalProductRefundPayload(TributeDigitalProductPayload):
-    refund_reason: str
-    refunded_at: datetime.datetime
+    period: Literal["weekly", "monthly", "quarterly", "halfyearly", "yearly"]
 
 
 class EntitlementOperatorActionResponse(CamelModel):
@@ -161,7 +136,7 @@ class EntitlementOperationResponse(CamelModel):
 
     id: str
     event_name: str
-    operation_kind: Literal["grant", "refund", "review"]
+    operation_kind: Literal["grant", "refund", "restore", "review"]
     status: Literal[
         "pending",
         "processing",
@@ -226,13 +201,15 @@ class TributeWebhookInboxInput:
     processing_status: str
     provider_created_at: datetime.datetime
     provider_sent_at: datetime.datetime
+    provider_expires_at: datetime.datetime | None
+    is_anonymous: bool | None
     telegram_user_id: int | None
-    transaction_id: str | None
-    purchase_id: str | None
     external_item_id: str | None
     amount_minor: int | None
     currency: str | None
     payment_mode: str | None
+    provider_period: str | None = None
+    subscription_type: str | None = None
 
 
 __all__ = [
@@ -241,11 +218,8 @@ __all__ = [
     "EntitlementOperatorActionInput",
     "EntitlementOperatorActionResponse",
     "TributeCancelledSubscriptionPayload",
-    "TributeDigitalProductPayload",
-    "TributeDigitalProductRefundPayload",
     "TributeDonationPayload",
-    "TributeNewDigitalProductPayload",
-    "TributeOneTimeDonationPayload",
+    "TributeNewDonationPayload",
     "TributePaidSubscriptionPayload",
     "TributeRecurringDonationPayload",
     "TributeSubscriptionPayload",

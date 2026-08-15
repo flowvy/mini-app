@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	currencyFractionDigits,
+	formatMajorMoney,
 	formatMinorMoney,
 	majorToMinor,
 	minorToMajorInput,
@@ -21,5 +22,7 @@ describe("minor-unit money fields", () => {
 
 	it("formats display values separately from persisted integers", () => {
 		expect(formatMinorMoney(50_000, "RUB", "en-US")).toContain("500");
+		expect(formatMajorMoney("500.00", "RUB", "en-US")).toContain("500");
+		expect(formatMajorMoney("not-a-number", "RUB", "en-US")).toBe("not-a-number RUB");
 	});
 });

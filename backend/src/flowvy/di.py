@@ -17,18 +17,25 @@ from sqlalchemy.ext.asyncio import (
 from flowvy.config import Settings
 from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.commerce_rule import CommerceRuleRepository
+from flowvy.repositories.entitlement_baseline import EntitlementBaselineRepository
 from flowvy.repositories.entitlement_operation import EntitlementOperationRepository
 from flowvy.repositories.entitlement_operation_action import (
     EntitlementOperationActionRepository,
 )
 from flowvy.repositories.invite import InviteRepository
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
+from flowvy.repositories.sponsor_checkout import SponsorCheckoutRepository
+from flowvy.repositories.sponsor_offer import SponsorOfferRepository
 from flowvy.repositories.subscription import SubscriptionRepository
+from flowvy.repositories.tribute_webhook_event import TributeWebhookEventRepository
 from flowvy.repositories.user import UserRepository
 from flowvy.services.commerce import CommerceRuleService
+from flowvy.services.commerce_catalog import CommerceCatalogService
 from flowvy.services.entitlements import EntitlementJournalService
 from flowvy.services.registration import RegistrationAdminService, RegistrationService
 from flowvy.services.remnawave import RemnawaveClient
+from flowvy.services.sponsor import SponsorOfferService, SponsorStateService
+from flowvy.services.tribute import TributeClient
 from flowvy.services.user import UserService
 
 
@@ -114,6 +121,21 @@ class RepositoryProvider(Provider):
         return EntitlementOperationActionRepository(session)
 
     @provide(scope=Scope.REQUEST)
+    def get_entitlement_baseline_repo(
+        self,
+        session: AsyncSession,
+    ) -> EntitlementBaselineRepository:
+        return EntitlementBaselineRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_sponsor_offer_repo(self, session: AsyncSession) -> SponsorOfferRepository:
+        return SponsorOfferRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_sponsor_checkout_repo(self, session: AsyncSession) -> SponsorCheckoutRepository:
+        return SponsorCheckoutRepository(session)
+
+    @provide(scope=Scope.REQUEST)
     def get_subscription_repo(
         self,
         session: AsyncSession,
@@ -147,9 +169,18 @@ class ServiceProvider(Provider):
         self,
         rules: CommerceRuleRepository,
         profiles: AccessProfileRepository,
+        offers: SponsorOfferRepository,
     ) -> CommerceRuleService:
         """Create side-effect-free commerce-rule administration service."""
-        return CommerceRuleService(rules, profiles)
+        return CommerceRuleService(rules, profiles, offers)
+
+    @provide(scope=Scope.REQUEST)
+    def get_commerce_catalog_service(
+        self,
+        tribute: TributeClient,
+    ) -> CommerceCatalogService:
+        """Create the provider catalog normalization service."""
+        return CommerceCatalogService(tribute)
 
     @provide(scope=Scope.REQUEST)
     def get_entitlement_journal_service(
@@ -159,6 +190,50 @@ class ServiceProvider(Provider):
     ) -> EntitlementJournalService:
         """Create the administrator entitlement journal and action service."""
         return EntitlementJournalService(operations, actions)
+
+    @provide(scope=Scope.REQUEST)
+    def get_sponsor_offer_service(
+        self,
+        offers: SponsorOfferRepository,
+        rules: CommerceRuleRepository,
+        profiles: AccessProfileRepository,
+        provider_settings: ProviderSettingsRepository,
+        catalog: CommerceCatalogService,
+        config: Settings,
+    ) -> SponsorOfferService:
+        return SponsorOfferService(
+            offers,
+            rules,
+            profiles,
+            provider_settings,
+            catalog,
+            config,
+        )
+
+    @provide(scope=Scope.REQUEST)
+    def get_sponsor_state_service(
+        self,
+        offers: SponsorOfferService,
+        offer_repository: SponsorOfferRepository,
+        checkouts: SponsorCheckoutRepository,
+        operations: EntitlementOperationRepository,
+        events: TributeWebhookEventRepository,
+        baselines: EntitlementBaselineRepository,
+        subscriptions: SubscriptionRepository,
+        users: UserRepository,
+        config: Settings,
+    ) -> SponsorStateService:
+        return SponsorStateService(
+            offers,
+            offer_repository,
+            checkouts,
+            operations,
+            events,
+            baselines,
+            subscriptions,
+            users,
+            config,
+        )
 
     @provide(scope=Scope.REQUEST)
     def get_registration_service(

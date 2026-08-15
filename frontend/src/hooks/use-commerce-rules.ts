@@ -3,12 +3,15 @@ import { apiDelete, apiGet, apiPost, apiPut } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";
 import { isMockAuth } from "../lib/runtime.ts";
 import type {
+	CommerceCatalog,
 	CommerceRule,
 	CommerceRuleInput,
 	CommerceRulePreview,
 	EntitlementOperation,
 	EntitlementOperationList,
 	EntitlementOperatorActionInput,
+	SponsorOffer,
+	SponsorOfferInput,
 } from "../types/commerce.ts";
 
 const prefix = isMockAuth ? "/debug/admin/commerce" : "/admin/commerce";
@@ -20,10 +23,54 @@ export function useCommerceRules() {
 	});
 }
 
+export function useCommerceCatalog() {
+	return useQuery({
+		queryKey: queryKeys.commerceCatalog("tribute"),
+		queryFn: () => apiGet<CommerceCatalog>(`${prefix}/catalog?provider=tribute`),
+		staleTime: 5 * 60 * 1000,
+	});
+}
+
 export function useEntitlementOperations() {
 	return useQuery({
 		queryKey: queryKeys.entitlementOperations,
 		queryFn: () => apiGet<EntitlementOperationList>(`${prefix}/operations?limit=20`),
+	});
+}
+
+export function useSponsorOffers() {
+	return useQuery({
+		queryKey: queryKeys.sponsorOffers,
+		queryFn: () => apiGet<SponsorOffer[]>(`${prefix}/offers`),
+	});
+}
+
+export function useSaveSponsorOffer() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({ id, input }: { id?: string; input: SponsorOfferInput }) =>
+			id
+				? apiPut<SponsorOffer>(`${prefix}/offers/${id}`, input)
+				: apiPost<SponsorOffer>(`${prefix}/offers`, input),
+		onSuccess: async () => {
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: queryKeys.sponsorOffers }),
+				queryClient.invalidateQueries({ queryKey: queryKeys.sponsorState }),
+			]);
+		},
+	});
+}
+
+export function useDeleteSponsorOffer() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (id: string) => apiDelete(`${prefix}/offers/${id}`),
+		onSuccess: async () => {
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: queryKeys.sponsorOffers }),
+				queryClient.invalidateQueries({ queryKey: queryKeys.sponsorState }),
+			]);
+		},
 	});
 }
 

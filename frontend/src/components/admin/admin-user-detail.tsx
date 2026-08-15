@@ -6,11 +6,11 @@ import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	formatDateISO,
+	formatExpiryDate,
 	formatLastSeen,
 	formatMetaList,
 	formatMissing,
 	isUnlimitedDevices,
-	isUnlimitedExpiryISO,
 } from "../../lib/format.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
 import { FormRowSeparator, FormSection, FormSectionCard } from "../ui/form-section.tsx";
@@ -63,15 +63,7 @@ export const AdminUserDetail: FC<AdminUserDetailProps> = ({ user }) => {
 				<FormSectionCard>
 					<Row label={t("admin.userDetail.created")} value={formatDateISO(user.createdAt)} mono />
 					<FormRowSeparator />
-					<Row
-						label={t("admin.userDetail.expires")}
-						value={
-							isUnlimitedExpiryISO(user.expireAt)
-								? t("admin.userDetail.expiresUnlimited")
-								: formatDateISO(user.expireAt)
-						}
-						mono
-					/>
+					<Row label={t("admin.userDetail.expires")} value={formatExpiryDate(user.expireAt)} mono />
 					<FormRowSeparator />
 					<Row label={t("admin.userDetail.email")} value={user.email} mono muted={!user.email} />
 					<FormRowSeparator />

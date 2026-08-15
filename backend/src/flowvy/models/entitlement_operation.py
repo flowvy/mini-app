@@ -33,7 +33,7 @@ class EntitlementOperation(Base):
             name="ck_entitlement_operations_provider",
         ),
         CheckConstraint(
-            "operation_kind IN ('grant', 'refund', 'review')",
+            "operation_kind IN ('grant', 'refund', 'restore', 'review')",
             name="ck_entitlement_operations_kind",
         ),
         CheckConstraint(
@@ -86,9 +86,9 @@ class EntitlementOperation(Base):
             "created_at",
         ),
         Index(
-            "ix_entitlement_operations_purchase",
+            "ix_entitlement_operations_provider_reference",
             "provider",
-            "purchase_id",
+            "provider_reference_id",
         ),
     )
 
@@ -118,7 +118,7 @@ class EntitlementOperation(Base):
         nullable=True,
     )
     remnawave_user_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    purchase_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    provider_reference_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     transaction_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     external_item_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     amount_minor: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

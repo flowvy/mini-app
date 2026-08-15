@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { formatShortDate, isUnlimitedExpiry } from "../../lib/format.ts";
+import { formatExpiryDate, formatShortDate } from "../../lib/format.ts";
 import type { SubscriptionData } from "../../types/subscription.ts";
 import { FormRowSeparator, FormSection, FormSectionCard } from "../ui/form-section.tsx";
 import styles from "./detail-section.module.css";
@@ -29,11 +29,7 @@ export function DetailSection({ subscription }: DetailSectionProps) {
 					<Row
 						label={t("home.detail.expires")}
 						hint={t("home.detail.expiresHint")}
-						value={
-							isUnlimitedExpiry(subscription.expiresAt)
-								? t("home.detail.expiresUnlimited")
-								: formatShortDate(subscription.expiresAt)
-						}
+						value={formatExpiryDate(subscription.expiresAt)}
 						mono
 					/>
 					<FormRowSeparator />

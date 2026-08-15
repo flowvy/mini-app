@@ -38,10 +38,14 @@ uv run --frozen pytest -q
 .\scripts\verify-tribute-entitlements.ps1
 ```
 
-Команда поднимает только disposable PostgreSQL test service и запускает один production-boundary
-fixture: HMAC-signed digital-product purchase, exact duplicate, durable grant, absolute-expiry fake
-Remnawave mutation, HMAC-signed refund, duplicate refund и compensation. Реальные Tribute и
-Remnawave endpoints не вызываются.
+Команда поднимает только disposable PostgreSQL test service и запускает production-boundary
+donation fixture. Он проводит через реальный FastAPI/inbox/planner boundary подписанные
+`new_donation + once`, initial
+`new_donation + monthly`, renewal `recurrent_donation + monthly`, exact duplicate, anonymous и
+unknown-user события; он проверяет выбор one-time/recurring rule, amount bands и review outcomes.
+Donation fixture включает planner flag только в process-local test environment, оставляет executor
+выключенным и подтверждает отсутствие provider link/mutation. Реальные Tribute и Remnawave
+endpoints не вызываются.
 
 `tests/conftest.py` автоматически маркирует тесты с fixtures `engine` или `session` как
 `integration`. Они используют отдельную PostgreSQL database/user `test:test`; SQLite не является
@@ -50,23 +54,38 @@ Remnawave endpoints не вызываются.
 Kuma/Beszel tests подменяют resolver и HTTPX transport, проверяя pinned IP/Host/SNI без сети.
 Beszel fixtures фиксируют v0.18.7 auth/systems/system_stats contracts, pagination limits,
 credential isolation и 1m/20m Pulse mapping. Tribute fixtures проверяют fixed-origin read-only
-products request, server-only key, auth/non-2xx, timeout, oversized/malformed/schema-drift response
-без сети. Отдельный Tribute webhook suite строит HMAC локальным placeholder key и проверяет
+subscriptions catalog, strict API `1.0.0` shapes, BFF allow-list,
+server-only key, auth/non-2xx, timeout, oversized/malformed/schema-drift response без сети. Отдельный
+provider-settings suite проверяет payment-destination HTTPS normalization, запрет
+credentials/fragment, subscription ID bounds, clear/persist response и отсутствие Tribute/cache
+side effect при сохранении. Отдельный
+Tribute webhook suite строит HMAC локальным placeholder key и проверяет
 fail-closed missing key/signature, content type, raw/declared size, strict envelope, timestamp window,
 malformed normalized fields, typed documented event payloads, обязательный cancellation reason,
 отдельный authenticated `test_event` ping без persistence, safe schema-shape diagnostics без values,
 ignored unknown event, exact replay, конкурентный DB duplicate и retention без raw
-payload/signature/username. Entitlement tests отдельно доказывают semantic dedupe разных deliveries
-одной digital purchase, review-only donation/subscription, unknown-user fail closed, rule/profile
-snapshots, refund before/after grant, replay более поздних ещё не refunded grants, per-user worker
-serialization, absolute-target reconciliation после timeout и отсутствие второго provider mutation.
+payload/signature/username. Entitlement tests отдельно доказывают subscription absolute `expires_at`
+state, default-off/explicitly enabled
+identified-donation fingerprint, anonymous review, unknown-user fail closed, rule/profile snapshots,
+generic compensation/recovery semantics, first paid provider create,
+base/lifetime overlay, full-profile/disabled restoration, paid-work priority над due restore,
+per-user worker serialization, absolute-target reconciliation после timeout, explicit nullable
+provider clears и отсутствие второго provider mutation.
+Sponsor fixtures отдельно проверяют publish validation для всех subscription periods и identified
+donation bands, exact one-time/recurring donation schedule,
+disabled delivery, immutable checkout snapshot,
+trial/cancellation exact expiry, review visibility поверх active access, provisioning priority,
+повтор того же pending offer и conflict другого offer. PostgreSQL repository suite доказывает, что
+subscription подтверждает только matching signed user/family/item/mode event, а donation — только
+bounded user/family/time/amount/currency/mode/provider-period match. Mismatch попадает в
+review до planner grant, а подтверждённый checkout разрешает только linked offer rule. Provider `donation_request_id` не
+сравнивается с opaque `startapp` destination; событие старше checkout, анонимность или неверная
+сумма/валюта fail closed. Sponsor-state regression восстанавливает пропущенную checkout/event связь
+только из уже applied operation и сохранённого authenticated event.
 Operator-action tests дополнительно проверяют server-computed eligibility, обязательную bounded
 resolve note, retry без сброса attempt history, повтор одного request UUID без второй audit row,
 запрет reuse для другого решения и конкурентные retry/resolve под operation row lock. HTTP fixture
 проверяет active-admin boundary, safe projection и `409` для stale action.
-Отдельный end-to-end fixture связывает эти границы через production FastAPI route и Dishka session:
-после duplicate purchase/refund в PostgreSQL остаются ровно две semantic operations, fake provider
-получает один grant и одну compensation, а local subscription возвращается к исходному expiry.
 Commerce fixtures отдельно проверяют conditional rule validation, active-profile gate,
 CRUD, no-match/fixed/volume preview и целочисленные 500/1000/3500/4000 RUB boundaries без webhook
 или access side effect. Media tests сканируют ложный declared size и действительно читают aiogram `InputFile`
@@ -83,7 +102,11 @@ cursor stream, UUID-less 3.x user, version-specific 2.8.1/3.1.0 update identity,
 upgrade и `alembic check`, затем удаляет БД в `finally`. Fixture отдельно доказывает webhook
 delivery-key backfill, удаление legacy raw payload, timezone conversion, создание уникального
 числового Remnawave identity, сохранность старого nullable UUID и перенос старого `kuma_enabled` в
-новый Pulse provider selector с обратимым downgrade.
+новый Pulse provider selector с обратимым downgrade. После каждого zero-to-head fixture выполняет
+rollback-only реальные INSERT в `sponsor_offers` и `sponsor_checkouts` без явных ID, поэтому
+расхождение ORM и Alembic UUID defaults не может пройти migration gate.
+`test_sponsor_checkout_repository.py` отдельно выполняет published → draft переход на PostgreSQL и
+проверяет, что nullable JSONB snapshot становится SQL `NULL`, а не JSON-скаляром `null`.
 
 ## Frontend unit
 
@@ -113,7 +136,18 @@ pnpm test:e2e:live  # существующие dev-up frontend/backend и реа
 каждый `/api/*` request. Неизвестный запрос, `console.error`, `pageerror` или network failure валит
 тест. Матрица покрывает auth/role, loading/empty/error/malformed/retry, device mutation, Pulse,
 dashboard/users/settings, выбор Kuma/Beszel, Tribute credential/API-check states без секретов,
-commerce-rule empty/create/edit/toggle/delete/save failure, fixed/volume preview/no-match,
+commerce-rule empty/create/edit/toggle/delete/save failure, donation fixed/volume
+preview/no-match, subscription provider-expiry без локального расчёта дней,
+subscription catalog loading/select/empty/error/retry и сохранение legacy item ID,
+payment destination loading/empty/error/retry/save/clear, unavailable subscription mapping,
+local URL validation, dirty/discard, safe mutation failure и success,
+admin sponsor-offer empty/draft/create/publish-guard presentation, donation amount/mode/frequency
+controls и truthful предупреждение о том, что Creator link их не фиксирует, Home no/base access, one-time
+renewal, recurring active/cancelled, pending/provisioning/review duplicate-payment guard,
+identified-donation exact amount/schedule/anonymity instructions и redirect-intent POST без
+client-side payment proof,
+pending donation → status check → one-time active transition, совместный sponsor/subscription
+refetch, исчезновение stale pending controls, multi-type renewal chooser и neutral/active icon states,
 payment-activity loading/empty/populated/error/retry и безопасные applied/review reason codes,
 server-approved operator retry/resolve, обязательную resolution note, dialog cancel/focus,
 mutation failure с повтором того же request UUID, success feedback и resolved/retry audit copy,

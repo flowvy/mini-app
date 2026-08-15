@@ -113,7 +113,7 @@ async def test_tribute(
     _admin: CurrentAdmin,
     service: FromDishka[ProviderSettingsService] = None,  # type: ignore[assignment]
 ) -> TributeTestResponse:
-    """Check configured Tribute API access with one read-only products request."""
+    """Check configured Tribute API access with one read-only subscriptions request."""
     return await service.test_tribute()
 
 

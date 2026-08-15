@@ -7,6 +7,7 @@ import uuid
 from flowvy.models.commerce_rule import CommerceRule
 from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.commerce_rule import CommerceRuleRepository
+from flowvy.repositories.sponsor_offer import SponsorOfferRepository
 from flowvy.schemas.commerce import (
     MAX_DURATION_DAYS,
     AmountBand,
@@ -28,6 +29,8 @@ class CommerceRuleNotFoundError(CommerceRuleError):
 def _calculator(payload: CommerceRuleInput) -> dict[str, object]:
     if payload.calculation_type == "fixed":
         return {"fixed_duration_days": payload.fixed_duration_days}
+    if payload.calculation_type == "provider_expiry":
+        return {}
     return {
         "amount_bands": [band.model_dump() for band in payload.amount_bands],
     }
@@ -63,6 +66,8 @@ def evaluate_commerce_rule(
             matched=True,
             duration_days=payload.fixed_duration_days,
         )
+    if payload.calculation_type == "provider_expiry":
+        raise CommerceRuleError("Provider-expiry rules cannot be previewed from an amount")
 
     matched_band: AmountBand | None = None
     for band in payload.amount_bands:
@@ -92,9 +97,11 @@ class CommerceRuleService:
         self,
         rules: CommerceRuleRepository,
         profiles: AccessProfileRepository,
+        offers: SponsorOfferRepository | None = None,
     ) -> None:
         self._rules = rules
         self._profiles = profiles
+        self._offers = offers
 
     async def list_rules(self, provider: str = "tribute") -> list[CommerceRuleResponse]:
         return [
@@ -128,6 +135,8 @@ class CommerceRuleService:
         rule = await self._rules.get_by_id(rule_id)
         if rule is None:
             raise CommerceRuleNotFoundError("Commerce rule was not found")
+        if self._offers is not None and await self._offers.get_by_rule_id(rule_id) is not None:
+            raise CommerceRuleError("Delete the linked sponsor offer first")
         await self._rules.delete(rule)
 
     async def preview(self, request: CommerceRulePreviewRequest) -> CommerceRulePreviewResponse:

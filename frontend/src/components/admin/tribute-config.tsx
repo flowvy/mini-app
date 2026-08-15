@@ -15,6 +15,8 @@ import {
 	SettingsPanel,
 	SettingsStatusRow,
 } from "./settings-surface.tsx";
+import { SponsorOffersConfig } from "./sponsor-offers-config.tsx";
+import { TributePaymentDestinations } from "./tribute-payment-destinations.tsx";
 
 interface TributeConfigProps {
 	settings: AdminSettings;
@@ -84,7 +86,9 @@ export const TributeConfig: FC<TributeConfigProps> = ({ settings }) => {
 			</SettingsPanel>
 			{checkFailed && <InlineFeedback>{t("settings.tribute.testError")}</InlineFeedback>}
 
+			<TributePaymentDestinations settings={settings} />
 			<CommerceRulesConfig />
+			<SponsorOffersConfig settings={settings} />
 			<CommerceActivity executionEnabled={settings.tributeEntitlementExecutionEnabled} />
 
 			<SettingsPanel title={t("settings.tribute.deliverySection")}>
@@ -104,6 +108,17 @@ export const TributeConfig: FC<TributeConfigProps> = ({ settings }) => {
 					}
 					tone={settings.tributeEntitlementExecutionEnabled ? "positive" : "warning"}
 					description={t("settings.tribute.executorHint")}
+				/>
+				<SettingsDivider />
+				<SettingsStatusRow
+					label={t("settings.tribute.donationAutomationLabel")}
+					status={
+						settings.tributeIdentifiedDonationAutomationEnabled
+							? t("settings.tribute.donationAutomationEnabled")
+							: t("settings.tribute.donationAutomationReview")
+					}
+					tone={settings.tributeIdentifiedDonationAutomationEnabled ? "positive" : "warning"}
+					description={t("settings.tribute.donationAutomationHint")}
 				/>
 				<SettingsDivider />
 				<SettingsStatusRow

@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 import httpx
 from pydantic import ValidationError
 
-from flowvy.schemas.tribute import TributeProductsPage
+from flowvy.schemas.tribute import (
+    TributeCatalog,
+    TributeSubscriptionsResponse,
+)
 
-TRIBUTE_PRODUCTS_URL = "https://tribute.tg/api/v1/products"
+TRIBUTE_SUBSCRIPTIONS_URL = "https://tribute.tg/api/v1/subscriptions"
 
 
 class TributeError(Exception):
@@ -20,7 +25,7 @@ class TributeError(Exception):
 
 
 class TributeClient:
-    """Validate a server-side API key through the documented products endpoint."""
+    """Read subscriptions from Tribute's documented fixed-origin endpoint."""
 
     def __init__(
         self,
@@ -43,18 +48,36 @@ class TributeClient:
         if not self.credentials_configured:
             raise TributeError("Tribute API key is not configured")
 
-        body = await self._request()
+        body = await self._request(TRIBUTE_SUBSCRIPTIONS_URL)
         try:
-            TributeProductsPage.model_validate_json(body)
+            TributeSubscriptionsResponse.model_validate_json(body)
         except (ValidationError, ValueError) as exc:
-            raise TributeError("Tribute returned an invalid products response") from exc
+            raise TributeError("Tribute returned an invalid subscriptions response") from exc
 
-    async def _request(self) -> bytes:
+    async def get_catalog(self) -> TributeCatalog:
+        """Fetch subscriptions through the documented read-only endpoint."""
+        if not self.credentials_configured:
+            raise TributeError("Tribute API key is not configured")
+
+        subscriptions_body = await self._request(TRIBUTE_SUBSCRIPTIONS_URL)
+        try:
+            subscriptions = TributeSubscriptionsResponse.model_validate_json(subscriptions_body)
+        except (ValidationError, ValueError) as exc:
+            raise TributeError("Tribute returned an invalid subscriptions response") from exc
+
+        return TributeCatalog(subscriptions=subscriptions.result)
+
+    async def _request(
+        self,
+        url: str,
+        *,
+        params: Mapping[str, str | int | bool] | None = None,
+    ) -> bytes:
         try:
             async with self._http.stream(
                 "GET",
-                TRIBUTE_PRODUCTS_URL,
-                params={"page": 1, "size": 1},
+                url,
+                params=params,
                 headers={"Api-Key": self._api_key, "Accept": "application/json"},
                 follow_redirects=False,
             ) as response:

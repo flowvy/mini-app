@@ -30,6 +30,7 @@ from flowvy.api.routes.devices import router as devices_router
 from flowvy.api.routes.health import router as health_router
 from flowvy.api.routes.pulse import router as pulse_router
 from flowvy.api.routes.registration import router as registration_router
+from flowvy.api.routes.sponsor import router as sponsor_router
 from flowvy.api.routes.subscription import router as subscription_router
 from flowvy.api.routes.tribute_webhooks import router as tribute_webhooks_router
 from flowvy.api.routes.users import router as users_router
@@ -183,6 +184,7 @@ def create_app() -> FastAPI:
     app.include_router(users_router)
     app.include_router(registration_router)
     app.include_router(subscription_router)
+    app.include_router(sponsor_router)
     app.include_router(devices_router)
     app.include_router(pulse_router)
     app.include_router(admin_dashboard_router)

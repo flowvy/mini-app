@@ -5,6 +5,25 @@ const KB = 1024;
 const MB = KB * 1024;
 const GB = MB * 1024;
 const TB = GB * 1024;
+const LIFETIME_EXPIRY_START_MS = Date.UTC(2099, 0, 1);
+
+export type ExpiryValue = number | string;
+
+export interface ParsedExpiry {
+	date: Date;
+	isUnlimited: boolean;
+}
+
+/** Parse the Unix/ISO expiry contracts used by Flowvy through one lifetime-sentinel rule. */
+export function parseExpiry(expiry: ExpiryValue | null): ParsedExpiry | null {
+	if (expiry == null) return null;
+	const timestamp = typeof expiry === "number" ? expiry * 1000 : Date.parse(expiry);
+	if (!Number.isFinite(timestamp)) return null;
+	return {
+		date: new Date(timestamp),
+		isUnlimited: timestamp >= LIFETIME_EXPIRY_START_MS,
+	};
+}
 
 /** Format bytes to human-readable traffic string. */
 export function formatTraffic(bytes: number): string {
@@ -28,17 +47,16 @@ export function isUnlimitedTraffic(totalBytes: number): boolean {
 	return totalBytes === 0;
 }
 
-/** Whether expiry date is effectively unlimited (>10 years from now). */
-export function isUnlimitedExpiry(expireUnix: number): boolean {
-	const tenYears = 10 * 365 * 86400;
-	const nowUnix = Math.floor(Date.now() / 1000);
-	return expireUnix - nowUnix > tenYears;
+/** Whether expiry is Flowvy's documented lifetime sentinel. */
+export function isUnlimitedExpiry(expiry: ExpiryValue): boolean {
+	return parseExpiry(expiry)?.isUnlimited ?? false;
 }
 
 /** Days until expiration (negative = expired). */
-export function getDaysLeft(expireUnix: number): number {
-	const nowUnix = Math.floor(Date.now() / 1000);
-	return Math.floor((expireUnix - nowUnix) / 86400);
+export function getDaysLeft(expiry: ExpiryValue): number {
+	const parsed = parseExpiry(expiry);
+	if (!parsed) return 0;
+	return Math.floor((parsed.date.getTime() - Date.now()) / 86400000);
 }
 
 /** Traffic usage percent (0–100), clamped. */
@@ -71,11 +89,7 @@ export function formatExpiry(daysLeft: number): string {
 
 /** Format Unix timestamp to short date with year. */
 export function formatShortDate(unix: number): string {
-	return new Intl.DateTimeFormat(i18n.language, {
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-	}).format(new Date(unix * 1000));
+	return formatCalendarDate(new Date(unix * 1000));
 }
 
 /** Format Unix timestamp to compact month + day (no year). */
@@ -122,9 +136,11 @@ export function formatLastSeen(onlineAt: string | null): string {
 
 /** Format ISO expiry for admin users list. */
 export function formatAdminExpiry(expireAt: string): string {
-	const diff = new Date(expireAt).getTime() - Date.now();
+	const parsed = parseExpiry(expireAt);
+	if (!parsed) return formatMissing();
+	if (parsed.isUnlimited) return i18n.t("format.unlimitedSymbol");
+	const diff = parsed.date.getTime() - Date.now();
 	const days = Math.floor(diff / 86400000);
-	if (days > 3650) return i18n.t("format.unlimitedSymbol");
 	if (days < 0) return i18n.t("format.adminExpiry.expired", { n: Math.abs(days) });
 	if (days === 0) return i18n.t("format.adminExpiry.today");
 	if (days <= 30) return i18n.t("format.adminExpiry.daysLeft", { n: days });
@@ -133,7 +149,9 @@ export function formatAdminExpiry(expireAt: string): string {
 
 /** CSS var for admin expiry color (≤3d = warning, <0 = negative). */
 export function getAdminExpiryColor(expireAt: string): string | null {
-	const diff = new Date(expireAt).getTime() - Date.now();
+	const parsed = parseExpiry(expireAt);
+	if (!parsed || parsed.isUnlimited) return null;
+	const diff = parsed.date.getTime() - Date.now();
 	const days = Math.floor(diff / 86400000);
 	if (days < 0) return "var(--v2-text-negative)";
 	if (days <= 3) return "var(--v2-text-warning)";
@@ -143,26 +161,28 @@ export function getAdminExpiryColor(expireAt: string): string | null {
 /** Format ISO date string to "Mon DD, YYYY". */
 export function formatDateISO(iso: string | null): string {
 	if (!iso) return formatMissing();
+	return formatCalendarDate(new Date(iso));
+}
+
+/** Format an expiry consistently, including Flowvy's lifetime sentinel. */
+export function formatExpiryDate(expiry: ExpiryValue | null): string {
+	const parsed = parseExpiry(expiry);
+	if (!parsed) return formatMissing();
+	if (parsed.isUnlimited) return i18n.t("format.expiry.noExpiry");
+	return formatCalendarDate(parsed.date);
+}
+
+function formatCalendarDate(date: Date): string {
 	return new Intl.DateTimeFormat(i18n.language, {
 		month: "short",
 		day: "numeric",
 		year: "numeric",
-	}).format(new Date(iso));
-}
-
-/** Whether ISO expiry is effectively unlimited (year > 2090). */
-export function isUnlimitedExpiryISO(iso: string): boolean {
-	return new Date(iso).getFullYear() > 2090;
+	}).format(date);
 }
 
 /** Whether device limit is unlimited (null or 0 in Remnawave). */
 export function isUnlimitedDevices(limit: number | null | undefined): boolean {
 	return !limit || limit === 0;
-}
-
-/** Days until ISO expiry (negative = expired). */
-export function getDaysLeftISO(iso: string): number {
-	return Math.floor((new Date(iso).getTime() - Date.now()) / 86400000);
 }
 
 /** CSS variable for ISO expiry color. */

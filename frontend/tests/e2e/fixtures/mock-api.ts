@@ -6,7 +6,7 @@ export function entitlementOperation(
 ): EntitlementOperation {
 	return {
 		id: "20000000-0000-4000-8000-000000000001",
-		eventName: "new_digital_product",
+		eventName: "new_subscription",
 		operationKind: "grant",
 		status: "applied",
 		reasonCode: null,
@@ -25,6 +25,41 @@ export function entitlementOperation(
 	};
 }
 
+function sponsorOfferPaymentFields(
+	input: Record<string, unknown>,
+	rule: Record<string, unknown> | undefined,
+): Record<string, unknown> {
+	const isDonation = rule?.commerceType === "donation";
+	const expectedAmountMinor =
+		isDonation && typeof input.expectedAmountMinor === "number" ? input.expectedAmountMinor : null;
+	const expectedPaymentMode =
+		isDonation && ["one_time", "recurring"].includes(String(input.expectedPaymentMode))
+			? input.expectedPaymentMode
+			: null;
+	const expectedProviderPeriod =
+		expectedPaymentMode === "recurring" && typeof input.expectedProviderPeriod === "string"
+			? input.expectedProviderPeriod
+			: null;
+	const currency = typeof rule?.currency === "string" ? rule.currency : "RUB";
+	return {
+		checkoutUrl: isDonation && typeof input.checkoutUrl === "string" ? input.checkoutUrl : null,
+		expectedAmountMinor,
+		expectedPaymentMode,
+		expectedProviderPeriod,
+		priceOptions:
+			expectedAmountMinor === null
+				? []
+				: [
+						{
+							priceMajor: String(expectedAmountMinor / 100),
+							currency,
+							period: expectedProviderPeriod,
+						},
+					],
+		requiresNonAnonymous: isDonation,
+	};
+}
+
 export const mockData = {
 	settings: {
 		pulseProvider: "kuma",
@@ -34,6 +69,9 @@ export const mockData = {
 		beszelCredentialsConfigured: true,
 		tributeCredentialsConfigured: true,
 		tributeEntitlementExecutionEnabled: false,
+		tributeIdentifiedDonationAutomationEnabled: false,
+		tributeDonationUrl: null,
+		tributeSubscriptionUrls: {},
 		appName: "Flowvy",
 		logoUrl: null,
 		welcomeText: "Welcome to Flowvy",
@@ -161,6 +199,31 @@ export const mockData = {
 		},
 	],
 	commerceRules: [],
+	sponsorOffers: [],
+	sponsorState: {
+		status: "no_access",
+		accessLevel: "none",
+		primaryAction: "none",
+		paidExpiresAt: null,
+		baseExpiresAt: null,
+		currentOfferId: null,
+		managementUrl: null,
+		pendingCheckout: null,
+		offers: [],
+	},
+	commerceCatalog: {
+		subscriptions: [
+			{
+				externalItemId: "12",
+				name: "Supporter",
+				currency: "RUB",
+				periods: [
+					{ periodId: "34", period: "monthly", priceMajor: "500" },
+					{ periodId: "35", period: "yearly", priceMajor: "3500" },
+				],
+			},
+		],
+	},
 	registrationOptions: {
 		internalSquads: [{ uuid: "00000000-0000-4000-8000-000000000011", name: "Primary" }],
 		externalSquads: [{ uuid: "00000000-0000-4000-8000-000000000021", name: "Public" }],
@@ -196,6 +259,8 @@ export interface MockApi {
 	mock: (method: string, path: string | RegExp, reply: MockReply | MockReply[]) => void;
 	seedSettings: (patch: Record<string, unknown>) => void;
 	seedCommerceRules: (rules: Array<Record<string, unknown>>) => void;
+	seedSponsorOffers: (offers: Array<Record<string, unknown>>) => void;
+	seedSponsorState: (state: Record<string, unknown>) => void;
 }
 
 interface MockState {
@@ -204,6 +269,8 @@ interface MockState {
 	registration: Record<string, unknown>;
 	accessProfiles: Array<Record<string, unknown>>;
 	commerceRules: Array<Record<string, unknown>>;
+	sponsorOffers: Array<Record<string, unknown>>;
+	sponsorState: Record<string, unknown>;
 }
 
 function clone<T>(value: T): T {
@@ -289,8 +356,54 @@ async function handleApi(
 		await reply(route, { body: state.commerceRules });
 		return;
 	}
+	if (method === "GET" && path === "/api/debug/admin/commerce/catalog") {
+		await reply(route, { body: mockData.commerceCatalog });
+		return;
+	}
 	if (method === "GET" && path === "/api/debug/admin/commerce/operations") {
 		await reply(route, { body: { operations: [], hasMore: false } });
+		return;
+	}
+	if (method === "GET" && path === "/api/debug/admin/commerce/offers") {
+		await reply(route, { body: state.sponsorOffers });
+		return;
+	}
+	if (method === "POST" && path === "/api/debug/admin/commerce/offers") {
+		const input = request.postDataJSON() as Record<string, unknown>;
+		const rule = state.commerceRules.find((item) => item.id === input.commerceRuleId);
+		const created = {
+			...input,
+			id: `30000000-0000-4000-8000-${String(state.sponsorOffers.length + 1).padStart(12, "0")}`,
+			provider: "tribute",
+			commerceType: rule?.commerceType ?? "donation",
+			paymentMode: rule?.paymentMode ?? "one_time",
+			externalItemId: rule?.externalItemId ?? null,
+			...sponsorOfferPaymentFields(input, rule),
+			availability: input.isPublished ? "ready" : "draft",
+		};
+		state.sponsorOffers.push(created);
+		await reply(route, { status: 201, body: created });
+		return;
+	}
+	const sponsorOfferMatch = path.match(/^\/api\/debug\/admin\/commerce\/offers\/([^/]+)$/);
+	if (sponsorOfferMatch && method === "PUT") {
+		const input = request.postDataJSON() as Record<string, unknown>;
+		const index = state.sponsorOffers.findIndex((offer) => offer.id === sponsorOfferMatch[1]);
+		const ruleId = input.commerceRuleId ?? state.sponsorOffers[index]?.commerceRuleId;
+		const rule = state.commerceRules.find((item) => item.id === ruleId);
+		state.sponsorOffers[index] = {
+			...state.sponsorOffers[index],
+			...input,
+			...sponsorOfferPaymentFields(input, rule),
+			id: sponsorOfferMatch[1],
+			availability: input.isPublished ? "ready" : "draft",
+		};
+		await reply(route, { body: state.sponsorOffers[index] });
+		return;
+	}
+	if (sponsorOfferMatch && method === "DELETE") {
+		state.sponsorOffers = state.sponsorOffers.filter((offer) => offer.id !== sponsorOfferMatch[1]);
+		await reply(route, { status: 204 });
 		return;
 	}
 	if (method === "POST" && path === "/api/debug/admin/commerce/rules") {
@@ -320,7 +433,7 @@ async function handleApi(
 		const body = request.postDataJSON() as {
 			amountMinor: number;
 			rule: {
-				calculationType: "fixed" | "volume";
+				calculationType: "fixed" | "volume" | "provider_expiry";
 				fixedDurationDays: number | null;
 				amountBands: Array<{
 					fromAmountMinor: number;
@@ -332,6 +445,13 @@ async function handleApi(
 		if (body.rule.calculationType === "fixed") {
 			await reply(route, {
 				body: { matched: true, durationDays: body.rule.fixedDurationDays, matchedBand: null },
+			});
+			return;
+		}
+		if (body.rule.calculationType === "provider_expiry") {
+			await reply(route, {
+				status: 422,
+				body: { detail: "Provider expiry has no amount preview" },
 			});
 			return;
 		}
@@ -414,6 +534,35 @@ async function handleApi(
 		await reply(route, { body: mockData.subscription });
 		return;
 	}
+	if (
+		method === "GET" &&
+		(path === "/api/me/sponsor" || /^\/api\/debug\/sponsor\/\d+$/.test(path))
+	) {
+		await reply(route, { body: state.sponsorState });
+		return;
+	}
+	if (
+		method === "POST" &&
+		(path === "/api/me/sponsor/checkouts" || /^\/api\/debug\/sponsor\/\d+\/checkouts$/.test(path))
+	) {
+		const input = request.postDataJSON() as { offerId: string };
+		const offer = state.sponsorOffers.find((item) => item.id === input.offerId);
+		const checkout = {
+			id: "40000000-0000-4000-8000-000000000001",
+			offerId: input.offerId,
+			status: "pending",
+			checkoutUrl: offer?.checkoutUrl ?? "https://t.me/tribute/app?startapp=checkout_test",
+			expiresAt: "2026-08-14T12:30:00Z",
+		};
+		state.sponsorState = {
+			...state.sponsorState,
+			status: "checkout_pending",
+			primaryAction: "continue_checkout",
+			pendingCheckout: checkout,
+		};
+		await reply(route, { status: 201, body: checkout });
+		return;
+	}
 	if (method === "GET" && path === "/api/me/devices") {
 		await reply(route, { body: state.devices });
 		return;
@@ -468,6 +617,8 @@ export const test = base.extend<{ mockApi: MockApi }>({
 			registration: clone(mockData.registration),
 			accessProfiles: clone(mockData.accessProfiles),
 			commerceRules: clone(mockData.commerceRules),
+			sponsorOffers: clone(mockData.sponsorOffers),
+			sponsorState: clone(mockData.sponsorState),
 		};
 		const tracker: MockApi = {
 			unhandled: [],
@@ -487,6 +638,12 @@ export const test = base.extend<{ mockApi: MockApi }>({
 			},
 			seedCommerceRules(rules) {
 				state.commerceRules = clone(rules);
+			},
+			seedSponsorOffers(offers) {
+				state.sponsorOffers = clone(offers);
+			},
+			seedSponsorState(sponsorState) {
+				state.sponsorState = clone(sponsorState);
 			},
 		};
 

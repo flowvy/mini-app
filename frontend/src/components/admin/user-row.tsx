@@ -8,7 +8,7 @@ import {
 	getAdminExpiryColor,
 	getTrafficColor,
 	getTrafficPercent,
-	isUnlimitedExpiryISO,
+	isUnlimitedExpiry,
 } from "../../lib/format.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
 import { StatusBadge } from "../ui/status-badge.tsx";
@@ -24,7 +24,7 @@ export const UserRow: FC<UserRowProps> = ({ user, onClick }) => {
 	const limit = user.trafficLimitBytes;
 	const pct = getTrafficPercent(used, limit);
 	const expiryText = formatAdminExpiry(user.expireAt);
-	const unlimitedExpiry = isUnlimitedExpiryISO(user.expireAt);
+	const unlimitedExpiry = isUnlimitedExpiry(user.expireAt);
 	const expiryColor = getAdminExpiryColor(user.expireAt);
 
 	const parts: string[] = [];

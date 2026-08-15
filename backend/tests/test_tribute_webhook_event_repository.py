@@ -16,21 +16,29 @@ from flowvy.schemas.tribute_webhooks import TributeWebhookInboxInput
 from flowvy.services.webhook_retention import delete_expired_webhook_events
 
 
-def _event(delivery_key: str, timestamp: datetime.datetime) -> TributeWebhookInboxInput:
+def _event(
+    delivery_key: str,
+    timestamp: datetime.datetime,
+    *,
+    event_name: str = "new_donation",
+    telegram_user_id: int = 123,
+    payment_mode: str = "one_time",
+) -> TributeWebhookInboxInput:
     return TributeWebhookInboxInput(
         delivery_key=delivery_key,
-        event_name="new_donation",
+        event_name=event_name,
         event_family="donation",
         processing_status="observed",
         provider_created_at=timestamp,
         provider_sent_at=timestamp,
-        telegram_user_id=123,
-        transaction_id="tx-1",
-        purchase_id=None,
+        provider_expires_at=None,
+        is_anonymous=None,
+        telegram_user_id=telegram_user_id,
         external_item_id=None,
         amount_minor=50000,
         currency="RUB",
-        payment_mode="one_time",
+        payment_mode=payment_mode,
+        provider_period="monthly" if payment_mode == "recurring" else None,
     )
 
 
@@ -72,6 +80,42 @@ async def test_two_concurrent_deliveries_record_exactly_once(
     async with factory() as session:
         count = await session.scalar(select(func.count()).select_from(TributeWebhookEvent))
     assert count == 1
+
+
+@pytest.mark.asyncio
+async def test_recurring_donation_queries_ignore_one_time_and_other_users(
+    session: AsyncSession,
+) -> None:
+    repo = TributeWebhookEventRepository(session)
+    now = datetime.datetime.now(datetime.UTC)
+    payment = await repo.record_once(
+        _event("e" * 64, now, payment_mode="recurring"),
+    )
+    cancellation = await repo.record_once(
+        _event(
+            "f" * 64,
+            now + datetime.timedelta(seconds=1),
+            event_name="cancelled_donation",
+            payment_mode="recurring",
+        ),
+    )
+    await repo.record_once(
+        _event("1" * 64, now + datetime.timedelta(seconds=2)),
+    )
+    await repo.record_once(
+        _event(
+            "2" * 64,
+            now + datetime.timedelta(seconds=3),
+            telegram_user_id=456,
+            payment_mode="recurring",
+        ),
+    )
+
+    latest = await repo.latest_recurring_donation_for_user(123)
+    latest_payment = await repo.latest_recurring_donation_payment_for_user(123)
+
+    assert latest is not None and latest.id == cancellation.id
+    assert latest_payment is not None and latest_payment.id == payment.id
 
 
 @pytest.mark.asyncio

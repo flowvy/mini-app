@@ -5,7 +5,11 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from flowvy.services.tribute import TRIBUTE_PRODUCTS_URL, TributeClient, TributeError
+from flowvy.services.tribute import (
+    TRIBUTE_SUBSCRIPTIONS_URL,
+    TributeClient,
+    TributeError,
+)
 
 
 def _client(
@@ -22,13 +26,13 @@ def _client(
 
 
 @pytest.mark.asyncio
-async def test_api_check_uses_fixed_read_only_products_request() -> None:
+async def test_api_check_uses_fixed_read_only_subscriptions_request() -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         assert request.method == "GET"
-        assert str(request.url.copy_with(query=None)) == TRIBUTE_PRODUCTS_URL
-        assert dict(request.url.params) == {"page": "1", "size": "1"}
+        assert str(request.url.copy_with(query=None)) == TRIBUTE_SUBSCRIPTIONS_URL
+        assert not request.url.params
         assert request.headers["Api-Key"] == "test_tribute_key"
-        return httpx.Response(200, json={"rows": [], "meta": {"total": 0}})
+        return httpx.Response(200, json={"result": []})
 
     client, http = _client(httpx.MockTransport(handler))
     async with http:
@@ -66,14 +70,14 @@ async def test_api_check_maps_non_success_without_returning_body(status_code: in
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("body", [b"not-json", b"[]", b'{"rows":"wrong"}'])
+@pytest.mark.parametrize("body", [b"not-json", b"[]", b'{"result":"wrong"}'])
 async def test_api_check_rejects_malformed_or_drifted_json(body: bytes) -> None:
     async def handler(_request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, content=body)
 
     client, http = _client(httpx.MockTransport(handler))
     async with http:
-        with pytest.raises(TributeError, match="invalid products response"):
+        with pytest.raises(TributeError, match="invalid subscriptions response"):
             await client.test_connection()
 
 
@@ -109,3 +113,56 @@ async def test_api_check_maps_transport_failure_safely() -> None:
         with pytest.raises(TributeError, match="connection failed") as caught:
             await client.test_connection()
     assert "private network detail" not in caught.value.detail
+
+
+@pytest.mark.asyncio
+async def test_catalog_uses_only_documented_read_endpoints_and_validates_result() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        assert request.method == "GET"
+        assert request.headers["Api-Key"] == "test_tribute_key"
+        assert str(request.url.copy_with(query=None)) == TRIBUTE_SUBSCRIPTIONS_URL
+        assert not request.url.params
+        return httpx.Response(
+            200,
+            json={
+                "result": [
+                    {
+                        "subscriptionId": 12,
+                        "name": "Supporter",
+                        "currency": "rub",
+                        "periods": [
+                            {"periodId": 34, "period": "monthly", "price": 500},
+                            {"periodId": 35, "period": "yearly", "price": 3500},
+                        ],
+                    },
+                ],
+            },
+        )
+
+    client, http = _client(httpx.MockTransport(handler), max_response_bytes=4096)
+    async with http:
+        catalog = await client.get_catalog()
+
+    assert len(requests) == 1
+    assert catalog.subscriptions[0].subscription_id == 12
+    assert catalog.subscriptions[0].currency == "RUB"
+    assert catalog.subscriptions[0].periods[1].price == 3500
+
+
+@pytest.mark.asyncio
+async def test_catalog_rejects_subscription_schema_drift_without_upstream_body() -> None:
+    async def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"result": [{"subscriptionId": "private malformed payload"}]},
+        )
+
+    client, http = _client(httpx.MockTransport(handler))
+    async with http:
+        with pytest.raises(TributeError, match="invalid subscriptions response") as caught:
+            await client.get_catalog()
+
+    assert "private malformed payload" not in caught.value.detail

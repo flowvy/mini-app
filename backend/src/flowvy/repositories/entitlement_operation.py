@@ -6,7 +6,7 @@ import datetime
 import uuid
 from typing import Any
 
-from sqlalchemy import and_, exists, or_, select, text
+from sqlalchemy import exists, or_, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import aliased
 
@@ -61,6 +61,14 @@ class EntitlementOperationRepository(BaseRepository[EntitlementOperation]):
         now: datetime.datetime,
     ) -> EntitlementOperation | None:
         """Lock one due operation while excluding a currently active subject."""
+        queued_paid = aliased(EntitlementOperation)
+        paid_work_waiting = exists(
+            select(queued_paid.id).where(
+                queued_paid.user_id == EntitlementOperation.user_id,
+                queued_paid.operation_kind.in_(("grant", "refund")),
+                queued_paid.status.in_(("pending", "retry", "processing")),
+            ),
+        )
         active_subject = select(EntitlementOperation.user_id).where(
             EntitlementOperation.status == "processing",
             EntitlementOperation.user_id.is_not(None),
@@ -76,6 +84,10 @@ class EntitlementOperationRepository(BaseRepository[EntitlementOperation]):
                 or_(
                     EntitlementOperation.user_id.is_(None),
                     EntitlementOperation.user_id.not_in(active_subject),
+                ),
+                or_(
+                    EntitlementOperation.operation_kind != "restore",
+                    ~paid_work_waiting,
                 ),
             )
             .order_by(
@@ -131,11 +143,13 @@ class EntitlementOperationRepository(BaseRepository[EntitlementOperation]):
         await self._session.flush()
         return len(rows)
 
-    async def later_applied_grants(
+    async def uncompensated_applied_grants(
         self,
-        original: EntitlementOperation,
+        user_id: int,
+        *,
+        exclude_id: uuid.UUID | None = None,
     ) -> list[EntitlementOperation]:
-        """Return uncompensated later grants in stable order for refund replay."""
+        """Return paid sources which have not been compensated by an applied refund."""
         refund = aliased(EntitlementOperation)
         already_refunded = exists(
             select(refund.id).where(
@@ -144,27 +158,71 @@ class EntitlementOperationRepository(BaseRepository[EntitlementOperation]):
                 refund.status == "applied",
             ),
         )
+        stmt = select(EntitlementOperation).where(
+            EntitlementOperation.user_id == user_id,
+            EntitlementOperation.operation_kind == "grant",
+            EntitlementOperation.status == "applied",
+            ~already_refunded,
+        )
+        if exclude_id is not None:
+            stmt = stmt.where(EntitlementOperation.id != exclude_id)
+        stmt = stmt.order_by(
+            EntitlementOperation.provider_created_at.asc(),
+            EntitlementOperation.created_at.asc(),
+        )
+        return list((await self._session.scalars(stmt)).all())
+
+    async def latest_applied_provider_operation(
+        self,
+        user_id: int,
+    ) -> EntitlementOperation | None:
+        """Return the last successfully reconciled provider mutation for one user."""
         stmt = (
             select(EntitlementOperation)
             .where(
-                EntitlementOperation.user_id == original.user_id,
-                EntitlementOperation.operation_kind == "grant",
+                EntitlementOperation.user_id == user_id,
+                EntitlementOperation.operation_kind.in_(("grant", "refund", "restore")),
                 EntitlementOperation.status == "applied",
-                or_(
-                    EntitlementOperation.provider_created_at > original.provider_created_at,
-                    and_(
-                        EntitlementOperation.provider_created_at == original.provider_created_at,
-                        EntitlementOperation.created_at > original.created_at,
-                    ),
-                ),
-                ~already_refunded,
+                EntitlementOperation.target_expiry.is_not(None),
             )
+            .order_by(
+                EntitlementOperation.applied_at.desc(),
+                EntitlementOperation.created_at.desc(),
+            )
+            .limit(1)
+        )
+        return (await self._session.execute(stmt)).scalar_one_or_none()
+
+    async def list_for_user(self, user_id: int) -> list[EntitlementOperation]:
+        """Return the complete bounded-by-user payment ledger in chronological order."""
+        stmt = (
+            select(EntitlementOperation)
+            .where(EntitlementOperation.user_id == user_id)
             .order_by(
                 EntitlementOperation.provider_created_at.asc(),
                 EntitlementOperation.created_at.asc(),
             )
         )
         return list((await self._session.scalars(stmt)).all())
+
+    async def cancel_scheduled_restores(self, user_id: int, reason: str) -> int:
+        """Cancel future restore work superseded by a newer effective-access decision."""
+        stmt = (
+            select(EntitlementOperation)
+            .where(
+                EntitlementOperation.user_id == user_id,
+                EntitlementOperation.operation_kind == "restore",
+                EntitlementOperation.status.in_(("pending", "retry")),
+            )
+            .with_for_update()
+        )
+        rows = list((await self._session.scalars(stmt)).all())
+        for row in rows:
+            row.status = "cancelled"
+            row.reason_code = reason
+            row.next_attempt_at = None
+            row.locked_at = None
+        return len(rows)
 
     async def get_locked(self, operation_id: uuid.UUID) -> EntitlementOperation | None:
         return (

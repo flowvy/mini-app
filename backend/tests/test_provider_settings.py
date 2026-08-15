@@ -37,6 +37,8 @@ def _row(**overrides: object) -> SimpleNamespace:
         "welcome_media_file_id": None,
         "welcome_media_file_name": None,
         "welcome_button_text": None,
+        "tribute_donation_url": None,
+        "tribute_subscription_urls": {},
         "updated_at": datetime(2026, 8, 2, tzinfo=UTC),
     }
     values.update(overrides)
@@ -95,6 +97,67 @@ def test_patch_rejects_unsafe_provider_url_syntax(field: str, value: str) -> Non
         return
     with pytest.raises(ValidationError):
         ProviderSettingsPatch(**{field: value})
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "not a URL",
+        "http://pay.example.test/donation",
+        "https://user:secret@pay.example.test/donation",
+        "https://pay.example.test/donation#confirm",
+    ],
+)
+def test_patch_rejects_unsafe_payment_destinations(value: str) -> None:
+    with pytest.raises(ValidationError):
+        ProviderSettingsPatch(tribute_donation_url=value)
+
+
+def test_patch_normalizes_payment_destinations_without_assuming_provider_host() -> None:
+    patch = ProviderSettingsPatch(
+        tribute_donation_url="  https://pay.example.test/donation?campaign=flowvy  ",
+        tribute_subscription_urls={
+            "12": "https://t.me/tribute/app?startapp=subscription_12",
+        },
+    )
+
+    assert patch.tribute_donation_url == "https://pay.example.test/donation?campaign=flowvy"
+    assert patch.tribute_subscription_urls == {
+        "12": "https://t.me/tribute/app?startapp=subscription_12"
+    }
+
+
+@pytest.mark.parametrize("subscription_id", ["0", "-1", "abc", " 12 "])
+def test_patch_rejects_invalid_subscription_mapping_keys(subscription_id: str) -> None:
+    with pytest.raises(ValidationError):
+        ProviderSettingsPatch(
+            tribute_subscription_urls={subscription_id: "https://pay.example.test/subscription"}
+        )
+
+
+@pytest.mark.asyncio
+async def test_payment_destinations_are_exposed_and_persisted_without_provider_calls() -> None:
+    row = _row(
+        tribute_donation_url="https://pay.example.test/donation",
+        tribute_subscription_urls={"12": "https://pay.example.test/subscription/12"},
+    )
+    service, _kuma, _beszel, redis = _service(row)
+
+    payload = (await service.get()).model_dump(by_alias=True)
+    await service.update(
+        ProviderSettingsPatch(
+            tribute_donation_url=None,
+            tribute_subscription_urls={},
+        )
+    )
+
+    assert payload["tributeDonationUrl"] == "https://pay.example.test/donation"
+    assert payload["tributeSubscriptionUrls"] == {"12": "https://pay.example.test/subscription/12"}
+    service._repo.update_partial.assert_awaited_once_with(
+        {"tribute_donation_url": None, "tribute_subscription_urls": {}}
+    )
+    service._tribute.test_connection.assert_not_awaited()
+    redis.delete.assert_not_awaited()
 
 
 @pytest.mark.asyncio

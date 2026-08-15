@@ -83,9 +83,11 @@ class Settings(BaseSettings):
     )
     tribute_webhook_retention_days: int = Field(default=90, ge=1, le=365)
     tribute_entitlement_execution_enabled: bool = False
+    tribute_identified_donation_automation_enabled: bool = False
     tribute_entitlement_worker_interval_seconds: int = Field(default=10, ge=1, le=300)
     tribute_entitlement_lease_seconds: int = Field(default=120, ge=30, le=3600)
     tribute_entitlement_max_attempts: int = Field(default=5, ge=1, le=20)
+    sponsor_checkout_pending_minutes: int = Field(default=30, ge=5, le=180)
     debug: bool = False
     admin_telegram_ids: Annotated[list[int], NoDecode] = []
 

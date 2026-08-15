@@ -9,10 +9,13 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from flowvy.api.routes.admin.deps import CurrentAdmin
 from flowvy.schemas.commerce import (
+    CommerceCatalogResponse,
     CommerceRuleInput,
     CommerceRulePreviewRequest,
     CommerceRulePreviewResponse,
     CommerceRuleResponse,
+    SponsorOfferInput,
+    SponsorOfferResponse,
 )
 from flowvy.schemas.tribute_webhooks import (
     EntitlementOperationListResponse,
@@ -24,10 +27,19 @@ from flowvy.services.commerce import (
     CommerceRuleNotFoundError,
     CommerceRuleService,
 )
+from flowvy.services.commerce_catalog import (
+    CommerceCatalogService,
+    CommerceCatalogUnavailableError,
+)
 from flowvy.services.entitlements import (
     EntitlementJournalService,
     EntitlementOperationConflictError,
     EntitlementOperationNotFoundError,
+)
+from flowvy.services.sponsor import (
+    SponsorOfferError,
+    SponsorOfferNotFoundError,
+    SponsorOfferService,
 )
 
 router = APIRouter(
@@ -35,6 +47,80 @@ router = APIRouter(
     tags=["admin-commerce"],
     route_class=DishkaRoute,
 )
+
+
+def _sponsor_offer_error(exc: SponsorOfferError) -> HTTPException:
+    code = (
+        status.HTTP_404_NOT_FOUND
+        if isinstance(exc, SponsorOfferNotFoundError)
+        else status.HTTP_422_UNPROCESSABLE_CONTENT
+    )
+    return HTTPException(code, str(exc))
+
+
+@router.get("/offers", response_model=list[SponsorOfferResponse])
+async def list_sponsor_offers(
+    _admin: CurrentAdmin,
+    service: FromDishka[SponsorOfferService],
+) -> list[SponsorOfferResponse]:
+    return await service.list_admin()
+
+
+@router.post(
+    "/offers",
+    response_model=SponsorOfferResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_sponsor_offer(
+    payload: SponsorOfferInput,
+    admin: CurrentAdmin,
+    service: FromDishka[SponsorOfferService],
+) -> SponsorOfferResponse:
+    try:
+        return await service.create(payload, admin.user.id)
+    except SponsorOfferError as exc:
+        raise _sponsor_offer_error(exc) from exc
+
+
+@router.put("/offers/{offer_id}", response_model=SponsorOfferResponse)
+async def update_sponsor_offer(
+    offer_id: uuid.UUID,
+    payload: SponsorOfferInput,
+    _admin: CurrentAdmin,
+    service: FromDishka[SponsorOfferService],
+) -> SponsorOfferResponse:
+    try:
+        return await service.update(offer_id, payload)
+    except SponsorOfferError as exc:
+        raise _sponsor_offer_error(exc) from exc
+
+
+@router.delete("/offers/{offer_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_sponsor_offer(
+    offer_id: uuid.UUID,
+    _admin: CurrentAdmin,
+    service: FromDishka[SponsorOfferService],
+) -> None:
+    try:
+        await service.delete(offer_id)
+    except SponsorOfferError as exc:
+        raise _sponsor_offer_error(exc) from exc
+
+
+@router.get("/catalog", response_model=CommerceCatalogResponse)
+async def get_commerce_catalog(
+    _admin: CurrentAdmin,
+    service: FromDishka[CommerceCatalogService],
+    _provider: str = Query(default="tribute", pattern="^tribute$", alias="provider"),
+) -> CommerceCatalogResponse:
+    """Return an allow-listed read-only provider catalog to an administrator."""
+    try:
+        return await service.get_tribute()
+    except CommerceCatalogUnavailableError as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            "Tribute catalog is unavailable",
+        ) from exc
 
 
 @router.get("/operations", response_model=EntitlementOperationListResponse)

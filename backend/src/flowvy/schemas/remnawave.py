@@ -60,7 +60,10 @@ class RemnawaveUpdateUserRequest(BaseModel):
         identity: int | str,
     ) -> dict[str, object]:
         """Serialize one absolute update with the detected version identity."""
-        payload = self.model_dump(by_alias=True, exclude_none=True, mode="json")
+        # The official contract makes several access fields nullable. Preserve an
+        # explicitly supplied ``None`` so a full-profile restore can clear a paid
+        # override, while still omitting fields callers never set.
+        payload = self.model_dump(by_alias=True, exclude_unset=True, mode="json")
         payload[identity_field] = identity
         return payload
 

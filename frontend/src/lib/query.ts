@@ -29,6 +29,9 @@ export const queryKeys = {
 	accessProfiles: ["admin", "registration", "access-profiles"] as const,
 	registrationOptions: ["admin", "registration", "options"] as const,
 	commerceRules: (provider: string) => ["admin", "commerce", "rules", provider] as const,
+	commerceCatalog: (provider: string) => ["admin", "commerce", "catalog", provider] as const,
 	entitlementOperations: ["admin", "commerce", "operations"] as const,
+	sponsorOffers: ["admin", "commerce", "offers"] as const,
+	sponsorState: ["commerce", "sponsor", "me"] as const,
 	myInvite: ["registration", "my-invite"] as const,
 };

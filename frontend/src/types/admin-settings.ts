@@ -8,6 +8,9 @@ export interface AdminSettings {
 	beszelCredentialsConfigured: boolean;
 	tributeCredentialsConfigured: boolean;
 	tributeEntitlementExecutionEnabled: boolean;
+	tributeIdentifiedDonationAutomationEnabled: boolean;
+	tributeDonationUrl: string | null;
+	tributeSubscriptionUrls: Record<string, string>;
 	appName: string | null;
 	logoUrl: string | null;
 	welcomeText: string | null;
@@ -26,6 +29,8 @@ export interface AdminSettingsPatch {
 	kumaUrl?: string | null;
 	kumaSlug?: string | null;
 	beszelUrl?: string | null;
+	tributeDonationUrl?: string | null;
+	tributeSubscriptionUrls?: Record<string, string>;
 	appName?: string | null;
 	logoUrl?: string | null;
 	welcomeText?: string | null;

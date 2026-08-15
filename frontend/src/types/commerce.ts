@@ -1,9 +1,19 @@
 export type CommerceProvider = "tribute";
-export type CommerceType = "donation" | "subscription" | "digital_product";
+export type CommerceType = "donation" | "subscription";
 export type PaymentMode = "any" | "one_time" | "recurring";
-export type CalculationType = "fixed" | "volume";
+export type SponsorDonationPaymentMode = Exclude<PaymentMode, "any">;
+export type CalculationType = "fixed" | "volume" | "provider_expiry";
 export type GrantMode = "extend" | "replace";
-export type EntitlementOperationKind = "grant" | "refund" | "review";
+export type TributeSubscriptionPeriod =
+	| "trial"
+	| "onetime"
+	| "weekly"
+	| "monthly"
+	| "quarterly"
+	| "halfyearly"
+	| "yearly";
+export type TributeDonationPeriod = Exclude<TributeSubscriptionPeriod, "trial" | "onetime">;
+export type EntitlementOperationKind = "grant" | "refund" | "restore" | "review";
 export type EntitlementOperatorAction = "retry" | "resolve";
 export type EntitlementOperationStatus =
 	| "pending"
@@ -46,6 +56,23 @@ export interface CommerceRulePreview {
 	matchedBand: AmountBand | null;
 }
 
+export interface CommerceCatalogSubscriptionPeriod {
+	periodId: string;
+	period: TributeSubscriptionPeriod;
+	priceMajor: string;
+}
+
+export interface CommerceCatalogSubscription {
+	externalItemId: string;
+	name: string;
+	currency: string;
+	periods: CommerceCatalogSubscriptionPeriod[];
+}
+
+export interface CommerceCatalog {
+	subscriptions: CommerceCatalogSubscription[];
+}
+
 export interface EntitlementOperation {
 	id: string;
 	eventName: string;
@@ -78,6 +105,89 @@ export interface EntitlementOperatorActionInput {
 	requestId: string;
 	action: EntitlementOperatorAction;
 	note: string | null;
+}
+
+export type SponsorOfferAvailability =
+	| "draft"
+	| "ready"
+	| "rule_disabled"
+	| "profile_unavailable"
+	| "delivery_disabled"
+	| "configuration_changed";
+
+export interface SponsorOfferPriceOption {
+	priceMajor: string;
+	currency: string;
+	period: TributeSubscriptionPeriod | null;
+}
+
+export interface SponsorOfferInput {
+	title: string;
+	description: string;
+	commerceRuleId: string;
+	checkoutUrl: string | null;
+	expectedAmountMinor: number | null;
+	expectedPaymentMode: SponsorDonationPaymentMode | null;
+	expectedProviderPeriod: TributeDonationPeriod | null;
+	isPublished: boolean;
+	sortOrder: number;
+}
+
+export interface SponsorOffer extends SponsorOfferInput {
+	id: string;
+	provider: CommerceProvider;
+	commerceType: CommerceType;
+	paymentMode: PaymentMode;
+	externalItemId: string | null;
+	checkoutUrl: string | null;
+	priceOptions: SponsorOfferPriceOption[];
+	requiresNonAnonymous: boolean;
+	availability: SponsorOfferAvailability;
+}
+
+export type SponsorStateStatus =
+	| "no_access"
+	| "base_access"
+	| "checkout_pending"
+	| "provisioning"
+	| "attention"
+	| "one_time_active"
+	| "one_time_expired"
+	| "recurring_trial"
+	| "recurring_active"
+	| "recurring_donation_active"
+	| "recurring_cancelled_active"
+	| "recurring_expired"
+	| "refunded";
+
+export type SponsorPrimaryAction =
+	| "choose_offer"
+	| "continue_checkout"
+	| "refresh"
+	| "renew"
+	| "manage_subscription"
+	| "manage_auto_donation"
+	| "resume_recurring"
+	| "none";
+
+export interface SponsorCheckout {
+	id: string;
+	offerId: string | null;
+	status: "pending" | "confirmed" | "expired";
+	checkoutUrl: string;
+	expiresAt: string;
+}
+
+export interface SponsorState {
+	status: SponsorStateStatus;
+	accessLevel: "none" | "base" | "paid";
+	primaryAction: SponsorPrimaryAction;
+	paidExpiresAt: string | null;
+	baseExpiresAt: string | null;
+	currentOfferId: string | null;
+	managementUrl: string | null;
+	pendingCheckout: SponsorCheckout | null;
+	offers: SponsorOffer[];
 }
 
 export function commerceRuleInput(rule: CommerceRule): CommerceRuleInput {

@@ -174,6 +174,24 @@ async def test_update_user_access_uses_official_version_identity_and_absolute_ex
     assert other_identity not in body
 
 
+def test_update_user_payload_preserves_explicit_nullable_clears() -> None:
+    request = RemnawaveUpdateUserRequest(
+        expire_at="2026-09-15T12:00:00Z",
+        description=None,
+        tag=None,
+        hwid_device_limit=None,
+        external_squad_uuid=None,
+    )
+
+    body = request.to_provider_payload(identity_field="id", identity=42)
+
+    assert body["description"] is None
+    assert body["tag"] is None
+    assert body["hwidDeviceLimit"] is None
+    assert body["externalSquadUuid"] is None
+    assert "status" not in body
+
+
 @pytest.mark.asyncio
 async def test_get_user_by_telegram_id_found() -> None:
     """Should parse user data from Remnawave response."""

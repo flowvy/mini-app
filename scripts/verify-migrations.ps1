@@ -35,6 +35,100 @@ try {
         uv run --frozen alembic upgrade head
         if ($LASTEXITCODE -ne 0) { throw "Alembic zero-to-head upgrade failed." }
 
+        $sponsorInsertProofSql = @'
+BEGIN;
+
+INSERT INTO users (id, username, full_name, role, is_active)
+VALUES (300001, 'migration-fixture', 'Migration Fixture', 'USER', true);
+
+WITH profile AS (
+    INSERT INTO access_profiles (name, validity_mode, validity_days)
+    VALUES ('Migration sponsor profile', 'duration', 30)
+    RETURNING id
+), rule AS (
+    INSERT INTO commerce_rules (
+        provider,
+        name,
+        commerce_type,
+        payment_mode,
+        external_item_id,
+        currency,
+        calculation_type,
+        calculator,
+        access_profile_id,
+        grant_mode
+    )
+    SELECT
+        'tribute',
+        'Migration sponsor rule',
+        'donation',
+        'one_time',
+        NULL,
+        'RUB',
+        'fixed',
+        '{"duration_days": 30}'::jsonb,
+        profile.id,
+        'extend'
+    FROM profile
+    RETURNING id
+), offer AS (
+    INSERT INTO sponsor_offers (
+        provider,
+        commerce_rule_id,
+        title,
+        description,
+        checkout_url,
+        expected_amount_minor,
+        expected_payment_mode,
+        expected_provider_period,
+        is_published,
+        sort_order
+    )
+    SELECT
+        'tribute',
+        rule.id,
+        'Migration sponsor offer',
+        '',
+        'https://t.me/tribute/app?startapp=migration-proof',
+        10000,
+        'one_time',
+        NULL,
+        false,
+        100
+    FROM rule
+    RETURNING id
+)
+INSERT INTO sponsor_checkouts (
+    user_id,
+    offer_id,
+    provider,
+    commerce_type,
+    payment_mode,
+    external_item_id,
+    status,
+    offer_snapshot,
+    expires_at
+)
+SELECT
+    300001,
+    offer.id,
+    'tribute',
+    'donation',
+    'one_time',
+    NULL,
+    'pending',
+    '{}'::jsonb,
+    now() + interval '30 minutes'
+FROM offer;
+
+ROLLBACK;
+'@
+        docker exec $containerId psql -U flowvy -d $databaseName -v ON_ERROR_STOP=1 `
+            -c $sponsorInsertProofSql
+        if ($LASTEXITCODE -ne 0) {
+            throw "Migrated sponsor tables could not generate UUID primary keys."
+        }
+
         uv run --frozen alembic downgrade base
         if ($LASTEXITCODE -ne 0) { throw "Alembic downgrade-to-base failed on the disposable database." }
 
@@ -194,4 +288,4 @@ finally {
     }
 }
 
-Write-Host "Alembic passed one-head, previous-head data upgrades, Kuma/Beszel setting preservation, webhook hardening, Remnawave identity preservation, downgrade/re-upgrade, and drift checks."
+Write-Host "Alembic passed one-head, previous-head data upgrades, sponsor UUID inserts, Kuma/Beszel setting preservation, webhook hardening, Remnawave identity preservation, downgrade/re-upgrade, and drift checks."

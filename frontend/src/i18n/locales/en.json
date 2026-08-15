@@ -77,6 +77,94 @@
 	},
 	"home": {
 		"noSubscription": "No active subscription",
+		"sponsor": {
+			"loadingLabel": "Loading sponsor access",
+			"unavailableTitle": "Sponsor status unavailable",
+			"unavailableDescription": "Your existing access is unchanged. Retry before starting or managing a payment.",
+			"sponsorAccess": "Sponsor access",
+			"sponsorAccessUntil": "Sponsor access until",
+			"baseAccess": "Basic access",
+			"baseAccessUntil": "Basic access until",
+			"checkStatus": "Check payment status",
+			"checkoutNotice": "Payment is completed in Tribute. Return to {{appName}} afterward; access changes only after {{appName}} receives and applies Tribute's confirmation.",
+			"nonAnonymousWarning": "Use the same Telegram account and keep your name visible in Tribute. Anonymous donations need manual review.",
+			"donationInstruction": {
+				"oneTime": "In Tribute: {{amount}} · One-time donation · same Telegram account · name visible. Other settings need manual review.",
+				"recurring": "In Tribute: {{amount}} · Auto-donation every {{period}} · same Telegram account · name visible. Other settings need manual review."
+			},
+			"recurringDonationCancellationTiming": "If you turn off auto-donation, {{appName}} will reflect the change when the paid period ends.",
+			"subscriptionStatusTiming": "If you cancel in Tribute, {{appName}} will update this card when the paid period ends and Tribute sends the change.",
+			"otherSubscriptionsTitle": "Other subscription options",
+			"otherSubscriptionsWarning": "You can choose another subscription after your current paid period ends on {{date}}.",
+			"checkoutError": "Could not start this payment. No payment was created; retry from {{appName}}.",
+			"action": {
+				"choose": "Choose sponsor access",
+				"continue": "Continue in Tribute",
+				"refresh": "Refresh status",
+				"renew": "Extend access",
+				"manage": "Manage in Tribute",
+				"manageAutoDonation": "Manage auto-donation in Tribute",
+				"resume": "Resume sponsor access"
+			},
+			"type": {
+				"donation": "Donation",
+				"subscription": "Subscription"
+			},
+			"state": {
+				"noAccess": {
+					"title": "Get sponsor access",
+					"description": "Choose a published option to support the service and receive the configured access."
+				},
+				"baseAccess": {
+					"title": "Upgrade your access",
+					"description": "Your basic access stays active. Sponsor access adds the benefits configured by the administrator."
+				},
+				"checkoutPending": {
+					"title": "Payment not confirmed yet",
+					"description": "Finish the payment in Tribute, or check again after returning. Do not start a second payment while this one is pending."
+				},
+				"provisioning": {
+					"title": "Payment received",
+					"description": "{{appName}} is applying sponsor access. You do not need to pay again."
+				},
+				"attention": {
+					"title": "Payment needs review",
+					"description": "{{appName}} received a payment it could not safely automate. Do not pay again; an administrator must review it."
+				},
+				"oneTimeActive": {
+					"title": "Sponsor access is active",
+					"description": "This access came from a one-time payment and will not renew automatically."
+				},
+				"oneTimeExpired": {
+					"title": "Sponsor access expired",
+					"description": "Choose a new one-time payment or a recurring option to restore sponsor access."
+				},
+				"recurringTrial": {
+					"title": "Sponsor trial is active",
+					"description": "Your trial access is available until the date below. Billing and cancellation are managed in Tribute."
+				},
+				"recurringActive": {
+					"title": "Sponsor access is active",
+					"description": "Your paid access is available until the date below. Billing and cancellation are managed in Tribute."
+				},
+				"recurringDonationActive": {
+					"title": "Sponsor access is active",
+					"description": "Your paid access is available until the date below."
+				},
+				"recurringCancelled": {
+					"title": "Auto-renewal is off",
+					"description": "Your paid access remains active until the shown date. Choose an offer to resume recurring support."
+				},
+				"recurringExpired": {
+					"title": "Recurring access ended",
+					"description": "Choose an available offer to start sponsor access again."
+				},
+				"refunded": {
+					"title": "Payment was refunded",
+					"description": "Sponsor access from that payment is no longer active. Choose another offer only if you want to pay again."
+				}
+			}
+		},
 		"invite": {
 			"title": "Invite friends",
 			"loadingLabel": "Loading invite",
@@ -109,7 +197,6 @@
 			"createdHint": "When your account was created",
 			"expires": "Expires",
 			"expiresHint": "When this subscription expires",
-			"expiresUnlimited": "Unlimited",
 			"email": "Email",
 			"emailHint": "Account email address",
 			"telegramId": "Telegram ID",
@@ -328,7 +415,7 @@
 		},
 		"tribute": {
 			"title": "Tribute",
-			"configureDesc": "Subscriptions, digital products, and donations",
+			"configureDesc": "Subscriptions and donations",
 			"keyAdded": "Key added",
 			"setupRequired": "Setup",
 			"connectionSection": "Connection",
@@ -338,21 +425,51 @@
 			"apiKeyHint": "Generated in Tribute Creator Dashboard → Settings → API Keys.",
 			"credentialsNotice": "Set TRIBUTE_API_KEY in the server environment and restart Flowvy. The key is never returned to this app.",
 			"apiAccessLabel": "API access",
-			"apiAccessHint": "Checks the first products page using a read-only request. It never creates a payment.",
+			"apiAccessHint": "Checks Tribute subscriptions using a read-only request. It never creates a payment.",
 			"keyRequired": "Key required",
 			"notTested": "Not tested",
 			"connected": "Connected",
 			"testFailed": "Check failed",
 			"test": "Check API",
 			"testError": "Tribute API check failed. Verify the server key and try again.",
+			"destinations": {
+				"section": "Payment links",
+				"intro": "Subscription links are shared provider destinations. Donation links belong to individual sponsor offers below, so every amount has one clear destination.",
+				"subscriptions": "Subscription links",
+				"subscriptionsHint": "Each link must come from the Links screen of the matching Tribute subscription.",
+				"placeholder": "https://…",
+				"loading": "Loading Tribute subscriptions…",
+				"catalogError": "Could not load subscriptions. Saved links remain unchanged.",
+				"empty": "Tribute returned no subscriptions. Create one in Tribute, then retry this page.",
+				"unavailable": "Unavailable subscription · ID {{id}}",
+				"unavailableHint": "This saved subscription is no longer in the current catalog. Keep its link or clear the field to remove it.",
+				"saveAction": "Save payment links",
+				"saveError": "Could not save payment links. Check the values and try again.",
+				"saved": "Payment links saved.",
+				"discardTitle": "Discard payment link changes?",
+				"discardConfirm": "Discard",
+				"discardCancel": "Keep editing",
+				"discardBody": "The unsaved payment links will be lost.",
+				"validation": {
+					"invalid": "Enter a complete URL.",
+					"https": "Use an HTTPS link.",
+					"credentials": "The link cannot contain a username or password.",
+					"fragment": "Remove the # fragment from the link.",
+					"tooLong": "The link is too long."
+				}
+			},
 			"deliverySection": "Webhook delivery",
 			"receiverLabel": "Flowvy receiver",
 			"receiverActive": "Authenticated",
-			"receiverHint": "Signed Tribute events enter a durable journal. Digital-product purchases use purchase ID idempotency; donations and subscriptions remain review-only until Tribute documents a unique payment identity.",
+			"receiverHint": "Signed Tribute events enter a durable journal. Subscriptions reconcile Tribute's exact expiration; identified donations stay behind a separate rollout switch and anonymous donations require review. Unsupported event types are recorded and ignored.",
 			"executorLabel": "Access delivery",
 			"executorEnabled": "Automatic grants enabled",
 			"executorDisabled": "Planning only",
 			"executorHint": "Provider mutations are controlled by server configuration. Review the activity journal before enabling automatic delivery.",
+			"donationAutomationLabel": "Identified donations",
+			"donationAutomationEnabled": "Automatic planning enabled",
+			"donationAutomationReview": "Review only",
+			"donationAutomationHint": "Tribute does not document a unique payment ID for donations. Keep this review-only until the normalized event fingerprint has controlled live evidence. Anonymous donations always require review.",
 			"signatureLabel": "Provider signature",
 			"signatureValue": "HMAC-SHA256",
 			"signatureHint": "Tribute documents the trbt-signature header over the raw request body. Flowvy will validate it before processing events.",
@@ -360,7 +477,7 @@
 				"section": "Access automation",
 				"add": "Add rule",
 				"introTitle": "Map payments to access",
-				"introHint": "Digital-product purchases can be planned from a documented purchase ID. Donation and subscription rules stay review-only until Tribute exposes a unique ID for every payment.",
+				"introHint": "Subscriptions synchronize Tribute's exact expiration. Identified-donation automation remains a separate controlled rollout; anonymous donations always require review.",
 				"loading": "Loading automation rules…",
 				"loadError": "Could not load automation rules or access profiles.",
 				"emptyTitle": "No automation rules",
@@ -378,14 +495,28 @@
 				"commerceType": "Commerce type",
 				"donation": "Donation",
 				"subscription": "Subscription",
-				"product": "Product",
 				"paymentMode": "Donation schedule",
 				"paymentModeHint": "Choose whether this rule accepts one-time donations, recurring donations, or both.",
 				"paymentAny": "One-time and recurring",
 				"paymentOneTime": "One-time only",
 				"paymentRecurring": "Recurring only",
-				"providerItemId": "Tribute item ID",
-				"providerItemHint": "Use the exact subscription or digital-product identifier from Tribute.",
+				"providerItem": "Tribute offer",
+				"providerItemHint": "Choose the subscription that should trigger this rule.",
+				"catalogLoading": "Loading Tribute catalog…",
+				"catalogUnavailable": "Catalog unavailable",
+				"catalogError": "Could not load the Tribute catalog. Existing rules are unchanged.",
+				"catalogCurrentItem": "Current Tribute item · ID {{id}}",
+				"selectSubscription": "Select a subscription",
+				"noSubscriptions": "No subscriptions were returned by Tribute.",
+				"period": {
+					"trial": "trial",
+					"onetime": "one time",
+					"weekly": "week",
+					"monthly": "month",
+					"quarterly": "3 months",
+					"halfyearly": "6 months",
+					"yearly": "year"
+				},
 				"currency": "Currency",
 				"priority": "Priority",
 				"priorityHint": "Lower numbers run first when several rules could match.",
@@ -393,6 +524,7 @@
 				"noActiveProfiles": "Create or activate an access profile before saving an automation rule.",
 				"accessProfile": "Access profile",
 				"accessProfileHint": "Calculated days override this profile's default validity. Traffic, device limits, squads, tags, and provider options are reused.",
+				"subscriptionProfileHint": "Tribute supplies the expiration date. Traffic, device limits, squads, tags, and provider options come from this profile.",
 				"selectProfile": "Select a profile",
 				"grantMode": "Activation policy",
 				"extend": "Extend current access",
@@ -400,6 +532,9 @@
 				"calculation": "Duration calculation",
 				"fixed": "Fixed duration",
 				"amountBands": "Amount bands",
+				"providerExpiryTitle": "Tribute controls the expiration date",
+				"providerExpiryHint": "Flowvy applies the subscription's expires_at value from the signed Tribute webhook. Renewals update that same absolute date, so repeated deliveries cannot add time twice.",
+				"providerExpirySummary": "Expiration synced with Tribute",
 				"fixedDays": "Access days",
 				"volumeHint": "The highest reached band sets the rate for the whole payment: payment ÷ payment unit × access per unit, rounded down to whole days.",
 				"band": "Band {{count}}",
@@ -436,8 +571,71 @@
 				"deleteConfirmBody": "{{name}} will be removed from Flowvy configuration.",
 				"type": {
 					"donation": "Donation",
-					"subscription": "Subscription",
-					"digital_product": "Digital product"
+					"subscription": "Subscription"
+				}
+			},
+			"offers": {
+				"section": "Sponsor offers",
+				"add": "Add offer",
+				"introTitle": "Publish payment choices on Home",
+				"introHint": "Each offer is one public payment choice. Tribute subscriptions lock their price; donation amount and frequency are chosen by the payer and verified from the signed webhook.",
+				"loading": "Loading sponsor offers…",
+				"loadError": "Could not load sponsor offers or automation rules.",
+				"emptyTitle": "No sponsor offers",
+				"emptyHint": "Create the first user-facing choice from an existing automation rule.",
+				"emptyRulesHint": "Create an automation rule first, then turn it into a user-facing offer.",
+				"createFirst": "Create first offer",
+				"editorEyebrow": "Sponsor offer",
+				"createTitle": "Create sponsor offer",
+				"editTitle": "Edit sponsor offer",
+				"editorSubtitle": "Choose what users see while the linked rule controls access.",
+				"closeEditor": "Close offer editor",
+				"presentationSection": "Home presentation",
+				"titleLabel": "Offer title",
+				"titlePlaceholder": "Monthly sponsor access",
+				"descriptionLabel": "Description",
+				"descriptionPlaceholder": "Help us keep the service running and receive sponsor access",
+				"descriptionHint": "Write the motivational text shown under this option—for example, what the support makes possible. Payment facts still come from Tribute.",
+				"deliverySection": "Payment and access",
+				"ruleLabel": "Automation rule",
+				"ruleHint": "The rule matches the signed Tribute payment and calculates the access profile and duration. Several offers may reuse one flexible rule.",
+				"donationLinkLabel": "Tribute link for this offer",
+				"donationLinkHint": "Paste the donation page for this sponsor choice. Tribute does not lock the amount or frequency in the link, so the user will see the exact choices to make before leaving the app.",
+				"expectedAmountLabel": "Amount the user must enter ({{currency}})",
+				"expectedAmountHint": "Flowvy checks the signed amount exactly. A different amount is held for manual review and does not grant this offer automatically.",
+				"expectedAmountInvalid": "Enter a positive amount with no more than two decimal places.",
+				"paymentModeLabel": "Payment choice in Tribute",
+				"paymentModeHint": "Choose the exact option the user must select on Tribute's donation form. The link itself cannot lock this choice.",
+				"paymentModeOneTime": "One-time",
+				"paymentModeRecurring": "Auto-donation",
+				"providerPeriodLabel": "Auto-donation frequency",
+				"providerPeriodHint": "Flowvy grants this offer only when Tribute confirms the same recurring period.",
+				"sortOrderLabel": "Display order",
+				"sortOrderHint": "Lower numbers appear first on Home.",
+				"publishTitle": "Visible on Home",
+				"publishHint": "Publishing validates the current destination and freezes its payment facts for display and checkout matching.",
+				"publishLabel": "Publish this sponsor offer",
+				"publishUnavailable": "This offer can stay as a draft. Enable automatic access delivery and its rule before publishing; donation offers also need identified-donation automation, a link, an amount, and an exact payment choice.",
+				"createAction": "Create offer",
+				"saveAction": "Save offer",
+				"saveError": "Could not save this sponsor offer. Check the linked rule and Tribute configuration.",
+				"toggleLabel": "Publish or hide {{name}}",
+				"toggleError": "Could not change the offer visibility. Check its rule and Tribute configuration.",
+				"pricePending": "Price checked when published",
+				"ruleUnavailable": "Automation rule unavailable",
+				"deleteTitle": "Delete offer",
+				"deleteHint": "Removes this choice from Home. The automation rule and payment history remain unchanged.",
+				"deleteAction": "Delete",
+				"deleteError": "Could not delete the sponsor offer. Try again.",
+				"deleteConfirmTitle": "Delete sponsor offer?",
+				"deleteConfirmBody": "{{name}} will no longer be available on Home.",
+				"availability": {
+					"draft": "Draft",
+					"ready": "Published",
+					"ruleDisabled": "Rule disabled",
+					"profileUnavailable": "Profile unavailable",
+					"deliveryDisabled": "Delivery disabled",
+					"configurationChanged": "Republish required"
 				}
 			},
 			"activity": {
@@ -463,21 +661,25 @@
 					"cancelled": "Cancelled"
 				},
 				"event": {
-					"new_digital_product": "Digital product {{item}} purchased",
-					"digital_product_refunded": "Digital product {{item}} refunded",
 					"new_donation": "One-time donation",
 					"recurrent_donation": "Recurring donation payment",
 					"cancelled_donation": "Recurring donation cancelled",
 					"new_subscription": "Subscription started",
 					"renewed_subscription": "Subscription renewed",
 					"cancelled_subscription": "Subscription cancelled",
+					"effective_access_restore": "Base access restoration",
 					"other": "Unsupported Tribute event"
 				},
 				"reason": {
 					"cancellation_is_not_refund": "Cancellation does not revoke already paid access.",
 					"semantic_identity_unverified": "Tribute does not document a unique ID for this individual payment.",
 					"unsupported_event": "This event type is not supported.",
-					"purchase_identity_missing": "The documented purchase ID is missing.",
+					"subscription_identity_missing": "The documented subscription ID is missing.",
+					"provider_expiry_missing": "Tribute did not provide the subscription expiration date.",
+					"anonymous_donation": "The donation is anonymous and cannot be matched automatically.",
+					"donation_identity_missing": "The donation does not contain a usable payer identity.",
+					"donation_semantic_evidence_required": "Identified-donation automation is review-only until its event fingerprint has controlled live evidence.",
+					"donation_offer_mismatch": "The signed donation did not match the amount or payment schedule selected in Flowvy. No automatic access was granted.",
 					"telegram_identity_missing": "No Telegram identity is available for automatic matching.",
 					"user_not_found": "No existing Flowvy user matches this Telegram identity.",
 					"user_inactive": "The matching Flowvy user is inactive.",
@@ -487,16 +689,20 @@
 					"rule_not_found": "No enabled rule matches this item, currency, and amount.",
 					"profile_unavailable": "The rule's access profile is unavailable.",
 					"profile_not_grantable": "The access profile does not grant active access.",
-					"purchase_already_refunded": "The refund arrived before this purchase and prevented delivery.",
-					"refunded_before_apply": "The purchase was refunded before access was applied.",
+					"refunded_before_apply": "The payment was refunded before access was applied.",
 					"grant_cancelled_before_apply": "The queued grant was cancelled without changing provider access.",
-					"refund_source_not_found": "The original purchase has not arrived yet.",
-					"no_grant_to_compensate": "The original purchase did not apply access.",
+					"no_grant_to_compensate": "The original payment did not apply access.",
 					"provider_identity_missing": "The linked provider identity is missing.",
 					"provider_identity_mismatch": "The provider account does not match the paid Telegram identity.",
 					"grant_plan_incomplete": "The stored grant plan is incomplete.",
 					"profile_snapshot_invalid": "The stored access-profile snapshot is invalid.",
 					"provider_state_conflict": "Provider access changed outside this operation; automatic overwrite was stopped.",
+					"provider_state_ahead": "Provider access already ends later than this subscription; automatic shortening was stopped.",
+					"paid_state_ahead": "A newer paid period already ends later; this older state was stopped for review.",
+					"provider_state_not_restorable": "The current provider state cannot be captured and restored exactly, so the paid overlay was stopped.",
+					"baseline_missing": "The original access snapshot is unavailable; automatic restoration was stopped.",
+					"superseded_by_effective_access": "A newer paid-access decision replaced this scheduled restoration.",
+					"provider_entitlement_expired": "The subscription expiration supplied by Tribute is already in the past.",
 					"provider_state_mismatch": "The provider did not return the requested absolute expiration.",
 					"refund_history_incomplete": "The access history is insufficient for a safe compensation.",
 					"refund_requires_revocation": "Compensation would require revoking access and needs manual review.",
@@ -662,7 +868,6 @@
 			"accountInfo": "Account Info",
 			"created": "Created",
 			"expires": "Expires",
-			"expiresUnlimited": "Unlimited",
 			"email": "Email",
 			"telegramId": "Telegram ID",
 			"devices": "Devices",
@@ -734,6 +939,7 @@
 		},
 		"expiry": {
 			"expired": "Expired",
+			"noExpiry": "No expiry",
 			"today": "Today",
 			"oneDay": "1 day",
 			"days": "{{n}}d"

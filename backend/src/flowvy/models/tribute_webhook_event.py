@@ -6,6 +6,7 @@ import datetime
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     DateTime,
     Index,
@@ -32,7 +33,7 @@ class TributeWebhookEvent(Base):
             name="ck_tribute_webhook_events_delivery_key",
         ),
         CheckConstraint(
-            "event_family IN ('donation', 'subscription', 'digital_product', 'other')",
+            "event_family IN ('donation', 'subscription', 'other')",
             name="ck_tribute_webhook_events_family",
         ),
         CheckConstraint(
@@ -55,6 +56,15 @@ class TributeWebhookEvent(Base):
             "payment_mode IS NULL OR payment_mode IN ('one_time', 'recurring')",
             name="ck_tribute_webhook_events_payment_mode",
         ),
+        CheckConstraint(
+            "provider_period IS NULL OR provider_period IN "
+            "('weekly', 'monthly', 'quarterly', 'halfyearly', 'yearly')",
+            name="ck_tribute_webhook_events_provider_period",
+        ),
+        CheckConstraint(
+            "subscription_type IS NULL OR subscription_type IN ('regular', 'gift', 'trial')",
+            name="ck_tribute_webhook_events_subscription_type",
+        ),
         Index(
             "ix_tribute_webhook_events_status_received",
             "processing_status",
@@ -70,8 +80,8 @@ class TributeWebhookEvent(Base):
             "transaction_id",
         ),
         Index(
-            "ix_tribute_webhook_events_purchase",
-            "purchase_id",
+            "ix_tribute_webhook_events_provider_reference",
+            "provider_reference_id",
         ),
     )
 
@@ -86,13 +96,19 @@ class TributeWebhookEvent(Base):
     provider_sent_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True),
     )
+    provider_expires_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True),
+    )
+    is_anonymous: Mapped[bool | None] = mapped_column(Boolean)
     telegram_user_id: Mapped[int | None] = mapped_column(BigInteger)
     transaction_id: Mapped[str | None] = mapped_column(String(128))
-    purchase_id: Mapped[str | None] = mapped_column(String(128))
+    provider_reference_id: Mapped[str | None] = mapped_column(String(128))
     external_item_id: Mapped[str | None] = mapped_column(String(128))
     amount_minor: Mapped[int | None] = mapped_column(BigInteger)
     currency: Mapped[str | None] = mapped_column(String(3))
     payment_mode: Mapped[str | None] = mapped_column(String(16))
+    provider_period: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    subscription_type: Mapped[str | None] = mapped_column(String(16), nullable=True)
     received_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

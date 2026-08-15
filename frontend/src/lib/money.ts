@@ -43,3 +43,14 @@ export function formatMinorMoney(value: number, currency: string, locale?: strin
 		maximumFractionDigits: fractionDigits,
 	}).format(value / 10 ** fractionDigits);
 }
+
+export function formatMajorMoney(value: string, currency: string, locale?: string): string {
+	const parsed = Number(value);
+	if (!Number.isFinite(parsed)) return `${value} ${currency}`;
+	const fractionDigits = currencyFractionDigits(currency);
+	return new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency,
+		maximumFractionDigits: fractionDigits,
+	}).format(parsed);
+}

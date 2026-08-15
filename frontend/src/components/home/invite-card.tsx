@@ -1,9 +1,10 @@
-import { copyTextToClipboard, openTelegramLink } from "@telegram-apps/sdk-react";
+import { copyTextToClipboard } from "@telegram-apps/sdk-react";
 import { Check, Copy, Send, Users } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useInvite } from "../../hooks/use-invite.ts";
 import { hapticImpact, hapticNotification } from "../../lib/haptics.ts";
+import { openTelegramDestination } from "../../lib/telegram-link.ts";
 import { useCurrentUser } from "../auth-guard.tsx";
 import { Skeleton } from "../ui/skeleton.tsx";
 import styles from "./invite-card.module.css";
@@ -103,9 +104,8 @@ export function InviteCard() {
 					rel="noreferrer"
 					onClick={(event) => {
 						hapticImpact("light");
-						if (openTelegramLink.isAvailable()) {
+						if (openTelegramDestination(shareUrl)) {
 							event.preventDefault();
-							openTelegramLink(shareUrl);
 						}
 					}}
 				>

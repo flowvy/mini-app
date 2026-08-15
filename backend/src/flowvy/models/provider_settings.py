@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, Text, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from flowvy.models.base import Base, updated_at
@@ -23,6 +23,10 @@ class ProviderSettings(Base):
         CheckConstraint(
             "registration_mode IN ('open', 'invite_only')",
             name="ck_provider_settings_registration_mode",
+        ),
+        CheckConstraint(
+            "jsonb_typeof(tribute_subscription_urls) = 'object'",
+            name="ck_provider_settings_tribute_subscription_urls_object",
         ),
     )
 
@@ -45,4 +49,10 @@ class ProviderSettings(Base):
     welcome_media_file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     welcome_media_file_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     welcome_button_text: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    tribute_donation_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tribute_subscription_urls: Mapped[dict[str, str]] = mapped_column(
+        JSONB,
+        default=dict,
+        server_default=text("'{}'::jsonb"),
+    )
     updated_at: Mapped[updated_at]

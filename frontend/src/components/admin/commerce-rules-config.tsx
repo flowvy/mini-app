@@ -32,10 +32,12 @@ export function CommerceRulesConfig() {
 	const commerceTypeLabels = {
 		donation: t("settings.tribute.rules.type.donation"),
 		subscription: t("settings.tribute.rules.type.subscription"),
-		digital_product: t("settings.tribute.rules.type.digital_product"),
 	};
 
 	const summary = (rule: CommerceRule) => {
+		if (rule.calculationType === "provider_expiry") {
+			return t("settings.tribute.rules.providerExpirySummary");
+		}
 		if (rule.calculationType === "fixed") {
 			return t("settings.tribute.rules.fixedSummary", { count: rule.fixedDurationDays });
 		}

@@ -61,6 +61,9 @@ class ProviderSettingsService:
             tribute_entitlement_execution_enabled=(
                 self._config.tribute_entitlement_execution_enabled
             ),
+            tribute_identified_donation_automation_enabled=(
+                self._config.tribute_identified_donation_automation_enabled
+            ),
             app_name=row.app_name,
             logo_url=row.logo_url,
             welcome_text=row.welcome_text,
@@ -69,6 +72,8 @@ class ProviderSettingsService:
             welcome_media_file_id=row.welcome_media_file_id,
             welcome_media_file_name=row.welcome_media_file_name,
             welcome_button_text=row.welcome_button_text,
+            tribute_donation_url=row.tribute_donation_url,
+            tribute_subscription_urls=row.tribute_subscription_urls,
             remnawave_version=version,
             updated_at=int(row.updated_at.timestamp()),
         )

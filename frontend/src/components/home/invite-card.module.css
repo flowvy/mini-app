@@ -35,7 +35,7 @@
 	grid-template-columns: auto auto;
 	align-items: center;
 	column-gap: 5px;
-	color: var(--v2-text-positive);
+	color: var(--v2-icon-secondary);
 }
 
 .count strong {

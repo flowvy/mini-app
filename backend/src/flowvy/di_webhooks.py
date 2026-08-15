@@ -6,9 +6,11 @@ from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from flowvy.config import Settings
 from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.commerce_rule import CommerceRuleRepository
 from flowvy.repositories.entitlement_operation import EntitlementOperationRepository
+from flowvy.repositories.sponsor_checkout import SponsorCheckoutRepository
 from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.tribute_webhook_event import TributeWebhookEventRepository
 from flowvy.repositories.user import UserRepository
@@ -51,9 +53,10 @@ class WebhooksProvider(Provider):
         self,
         repo: TributeWebhookEventRepository,
         planner: TributeEntitlementPlanner,
+        checkouts: SponsorCheckoutRepository,
     ) -> TributeWebhookInboxService:
         """Create the authenticated inbox plus its same-transaction durable planner."""
-        return TributeWebhookInboxService(repo, planner)
+        return TributeWebhookInboxService(repo, planner, checkouts)
 
     @provide(scope=Scope.REQUEST)
     def get_tribute_entitlement_planner(
@@ -63,6 +66,7 @@ class WebhooksProvider(Provider):
         profiles: AccessProfileRepository,
         users: UserRepository,
         subscriptions: SubscriptionRepository,
+        settings: Settings,
     ) -> TributeEntitlementPlanner:
         """Create a side-effect-free planner for authenticated Tribute events."""
         return TributeEntitlementPlanner(
@@ -71,4 +75,7 @@ class WebhooksProvider(Provider):
             profiles,
             users,
             subscriptions,
+            identified_donation_automation_enabled=(
+                settings.tribute_identified_donation_automation_enabled
+            ),
         )

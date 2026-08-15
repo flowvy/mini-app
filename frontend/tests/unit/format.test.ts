@@ -7,6 +7,7 @@ import {
 	isUnlimitedDevices,
 	isUnlimitedExpiry,
 	isUnlimitedTraffic,
+	parseExpiry,
 } from "../../src/lib/format.ts";
 
 describe("subscription formatting decisions", () => {
@@ -37,7 +38,10 @@ describe("subscription formatting decisions", () => {
 		expect(getDaysLeft(now + 8 * 86400)).toBe(8);
 		expect(getExpiryColor(-1)).toBe("var(--v2-text-negative)");
 		expect(getExpiryColor(7)).toBe("var(--v2-text-warning)");
-		expect(isUnlimitedExpiry(now + 11 * 365 * 86400)).toBe(true);
+		expect(isUnlimitedExpiry(now + 11 * 365 * 86400)).toBe(false);
+		expect(isUnlimitedExpiry("2099-12-31T23:59:59Z")).toBe(true);
+		expect(parseExpiry(4_102_444_799)?.isUnlimited).toBe(true);
+		expect(parseExpiry("2037-08-01T00:00:00Z")?.isUnlimited).toBe(false);
 
 		vi.useRealTimers();
 	});

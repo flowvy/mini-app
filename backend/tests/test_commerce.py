@@ -164,13 +164,12 @@ async def test_entitlement_journal_requires_admin_and_returns_only_allow_listed_
         )
         operation = await EntitlementOperationRepository(session).create(
             provider="tribute",
-            semantic_key="digital_product:purchase:route-test",
-            event_name="new_digital_product",
+            semantic_key="donation:event:route-test",
+            event_name="new_donation",
             operation_kind="grant",
             status="pending",
             provider_created_at=created_at,
             telegram_user_id=admin_id,
-            purchase_id="route-test",
             transaction_id="must-not-be-returned",
             external_item_id="456",
             amount_minor=50_000,
@@ -200,7 +199,7 @@ async def test_entitlement_journal_requires_admin_and_returns_only_allow_listed_
     assert payload["operations"] == [
         {
             "id": operation_id,
-            "eventName": "new_digital_product",
+            "eventName": "new_donation",
             "operationKind": "grant",
             "status": "pending",
             "reasonCode": None,
@@ -236,8 +235,8 @@ async def test_entitlement_action_route_requires_admin_and_returns_safe_transiti
         )
         operation = await EntitlementOperationRepository(session).create(
             provider="tribute",
-            semantic_key="digital_product:purchase:route-action-test",
-            event_name="new_digital_product",
+            semantic_key="donation:event:route-action-test",
+            event_name="new_donation",
             operation_kind="grant",
             status="review",
             reason_code="provider_unavailable",
@@ -245,7 +244,6 @@ async def test_entitlement_action_route_requires_admin_and_returns_safe_transiti
             telegram_user_id=admin_id,
             user_id=admin_id,
             remnawave_user_id=42,
-            purchase_id="route-action-test",
             external_item_id="456",
             amount_minor=50_000,
             currency="RUB",
@@ -325,13 +323,40 @@ async def test_fixed_preview_ignores_amount() -> None:
     assert result.matched_band is None
 
 
+def test_subscription_uses_provider_expiry_without_a_local_duration() -> None:
+    payload = _rule(
+        commerce_type="subscription",
+        payment_mode="recurring",
+        external_item_id="12",
+        calculation_type="provider_expiry",
+        fixed_duration_days=None,
+        amount_bands=[],
+        grant_mode="replace",
+    )
+
+    assert payload.calculation_type == "provider_expiry"
+    assert payload.fixed_duration_days is None
+    assert payload.amount_bands == []
+
+
+@pytest.mark.parametrize("calculation_type", ["fixed", "volume"])
+def test_subscription_rejects_local_duration_calculation(calculation_type: str) -> None:
+    with pytest.raises(ValidationError, match="provider expiry"):
+        _rule(
+            commerce_type="subscription",
+            payment_mode="recurring",
+            external_item_id="12",
+            calculation_type=calculation_type,
+        )
+
+
 @pytest.mark.parametrize(
     "overrides",
     [
         {"calculation_type": "fixed", "fixed_duration_days": None, "amount_bands": []},
         {"calculation_type": "volume", "fixed_duration_days": 30},
         {"commerce_type": "subscription", "payment_mode": "any", "external_item_id": "sub"},
-        {"commerce_type": "digital_product", "payment_mode": "one_time"},
+        {"commerce_type": "unsupported", "payment_mode": "one_time"},
         {"commerce_type": "donation", "external_item_id": "not-allowed"},
         {"currency": "rubles"},
         {

@@ -15,3 +15,9 @@
 .success {
 	color: var(--v2-text-positive);
 }
+
+.warning {
+	border: 1px solid var(--v2-border-warning-secondary);
+	background: var(--v2-bg-warning);
+	color: var(--v2-text-warning);
+}

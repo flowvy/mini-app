@@ -9,7 +9,10 @@
 - [`0001-invite-registration-and-access-profiles.md`](0001-invite-registration-and-access-profiles.md) —
   пользовательские invites и единый registration access profile;
 - [`0002-ui-copy-and-provider-owned-content.md`](0002-ui-copy-and-provider-owned-content.md) —
-  граница locale, operator-owned content и provider data.
+  граница locale, operator-owned content и provider data;
+- [`0003-tribute-managed-checkout-and-entitlements.md`](0003-tribute-managed-checkout-and-entitlements.md) —
+  accepted Creator sponsor offers/intents/billing state и восстановление базового доступа;
+  недоступный Shop остаётся deferred upgrade.
 
 ## Когда нужен ADR
 

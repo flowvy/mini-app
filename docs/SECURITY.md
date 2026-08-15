@@ -54,18 +54,32 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
   перед каждым save. Draft preview не пишет БД и не вызывает provider/user mutations. Money приходит
   и хранится как bounded integer minor units; bands, currency, commerce/payment shape, duration и
   priority schema-validated, а calculator JSONB никогда не принимается напрямую в ORM.
+- Sponsor-offer CRUD использует тот же active-admin boundary. Draft не вызывает provider; publish
+  fail-closed требует enabled executor/rule, active profile и backend-validated Creator
+  item/destination. User API возвращает только published ready snapshots и требует уже существующего
+  active local user, поэтому payment screen не обходит open/invite-only admission.
+- Local `sponsor_checkouts` содержит только redirect intent/allow-listed offer snapshot, не card data.
+  Partial unique index и user row lock разрешают один pending intent; повтор другого offer получает
+  conflict. Redirect, browser return и client refresh никогда не переводят intent в paid. Только
+  authenticated positive Tribute event может связать matching Telegram user/family/item/mode, а
+  provider access всё равно меняет отдельная durable operation. Review остаётся видимым даже поверх
+  прежнего paid access, чтобы пользователь не платил повторно.
 - Успешная аутентификация Tribute webhook разрешает только inbox/ledger transaction. HTTP request
-  не выполняет Remnawave mutation. Unique semantic key используется только для document-confirmed
-  digital-product `purchase_id`; donation/subscription не получают выдуманную idempotency identity
-  и остаются review-only. Cancellation не считается refund.
+  не выполняет Remnawave mutation. Subscription deduplicates absolute state
+  `subscription/user/expires_at`. Donation fingerprint — derived boundary, а не provider
+  transaction ID, поэтому default-off
+  `TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED` оставляет его review-only до controlled evidence.
+  Anonymous donation всегда review-only. Cancellation не считается refund.
 - Pending grant содержит immutable rule/profile snapshots, но executor запускается только при
   server-only `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED=true`; default — `false`. Перед каждым provider
-  call worker повторно проверяет live Remnawave/Telegram identity, работает с absolute expiry,
-  reconciles неопределённый timeout и останавливается при внешнем изменении состояния. Один user не
-  имеет двух одновременных processing operations.
-- Refund — отдельная compensating operation по исходному `purchase_id`. Она replay-ит только более
-  поздние applied и ещё не refunded grants; неполная история или потенциальный отзыв уже истёкшего
-  доступа закрываются в review. Webhook никогда не создаёт нового Flowvy/Remnawave user.
+  call worker повторно проверяет live Remnawave/Telegram identity. Первый provider user создаётся
+  только для уже существующего active local user после exact lookup miss; ambiguity и неизвестный
+  create timeout fail closed/read-only reconcile. До paid mutation сохраняется immutable base
+  snapshot, nullable provider fields восстанавливаются явно, а внешний state conflict останавливает
+  overwrite. Один user не имеет двух одновременных processing operations.
+- Webhook request никогда не создаёт Flowvy/Remnawave user; provider create выполняет только
+  feature-gated worker. Неподдерживаемые подписанные события сохраняются как `ignored` audit
+  metadata и не создают checkout match, entitlement operation или provider mutation.
 - Admin activity API требует актуального active admin и возвращает только allow-listed journal
   projection без raw payload/signature, transaction ID, rule/profile snapshots и provider secrets.
 - Operator action API повторно использует тот же active-admin boundary, вычисляет eligibility на

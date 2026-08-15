@@ -9,10 +9,13 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from flowvy.api.routes.debug import check_debug
 from flowvy.schemas.commerce import (
+    CommerceCatalogResponse,
     CommerceRuleInput,
     CommerceRulePreviewRequest,
     CommerceRulePreviewResponse,
     CommerceRuleResponse,
+    SponsorOfferInput,
+    SponsorOfferResponse,
 )
 from flowvy.schemas.tribute_webhooks import (
     EntitlementOperationListResponse,
@@ -24,17 +27,91 @@ from flowvy.services.commerce import (
     CommerceRuleNotFoundError,
     CommerceRuleService,
 )
+from flowvy.services.commerce_catalog import (
+    CommerceCatalogService,
+    CommerceCatalogUnavailableError,
+)
 from flowvy.services.entitlements import (
     EntitlementJournalService,
     EntitlementOperationConflictError,
     EntitlementOperationNotFoundError,
 )
+from flowvy.services.sponsor import SponsorOfferError, SponsorOfferService
 
 router = APIRouter(
     prefix="/api/debug/admin/commerce",
     tags=["debug-admin-commerce"],
     route_class=DishkaRoute,
 )
+
+
+@router.get("/offers", response_model=list[SponsorOfferResponse])
+async def debug_list_sponsor_offers(
+    request: Request,
+    service: FromDishka[SponsorOfferService],
+) -> list[SponsorOfferResponse]:
+    check_debug(request)
+    return await service.list_admin()
+
+
+@router.post(
+    "/offers",
+    response_model=SponsorOfferResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def debug_create_sponsor_offer(
+    payload: SponsorOfferInput,
+    request: Request,
+    service: FromDishka[SponsorOfferService],
+) -> SponsorOfferResponse:
+    check_debug(request)
+    try:
+        return await service.create(payload, None)
+    except SponsorOfferError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+
+
+@router.put("/offers/{offer_id}", response_model=SponsorOfferResponse)
+async def debug_update_sponsor_offer(
+    offer_id: uuid.UUID,
+    payload: SponsorOfferInput,
+    request: Request,
+    service: FromDishka[SponsorOfferService],
+) -> SponsorOfferResponse:
+    check_debug(request)
+    try:
+        return await service.update(offer_id, payload)
+    except SponsorOfferError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+
+
+@router.delete("/offers/{offer_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def debug_delete_sponsor_offer(
+    offer_id: uuid.UUID,
+    request: Request,
+    service: FromDishka[SponsorOfferService],
+) -> None:
+    check_debug(request)
+    try:
+        await service.delete(offer_id)
+    except SponsorOfferError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+
+
+@router.get("/catalog", response_model=CommerceCatalogResponse)
+async def debug_get_commerce_catalog(
+    request: Request,
+    service: FromDishka[CommerceCatalogService],
+) -> CommerceCatalogResponse:
+    """Return the same provider catalog only in explicit local debug mode."""
+    check_debug(request)
+    try:
+        return await service.get_tribute()
+    except CommerceCatalogUnavailableError as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            "Tribute catalog is unavailable",
+        ) from exc
 
 
 @router.get("/operations", response_model=EntitlementOperationListResponse)

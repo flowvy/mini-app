@@ -2,19 +2,28 @@ import { Plus, Trash2 } from "lucide-react";
 import { type FormEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+	useCommerceCatalog,
 	useDeleteCommerceRule,
 	usePreviewCommerceRule,
 	useSaveCommerceRule,
 } from "../../hooks/use-commerce-rules.ts";
 import { ApiError } from "../../lib/api.ts";
 import { getLocalizedError } from "../../lib/error-copy.ts";
-import { formatMinorMoney, majorToMinor, minorToMajorInput } from "../../lib/money.ts";
+import {
+	formatMajorMoney,
+	formatMinorMoney,
+	majorToMinor,
+	minorToMajorInput,
+} from "../../lib/money.ts";
 import type {
+	CalculationType,
+	CommerceCatalogSubscription,
 	CommerceRule,
 	CommerceRuleInput,
 	CommerceType,
 	GrantMode,
 	PaymentMode,
+	TributeSubscriptionPeriod,
 } from "../../types/commerce.ts";
 import type { AccessProfile } from "../../types/registration.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
@@ -44,7 +53,7 @@ interface RuleDraft {
 	paymentMode: PaymentMode;
 	externalItemId: string;
 	currency: string;
-	calculationType: "fixed" | "volume";
+	calculationType: CalculationType;
 	fixedDurationDays: string;
 	bands: BandDraft[];
 	accessProfileId: string;
@@ -67,7 +76,8 @@ function initialDraft(rule: CommerceRule | null, profiles: AccessProfile[]): Rul
 			paymentMode: rule.paymentMode,
 			externalItemId: rule.externalItemId ?? "",
 			currency: rule.currency,
-			calculationType: rule.calculationType,
+			calculationType:
+				rule.commerceType === "subscription" ? "provider_expiry" : rule.calculationType,
 			fixedDurationDays: rule.fixedDurationDays == null ? "" : String(rule.fixedDurationDays),
 			bands: rule.amountBands.map((band) => ({
 				key: nextBandKey++,
@@ -76,7 +86,7 @@ function initialDraft(rule: CommerceRule | null, profiles: AccessProfile[]): Rul
 				unitDays: String(band.unitDays),
 			})),
 			accessProfileId: rule.accessProfileId,
-			grantMode: rule.grantMode,
+			grantMode: rule.commerceType === "subscription" ? "replace" : rule.grantMode,
 			priority: String(rule.priority),
 			isEnabled: rule.isEnabled,
 		};
@@ -116,13 +126,15 @@ function toInput(draft: RuleDraft, profiles: AccessProfile[]): CommerceRuleInput
 	}
 	const externalItemId = draft.externalItemId.trim() || null;
 	if (draft.commerceType !== "donation" && externalItemId === null) return null;
+	const calculationType =
+		draft.commerceType === "subscription" ? "provider_expiry" : draft.calculationType;
 
 	const fixedDurationDays =
-		draft.calculationType === "fixed" ? positiveInteger(draft.fixedDurationDays, 36_500) : null;
-	if (draft.calculationType === "fixed" && fixedDurationDays === null) return null;
+		calculationType === "fixed" ? positiveInteger(draft.fixedDurationDays, 36_500) : null;
+	if (calculationType === "fixed" && fixedDurationDays === null) return null;
 
 	const amountBands = [];
-	if (draft.calculationType === "volume") {
+	if (calculationType === "volume") {
 		for (const band of draft.bands) {
 			const fromAmountMinor = majorToMinor(band.from, currency);
 			const unitAmountMinor = majorToMinor(band.unitAmount, currency);
@@ -151,11 +163,11 @@ function toInput(draft: RuleDraft, profiles: AccessProfile[]): CommerceRuleInput
 		paymentMode: draft.paymentMode,
 		externalItemId: draft.commerceType === "donation" ? null : externalItemId,
 		currency,
-		calculationType: draft.calculationType,
+		calculationType,
 		fixedDurationDays,
 		amountBands,
 		accessProfileId: draft.accessProfileId,
-		grantMode: draft.grantMode,
+		grantMode: draft.commerceType === "subscription" ? "replace" : draft.grantMode,
 		priority,
 		isEnabled: draft.isEnabled,
 	};
@@ -181,6 +193,7 @@ export function CommerceRuleEditor({
 	const [confirmDelete, setConfirmDelete] = useState(false);
 	const deleteTriggerRef = useRef<HTMLButtonElement>(null);
 	const save = useSaveCommerceRule();
+	const catalog = useCommerceCatalog();
 	const preview = usePreviewCommerceRule();
 	const remove = useDeleteCommerceRule();
 	const input = toInput(draft, profiles);
@@ -191,6 +204,37 @@ export function CommerceRuleEditor({
 	const previewError = previewFingerprint === currentFingerprint ? previewMutationFailure : null;
 	const busy = save.isPending || remove.isPending;
 	const activeProfiles = profiles.filter((profile) => profile.isActive);
+	const catalogItems =
+		draft.commerceType === "subscription" ? (catalog.data?.subscriptions ?? []) : [];
+	const selectedCatalogItem = catalogItems.find(
+		(item) => item.externalItemId === draft.externalItemId,
+	);
+	const catalogOptions = (() => {
+		if (draft.commerceType === "donation") return [];
+		const placeholder = catalog.isPending
+			? t("settings.tribute.rules.catalogLoading")
+			: catalog.isError
+				? t("settings.tribute.rules.catalogUnavailable")
+				: t("settings.tribute.rules.selectSubscription");
+		const options = [{ value: "", label: placeholder, disabled: true }];
+		if (draft.externalItemId && !selectedCatalogItem) {
+			options.push({
+				value: draft.externalItemId,
+				label: t("settings.tribute.rules.catalogCurrentItem", {
+					id: draft.externalItemId,
+				}),
+				disabled: false,
+			});
+		}
+		options.push(
+			...(catalog.data?.subscriptions ?? []).map((subscription) => ({
+				value: subscription.externalItemId,
+				label: subscriptionLabel(subscription, t),
+				disabled: false,
+			})),
+		);
+		return options;
+	})();
 
 	const submit = (event: FormEvent) => {
 		event.preventDefault();
@@ -202,6 +246,19 @@ export function CommerceRuleEditor({
 		setDraft((current) => ({
 			...current,
 			bands: current.bands.map((band) => (band.key === key ? { ...band, ...patch } : band)),
+		}));
+	};
+
+	const selectCatalogItem = (externalItemId: string) => {
+		const item = catalogItems.find((candidate) => candidate.externalItemId === externalItemId);
+		setDraft((current) => ({
+			...current,
+			externalItemId,
+			currency: item?.currency ?? current.currency,
+			name:
+				item && (!current.name.trim() || current.name === selectedCatalogItem?.name)
+					? item.name
+					: current.name,
 		}));
 	};
 
@@ -267,7 +324,6 @@ export function CommerceRuleEditor({
 								options={[
 									{ key: "donation", label: t("settings.tribute.rules.donation") },
 									{ key: "subscription", label: t("settings.tribute.rules.subscription") },
-									{ key: "digital_product", label: t("settings.tribute.rules.product") },
 								]}
 								value={draft.commerceType}
 								onChange={(value) => {
@@ -275,13 +331,20 @@ export function CommerceRuleEditor({
 									setDraft({
 										...draft,
 										commerceType,
-										paymentMode:
+										paymentMode: commerceType === "subscription" ? "recurring" : "any",
+										externalItemId: commerceType === draft.commerceType ? draft.externalItemId : "",
+										calculationType:
 											commerceType === "subscription"
-												? "recurring"
-												: commerceType === "digital_product"
-													? "one_time"
-													: "any",
-										externalItemId: commerceType === "donation" ? "" : draft.externalItemId,
+												? "provider_expiry"
+												: draft.calculationType === "provider_expiry"
+													? "volume"
+													: draft.calculationType,
+										grantMode: commerceType === "subscription" ? "replace" : draft.grantMode,
+										name:
+											draft.name === selectedCatalogItem?.name &&
+											commerceType !== draft.commerceType
+												? ""
+												: draft.name,
 									});
 								}}
 							/>
@@ -307,18 +370,31 @@ export function CommerceRuleEditor({
 							</FormField>
 						) : (
 							<FormField
-								label={t("settings.tribute.rules.providerItemId")}
+								label={t("settings.tribute.rules.providerItem")}
 								htmlFor="commerce-provider-item"
 								hint={t("settings.tribute.rules.providerItemHint")}
 							>
-								<FormFieldInput
+								<FormFieldSelect
 									id="commerce-provider-item"
 									value={draft.externalItemId}
-									maxLength={128}
-									autoComplete="off"
-									onChange={(event) => setDraft({ ...draft, externalItemId: event.target.value })}
+									options={catalogOptions}
+									disabled={catalog.isPending || catalog.isError || catalogItems.length === 0}
+									onChange={(event) => selectCatalogItem(event.target.value)}
 								/>
+								{catalog.isSuccess && catalogItems.length === 0 && (
+									<span className={styles.fieldNotice}>
+										{t("settings.tribute.rules.noSubscriptions")}
+									</span>
+								)}
 							</FormField>
+						)}
+						{draft.commerceType !== "donation" && catalog.isError && (
+							<div className={styles.catalogError}>
+								<InlineFeedback>{t("settings.tribute.rules.catalogError")}</InlineFeedback>
+								<ActionBtn variant="action" size="sm" onClick={() => void catalog.refetch()}>
+									{t("common.retry")}
+								</ActionBtn>
+							</div>
 						)}
 						<div className={styles.twoColumns}>
 							<FormField label={t("settings.tribute.rules.currency")} htmlFor="commerce-currency">
@@ -327,6 +403,7 @@ export function CommerceRuleEditor({
 									value={draft.currency}
 									maxLength={3}
 									autoCapitalize="characters"
+									readOnly={draft.commerceType !== "donation" && Boolean(selectedCatalogItem)}
 									onChange={(event) =>
 										setDraft({ ...draft, currency: event.target.value.toUpperCase() })
 									}
@@ -362,7 +439,11 @@ export function CommerceRuleEditor({
 						<FormField
 							label={t("settings.tribute.rules.accessProfile")}
 							htmlFor="commerce-access-profile"
-							hint={t("settings.tribute.rules.accessProfileHint")}
+							hint={t(
+								draft.commerceType === "subscription"
+									? "settings.tribute.rules.subscriptionProfileHint"
+									: "settings.tribute.rules.accessProfileHint",
+							)}
 						>
 							<FormFieldSelect
 								id="commerce-access-profile"
@@ -375,213 +456,226 @@ export function CommerceRuleEditor({
 								onChange={(event) => setDraft({ ...draft, accessProfileId: event.target.value })}
 							/>
 						</FormField>
-						<FormField label={t("settings.tribute.rules.grantMode")}>
-							<SegmentedControl
-								ariaLabel={t("settings.tribute.rules.grantMode")}
-								options={[
-									{ key: "extend", label: t("settings.tribute.rules.extend") },
-									{ key: "replace", label: t("settings.tribute.rules.replace") },
-								]}
-								value={draft.grantMode}
-								onChange={(value) => setDraft({ ...draft, grantMode: value as GrantMode })}
-							/>
-						</FormField>
-						<FormField label={t("settings.tribute.rules.calculation")}>
-							<SegmentedControl
-								ariaLabel={t("settings.tribute.rules.calculation")}
-								options={[
-									{ key: "fixed", label: t("settings.tribute.rules.fixed") },
-									{ key: "volume", label: t("settings.tribute.rules.amountBands") },
-								]}
-								value={draft.calculationType}
-								onChange={(value) =>
-									setDraft({
-										...draft,
-										calculationType: value as "fixed" | "volume",
-										bands: draft.bands.length ? draft.bands : [blankBand()],
-									})
-								}
-							/>
-						</FormField>
-						{draft.calculationType === "fixed" ? (
-							<FormField
-								label={t("settings.tribute.rules.fixedDays")}
-								htmlFor="commerce-fixed-days"
-							>
-								<FormFieldInput
-									id="commerce-fixed-days"
-									type="number"
-									inputMode="numeric"
-									min="1"
-									max="36500"
-									value={draft.fixedDurationDays}
-									onChange={(event) =>
-										setDraft({ ...draft, fixedDurationDays: event.target.value })
-									}
-								/>
-							</FormField>
-						) : (
-							<div className={styles.bands}>
-								<p className={styles.help}>{t("settings.tribute.rules.volumeHint")}</p>
-								{draft.bands.map((band, index) => (
-									<fieldset
-										className={styles.band}
-										key={band.key}
-										aria-label={t("settings.tribute.rules.band", { count: index + 1 })}
-									>
-										<div className={styles.bandHeader}>
-											<strong>{t("settings.tribute.rules.band", { count: index + 1 })}</strong>
-											{draft.bands.length > 1 && (
-												<ActionBtn
-													variant="ghost"
-													size="sm"
-													className={styles.removeBand}
-													aria-label={t("settings.tribute.rules.removeBandLabel", {
-														count: index + 1,
-													})}
-													onClick={() =>
-														setDraft({
-															...draft,
-															bands: draft.bands.filter((item) => item.key !== band.key),
-														})
-													}
-												>
-													<Trash2 size={15} aria-hidden="true" />
-												</ActionBtn>
-											)}
-										</div>
-										<div className={styles.bandRows}>
-											<FormRow
-												label={t("settings.tribute.rules.fromAmount")}
-												htmlFor={`commerce-band-from-${band.key}`}
-											>
-												<div className={styles.bandControl}>
-													<FormFieldInput
-														id={`commerce-band-from-${band.key}`}
-														className={styles.bandInput}
-														inputMode="decimal"
-														value={band.from}
-														onChange={(event) => updateBand(band.key, { from: event.target.value })}
-													/>
-													<span className={styles.bandUnit}>{draft.currency}</span>
-												</div>
-											</FormRow>
-											<FormRowSeparator />
-											<FormRow
-												label={t("settings.tribute.rules.everyAmount")}
-												htmlFor={`commerce-band-unit-${band.key}`}
-											>
-												<div className={styles.bandControl}>
-													<FormFieldInput
-														id={`commerce-band-unit-${band.key}`}
-														className={styles.bandInput}
-														inputMode="decimal"
-														value={band.unitAmount}
-														onChange={(event) =>
-															updateBand(band.key, { unitAmount: event.target.value })
-														}
-													/>
-													<span className={styles.bandUnit}>{draft.currency}</span>
-												</div>
-											</FormRow>
-											<FormRowSeparator />
-											<FormRow
-												label={t("settings.tribute.rules.grantDays")}
-												htmlFor={`commerce-band-days-${band.key}`}
-											>
-												<div className={styles.bandControl}>
-													<FormFieldInput
-														id={`commerce-band-days-${band.key}`}
-														className={styles.bandInput}
-														type="number"
-														inputMode="numeric"
-														min="1"
-														max="36500"
-														value={band.unitDays}
-														onChange={(event) =>
-															updateBand(band.key, { unitDays: event.target.value })
-														}
-													/>
-													<span className={styles.bandUnit}>
-														{t("settings.tribute.rules.daysUnit")}
-													</span>
-												</div>
-											</FormRow>
-										</div>
-									</fieldset>
-								))}
-								<ActionBtn
-									variant="action"
-									size="sm"
-									className={styles.addBand}
-									disabled={draft.bands.length >= 20}
-									onClick={() => setDraft({ ...draft, bands: [...draft.bands, blankBand()] })}
-								>
-									<Plus size={13} /> {t("settings.tribute.rules.addBand")}
-								</ActionBtn>
+						{draft.commerceType === "subscription" ? (
+							<div className={styles.providerExpiry}>
+								<strong>{t("settings.tribute.rules.providerExpiryTitle")}</strong>
+								<span>{t("settings.tribute.rules.providerExpiryHint")}</span>
 							</div>
+						) : (
+							<>
+								<FormField label={t("settings.tribute.rules.grantMode")}>
+									<SegmentedControl
+										ariaLabel={t("settings.tribute.rules.grantMode")}
+										options={[
+											{ key: "extend", label: t("settings.tribute.rules.extend") },
+											{ key: "replace", label: t("settings.tribute.rules.replace") },
+										]}
+										value={draft.grantMode}
+										onChange={(value) => setDraft({ ...draft, grantMode: value as GrantMode })}
+									/>
+								</FormField>
+								<FormField label={t("settings.tribute.rules.calculation")}>
+									<SegmentedControl
+										ariaLabel={t("settings.tribute.rules.calculation")}
+										options={[
+											{ key: "fixed", label: t("settings.tribute.rules.fixed") },
+											{ key: "volume", label: t("settings.tribute.rules.amountBands") },
+										]}
+										value={draft.calculationType}
+										onChange={(value) =>
+											setDraft({
+												...draft,
+												calculationType: value as CalculationType,
+												bands: draft.bands.length ? draft.bands : [blankBand()],
+											})
+										}
+									/>
+								</FormField>
+								{draft.calculationType === "fixed" ? (
+									<FormField
+										label={t("settings.tribute.rules.fixedDays")}
+										htmlFor="commerce-fixed-days"
+									>
+										<FormFieldInput
+											id="commerce-fixed-days"
+											type="number"
+											inputMode="numeric"
+											min="1"
+											max="36500"
+											value={draft.fixedDurationDays}
+											onChange={(event) =>
+												setDraft({ ...draft, fixedDurationDays: event.target.value })
+											}
+										/>
+									</FormField>
+								) : (
+									<div className={styles.bands}>
+										<p className={styles.help}>{t("settings.tribute.rules.volumeHint")}</p>
+										{draft.bands.map((band, index) => (
+											<fieldset
+												className={styles.band}
+												key={band.key}
+												aria-label={t("settings.tribute.rules.band", { count: index + 1 })}
+											>
+												<div className={styles.bandHeader}>
+													<strong>{t("settings.tribute.rules.band", { count: index + 1 })}</strong>
+													{draft.bands.length > 1 && (
+														<ActionBtn
+															variant="ghost"
+															size="sm"
+															className={styles.removeBand}
+															aria-label={t("settings.tribute.rules.removeBandLabel", {
+																count: index + 1,
+															})}
+															onClick={() =>
+																setDraft({
+																	...draft,
+																	bands: draft.bands.filter((item) => item.key !== band.key),
+																})
+															}
+														>
+															<Trash2 size={15} aria-hidden="true" />
+														</ActionBtn>
+													)}
+												</div>
+												<div className={styles.bandRows}>
+													<FormRow
+														label={t("settings.tribute.rules.fromAmount")}
+														htmlFor={`commerce-band-from-${band.key}`}
+													>
+														<div className={styles.bandControl}>
+															<FormFieldInput
+																id={`commerce-band-from-${band.key}`}
+																className={styles.bandInput}
+																inputMode="decimal"
+																value={band.from}
+																onChange={(event) =>
+																	updateBand(band.key, { from: event.target.value })
+																}
+															/>
+															<span className={styles.bandUnit}>{draft.currency}</span>
+														</div>
+													</FormRow>
+													<FormRowSeparator />
+													<FormRow
+														label={t("settings.tribute.rules.everyAmount")}
+														htmlFor={`commerce-band-unit-${band.key}`}
+													>
+														<div className={styles.bandControl}>
+															<FormFieldInput
+																id={`commerce-band-unit-${band.key}`}
+																className={styles.bandInput}
+																inputMode="decimal"
+																value={band.unitAmount}
+																onChange={(event) =>
+																	updateBand(band.key, { unitAmount: event.target.value })
+																}
+															/>
+															<span className={styles.bandUnit}>{draft.currency}</span>
+														</div>
+													</FormRow>
+													<FormRowSeparator />
+													<FormRow
+														label={t("settings.tribute.rules.grantDays")}
+														htmlFor={`commerce-band-days-${band.key}`}
+													>
+														<div className={styles.bandControl}>
+															<FormFieldInput
+																id={`commerce-band-days-${band.key}`}
+																className={styles.bandInput}
+																type="number"
+																inputMode="numeric"
+																min="1"
+																max="36500"
+																value={band.unitDays}
+																onChange={(event) =>
+																	updateBand(band.key, { unitDays: event.target.value })
+																}
+															/>
+															<span className={styles.bandUnit}>
+																{t("settings.tribute.rules.daysUnit")}
+															</span>
+														</div>
+													</FormRow>
+												</div>
+											</fieldset>
+										))}
+										<ActionBtn
+											variant="action"
+											size="sm"
+											className={styles.addBand}
+											disabled={draft.bands.length >= 20}
+											onClick={() => setDraft({ ...draft, bands: [...draft.bands, blankBand()] })}
+										>
+											<Plus size={13} /> {t("settings.tribute.rules.addBand")}
+										</ActionBtn>
+									</div>
+								)}
+							</>
 						)}
 					</div>
 				</section>
 
-				<section className={styles.card} aria-labelledby="commerce-preview-title">
-					<h3 id="commerce-preview-title" className={styles.cardTitle}>
-						{t("settings.tribute.rules.previewSection")}
-					</h3>
-					<div className={styles.fields}>
-						<p className={styles.help}>{t("settings.tribute.rules.previewHint")}</p>
-						<div className={styles.previewControls}>
-							<FormField
-								label={t("settings.tribute.rules.previewAmount", { currency: draft.currency })}
-								htmlFor="commerce-preview-amount"
-							>
-								<FormFieldInput
-									id="commerce-preview-amount"
-									inputMode="decimal"
-									value={previewAmount}
-									onChange={(event) => setPreviewAmount(event.target.value)}
-								/>
-							</FormField>
-							<ActionBtn
-								variant="action"
-								size="md"
-								loading={preview.isPending}
-								disabled={!input || previewAmountMinor === null}
-								onClick={() => {
-									if (!input || previewAmountMinor === null) return;
-									const fingerprint = JSON.stringify({ input, previewAmountMinor });
-									preview.reset();
-									setPreviewFingerprint(fingerprint);
-									preview.mutate({ rule: input, amountMinor: previewAmountMinor });
-								}}
-							>
-								{t("settings.tribute.rules.previewAction")}
-							</ActionBtn>
+				{draft.commerceType !== "subscription" && (
+					<section className={styles.card} aria-labelledby="commerce-preview-title">
+						<h3 id="commerce-preview-title" className={styles.cardTitle}>
+							{t("settings.tribute.rules.previewSection")}
+						</h3>
+						<div className={styles.fields}>
+							<p className={styles.help}>{t("settings.tribute.rules.previewHint")}</p>
+							<div className={styles.previewControls}>
+								<FormField
+									label={t("settings.tribute.rules.previewAmount", { currency: draft.currency })}
+									htmlFor="commerce-preview-amount"
+								>
+									<FormFieldInput
+										id="commerce-preview-amount"
+										inputMode="decimal"
+										value={previewAmount}
+										onChange={(event) => setPreviewAmount(event.target.value)}
+									/>
+								</FormField>
+								<ActionBtn
+									variant="action"
+									size="md"
+									loading={preview.isPending}
+									disabled={!input || previewAmountMinor === null}
+									onClick={() => {
+										if (!input || previewAmountMinor === null) return;
+										const fingerprint = JSON.stringify({ input, previewAmountMinor });
+										preview.reset();
+										setPreviewFingerprint(fingerprint);
+										preview.mutate({ rule: input, amountMinor: previewAmountMinor });
+									}}
+								>
+									{t("settings.tribute.rules.previewAction")}
+								</ActionBtn>
+							</div>
+							{previewData && (
+								<output className={styles.previewResult}>
+									<strong>
+										{previewData.matched
+											? t("settings.tribute.rules.previewMatched", {
+													count: previewData.durationDays,
+												})
+											: t("settings.tribute.rules.previewNoMatch")}
+									</strong>
+									{previewData.matchedBand && (
+										<span>
+											{t("settings.tribute.rules.previewBand", {
+												amount: formatMinorMoney(
+													previewData.matchedBand.fromAmountMinor,
+													draft.currency,
+												),
+											})}
+										</span>
+									)}
+								</output>
+							)}
+							{previewError && <InlineFeedback>{previewErrorCopy()}</InlineFeedback>}
 						</div>
-						{previewData && (
-							<output className={styles.previewResult}>
-								<strong>
-									{previewData.matched
-										? t("settings.tribute.rules.previewMatched", {
-												count: previewData.durationDays,
-											})
-										: t("settings.tribute.rules.previewNoMatch")}
-								</strong>
-								{previewData.matchedBand && (
-									<span>
-										{t("settings.tribute.rules.previewBand", {
-											amount: formatMinorMoney(
-												previewData.matchedBand.fromAmountMinor,
-												draft.currency,
-											),
-										})}
-									</span>
-								)}
-							</output>
-						)}
-						{previewError && <InlineFeedback>{previewErrorCopy()}</InlineFeedback>}
-					</div>
-				</section>
+					</section>
+				)}
 
 				{rule && (
 					<section className={styles.dangerZone}>
@@ -629,4 +723,28 @@ export function CommerceRuleEditor({
 			</ConfirmDialog>
 		</>
 	);
+}
+
+type Translate = ReturnType<typeof useTranslation>["t"];
+
+const SUBSCRIPTION_PERIOD_KEYS: Record<TributeSubscriptionPeriod, string> = {
+	trial: "settings.tribute.rules.period.trial",
+	onetime: "settings.tribute.rules.period.onetime",
+	weekly: "settings.tribute.rules.period.weekly",
+	monthly: "settings.tribute.rules.period.monthly",
+	quarterly: "settings.tribute.rules.period.quarterly",
+	halfyearly: "settings.tribute.rules.period.halfyearly",
+	yearly: "settings.tribute.rules.period.yearly",
+};
+
+function subscriptionLabel(subscription: CommerceCatalogSubscription, t: Translate): string {
+	const prices = subscription.periods
+		.map(
+			(period) =>
+				`${formatMajorMoney(period.priceMajor, subscription.currency)} / ${t(
+					SUBSCRIPTION_PERIOD_KEYS[period.period],
+				)}`,
+		)
+		.join(", ");
+	return prices ? `${subscription.name} · ${prices}` : subscription.name;
 }

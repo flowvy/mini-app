@@ -2,15 +2,47 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    TypeAdapter,
+    field_validator,
+)
 from pydantic.alias_generators import to_camel
 
 from flowvy.beszel_target import normalize_beszel_base_url
 from flowvy.kuma_target import normalize_kuma_base_url, normalize_kuma_slug
 
 PulseProvider = Literal["disabled", "kuma", "beszel"]
+_PAYMENT_URL_ADAPTER = TypeAdapter(HttpUrl)
+
+
+def normalize_payment_destination(value: str) -> str:
+    """Normalize an administrator-provided HTTPS destination without guessing provider paths."""
+    candidate = value.strip()
+    if not candidate:
+        raise ValueError("Payment URL cannot be empty")
+    parsed = _PAYMENT_URL_ADAPTER.validate_python(candidate)
+    if parsed.scheme != "https":
+        raise ValueError("Payment URL must use HTTPS")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("Payment URL cannot include credentials")
+    if parsed.fragment is not None:
+        raise ValueError("Payment URL cannot include a fragment")
+    return str(parsed)
+
+
+PaymentDestinationUrl = Annotated[
+    str,
+    Field(max_length=2048),
+    AfterValidator(normalize_payment_destination),
+]
+TributeSubscriptionId = Annotated[str, Field(pattern=r"^[1-9][0-9]{0,127}$")]
 
 
 class ProviderSettingsResponse(BaseModel):
@@ -29,6 +61,7 @@ class ProviderSettingsResponse(BaseModel):
     beszel_credentials_configured: bool
     tribute_credentials_configured: bool
     tribute_entitlement_execution_enabled: bool
+    tribute_identified_donation_automation_enabled: bool
     app_name: str | None = None
     logo_url: str | None = None
     welcome_text: str | None = None
@@ -37,6 +70,11 @@ class ProviderSettingsResponse(BaseModel):
     welcome_media_file_id: str | None = None
     welcome_media_file_name: str | None = None
     welcome_button_text: str | None = None
+    tribute_donation_url: PaymentDestinationUrl | None = None
+    tribute_subscription_urls: dict[TributeSubscriptionId, PaymentDestinationUrl] = Field(
+        default_factory=dict,
+        max_length=100,
+    )
     remnawave_version: str | None = None
     flowvy_version: str = "0.1.0"
     updated_at: int
@@ -62,6 +100,11 @@ class ProviderSettingsPatch(BaseModel):
     welcome_media_file_id: str | None = None
     welcome_media_file_name: str | None = None
     welcome_button_text: str | None = Field(default=None, max_length=100)
+    tribute_donation_url: PaymentDestinationUrl | None = None
+    tribute_subscription_urls: dict[TributeSubscriptionId, PaymentDestinationUrl] = Field(
+        default_factory=dict,
+        max_length=100,
+    )
 
     @field_validator("kuma_url")
     @classmethod

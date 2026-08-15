@@ -17,6 +17,11 @@ class UserRepository(BaseRepository[User]):
         """Find user by Telegram ID (same as primary key)."""
         return await self.get_by_id(telegram_id)
 
+    async def get_by_telegram_id_for_update(self, telegram_id: int) -> User | None:
+        """Lock one local account while creating a user-scoped durable intent."""
+        stmt = select(User).where(User.id == telegram_id).with_for_update()
+        return (await self._session.execute(stmt)).scalar_one_or_none()
+
     async def get_admins(self) -> list[User]:
         """Return all users with admin role."""
         stmt = select(User).where(User.role == UserRole.ADMIN)

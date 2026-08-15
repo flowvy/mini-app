@@ -4,10 +4,13 @@ from flowvy.models.access_profile import AccessProfile, AccessValidityMode
 from flowvy.models.base import Base
 from flowvy.models.bot_metrics import BotMetricsHistory
 from flowvy.models.commerce_rule import CommerceRule
+from flowvy.models.entitlement_baseline import EntitlementBaseline
 from flowvy.models.entitlement_operation import EntitlementOperation
 from flowvy.models.entitlement_operation_action import EntitlementOperationAction
 from flowvy.models.invite import Invite
 from flowvy.models.provider_settings import ProviderSettings
+from flowvy.models.sponsor_checkout import SponsorCheckout
+from flowvy.models.sponsor_offer import SponsorOffer
 from flowvy.models.subscription import Subscription, SubscriptionStatus
 from flowvy.models.tribute_webhook_event import TributeWebhookEvent
 from flowvy.models.user import User, UserRole
@@ -19,10 +22,13 @@ __all__ = [
     "Base",
     "BotMetricsHistory",
     "CommerceRule",
+    "EntitlementBaseline",
     "EntitlementOperation",
     "EntitlementOperationAction",
     "Invite",
     "ProviderSettings",
+    "SponsorCheckout",
+    "SponsorOffer",
     "Subscription",
     "SubscriptionStatus",
     "TributeWebhookEvent",

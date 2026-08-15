@@ -6,7 +6,7 @@ import {
 	useEntitlementOperations,
 } from "../../hooks/use-commerce-rules.ts";
 import { useTouchEditing } from "../../hooks/use-touch-editing.ts";
-import { formatDateISO } from "../../lib/format.ts";
+import { formatDateISO, formatExpiryDate } from "../../lib/format.ts";
 import { formatMinorMoney } from "../../lib/money.ts";
 import type {
 	EntitlementOperation,
@@ -43,14 +43,13 @@ const STATUS_KEYS: Record<EntitlementOperationStatus, string> = {
 };
 
 const EVENT_KEYS: Record<string, string> = {
-	new_digital_product: "settings.tribute.activity.event.new_digital_product",
-	digital_product_refunded: "settings.tribute.activity.event.digital_product_refunded",
 	new_donation: "settings.tribute.activity.event.new_donation",
 	recurrent_donation: "settings.tribute.activity.event.recurrent_donation",
 	cancelled_donation: "settings.tribute.activity.event.cancelled_donation",
 	new_subscription: "settings.tribute.activity.event.new_subscription",
 	renewed_subscription: "settings.tribute.activity.event.renewed_subscription",
 	cancelled_subscription: "settings.tribute.activity.event.cancelled_subscription",
+	effective_access_restore: "settings.tribute.activity.event.effective_access_restore",
 };
 
 const UNKNOWN_EVENT_KEY = "settings.tribute.activity.event.other";
@@ -59,7 +58,13 @@ const REASON_KEYS: Record<string, string> = {
 	cancellation_is_not_refund: "settings.tribute.activity.reason.cancellation_is_not_refund",
 	semantic_identity_unverified: "settings.tribute.activity.reason.semantic_identity_unverified",
 	unsupported_event: "settings.tribute.activity.reason.unsupported_event",
-	purchase_identity_missing: "settings.tribute.activity.reason.purchase_identity_missing",
+	subscription_identity_missing: "settings.tribute.activity.reason.subscription_identity_missing",
+	provider_expiry_missing: "settings.tribute.activity.reason.provider_expiry_missing",
+	anonymous_donation: "settings.tribute.activity.reason.anonymous_donation",
+	donation_identity_missing: "settings.tribute.activity.reason.donation_identity_missing",
+	donation_semantic_evidence_required:
+		"settings.tribute.activity.reason.donation_semantic_evidence_required",
+	donation_offer_mismatch: "settings.tribute.activity.reason.donation_offer_mismatch",
 	telegram_identity_missing: "settings.tribute.activity.reason.telegram_identity_missing",
 	user_not_found: "settings.tribute.activity.reason.user_not_found",
 	user_inactive: "settings.tribute.activity.reason.user_inactive",
@@ -69,16 +74,20 @@ const REASON_KEYS: Record<string, string> = {
 	rule_not_found: "settings.tribute.activity.reason.rule_not_found",
 	profile_unavailable: "settings.tribute.activity.reason.profile_unavailable",
 	profile_not_grantable: "settings.tribute.activity.reason.profile_not_grantable",
-	purchase_already_refunded: "settings.tribute.activity.reason.purchase_already_refunded",
 	refunded_before_apply: "settings.tribute.activity.reason.refunded_before_apply",
 	grant_cancelled_before_apply: "settings.tribute.activity.reason.grant_cancelled_before_apply",
-	refund_source_not_found: "settings.tribute.activity.reason.refund_source_not_found",
 	no_grant_to_compensate: "settings.tribute.activity.reason.no_grant_to_compensate",
 	provider_identity_missing: "settings.tribute.activity.reason.provider_identity_missing",
 	provider_identity_mismatch: "settings.tribute.activity.reason.provider_identity_mismatch",
 	grant_plan_incomplete: "settings.tribute.activity.reason.grant_plan_incomplete",
 	profile_snapshot_invalid: "settings.tribute.activity.reason.profile_snapshot_invalid",
 	provider_state_conflict: "settings.tribute.activity.reason.provider_state_conflict",
+	provider_state_ahead: "settings.tribute.activity.reason.provider_state_ahead",
+	paid_state_ahead: "settings.tribute.activity.reason.paid_state_ahead",
+	provider_state_not_restorable: "settings.tribute.activity.reason.provider_state_not_restorable",
+	baseline_missing: "settings.tribute.activity.reason.baseline_missing",
+	superseded_by_effective_access: "settings.tribute.activity.reason.superseded_by_effective_access",
+	provider_entitlement_expired: "settings.tribute.activity.reason.provider_entitlement_expired",
 	provider_state_mismatch: "settings.tribute.activity.reason.provider_state_mismatch",
 	refund_history_incomplete: "settings.tribute.activity.reason.refund_history_incomplete",
 	refund_requires_revocation: "settings.tribute.activity.reason.refund_requires_revocation",
@@ -116,7 +125,7 @@ function operationDescription(
 	}
 	if (operation.targetExpiry) {
 		details.push(
-			t("settings.tribute.activity.target", { date: formatDateISO(operation.targetExpiry) }),
+			t("settings.tribute.activity.target", { date: formatExpiryDate(operation.targetExpiry) }),
 		);
 	}
 	if (operation.reasonCode) {

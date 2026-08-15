@@ -7,6 +7,11 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from flowvy.api.routes.users import build_user_invite_response
 from flowvy.repositories.user import UserRepository
+from flowvy.schemas.commerce import (
+    SponsorCheckoutRequest,
+    SponsorCheckoutResponse,
+    SponsorStateResponse,
+)
 from flowvy.schemas.devices import DevicesResponse
 from flowvy.schemas.pulse import PulseResponse
 from flowvy.schemas.registration import UserInviteResponse
@@ -15,6 +20,11 @@ from flowvy.services.devices import DevicesService
 from flowvy.services.pulse import PulseService
 from flowvy.services.registration import RegistrationIdentity, RegistrationService
 from flowvy.services.remnawave import RemnawaveError
+from flowvy.services.sponsor import (
+    SponsorCheckoutConflictError,
+    SponsorOfferError,
+    SponsorStateService,
+)
 from flowvy.services.subscription import SubscriptionService
 
 router = APIRouter(
@@ -28,6 +38,36 @@ def check_debug(request: Request) -> None:
     """Raise 404 if debug mode is disabled."""
     if not request.app.state.settings.debug:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+
+@router.get("/sponsor/{telegram_id}", response_model=SponsorStateResponse)
+async def debug_sponsor_state(
+    telegram_id: int,
+    request: Request,
+    service: FromDishka[SponsorStateService],
+) -> SponsorStateResponse:
+    check_debug(request)
+    return await service.get_state(telegram_id)
+
+
+@router.post(
+    "/sponsor/{telegram_id}/checkouts",
+    response_model=SponsorCheckoutResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def debug_sponsor_checkout(
+    telegram_id: int,
+    payload: SponsorCheckoutRequest,
+    request: Request,
+    service: FromDishka[SponsorStateService],
+) -> SponsorCheckoutResponse:
+    check_debug(request)
+    try:
+        return await service.start_checkout(telegram_id, payload.offer_id)
+    except SponsorCheckoutConflictError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    except SponsorOfferError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
 
 
 @router.get("/invite/{telegram_id}", response_model=UserInviteResponse)
