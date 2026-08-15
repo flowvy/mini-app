@@ -1,0 +1,51 @@
+.content {
+	min-width: 0;
+	color: inherit;
+	font: inherit;
+	overflow-wrap: anywhere;
+}
+
+.content > :first-child {
+	margin-top: 0;
+}
+
+.content > :last-child {
+	margin-bottom: 0;
+}
+
+.content p,
+.content blockquote,
+.content ul,
+.content ol {
+	margin: 0 0 0.65em;
+}
+
+.content ul,
+.content ol {
+	padding-left: 1.4em;
+}
+
+.content li + li {
+	margin-top: 0.25em;
+}
+
+.content blockquote {
+	padding-left: 0.75em;
+	border-left: 2px solid var(--v2-border-positive-primary);
+	color: var(--v2-text-secondary);
+}
+
+.content a {
+	color: var(--v2-text-positive);
+	text-decoration: underline;
+	text-decoration-thickness: 0.08em;
+	text-underline-offset: 0.14em;
+}
+
+.content code {
+	padding: 0.08em 0.3em;
+	border-radius: 4px;
+	background: var(--v2-bg-tertiary);
+	font-family: var(--font-mono);
+	font-size: 0.92em;
+}

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from flowvy.models.sponsor_offer import SponsorOffer
 from flowvy.repositories.base import BaseRepository
@@ -32,6 +32,16 @@ class SponsorOfferRepository(BaseRepository[SponsorOffer]):
             .limit(1)
         )
         return (await self._session.execute(stmt)).scalar_one_or_none()
+
+    async def delete_by_rule_id(self, rule_id: object) -> int:
+        """Delete every presentation offer owned by one commerce rule."""
+        stmt = (
+            delete(SponsorOffer)
+            .where(SponsorOffer.commerce_rule_id == rule_id)
+            .returning(SponsorOffer.id)
+        )
+        result = await self._session.execute(stmt)
+        return len(result.scalars().all())
 
 
 __all__ = ["SponsorOfferRepository"]

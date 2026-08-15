@@ -60,8 +60,6 @@ class ProviderSettingsResponse(BaseModel):
     beszel_url: str | None
     beszel_credentials_configured: bool
     tribute_credentials_configured: bool
-    tribute_entitlement_execution_enabled: bool
-    tribute_identified_donation_automation_enabled: bool
     app_name: str | None = None
     logo_url: str | None = None
     welcome_text: str | None = None

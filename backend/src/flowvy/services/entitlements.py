@@ -126,15 +126,12 @@ class TributeEntitlementPlanner:
         profiles: AccessProfileRepository,
         users: UserRepository,
         subscriptions: SubscriptionRepository,
-        *,
-        identified_donation_automation_enabled: bool = False,
     ) -> None:
         self._operations = operations
         self._rules = rules
         self._profiles = profiles
         self._users = users
         self._subscriptions = subscriptions
-        self._identified_donation_automation_enabled = identified_donation_automation_enabled
 
     async def plan(
         self,
@@ -229,14 +226,6 @@ class TributeEntitlementPlanner:
                 source,
                 event,
                 reason,
-                semantic_key=semantic_key,
-                operation_kind="grant",
-            )
-        if not self._identified_donation_automation_enabled:
-            return await self._review(
-                source,
-                event,
-                "donation_semantic_evidence_required",
                 semantic_key=semantic_key,
                 operation_kind="grant",
             )

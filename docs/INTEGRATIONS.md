@@ -261,6 +261,10 @@ Flowvy создаёт provider user только когда оператор н�
 Без профиля создаётся только локальный Telegram user. Для каждого нового provider user используется
 детерминированный уникальный username `tg_<telegram_id>`, а protocol credentials, short UUID и
 subscription identity генерирует сама Remnawave; Flowvy их не переиспользует между пользователями.
+Registration default принимает только `duration`, `fixed` или `lifetime`, потому что Remnawave
+create-user требует конкретный `expireAt`. Профиль с `automation` не хранит дни/дату, исключён из
+default selector и отклоняется backend при прямом API-запросе. Если текущий default редактируется,
+его нельзя перевести в `automation`, пока оператор не выберет другой registration profile.
 
 До применения open/invite policy local miss проверяется exact read-only lookup по `telegramId`.
 Существующий provider-only user импортируется в локальные user/invite/subscription без attribution и
@@ -432,15 +436,20 @@ credentials и fragment, но сервер не делает по нему ис�
 `commerce_rules` связывает donation или subscription с active access profile. Donation может
 использовать fixed duration либо amount bands; вычисление идёт только в integer minor units.
 Subscription всегда использует абсолютный подписанный `expires_at` и replace semantics. Preview
-исполняет тот же calculator без сохранения и без provider mutation.
+исполняет тот же calculator без сохранения и без provider mutation. Для benefits profile этих правил
+рекомендуется `automation`: он хранит limits/status/tag/squads/provider options без локального срока;
+target expiry всегда приходит из проверенного rule result и не превращает отсутствие даты в lifetime.
 
 `sponsor_offers` отделяет пользовательское название, мотивационное описание и порядок от
 платёжного правила. Draft не требует provider request. Публикация fail-closed проверяет enabled
-rule, active profile, server feature flags и актуальный subscription catalog либо точные donation
-условия. Снятие с публикации не зависит от Tribute: snapshot очищается в SQL `NULL`, а редактируемые
-поля сохраняются; повторная публикация снова проверяет provider facts и создаёт новый snapshot.
-Несколько offers могут переиспользовать одно правило; правило нельзя удалить, пока на него ссылается
-offer.
+rule, active profile и актуальный subscription catalog либо точные donation условия. Снятие с
+публикации не зависит от Tribute: snapshot очищается в SQL `NULL`, а редактируемые поля сохраняются;
+повторная публикация снова проверяет provider facts и создаёт новый snapshot. Одна catalog
+subscription представлена одним rule и одним опубликованным offer со всеми provider periods/prices;
+несколько donation offers могут переиспользовать одно гибкое правило. Удаление rule атомарно удаляет
+все связанные public/draft offers и сам rule без запроса к Tribute. Сохранённые checkout/payment и
+entitlement snapshots не удаляются, уже выданный доступ не меняется; pending payment больше не
+сопоставляется автоматически с удалённым правилом.
 
 ### Webhook, inbox и идемпотентность
 
@@ -459,14 +468,19 @@ PostgreSQL `tribute_webhook_events` подавляет точные повтор
 retention worker после server-configured срока. Subscription semantic identity строится из
 subscription/user/absolute expiry, поэтому повтор одного состояния не продлевает доступ второй раз.
 Donation не содержит документированного уникального ID отдельного платежа: Flowvy использует
-нормализованный fingerprint, а автоматическое планирование identified donation дополнительно
-закрыто отдельным default-off feature flag. Anonymous donation всегда переводится в review.
+нормализованный fingerprint и автоматизирует identified donation только после полного
+checkout/rule match. Anonymous donation всегда переводится в review.
 
 Local `sponsor_checkouts` — 30-минутный intent, а не платёж. Donation webhook подтверждает его
 только при совпадении Telegram user, family, mode, event time, signed amount/currency и recurring
 period с immutable offer snapshot. Subscription дополнительно требует exact external item ID.
 Несовпадение создаёт review без grant. Browser redirect и кнопка обновления статуса не подтверждают
 оплату сами по себе; они только перечитывают server state.
+Пользователь может закрыть принадлежащий ему pending intent через
+`DELETE /api/me/sponsor/checkouts/{id}` и вернуться к выбору offers, если покинул Tribute без оплаты.
+Операция не вызывает Tribute, не отменяет provider payment и не удаляет audit row: статус становится
+`expired`. Matching signed event допускает `pending` и `expired`, поэтому позднее подтверждение после
+локального закрытия всё равно безопасно атрибутируется и обрабатывается.
 
 ### Entitlement planner и provider execution
 
@@ -476,9 +490,9 @@ Flowvy user, однозначную локальную Remnawave identity, enabl
 provider link допустима для первого платного доступа; неизвестный Telegram ID не создаёт local user
 и не обходит registration/invite policy.
 
-Provider worker включается только через `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED`. Он выбирает due
-rows через `FOR UPDATE SKIP LOCKED`, не держит DB transaction во время HTTP, повторно проверяет
-identity и применяет absolute target. Retry сверяет полный профиль и не продлевает доступ повторно.
+Provider worker запускается вместе с приложением. Он выбирает due rows через
+`FOR UPDATE SKIP LOCKED`, не держит DB transaction во время HTTP, повторно проверяет identity и
+применяет absolute target. Retry сверяет полный профиль и не продлевает доступ повторно.
 Перед первым платным изменением `entitlement_baselines` фиксирует восстановимое базовое состояние;
 после окончания последнего платного периода scheduled restore возвращает base profile либо
 отключает account, созданный только платёжным grant.
@@ -492,8 +506,10 @@ Admin journal показывает только allow-listed поля и server-
 `GET /api/me/sponsor` не вызывает Tribute. Он возвращает одно доказанное состояние и допустимое
 действие:
 
-- без платного доступа — выбор опубликованного donation или subscription offer;
-- pending — продолжить текущую оплату либо обновить server status, без второй оплаты;
+- без платного доступа — выбор опубликованного donation offer либо subscription offer со всеми
+  доступными periods/prices;
+- pending — продолжить текущую оплату, проверить server status с явным результатом либо закрыть
+  только локальное ожидание и выбрать другой offer, без второй одновременной оплаты;
 - applied one-time donation — точная дата и выбор любого опубликованного варианта продления;
 - recurring donation — точная оплаченная дата и управление автодонатом в Tribute;
 - active subscription — точная дата и управление подпиской в Tribute;
@@ -503,7 +519,38 @@ Tribute support подтвердила 2026-08-14: cancellation webhook recurrin
 уже оплаченного периода, а Creator API не позволяет вручную прочитать будущий billing state.
 Поэтому до конца периода Flowvy показывает доступ активным и заранее объясняет момент обновления.
 Для subscription другие subscription offers видны, но недоступны до окончания текущего периода;
-кнопка управления остаётся provider-hosted.
+кнопка управления остаётся provider-hosted. Creator API `1.0.0` возвращает `periods[]` с `periodId`,
+`period` и `price`, но официальные API/publishing docs на 2026-08-15 документируют только одну
+subscription link и не документируют URL-предвыбор `periodId`. Поэтому Flowvy показывает варианты
+до перехода, а сам выбор периода пользователь завершает в Tribute.
+Одна subscription automation выбирает один общий benefits profile для всех этих периодов. Profile
+задаёт трафик, устройства, status, tag и squads, а Tribute `expires_at` задаёт фактический срок; его
+локальная validity не используется. Режим profile `automation` делает это ограничение явным и не
+требует вводить фиктивные дни/дату; такой профиль нельзя использовать для регистрации. Разные
+benefits требуют отдельных subscriptions и rules.
+
+UX contract не маскирует это ограничение под локальный выбор: Home группирует название, мотивацию и
+все provider periods/prices в одной коммерческой карточке. Название и мотивацию задаёт оператор;
+Flowvy не придумывает отдельные названия услуг для provider periods. Shared read-only billing list
+показывает цену как главный факт, а нормализованный interval как вторичное условие списания;
+единственный CTA открывает Tribute. Radio, checkmark, active tile и segmented control запрещены,
+пока Flowvy не может передать реальный выбор провайдеру. Admin переиспользует тот же semantic
+billing presenter как storefront preview; status, visibility и Edit остаются отдельными действиями. Legacy
+дубли одного subscription сохраняются, но показываются свёрнуто после одной основной матрицы, чтобы
+оператор мог явно отредактировать или удалить их без скрытой миграции данных.
+
+Решение сверено 2026-08-15 с авторитетными UX-источниками:
+
+- [Apple HIG Layout](https://developer.apple.com/design/human-interface-guidelines/layout) и
+  [Segmented controls](https://developer.apple.com/design/human-interface-guidelines/segmented-controls)
+  для группировки и честного selection affordance;
+- [Baymard Plan Matrix](https://baymard.com/ecommerce-design-examples/plan-matrix) и
+  [subscription-service research](https://baymard.com/blog/new-research-consumables-subscription-services)
+  для видимых, сравнимых цен;
+- [Carbon selectable tiles](https://carbondesignsystem.com/components/tile/usage/) для различения
+  информационной и selectable tile;
+- [NN/g usability heuristics](https://www.nngroup.com/articles/ten-usability-heuristics/) для
+  соответствия реальному provider flow, видимого статуса и предсказуемого следующего действия.
 
 Все пользовательские сообщения используют настроенный branding app name. Фиксированное имя Flowvy
 допустимо только в административном интерфейсе.
@@ -522,6 +569,7 @@ rules/offers/activity и Home states без реальных платежей.
 - [Subscriptions API](https://wiki.tribute.tg/ru/api-dokumentaciya/podpiski);
 - [Donations](https://wiki.tribute.tg/ru/dlya-avtorov/donaty);
 - [Subscriptions](https://wiki.tribute.tg/ru/dlya-avtorov/podpiski).
+- [Subscription publishing](https://wiki.tribute.tg/ru/for-content-creators/subscriptions/subscription-publishing).
 
 ## Правила изменения контракта
 

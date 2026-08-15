@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import uuid
 from dataclasses import dataclass
 
 from sqlalchemy import select
@@ -53,6 +54,24 @@ class SponsorCheckoutRepository(BaseRepository[SponsorCheckout]):
             await self._session.flush()
             return None
         return checkout
+
+    async def abandon_pending(self, user_id: int, checkout_id: uuid.UUID) -> bool:
+        """Stop waiting for one owned redirect attempt without touching the provider."""
+        stmt = (
+            select(SponsorCheckout)
+            .where(
+                SponsorCheckout.id == checkout_id,
+                SponsorCheckout.user_id == user_id,
+                SponsorCheckout.status == "pending",
+            )
+            .with_for_update()
+        )
+        checkout = (await self._session.execute(stmt)).scalar_one_or_none()
+        if checkout is None:
+            return False
+        checkout.status = "expired"
+        await self._session.flush()
+        return True
 
     async def latest_for_user(self, user_id: int) -> SponsorCheckout | None:
         stmt = (

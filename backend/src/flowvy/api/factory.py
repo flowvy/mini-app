@@ -118,22 +118,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             settings.remnawave_webhook_cleanup_batch_size,
         ),
     )
-    entitlement_task: asyncio.Task[None] | None = None
-    if settings.tribute_entitlement_execution_enabled:
-        remnawave = await container.get(RemnawaveClient)
-        entitlement_task = asyncio.create_task(
-            run_entitlement_executor(
-                EntitlementExecutor(sm, remnawave, settings),
-                settings.tribute_entitlement_worker_interval_seconds,
-            ),
-        )
+    remnawave = await container.get(RemnawaveClient)
+    entitlement_task = asyncio.create_task(
+        run_entitlement_executor(
+            EntitlementExecutor(sm, remnawave, settings),
+            settings.tribute_entitlement_worker_interval_seconds,
+        ),
+    )
 
     try:
         yield
     finally:
-        background_tasks = [metrics_task, webhook_retention_task]
-        if entitlement_task is not None:
-            background_tasks.append(entitlement_task)
+        background_tasks = [metrics_task, webhook_retention_task, entitlement_task]
         for task in background_tasks:
             task.cancel()
         for task in background_tasks:

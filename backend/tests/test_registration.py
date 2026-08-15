@@ -7,6 +7,7 @@ import uuid
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from pydantic import ValidationError
 from redis.exceptions import ConnectionError as RedisConnectionError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
@@ -387,6 +388,113 @@ async def test_admin_configures_one_global_registration_profile(session: AsyncSe
     assert settings.registration_mode == "invite_only"
     assert settings.default_access_profile_id == profile.id
     assert profile.tag == "FREE"
+
+
+@pytest.mark.asyncio
+async def test_automation_profile_omits_expiry_and_cannot_be_registration_default(
+    session: AsyncSession,
+) -> None:
+    remnawave = AsyncMock()
+    admin = await UserService(UserRepository(session), Settings()).create_registered(
+        900_006,
+        "admin5",
+        "Admin Five",
+    )
+    service = RegistrationAdminService(
+        AccessProfileRepository(session),
+        ProviderSettingsRepository(session),
+        remnawave,
+    )
+
+    profile = await service.create_profile(
+        AccessProfileInput(name="Sponsor benefits", validity_mode="automation"),
+        admin.id,
+    )
+
+    assert profile.validity_mode == "automation"
+    assert profile.validity_days is None
+    assert profile.fixed_expire_at is None
+    with pytest.raises(
+        RegistrationAdminError,
+        match="cannot be used for registration",
+    ):
+        await service.update_settings(
+            RegistrationSettingsPatch(default_access_profile_id=profile.id),
+        )
+    remnawave.get_internal_squads.assert_not_awaited()
+    remnawave.get_external_squads.assert_not_awaited()
+    remnawave.get_user_tags.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_registration_default_cannot_be_changed_to_automation(
+    session: AsyncSession,
+) -> None:
+    remnawave = AsyncMock()
+    admin = await UserService(UserRepository(session), Settings()).create_registered(
+        900_007,
+        "admin6",
+        "Admin Six",
+    )
+    service = RegistrationAdminService(
+        AccessProfileRepository(session),
+        ProviderSettingsRepository(session),
+        remnawave,
+    )
+    profile = await service.create_profile(
+        AccessProfileInput(name="Default access", validity_mode="duration", validity_days=30),
+        admin.id,
+    )
+    await service.update_settings(
+        RegistrationSettingsPatch(default_access_profile_id=profile.id),
+    )
+
+    with pytest.raises(RegistrationAdminError, match="Change the default access profile"):
+        await service.update_profile(
+            profile.id,
+            AccessProfileInput(name="Default access", validity_mode="automation"),
+        )
+
+    persisted = await AccessProfileRepository(session).get_by_id(profile.id)
+    assert persisted is not None
+    assert persisted.validity_mode == "duration"
+    assert persisted.validity_days == 30
+
+
+@pytest.mark.asyncio
+async def test_registration_fails_closed_for_automation_managed_default(
+    session: AsyncSession,
+) -> None:
+    profile = await AccessProfileRepository(session).create(
+        name="Invalid registration default",
+        validity_mode="automation",
+        validity_days=None,
+        fixed_expire_at=None,
+        traffic_limit_bytes=0,
+        traffic_limit_strategy="NO_RESET",
+        status="ACTIVE",
+        internal_squad_uuids=[],
+        is_active=True,
+    )
+    await ProviderSettingsRepository(session).update_partial(
+        {"default_access_profile_id": profile.id},
+    )
+    remnawave = AsyncMock()
+    remnawave.get_user_by_telegram_id = AsyncMock(return_value=None)
+
+    with pytest.raises(RegistrationUnavailableError):
+        await _service(session, remnawave).register_open(IDENTITY)
+
+    remnawave.create_user.assert_not_awaited()
+
+
+def test_automation_profile_rejects_local_expiration_fields() -> None:
+    with pytest.raises(ValidationError):
+        AccessProfileInput(
+            name="Invalid automation profile",
+            validity_mode="automation",
+            validity_days=30,
+        )
 
 
 @pytest.mark.asyncio

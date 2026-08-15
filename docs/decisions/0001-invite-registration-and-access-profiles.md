@@ -66,9 +66,12 @@ Telegram-переход, ручной запасной путь и прозра�
 7. Access profile выбирает только оператор. Он одинаково применяется к open и invited registration;
    пригласивший не может назначить тариф. Отсутствующий профиль означает локальный аккаунт без
    Remnawave-доступа.
-8. Профиль хранит status, traffic/reset strategy, срок, device limit, tag, description и squads.
-   `duration`, `fixed` и `lifetime` преобразуются в точный create-user contract; lifetime означает
-   `2099-12-31T23:59:59Z` из-за обязательного `expireAt`.
+8. Профиль хранит status, traffic/reset strategy, политику срока, device limit, tag, description и
+   squads. `duration`, `fixed` и `lifetime` преобразуются в точный create-user contract; lifetime
+   означает `2099-12-31T23:59:59Z` из-за обязательного `expireAt`. `automation` хранит benefits без
+   локальных дней/даты и применяется только там, где внешний rule предоставляет target expiry. Он не
+   может быть registration default; backend отклоняет и прямой выбор, и перевод текущего default в
+   этот режим.
 9. Регистрация сериализуется PostgreSQL advisory transaction lock по Telegram ID. Перед Remnawave
    create выполняется exact lookup по `telegramId`; после timeout выполняется bounded reconciliation
    lookup, чтобы не создать дубль.
@@ -89,6 +92,8 @@ Telegram-переход, ручной запасной путь и прозра�
 - Повторное применение default profile к существующему Remnawave user отвергнуто: оно могло бы
   затереть оплаченный либо вручную настроенный доступ. Для такой миграции потребуется отдельное
   явное admin-действие, если продукт решит его добавить.
+- Использование automation-managed profile как registration default отвергнуто: без события
+  автоматизации невозможно вывести обязательный и безопасный `expireAt`.
 - Многоуровневая сеть и награды отложены: сначала нужна проверенная прямая attribution без лишней
   игровой механики и fraud surface.
 - Только код без ссылки отвергнут как лишний ручной шаг; только ссылка без кода — как плохой fallback

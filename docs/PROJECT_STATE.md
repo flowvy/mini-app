@@ -1,7 +1,7 @@
 # Текущее состояние Flowvy
 
 Последняя полная проверка: **2026-08-15**; последний change-aware gate: **2026-08-15**
-Проверенное текущее состояние: **`dev` с Tribute sponsor offers, Home billing state и paid/base reconciliation**
+Проверенное текущее состояние: **`dev` с always-on Tribute delivery, multi-period sponsor offers и paid/base reconciliation**
 Последний полный baseline: **`dd3b5c8`** (`dev`, 2026-08-04)
 Стадия: **незавершённый MVP; production readiness не подтверждена**
 
@@ -36,34 +36,43 @@
   calculator в integer minor units; subscription применяет signed absolute `expires_at`. Draft
   preview не пишет БД и не вызывает provider.
 - `sponsor_offers` отделяет title/description/order от access rule. Publish fail-closed проверяет
-  executor/rule/profile, subscription catalog либо точные donation условия и сохраняет immutable
-  checkout snapshot. Снятие с публикации очищает snapshot в SQL `NULL`, не обращается к Tribute и
-  оставляет редактируемую конфигурацию для последующей повторной проверки. Linked rule нельзя
-  удалить, пока существует offer.
+  enabled rule/profile, subscription catalog либо точные donation условия и сохраняет immutable
+  checkout snapshot. Одна provider subscription соответствует одному rule и одному опубликованному
+  offer со всеми catalog periods/prices. Снятие с публикации очищает snapshot в SQL `NULL`, не
+  обращается к Tribute и оставляет редактируемую конфигурацию для повторной проверки. Удаление rule
+  атомарно удаляет связанные offers, но сохраняет payment/checkout history, entitlement snapshots и
+  уже выданный доступ; pending payment после удаления больше не автоматизируется.
 - `GET /api/me/sponsor` вычисляет no/base/paid, pending, provisioning, review, one-time и recurring
   states только из локальных durable facts. `POST /api/me/sponsor/checkouts` создаёт один expiring
-  redirect intent, а не provider payment. Только matching signed event может подтвердить checkout.
+  redirect intent, а не provider payment. Pending check имеет явный progress/result;
+  `DELETE /api/me/sponsor/checkouts/{id}` идемпотентно закрывает только локальное ожидание своего
+  checkout и возвращает offers. Поздний matching signed event всё равно может подтвердить `expired`
+  intent; Tribute не вызывается. Только matching signed event может подтвердить checkout.
 - `POST /api/webhooks/tribute` проверяет raw-body HMAC, bounded body, freshness и strict supported
   schema до planner. Поддерживаются donation и subscription lifecycle events. Иное подписанное имя
   сохраняется как `ignored` audit metadata без checkout match, entitlement operation или
   Remnawave mutation; raw body/signature/username не хранятся.
 - `entitlement_operations` — durable ledger/outbox. Subscription deduplicates absolute
-  `subscription/user/expires_at` state; identified donation закрыт отдельным default-off semantic
-  gate, anonymous donation всегда review-only. Cancellation не отзывает уже оплаченный доступ.
+  `subscription/user/expires_at` state; identified donation автоматизируется после полного
+  checkout/rule match, anonymous или неоднозначный donation всегда review-only. Cancellation не
+  отзывает уже оплаченный доступ.
 - Admin operator actions вычисляются backend: terminal provider failure можно retry, review можно
   resolve с обязательной заметкой без access mutation. Request UUID и append-only audit обеспечивают
   идемпотентность.
-- Feature-gated executor по умолчанию выключен. При включении он повторно проверяет identity,
-  применяет immutable profile/absolute target и сохраняет `entitlement_baselines` для scheduled
-  восстановления base access. Provider conflict или неполная история останавливаются в review.
+- Executor запускается вместе с приложением, повторно проверяет identity, применяет immutable
+  profile/absolute target и сохраняет `entitlement_baselines` для scheduled восстановления base
+  access. Автоматизацию будущих платежей выключает rule toggle; provider conflict или неполная
+  история останавливаются в review.
 - `scripts/verify-tribute-entitlements.ps1` проводит подписанный donation flow через production
   FastAPI/Dishka/PostgreSQL boundary с fake providers и без реальных внешних запросов.
 - Явная открытая/invite-only регистрация: `/api/me` не создаёт полностью неизвестного пользователя
   чтением, но безопасно импортирует exact provider-only Remnawave match; onboarding работает
   одинаково из Mini App и бота.
 - Access profiles задают local-only либо Remnawave grant со сроком, трафиком/reset strategy,
-  устройствами, status, provider-owned tag, description и internal/external squads. Каталог tag
-  читается из Remnawave и повторно проверяется backend перед сохранением изменённого значения. У
+  устройствами, status, provider-owned tag, description и internal/external squads. Для rule-managed
+  grant доступен явный `automation` без локальных дней/даты; он сохраняет только benefits и не может
+  быть registration default. Каталог tag читается из Remnawave и повторно проверяется backend перед
+  сохранением изменённого значения. У
   каждого пользователя один постоянный многоразовый invite code; `invited_by_id` и direct count
   фиксируют приглашённых.
 - Remnawave create-user поддерживает общий точный контракт 2.8.1/3.0.0/3.1.0, deterministic identity
@@ -130,12 +139,26 @@
   modal/focus/VisualViewport lifecycle переиспользуют общие UI primitives; raw payload и provider
   diagnostics не выводятся.
 - На том же route admin создаёт user-facing sponsor offer из существующего automation rule.
-  Draft доступен при выключенном delivery; publish проверяет готовность на backend. Список показывает
-  сохранённую provider price/period и visibility, editor переиспользует общий native dialog,
-  FormField, Toggle, ActionBtn и ConfirmDialog без отдельной form/modal системы. Для donation каждая
-  карточка получает собственную Tribute link и ожидаемую сумму; глобального donation link в
-  Payment links больше нет. Переключатель опубликованного оффера переводит его в Draft без повторной
+  Publish проверяет готовность rule/profile/destination на backend. Список показывает storefront
+  preview: статус, видимость, описание и все сохранённые provider periods/prices без обрезанной
+  технической строки. Старые дубли одной subscription не удаляются автоматически: основная карточка
+  показывает общую матрицу периодов, остальные остаются явными, но свёрнутыми строками для проверки,
+  редактирования или удаления. Editor и список переиспользуют общий SubscriptionBillingList, native
+  dialog, FormField, Toggle, ActionBtn и ConfirmDialog без отдельной form/modal системы. Для donation
+  каждая карточка получает собственную Tribute link и ожидаемую сумму; глобального donation link в
+  Payment links больше нет. Существующий offer можно связать с другим automation rule; backend
+  повторно проверяет новую связку и обновляет published snapshot, а уже начатый checkout сохраняет
+  прежний immutable rule snapshot. Переключатель опубликованного оффера переводит его в Draft без повторной
   provider-проверки; Home получает только оставшиеся published-ready варианты.
+- Offer description поддерживает ограниченный переносимый CommonMark. Общий Tiptap editor всегда
+  показывает один фиксированный toolbar над полем на touch, keyboard и fine-pointer устройствах;
+  системный selection menu не заменяется и второй контекстный popup не создаётся. Toolbar имеет
+  WAI-ARIA semantics, roving tab stop и arrow/Home/End navigation. Результат форматирования виден
+  сразу без отдельного preview; системные Cut/Copy/Paste actions не подавляются. Backend сохраняет line
+  structure, а admin cards/Home рендерят единый
+  allow-listed semantic результат без raw HTML. Лимит относится к 300 видимым символам, а source
+  получает запас до 2 000 символов под Markdown syntax. Тот же editor/renderer является готовой
+  frontend-границей будущего Broadcast; Telegram serialization ещё не реализована.
 - Штатный подписанный Tribute test-ping подтверждён controlled delivery 2026-08-14: отдельный exact
   object с bounded `test_event` получает `200` после HMAC, не пишет inbox и не запускает commerce.
   Реальная доставка подтвердила ожидаемый 64-hex signature encoding без раскрытия тела или секрета.
@@ -183,7 +206,13 @@
   paid-period cancelled state у donation нет. Pending checkout,
   provisioning и review скрывают новый checkout и прямо просят не платить повторно. Donation offer
   предупреждает использовать тот же Telegram account и не включать anonymity. Redirect сам по себе
-  не меняет access. Единый expiry parser принимает Unix и ISO contracts и распознаёт только
+  не меняет access. Subscription offer является отдельной коммерческой карточкой: заданные
+  оператором название и описание, read-only список provider prices/billing intervals и одна
+  настоящая кнопка `Continue in Tribute`. Flowvy не создаёт названия отдельных услуг из technical
+  period enum; цена является главным фактом, а interval — вторичным условием списания. Billing rows
+  не имеют radio/check/selected affordance, потому что Flowvy не может передать предварительный
+  выбор периода по документированному Tribute URL contract. Единый expiry parser
+  принимает Unix и ISO contracts и распознаёт только
   документированный lifetime sentinel конца 2099 года; Home, sponsor state и admin user surfaces
   показывают его как `No expiry`, не как календарную дату 2100 года.
 - Identity, Registration & Access и Welcome Message собраны в секции Flowvy Mini-App. Branding
@@ -259,7 +288,7 @@
 - Tribute receiver получил controlled real non-anonymous donation и monthly subscription: HMAC,
   inbox, planner, checkout confirmation, Remnawave grant и base restore scheduling подтверждены;
   raw payload/PII не читались. Subscription idempotently применяет absolute provider expiry, а
-  identified donation остаётся за отдельным default-off flag; anonymous donation всегда review.
+  безопасно matched identified donation проходит автоматизацию; anonymous donation всегда review.
   Period-end donation/subscription cancellation и последующее renewal ещё не наблюдались live.
   Creator webhook не документирует failed-charge/retry и next-charge state, поэтому UI их не
   угадывает. Operator retry/resolve не заменяет controlled provider investigation или rollout.
@@ -456,7 +485,7 @@ Tribute показал success, endpoint вернул `200`, inbox осталс�
 | Tribute migrated UUID runtime repair | live admin create failure; rollback-only service reproduction; repair migration `w3x4y5z6a7b8`; migrated-schema offer/checkout INSERT proof; 18 focused tests; `PLAYWRIGHT_PORT=5223; scripts/verify.ps1 -Scope Full` | Реальная Alembic-схема выявила отсутствующий server default у UUID PK `sponsor_offers`/`sponsor_checkouts`, тогда как pytest `create_all()` использовал корректный ORM default. Forward repair добавил `gen_random_uuid()` обеим таблицам и применён к dev. Тот же published 100 RUB offer после upgrade создаётся как `ready`; diagnostic transaction откатана. Full gate: migration inserts, one-head/upgrade/downgrade/re-upgrade/drift, Ruff, 469 backend, 56 pinned Remnawave contract, frontend lint/type/unit/build, repository Playwright и docs passed |
 | Shared lifetime expiry presentation | 4 format unit cases; frontend lint/typecheck; 43 unit; production build; 12 focused Playwright cases | Повторная clean registration создала active secondary user с одной Remnawave-linked subscription и без commerce records. Общий Unix/ISO parser использует Flowvy lifetime sentinel `2099-12-31T23:59:59Z`; Home detail, sponsor card, admin list/hero/detail и entitlement target formatting больше не содержат отдельных lifetime эвристик. `Basic access / No expiry` подтверждён в light/dark на 430x932, 320x568, iOS WebKit и desktop; screenshots просмотрены, Axe/overflow/console/network guards зелёные. |
 | Tribute repeated clean one-time live flow | обезличенные DB invariants, read-only exact Remnawave lookup и runtime log counts | После удаления secondary user локально и в Remnawave повторная invite-only registration создала lifetime base access. Новый dedicated 100 RUB non-anonymous checkout получил ровно один authenticated `new_donation`, стал `confirmed` и создал один applied 30-day grant с первой попытки плюс один pending base restore. Duplicate/problem operations отсутствуют; local subscription, operation target/provider expiry, Remnawave identity и полный paid profile совпадают. Home показал active sponsor state и `Extend access`; runtime за flow содержит один webhook 2xx, 0 errors и 0 warnings. Raw payload, credential и идентификаторы не читались и не выводились. |
-| Tribute controlled-runtime restart | published offer/rule/profile/checkout DB audit; ready-offer service check; public route/readiness | Последующий restart стандартной default-off командой скрыл `Extend`, хотя active grant и offer оставались целы: `SponsorStateService` корректно удалил renewal action при нуле ready offers. Dev повторно поднят без очистки данных с `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED=true` и `TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED=true` в окружении того же процесса; один published offer снова `ready`, public app `200`, startup errors отсутствуют. При каждом продолжении controlled Tribute testing оба флага нужно передавать заново; в обычном/production runtime их безопасный default остаётся `false`. |
+| Tribute controlled-runtime restart (historical) | published offer/rule/profile/checkout DB audit; ready-offer service check; public route/readiness | Исторический controlled restart подтвердил, что active grant и offer сохраняются при изменении runtime rollout state, а `SponsorStateService` скрывает renewal action при нуле ready offers. Этот прежний gate удалён: текущая автоматизация управляется rule toggle, а видимость payment choice — offer toggle. |
 | Tribute recurring-donation state contract | 22 focused backend tests; 147/1 full Tribute browser cases; deterministic light/dark evidence; `PLAYWRIGHT_PORT=5240; scripts/verify.ps1 -Scope Full`; provider support answer; controlled live initial/cancel observation | Initial recurring `new_donation` и `recurrent_donation` связываются с applied donation grant и дают access-first `recurring_donation_active`/`Manage auto-donation in Tribute`, а не one-time `Extend` или обещание auto-renew. Tribute support подтвердила, что `cancelled_donation` приходит только в конце paid period и API не позволяет проверить состояние вручную. Поэтому UI до конца периода одинаков до/после отмены, показывает точную access date и branded timing note; period-end event даёт `recurring_expired`/base flow. `recurring_cancelled_active` остаётся subscription-only. Mobile/small-mobile/iOS WebKit/desktop matrix зелёная, light/dark recurring cards просмотрены вручную, overflow/Axe/console/network guards прошли. Full gate завершился за 253,8 с: migrations/drift, Ruff, 477 backend, 56 pinned Remnawave, frontend lint/type/unit/build, repository Playwright и docs. Live initial 100 RUB recurring donation пришёл как `new_donation + weekly`, применил один 30-day grant и согласовал local/Remnawave state; фактический period-end cancellation webhook ещё не наблюдался. |
 | Tribute exact donation offer contract | official Creator/subscriber donation docs; 90 focused backend tests; migration verifier; 147/1 full Tribute browser cases; `PLAYWRIGHT_PORT=5250; scripts/verify.ps1 -Scope Full`; standard dev restart | Donation link не фиксирует payer-controlled amount/mode/frequency. Offer и immutable checkout snapshot теперь требуют exact amount, one-time/recurring mode и recurring period; Home показывает точные действия до редиректа. Signed mismatch закрывает checkout и создаёт `review / donation_offer_mismatch` до grant, exact match разрешает только linked offer rule. Admin editor переиспользует текущие segmented/select/form primitives; mobile/small-mobile/iOS/desktop light/dark evidence проверена без overflow/Axe/console/network ошибок. Full gate за 253,6 с прошёл migrations/runtime inserts/drift, Ruff, 484 backend, 56 pinned Remnawave contracts, frontend lint/type/unit/build, repository Playwright и docs. Dev upgraded до `x3y4z5a6b7c8`; legacy `any` offer безопасно снят с публикации до выбора exact schedule; local/public health и frontend `200`, public debug `404`. Реальные Tribute/Remnawave requests не выполнялись. |
 | Tribute controlled live monthly subscription | official subscriptions/webhooks OpenAPI `1.0.0`; live read-only catalog; real signed monthly payment; allow-listed DB/Remnawave reconciliation; 94 subscription/webhook/sponsor tests plus 21 executor/operator tests; controlled cancellation observation | Catalog currency lower-case drift нормализован на provider boundary; конкретная subscription подтвердила один monthly period. Published offer создал pending checkout, signed `new_subscription` подтвердил exact item, identified user, 100 RUB/month, `regular` и absolute expiry; checkout стал confirmed. Remnawave применил весь paid profile, но provider сохранил более грубую fractional timestamp precision, из-за чего strict comparison безопасно дал review. Millisecond normalization и manual Retry для идемпотентного `provider_state_mismatch` reconciled ту же operation как applied без второй оплаты/мутации. После отмены в Tribute немедленного cancellation webhook не было: paid grant/expiry остались корректны. Home теперь access-first подтверждает срок и Manage CTA, не утверждает auto-renew без provider evidence и branded note объясняет period-end update. Lifetime base restore запланирован на paid expiry. Raw webhook, secrets и identifiers не читались/не выводились. |
@@ -464,6 +493,14 @@ Tribute показал success, endpoint вернул `200`, inbox осталс�
 | Sponsor-offer unpublish repair | PostgreSQL repository regression; focused sponsor service suite; focused visibility Playwright; `PLAYWRIGHT_PORT=5275; scripts/verify.ps1 -Scope Changed` | Nullable offer snapshot now uses SQLAlchemy `JSONB(none_as_null=True)`, so published → Draft stores SQL `NULL` instead of invalid JSONB `null`. Focused backend 20/20 and focused browser 1/1 passed. Changed gate passed Ruff, 383 service-free backend tests, frontend lint/typecheck/43 unit/build, 98 mobile Playwright tests and docs; existing development data was preserved. |
 | Remnawave device metadata UI | official exact 2.8.1/3.1.0 schemas; `scripts\verify-contracts.ps1`; focused four-project Devices matrix; light/dark evidence; `PLAYWRIGHT_PORT=5339; scripts\verify.ps1 -Scope Full` | BFF allow-list `requestIp`/UA/Updated и platform-based OS glyphs подтверждены. Focused Devices matrix 20/20 прошла на 430x932, 320x568, iOS WebKit и desktop; Android/iOS/macOS/Windows/Linux, nullable/long metadata, deletion, Axe/overflow/console/network зелёные. Light/dark screenshots на 320/430 px просмотрены. Full gate: migrations/drift, Ruff, 483 backend, 56 pinned Remnawave contract, frontend lint/typecheck/43 unit/build, 100 mobile Playwright и docs passed. Реальный Remnawave не вызывался. |
 | Compact locale punctuation и neutral dialog focus | Apple HIG Alerts/Writing, Material Writing и Microsoft Style Guide; locale invariant; focused Devices matrix; full mobile Playwright | Во всех 189 English locale leaves удалена только финальная точка с сохранением internal punctuation; будущие JSON-локали покрыты catalog regression. Device confirmation фокусирует semantic heading, а не Cancel. Focused Devices 9/9 прошли на 430x932, 320x568 и iOS WebKit, шесть light/dark screenshots просмотрены; frontend lint/typecheck, 44 unit, build и полный mobile Playwright 100/100 зелёные. |
+| Tribute always-on automation и multi-period subscription UX | official Creator API/OpenAPI `1.0.0` и subscription publishing docs; full backend; `scripts\verify-contracts.ps1`; Tribute all-project matrix; focused light/dark evidence; `scripts\verify.ps1 -Scope Changed -SkipE2E` | Скрытые rollout-флаги и admin `Webhook delivery` удалены: rule toggle управляет будущей payment-to-access автоматизацией, offer toggle — только публичной видимостью. Один provider subscription теперь имеет одну automation rule и один offer со всеми `periods[]`; Home показывает month/3 months/year и цены до перехода. Официального period-preselection URL-контракта нет, поэтому период выбирается в Tribute без guessed query parameters. Ruff и full backend 483/483, pinned contracts 56/56, frontend lint/typecheck/43 unit/build, Tribute 151 passed + 1 documented skip, focused evidence 4/4 и changed/docs gate прошли. Mobile/small-mobile light/dark screenshots просмотрены; реальный платеж или provider mutation не выполнялись. |
+| Tribute offer-card UX redesign | Apple HIG Layout/Segmented controls, Baymard Plan Matrix/subscription research, Carbon tiles, NN/g heuristics и официальный Tribute URL contract; shared presenter unit coverage; deterministic admin/Home light/dark evidence; `PLAYWRIGHT_PORT=5383; pnpm exec playwright test tests/e2e/tribute.spec.ts --workers=2`; `scripts\verify.ps1 -Scope Changed -SkipE2E` | Home снова показывает одну цельную коммерческую карточку: title/description, exact compact prices, read-only period tiles и отдельный `View plans in Tribute` CTA. Admin использует тот же semantic period grid, явные status/visibility/Edit controls и progressive disclosure для legacy-дублей без скрытого удаления данных. Period tiles намеренно не выглядят выбранными, потому что документированного preselection contract нет. Tribute matrix: 155 passed, 1 ожидаемый desktop-only keyboard skip на 430x932, 320x568, iOS WebKit и desktop; Axe/overflow/console/network guards и light/dark screenshots проверены. Frontend lint/typecheck, 44 unit, build и changed gate с Ruff, 384 service-free backend tests и docs прошли. Standard dev перезапущен с сохранением данных; local/public frontend, health и ready вернули `200`, public debug — `404`. Реальные Tribute/Remnawave requests не выполнялись. |
+| Tribute recoverable pending checkout | row-lock repository/service tests; full backend; frontend lint/type/unit/build; focused and full four-project Tribute Playwright; 320/430 light/dark visual review | `Check payment status` теперь показывает spinner, блокирует повторный запрос и сообщает, если подтверждение ещё не пришло. `Choose another option` через native dialog закрывает только owned local pending intent и сразу возвращает offers; failure оставляет безопасное waiting state. Поздний signed webhook после abandon подтверждается из `expired`, поэтому оплата не теряется. Subscription rule editor называет единый benefits profile для всех periods и объясняет, что Tribute `expires_at` задаёт срок. Ruff/format и 487 backend tests, 44 frontend unit, production build, 163 Tribute Playwright passed + 1 ожидаемый desktop keyboard skip; 320/430 light/dark screenshots просмотрены, overflow/Axe/console/network guards зелёные. Реальные Tribute/Remnawave requests не выполнялись. |
+| Atomic commerce-rule deletion | PostgreSQL service + authenticated HTTP regressions; full backend; frontend lint/type/unit/build; focused and full four-project Tribute Playwright; light/dark visual review; `scripts\verify.ps1 -Scope Changed -SkipE2E`; standard dev restart | Delete rule теперь в одной DB-транзакции удаляет все связанные draft/published offers и сам rule, не обращаясь к Tribute/Remnawave и не меняя историю либо уже выданный доступ. Confirmation честно предупреждает про payment choices и pending matching; failure остаётся в модалке для retry, success обновляет rules/offers/Home cache. Найденный Axe contrast defect общего danger CTA исправлен существующими adaptive design tokens. Ruff, 489 backend, 44 frontend unit, production build и 171 Tribute Playwright passed + 1 ожидаемый desktop keyboard skip; changed gate с 386 service-free tests зелёный. 320/430, iOS WebKit и desktop light/dark screenshots просмотрены, Axe/overflow/console/network guards прошли. Standard Telegram-enabled dev перезапущен с сохранением данных; local/public frontend, health и ready вернули `200`, public debug — `404`, startup error markers отсутствуют. |
+| Automation-managed access-profile validity | Alembic runtime INSERT/constraint gate; 68 focused и 493 full backend tests; 56 pinned Remnawave contracts; frontend lint/typecheck/44 unit/build; 107 mobile + 12 focused all-project Playwright; light/dark visual review; docs gate; standard dev restart | Access profile получил явный режим `automation`: дни и дата не хранятся, benefits переиспользуются, а exact expiry обязан предоставить payment rule или другая автоматизация. Режим исключён из registration default; backend отклоняет прямой выбор, перевод текущего default и повреждённую policy fail-closed. Admin editor показывает понятный hint/summary без фиктивного срока. Миграция `z5a6b7c8d9e0` прошла zero/previous-head, downgrade/re-upgrade, runtime insert и drift. 320/430 px, iOS WebKit и desktop light/dark screenshots просмотрены без overflow; smoke Axe/console/network guards зелёные. Standard Telegram-enabled dev применил новый head с сохранением данных; local/public frontend, health и ready вернули `200`, public debug — `404`, startup error markers отсутствуют. |
+| Tribute provider-authored offer presentation | official Creator API/OpenAPI `1.0.0`; Apple HIG Lists/Layout; GOV.UK Summary list; shared frontend presenter; focused admin/Home four-project Playwright; frontend full gate | Flowvy больше не превращает provider period enum в названия услуг и не предлагает маркетинговое название периода. Название и описание одной offer-card задаёт оператор; общий `SubscriptionBillingList` на Home, в admin list и editor показывает только подтверждённые Tribute цену и нейтральное условие списания. CTA открывает Tribute, где пользователь делает реальный выбор. Focused admin/Home matrix прошла 8/8 на 430x932, 320x568, iOS WebKit и desktop; light/dark evidence просмотрены без overflow/Axe/console/network ошибок. Frontend lint/typecheck, 44 unit и production build прошли. |
+| Sponsor-offer automation-rule relink | статический аудит admin edit locks; focused four-project Playwright; eight light/dark screenshots; `scripts\verify.ps1 -Scope Changed -SkipE2E` | Искусственная create-only блокировка rule select удалена. Существующий draft или published offer можно связать с другим rule; UI отправляет новый `commerceRuleId`, backend повторно валидирует и пересобирает published snapshot, начатые checkouts сохраняют прежние immutable facts. Focused matrix прошла 4/4 на 430x932, 320x568, iOS WebKit и desktop; light/dark screenshots просмотрены, Axe/overflow/console/network guards зелёные. В admin source больше нет `disabled`, зависящих только от существования entity. Changed gate прошёл Ruff, 387 service-free backend tests, frontend lint/typecheck/44 unit/build и docs. |
+| Inline WYSIWYG formatted offer content | official Tiptap React fixed-menu/StarterKit/CharacterCount/Markdown contracts and WAI-ARIA toolbar pattern; 23 focused sponsor backend tests; 5 focused frontend unit tests; focused four-project Playwright; 109 mobile Playwright; `scripts\verify.ps1 -Scope Changed -SkipE2E` | Описания offer хранят ограниченный CommonMark в прежнем строковом поле, но автор работает с provider-neutral inline WYSIWYG. Один постоянный toolbar с bold/italic/strike/link/quote/lists расположен над editor surface для touch, keyboard и fine pointer; pointer heuristics, conditional trigger и selection-bound app popup отсутствуют. Native Cut/Copy/Paste/Format menu остаётся системным. Home/admin используют один безопасный renderer без raw HTML; 300-character limit считается по видимому тексту, source contract допускает до 2 000 символов для formatting syntax. Редактор загружается lazy только в admin form. Light/dark mobile/small-mobile/desktop evidence просмотрены; Axe/overflow/console/network guards зелёные. Fresh gates: 389 service-free backend, Ruff, frontend lint/typecheck/49 unit/build, 109/109 mobile и 4/4 focused all-project browser scenarios. Компоненты готовы к будущему Broadcast composer; его transport serializer пока не реализован. |
 ## Следующее действие
 
 Следующие live evidence зависят от внешнего события Tribute: фактический period-end

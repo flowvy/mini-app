@@ -149,11 +149,7 @@ interface PendingDecision {
 	requestId: string;
 }
 
-interface CommerceActivityProps {
-	executionEnabled: boolean;
-}
-
-export function CommerceActivity({ executionEnabled }: CommerceActivityProps) {
+export function CommerceActivity() {
 	const { t } = useTranslation();
 	const activity = useEntitlementOperations();
 	const actionMutation = useActOnEntitlementOperation();
@@ -326,9 +322,7 @@ export function CommerceActivity({ executionEnabled }: CommerceActivityProps) {
 						{t(
 							decisionIsResolve
 								? "settings.tribute.activity.action.resolveBody"
-								: executionEnabled
-									? "settings.tribute.activity.action.retryBody"
-									: "settings.tribute.activity.action.retryBodyDisabled",
+								: "settings.tribute.activity.action.retryBody",
 						)}
 					</p>
 					{decisionIsResolve && (

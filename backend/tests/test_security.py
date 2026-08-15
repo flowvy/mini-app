@@ -20,6 +20,7 @@ from flowvy.api.routes.admin.deps import get_current_admin
 from flowvy.config import Settings
 from flowvy.models.user import UserRole
 from flowvy.repositories.user import UserRepository
+from flowvy.services.remnawave import RemnawaveClient
 from flowvy.services.user import InactiveUserError, UserService
 
 from .test_auth import _build_init_data
@@ -183,8 +184,9 @@ async def test_lifespan_registers_same_webhook_secret(
     dispatcher = AsyncMock()
     redis = AsyncMock()
     session_factory = AsyncMock(spec=async_sessionmaker)
+    remnawave = AsyncMock()
     container = AsyncMock()
-    container.get = AsyncMock(side_effect=[bot, redis, session_factory])
+    container.get = AsyncMock(side_effect=[bot, redis, session_factory, remnawave])
     app = FastAPI()
     app.state.settings = settings
     app.state.dishka_container = container
@@ -196,6 +198,7 @@ async def test_lifespan_registers_same_webhook_secret(
     monkeypatch.setattr("flowvy.api.factory.setup_dishka_aiogram", lambda **_kwargs: None)
     monkeypatch.setattr("flowvy.api.factory.run_metrics_collector", collector)
     monkeypatch.setattr("flowvy.api.factory.run_webhook_retention", collector)
+    monkeypatch.setattr("flowvy.api.factory.run_entitlement_executor", collector)
 
     async with lifespan(app):
         bot.set_webhook.assert_awaited_once_with(
@@ -207,6 +210,7 @@ async def test_lifespan_registers_same_webhook_secret(
     assert requested_types[0] is Bot
     assert requested_types[1] is Redis
     assert requested_types[2] == async_sessionmaker[AsyncSession]
+    assert requested_types[3] is RemnawaveClient
 
 
 @pytest.mark.asyncio
@@ -231,8 +235,9 @@ async def test_lifespan_polls_locally_when_webhook_is_not_configured(
     dispatcher.start_polling.side_effect = poll
     redis = AsyncMock()
     session_factory = AsyncMock(spec=async_sessionmaker)
+    remnawave = AsyncMock()
     container = AsyncMock()
-    container.get = AsyncMock(side_effect=[bot, redis, session_factory])
+    container.get = AsyncMock(side_effect=[bot, redis, session_factory, remnawave])
     app = FastAPI()
     app.state.settings = settings
     app.state.dishka_container = container
@@ -244,6 +249,7 @@ async def test_lifespan_polls_locally_when_webhook_is_not_configured(
     monkeypatch.setattr("flowvy.api.factory.setup_dishka_aiogram", lambda **_kwargs: None)
     monkeypatch.setattr("flowvy.api.factory.run_metrics_collector", collector)
     monkeypatch.setattr("flowvy.api.factory.run_webhook_retention", collector)
+    monkeypatch.setattr("flowvy.api.factory.run_entitlement_executor", collector)
 
     async with lifespan(app):
         await asyncio.wait_for(polling_started.wait(), timeout=1)

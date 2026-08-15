@@ -88,45 +88,8 @@ export const TributeConfig: FC<TributeConfigProps> = ({ settings }) => {
 
 			<TributePaymentDestinations settings={settings} />
 			<CommerceRulesConfig />
-			<SponsorOffersConfig settings={settings} />
-			<CommerceActivity executionEnabled={settings.tributeEntitlementExecutionEnabled} />
-
-			<SettingsPanel title={t("settings.tribute.deliverySection")}>
-				<SettingsStatusRow
-					label={t("settings.tribute.receiverLabel")}
-					status={t("settings.tribute.receiverActive")}
-					tone="positive"
-					description={t("settings.tribute.receiverHint")}
-				/>
-				<SettingsDivider />
-				<SettingsStatusRow
-					label={t("settings.tribute.executorLabel")}
-					status={
-						settings.tributeEntitlementExecutionEnabled
-							? t("settings.tribute.executorEnabled")
-							: t("settings.tribute.executorDisabled")
-					}
-					tone={settings.tributeEntitlementExecutionEnabled ? "positive" : "warning"}
-					description={t("settings.tribute.executorHint")}
-				/>
-				<SettingsDivider />
-				<SettingsStatusRow
-					label={t("settings.tribute.donationAutomationLabel")}
-					status={
-						settings.tributeIdentifiedDonationAutomationEnabled
-							? t("settings.tribute.donationAutomationEnabled")
-							: t("settings.tribute.donationAutomationReview")
-					}
-					tone={settings.tributeIdentifiedDonationAutomationEnabled ? "positive" : "warning"}
-					description={t("settings.tribute.donationAutomationHint")}
-				/>
-				<SettingsDivider />
-				<SettingsStatusRow
-					label={t("settings.tribute.signatureLabel")}
-					status={t("settings.tribute.signatureValue")}
-					description={t("settings.tribute.signatureHint")}
-				/>
-			</SettingsPanel>
+			<SponsorOffersConfig />
+			<CommerceActivity />
 		</div>
 	);
 };

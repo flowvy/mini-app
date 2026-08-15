@@ -4,7 +4,7 @@ import type { ProviderUserStatus } from "./user-status.ts";
 export type { ProviderUserStatus } from "./user-status.ts";
 
 export type RegistrationMode = "open" | "invite_only";
-export type ValidityMode = "duration" | "fixed" | "lifetime";
+export type ValidityMode = "duration" | "fixed" | "lifetime" | "automation";
 export type TrafficStrategy = "NO_RESET" | "DAY" | "WEEK" | "MONTH" | "MONTH_ROLLING";
 export interface OnboardingStatus {
 	state: "registered" | "open" | "invite_required";

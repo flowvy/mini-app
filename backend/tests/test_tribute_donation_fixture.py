@@ -160,8 +160,6 @@ async def test_signed_donation_matrix_plans_without_provider_mutation(
 ) -> None:
     """Exercise HTTP, signature, inbox dedupe, rule selection, bands, and reviews."""
     monkeypatch.setenv("TRIBUTE_API_KEY", _TRIBUTE_TEST_KEY)
-    monkeypatch.setenv("TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED", "true")
-    monkeypatch.setenv("TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED", "false")
     factory = async_sessionmaker(engine, expire_on_commit=False)
     one_time_rule_id, recurring_rule_id = await _seed_contract(factory)
     now = datetime.datetime.now(datetime.UTC).replace(microsecond=0)

@@ -58,12 +58,6 @@ class ProviderSettingsService:
             beszel_url=row.beszel_url,
             beszel_credentials_configured=self._beszel.credentials_configured,
             tribute_credentials_configured=self._tribute.credentials_configured,
-            tribute_entitlement_execution_enabled=(
-                self._config.tribute_entitlement_execution_enabled
-            ),
-            tribute_identified_donation_automation_enabled=(
-                self._config.tribute_identified_donation_automation_enabled
-            ),
             app_name=row.app_name,
             logo_url=row.logo_url,
             welcome_text=row.welcome_text,

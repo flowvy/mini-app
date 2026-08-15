@@ -169,8 +169,14 @@ class RegistrationAdminService:
     ) -> RegistrationSettingsResponse:
         data = patch.model_dump(exclude_unset=True)
         profile_id = data.get("default_access_profile_id")
-        if profile_id is not None and await self._profiles.get_active(profile_id) is None:
-            raise RegistrationAdminError("Default access profile is unavailable")
+        if profile_id is not None:
+            profile = await self._profiles.get_active(profile_id)
+            if profile is None:
+                raise RegistrationAdminError("Default access profile is unavailable")
+            if profile.validity_mode == "automation":
+                raise RegistrationAdminError(
+                    "Automation-managed validity cannot be used for registration",
+                )
         await self._settings.update_partial(data)
         return await self.get_settings()
 
@@ -232,6 +238,12 @@ class RegistrationAdminService:
         *,
         existing: AccessProfile | None = None,
     ) -> None:
+        if payload.validity_mode == "automation" and existing is not None:
+            settings = await self._settings.get()
+            if settings.default_access_profile_id == existing.id:
+                raise RegistrationAdminError(
+                    "Change the default access profile before using automation-managed validity",
+                )
         if (
             payload.validity_mode == "fixed"
             and payload.fixed_expire_at is not None
@@ -516,7 +528,7 @@ class RegistrationService:
         if profile_id is None:
             return None
         profile = await self._profiles.get_active(profile_id)
-        if profile is None:
+        if profile is None or profile.validity_mode == "automation":
             raise RegistrationUnavailableError
         return access_profile_snapshot(profile)
 
@@ -581,8 +593,10 @@ class RegistrationService:
             if profile.fixed_expire_at is None:  # pragma: no cover - schema invariant
                 raise RegistrationUnavailableError
             expire_at = profile.fixed_expire_at
-        else:
+        elif profile.validity_mode == "lifetime":
             expire_at = _LIFETIME_EXPIRES_AT
+        else:
+            raise RegistrationUnavailableError
         if expire_at <= now:
             raise RegistrationUnavailableError
         return RemnawaveCreateUserRequest(

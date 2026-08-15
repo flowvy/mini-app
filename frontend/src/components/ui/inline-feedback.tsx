@@ -4,14 +4,14 @@ import styles from "./inline-feedback.module.css";
 interface InlineFeedbackProps {
 	children: string;
 	id?: string;
-	tone?: "error" | "success" | "warning";
+	tone?: "error" | "success" | "warning" | "info";
 }
 
 export const InlineFeedback: FC<InlineFeedbackProps> = ({ children, id, tone = "error" }) => (
 	<p
 		id={id}
 		className={`${styles.message} ${styles[tone]}`}
-		role={tone === "error" ? "alert" : tone === "success" ? "status" : "note"}
+		role={tone === "error" ? "alert" : tone === "warning" ? "note" : "status"}
 	>
 		{children}
 	</p>

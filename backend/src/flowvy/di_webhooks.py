@@ -6,7 +6,6 @@ from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from flowvy.config import Settings
 from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.commerce_rule import CommerceRuleRepository
 from flowvy.repositories.entitlement_operation import EntitlementOperationRepository
@@ -66,7 +65,6 @@ class WebhooksProvider(Provider):
         profiles: AccessProfileRepository,
         users: UserRepository,
         subscriptions: SubscriptionRepository,
-        settings: Settings,
     ) -> TributeEntitlementPlanner:
         """Create a side-effect-free planner for authenticated Tribute events."""
         return TributeEntitlementPlanner(
@@ -75,7 +73,4 @@ class WebhooksProvider(Provider):
             profiles,
             users,
             subscriptions,
-            identified_donation_automation_enabled=(
-                settings.tribute_identified_donation_automation_enabled
-            ),
         )

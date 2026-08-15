@@ -85,6 +85,7 @@ function formatDateValue(value: string, locale: string): string {
 
 interface AccessProfileEditorProps {
 	profile: AccessProfile | null;
+	isRegistrationDefault: boolean;
 	internalSquads: Array<{ uuid: string; name: string }>;
 	externalSquads: Array<{ uuid: string; name: string }>;
 	tags: string[];
@@ -95,6 +96,7 @@ interface AccessProfileEditorProps {
 
 export function AccessProfileEditor({
 	profile,
+	isRegistrationDefault,
 	internalSquads,
 	externalSquads,
 	tags,
@@ -137,12 +139,15 @@ export function AccessProfileEditor({
 	const devicesAreValid =
 		deviceValue === null ||
 		(Number.isInteger(deviceValue) && deviceValue >= 0 && deviceValue <= 1_000);
+	const automationConflictsWithRegistration =
+		isRegistrationDefault && draft.validityMode === "automation";
 	const valid =
 		draft.name.trim().length > 0 &&
 		draft.name.trim().length <= 100 &&
 		(draft.validityMode !== "duration" ||
 			((draft.validityDays ?? 0) > 0 && (draft.validityDays ?? 0) <= 3_650)) &&
 		(draft.validityMode !== "fixed" || Boolean(draft.fixedExpireAt)) &&
+		!automationConflictsWithRegistration &&
 		tagIsValid &&
 		trafficIsValid &&
 		devicesAreValid;
@@ -221,6 +226,7 @@ export function AccessProfileEditor({
 									{ key: "duration", label: t("access.days") },
 									{ key: "fixed", label: t("access.date") },
 									{ key: "lifetime", label: t("access.lifetimeOption") },
+									{ key: "automation", label: t("access.automationOption") },
 								]}
 								value={draft.validityMode}
 								onChange={(value) => {
@@ -279,6 +285,16 @@ export function AccessProfileEditor({
 							)}
 							{draft.validityMode === "lifetime" && (
 								<p className={styles.validityNotice}>{t("access.lifetimeHint")}</p>
+							)}
+							{draft.validityMode === "automation" && (
+								<>
+									<p className={styles.validityNotice}>{t("access.automationHint")}</p>
+									{automationConflictsWithRegistration && (
+										<InlineFeedback tone="warning">
+											{t("access.automationDefaultConflict")}
+										</InlineFeedback>
+									)}
+								</>
 							)}
 						</div>
 

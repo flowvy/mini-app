@@ -114,6 +114,7 @@ class CommerceRuleService:
         admin_id: int | None,
     ) -> CommerceRuleResponse:
         await self._require_active_profile(payload.access_profile_id)
+        await self._require_unique_subscription(payload, current=None)
         rule = await self._rules.create(
             **self._values(payload),
             created_by_id=admin_id,
@@ -129,14 +130,15 @@ class CommerceRuleService:
         if rule is None:
             raise CommerceRuleNotFoundError("Commerce rule was not found")
         await self._require_active_profile(payload.access_profile_id)
+        await self._require_unique_subscription(payload, current=rule)
         return commerce_rule_response(await self._rules.update(rule, **self._values(payload)))
 
     async def delete_rule(self, rule_id: uuid.UUID) -> None:
         rule = await self._rules.get_by_id(rule_id)
         if rule is None:
             raise CommerceRuleNotFoundError("Commerce rule was not found")
-        if self._offers is not None and await self._offers.get_by_rule_id(rule_id) is not None:
-            raise CommerceRuleError("Delete the linked sponsor offer first")
+        if self._offers is not None:
+            await self._offers.delete_by_rule_id(rule_id)
         await self._rules.delete(rule)
 
     async def preview(self, request: CommerceRulePreviewRequest) -> CommerceRulePreviewResponse:
@@ -145,6 +147,27 @@ class CommerceRuleService:
     async def _require_active_profile(self, profile_id: uuid.UUID) -> None:
         if await self._profiles.get_active(profile_id) is None:
             raise CommerceRuleError("Access profile is unavailable")
+
+    async def _require_unique_subscription(
+        self,
+        payload: CommerceRuleInput,
+        *,
+        current: CommerceRule | None,
+    ) -> None:
+        if payload.commerce_type != "subscription":
+            return
+        if current is not None and current.external_item_id == payload.external_item_id:
+            return
+        existing = await self._rules.list_for_provider(payload.provider)
+        if any(
+            rule.commerce_type == "subscription"
+            and rule.external_item_id == payload.external_item_id
+            for rule in existing
+        ):
+            raise CommerceRuleError(
+                "This Tribute subscription already has an automation rule; "
+                "one rule handles all periods",
+            )
 
     @staticmethod
     def _values(payload: CommerceRuleInput) -> dict[str, object]:

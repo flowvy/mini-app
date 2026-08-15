@@ -54,3 +54,16 @@ export function formatMajorMoney(value: string, currency: string, locale?: strin
 		maximumFractionDigits: fractionDigits,
 	}).format(parsed);
 }
+
+/** Compact storefront money: exact value, narrow symbol, and no meaningless trailing zeroes. */
+export function formatPlanMoney(value: string, currency: string, locale?: string): string {
+	const parsed = Number(value);
+	if (!Number.isFinite(parsed)) return `${value} ${currency}`;
+	return new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency,
+		currencyDisplay: "narrowSymbol",
+		minimumFractionDigits: 0,
+		maximumFractionDigits: currencyFractionDigits(currency),
+	}).format(parsed);
+}

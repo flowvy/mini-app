@@ -30,11 +30,13 @@ const GB = 1024 ** 3;
 
 function accessSummary(profile: AccessProfile, t: TFunction): string {
 	const validity =
-		profile.validityMode === "lifetime"
-			? t("access.lifetime")
-			: profile.validityMode === "duration"
-				? t("access.daysSummary", { count: profile.validityDays })
-				: new Date(profile.fixedExpireAt ?? "").toLocaleDateString();
+		profile.validityMode === "automation"
+			? t("access.automationSummary")
+			: profile.validityMode === "lifetime"
+				? t("access.lifetime")
+				: profile.validityMode === "duration"
+					? t("access.daysSummary", { count: profile.validityDays })
+					: new Date(profile.fixedExpireAt ?? "").toLocaleDateString();
 	const traffic =
 		profile.trafficLimitBytes === 0
 			? t("access.trafficUnlimited")
@@ -58,7 +60,9 @@ export function AdminAccessSettings() {
 	const defaultAccessOptions = useMemo(
 		() => [
 			{ value: "", label: t("access.localOnly") },
-			...activeProfiles.map((profile) => ({ value: profile.id, label: profile.name })),
+			...activeProfiles
+				.filter((profile) => profile.validityMode !== "automation")
+				.map((profile) => ({ value: profile.id, label: profile.name })),
 		],
 		[activeProfiles, t],
 	);
@@ -186,6 +190,7 @@ export function AdminAccessSettings() {
 				<AccessProfileEditor
 					key={editingProfile?.id ?? "new"}
 					profile={editingProfile}
+					isRegistrationDefault={editingProfile?.id === settings.data.defaultAccessProfileId}
 					internalSquads={options.data?.internalSquads ?? []}
 					externalSquads={options.data?.externalSquads ?? []}
 					tags={options.data?.tags ?? []}

@@ -4,6 +4,7 @@ import { type FC, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import { useCommerceCatalog } from "../../hooks/use-commerce-rules.ts";
+import { TRIBUTE_PERIOD_KEYS } from "../../lib/commerce-labels.ts";
 import { formatMajorMoney } from "../../lib/money.ts";
 import {
 	PAYMENT_DESTINATION_ISSUE_KEYS,
@@ -136,7 +137,7 @@ export const TributePaymentDestinations: FC<TributePaymentDestinationsProps> = (
 							.map(
 								(period) =>
 									`${formatMajorMoney(period.priceMajor, subscription.currency, i18n.language)} / ${t(
-										`settings.tribute.rules.period.${period.period}`,
+										TRIBUTE_PERIOD_KEYS[period.period],
 									)}`,
 							)
 							.join(" · ");

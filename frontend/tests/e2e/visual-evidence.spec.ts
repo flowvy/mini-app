@@ -229,7 +229,7 @@ test("capture Tribute settings in configured and setup states", async ({
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
 		await expect(page.getByText("Configured on server", { exact: true })).toBeVisible();
-		await expect(page.getByText("Planning only", { exact: true })).toBeVisible();
+		await expect(page.getByRole("heading", { name: "Webhook delivery" })).toHaveCount(0);
 		await expect(page.getByRole("heading", { name: "Payment activity" })).toBeVisible();
 		await assertNoHorizontalOverflow(page);
 		await page.screenshot({
@@ -498,6 +498,17 @@ test("capture the lifetime access editor in light and dark themes", async ({
 		await assertNoHorizontalOverflow(page);
 		await page.screenshot({
 			path: testInfo.outputPath(`admin-access-lifetime-${colorScheme}.png`),
+			animations: "disabled",
+		});
+		await page.getByRole("radio", { name: "Automation" }).click();
+		await expect(
+			page.getByText(/No duration or date is stored.*automation must provide the expiry/),
+		).toBeVisible();
+		await expect(page.getByLabel("Number of days")).toHaveCount(0);
+		await expect(page.getByRole("textbox", { name: "Expires at" })).toHaveCount(0);
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`admin-access-automation-${colorScheme}.png`),
 			animations: "disabled",
 		});
 		await page.getByRole("radio", { name: "Date" }).click();

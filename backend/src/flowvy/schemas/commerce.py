@@ -10,6 +10,7 @@ from typing import Literal, Self
 from pydantic import Field, field_validator, model_validator
 
 from flowvy.schemas.base import CamelModel
+from flowvy.schemas.content import normalize_formatted_text
 from flowvy.schemas.provider_settings import PaymentDestinationUrl
 
 CommerceProvider = Literal["tribute"]
@@ -175,7 +176,6 @@ SponsorOfferAvailability = Literal[
     "ready",
     "rule_disabled",
     "profile_unavailable",
-    "delivery_disabled",
     "configuration_changed",
 ]
 SponsorStateStatus = Literal[
@@ -232,7 +232,7 @@ class SponsorOfferInput(CamelModel):
     """Administrator-editable public presentation linked to one commerce rule."""
 
     title: str = Field(min_length=1, max_length=100)
-    description: str = Field(default="", max_length=300)
+    description: str = Field(default="", max_length=2_000)
     commerce_rule_id: uuid.UUID
     checkout_url: PaymentDestinationUrl | None = None
     expected_amount_minor: int | None = Field(default=None, ge=1, le=MAX_MONEY_MINOR)
@@ -241,10 +241,15 @@ class SponsorOfferInput(CamelModel):
     is_published: bool = False
     sort_order: int = Field(default=100, ge=1, le=10_000)
 
-    @field_validator("title", "description")
+    @field_validator("title")
     @classmethod
-    def normalize_copy(cls, value: str) -> str:
+    def normalize_title(cls, value: str) -> str:
         return " ".join(value.strip().split())
+
+    @field_validator("description")
+    @classmethod
+    def normalize_description(cls, value: str) -> str:
+        return normalize_formatted_text(value)
 
     @model_validator(mode="after")
     def validate_expected_donation_schedule(self) -> Self:

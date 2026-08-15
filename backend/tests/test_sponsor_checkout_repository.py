@@ -207,6 +207,60 @@ async def test_signed_subscription_event_confirms_only_matching_pending_checkout
 
 
 @pytest.mark.asyncio
+async def test_abandon_pending_is_owned_idempotent_and_allows_another_attempt(
+    session: AsyncSession,
+) -> None:
+    checkout_repo = await _seed_checkout(session)
+    pending = await checkout_repo.get_pending_for_user(123)
+    assert pending is not None
+
+    assert await checkout_repo.abandon_pending(999, pending.id) is False
+    assert await checkout_repo.abandon_pending(123, pending.id) is True
+    assert await checkout_repo.abandon_pending(123, pending.id) is False
+    assert await checkout_repo.get_pending_for_user(123) is None
+    latest = await checkout_repo.latest_for_user(123)
+    assert latest is not None
+    assert latest.status == "expired"
+
+
+@pytest.mark.asyncio
+async def test_signed_event_can_confirm_an_abandoned_redirect_attempt(
+    session: AsyncSession,
+) -> None:
+    checkout_repo = await _seed_checkout(session)
+    pending = await checkout_repo.get_pending_for_user(123)
+    assert pending is not None
+    assert await checkout_repo.abandon_pending(123, pending.id) is True
+    now = datetime.datetime(2026, 8, 14, 12, 0, tzinfo=datetime.UTC)
+    event = TributeWebhookInboxInput(
+        delivery_key="9" * 64,
+        event_name="new_subscription",
+        event_family="subscription",
+        processing_status="observed",
+        provider_created_at=now,
+        provider_sent_at=now,
+        provider_expires_at=now + datetime.timedelta(days=30),
+        is_anonymous=None,
+        telegram_user_id=123,
+        external_item_id="42",
+        amount_minor=500,
+        currency="RUB",
+        payment_mode="recurring",
+        provider_period="monthly",
+        subscription_type="regular",
+    )
+    source = await TributeWebhookEventRepository(session).record_once(event)
+    assert source is not None
+
+    confirmed = await checkout_repo.confirm_matching(source, now)
+
+    assert confirmed is not None
+    assert confirmed.mismatch_reason is None
+    assert confirmed.checkout.id == pending.id
+    assert confirmed.checkout.status == "confirmed"
+
+
+@pytest.mark.asyncio
 async def test_unrelated_provider_item_does_not_confirm_checkout(session: AsyncSession) -> None:
     checkout_repo = await _seed_checkout(session)
     now = datetime.datetime(2026, 8, 14, 12, 0, tzinfo=datetime.UTC)

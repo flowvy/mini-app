@@ -21,6 +21,7 @@ from flowvy.models.user import UserRole
 from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.commerce_rule import CommerceRuleRepository
 from flowvy.repositories.entitlement_operation import EntitlementOperationRepository
+from flowvy.repositories.sponsor_offer import SponsorOfferRepository
 from flowvy.repositories.user import UserRepository
 from flowvy.schemas.commerce import (
     AmountBand,
@@ -388,8 +389,8 @@ def test_rule_normalizes_currency_and_band_order() -> None:
 async def _active_profile(session: AsyncSession) -> uuid.UUID:
     profile = await AccessProfileRepository(session).create(
         name="Paid access",
-        validity_mode="duration",
-        validity_days=30,
+        validity_mode="automation",
+        validity_days=None,
         traffic_limit_bytes=0,
         traffic_limit_strategy="NO_RESET",
         status="ACTIVE",
@@ -427,6 +428,126 @@ async def test_rule_crud_persists_validated_calculator(session: AsyncSession) ->
 
     await service.delete_rule(created.id)
     assert await service.list_rules() == []
+
+
+@pytest.mark.asyncio
+async def test_rule_delete_removes_every_linked_offer_atomically(session: AsyncSession) -> None:
+    profile_id = await _active_profile(session)
+    offers = SponsorOfferRepository(session)
+    service = CommerceRuleService(
+        CommerceRuleRepository(session),
+        AccessProfileRepository(session),
+        offers,
+    )
+    created = await service.create_rule(_rule(access_profile_id=profile_id), admin_id=None)
+    for index in range(2):
+        await offers.create(
+            provider="tribute",
+            commerce_rule_id=created.id,
+            title=f"Donation choice {index + 1}",
+            description="",
+            checkout_url="https://t.me/tribute/app?startapp=test",
+            expected_amount_minor=50_000 * (index + 1),
+            expected_payment_mode="one_time",
+            expected_provider_period=None,
+            checkout_snapshot=None,
+            is_published=False,
+            sort_order=index + 1,
+            created_by_id=None,
+        )
+
+    await service.delete_rule(created.id)
+
+    assert await service.list_rules() == []
+    assert await offers.list_all() == []
+
+
+@pytest.mark.asyncio
+async def test_admin_rule_delete_requires_auth_and_removes_linked_offers(
+    engine: AsyncEngine,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    admin_id = 123_459
+    monkeypatch.setenv("ADMIN_TELEGRAM_IDS", str(admin_id))
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with factory() as session:
+        await UserRepository(session).create(
+            id=admin_id,
+            username="admin",
+            full_name="Test Admin",
+            role=UserRole.ADMIN,
+        )
+        profile_id = await _active_profile(session)
+        service = CommerceRuleService(
+            CommerceRuleRepository(session),
+            AccessProfileRepository(session),
+            SponsorOfferRepository(session),
+        )
+        rule = await service.create_rule(_rule(access_profile_id=profile_id), admin_id=admin_id)
+        await SponsorOfferRepository(session).create(
+            provider="tribute",
+            commerce_rule_id=rule.id,
+            title="Linked donation choice",
+            description="",
+            checkout_url="https://t.me/tribute/app?startapp=test",
+            expected_amount_minor=50_000,
+            expected_payment_mode="one_time",
+            expected_provider_period=None,
+            checkout_snapshot=None,
+            is_published=False,
+            sort_order=1,
+            created_by_id=admin_id,
+        )
+        rule_id = rule.id
+        await session.commit()
+
+    app = create_app()
+    async with AsyncClient(
+        transport=ASGITransport(app=app),  # type: ignore[arg-type]
+        base_url="http://test",
+    ) as client:
+        unauthorized = await client.delete(f"/api/admin/commerce/rules/{rule_id}")
+        response = await client.delete(
+            f"/api/admin/commerce/rules/{rule_id}",
+            headers={"Authorization": f"tma {_admin_init_data(admin_id)}"},
+        )
+
+    assert unauthorized.status_code == 401
+    assert response.status_code == 204
+    async with factory() as session:
+        assert await CommerceRuleRepository(session).get_by_id(rule_id) is None
+        assert await SponsorOfferRepository(session).list_all() == []
+
+
+@pytest.mark.asyncio
+async def test_one_subscription_rule_handles_every_provider_period(
+    session: AsyncSession,
+) -> None:
+    profile_id = await _active_profile(session)
+    service = CommerceRuleService(
+        CommerceRuleRepository(session),
+        AccessProfileRepository(session),
+    )
+    payload = _rule(
+        access_profile_id=profile_id,
+        commerce_type="subscription",
+        payment_mode="recurring",
+        external_item_id="12",
+        calculation_type="provider_expiry",
+        fixed_duration_days=None,
+        amount_bands=[],
+        grant_mode="replace",
+    )
+
+    await service.create_rule(payload, admin_id=None)
+
+    with pytest.raises(CommerceRuleError, match="one rule handles all periods"):
+        await service.create_rule(
+            payload.model_copy(update={"name": "Duplicate annual rule"}),
+            admin_id=None,
+        )
+
+    assert len(await service.list_rules()) == 1
 
 
 @pytest.mark.asyncio

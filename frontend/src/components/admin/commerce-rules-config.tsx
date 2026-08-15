@@ -160,6 +160,7 @@ export function CommerceRulesConfig() {
 			{editor && profiles.data && (
 				<CommerceRuleEditor
 					rule={editor.rule}
+					rules={rules.data ?? []}
 					profiles={profiles.data}
 					returnFocusTo={editor.returnFocusTo}
 					onClose={() => setEditor(null)}

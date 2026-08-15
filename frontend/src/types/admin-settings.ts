@@ -7,8 +7,6 @@ export interface AdminSettings {
 	beszelUrl: string | null;
 	beszelCredentialsConfigured: boolean;
 	tributeCredentialsConfigured: boolean;
-	tributeEntitlementExecutionEnabled: boolean;
-	tributeIdentifiedDonationAutomationEnabled: boolean;
 	tributeDonationUrl: string | null;
 	tributeSubscriptionUrls: Record<string, string>;
 	appName: string | null;

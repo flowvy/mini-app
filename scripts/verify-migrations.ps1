@@ -42,8 +42,8 @@ INSERT INTO users (id, username, full_name, role, is_active)
 VALUES (300001, 'migration-fixture', 'Migration Fixture', 'USER', true);
 
 WITH profile AS (
-    INSERT INTO access_profiles (name, validity_mode, validity_days)
-    VALUES ('Migration sponsor profile', 'duration', 30)
+    INSERT INTO access_profiles (name, validity_mode, validity_days, fixed_expire_at)
+    VALUES ('Migration sponsor profile', 'automation', NULL, NULL)
     RETURNING id
 ), rule AS (
     INSERT INTO commerce_rules (
@@ -126,7 +126,7 @@ ROLLBACK;
         docker exec $containerId psql -U flowvy -d $databaseName -v ON_ERROR_STOP=1 `
             -c $sponsorInsertProofSql
         if ($LASTEXITCODE -ne 0) {
-            throw "Migrated sponsor tables could not generate UUID primary keys."
+            throw "Migrated sponsor tables or automation-managed access profiles rejected valid runtime data."
         }
 
         uv run --frozen alembic downgrade base

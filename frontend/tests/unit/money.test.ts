@@ -3,6 +3,7 @@ import {
 	currencyFractionDigits,
 	formatMajorMoney,
 	formatMinorMoney,
+	formatPlanMoney,
 	majorToMinor,
 	minorToMajorInput,
 } from "../../src/lib/money.ts";
@@ -24,5 +25,7 @@ describe("minor-unit money fields", () => {
 		expect(formatMinorMoney(50_000, "RUB", "en-US")).toContain("500");
 		expect(formatMajorMoney("500.00", "RUB", "en-US")).toContain("500");
 		expect(formatMajorMoney("not-a-number", "RUB", "en-US")).toBe("not-a-number RUB");
+		expect(formatPlanMoney("3500.00", "RUB", "en-US")).not.toContain(".00");
+		expect(formatPlanMoney("100.50", "RUB", "en-US")).toContain("100.5");
 	});
 });

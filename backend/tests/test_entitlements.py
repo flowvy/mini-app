@@ -59,18 +59,13 @@ def _event(
     )
 
 
-def _planner(
-    session: AsyncSession,
-    *,
-    identified_donation_automation_enabled: bool = True,
-) -> TributeEntitlementPlanner:
+def _planner(session: AsyncSession) -> TributeEntitlementPlanner:
     return TributeEntitlementPlanner(
         EntitlementOperationRepository(session),
         CommerceRuleRepository(session),
         AccessProfileRepository(session),
         UserRepository(session),
         SubscriptionRepository(session),
-        identified_donation_automation_enabled=identified_donation_automation_enabled,
     )
 
 
@@ -101,8 +96,8 @@ async def _seed_grant_contract(
         )
     profile = await AccessProfileRepository(session).create(
         name="Paid access",
-        validity_mode="duration",
-        validity_days=30,
+        validity_mode="automation",
+        validity_days=None,
         traffic_limit_bytes=0,
         traffic_limit_strategy="NO_RESET",
         status="ACTIVE",
@@ -280,27 +275,6 @@ async def test_anonymous_donation_requires_manual_review_without_grant(
     assert operation.status == "review"
     assert operation.reason_code == "anonymous_donation"
     assert operation.semantic_key is not None
-
-
-@pytest.mark.asyncio
-async def test_identified_donation_remains_review_only_until_explicit_rollout(
-    session: AsyncSession,
-) -> None:
-    await _seed_grant_contract(session, commerce_type="donation")
-    event = _event(
-        "8" * 64,
-        name="new_donation",
-        family="donation",
-    )
-
-    operation = await _planner(
-        session,
-        identified_donation_automation_enabled=False,
-    ).plan(await _source(session, event), event)
-
-    assert operation is not None
-    assert operation.status == "review"
-    assert operation.reason_code == "donation_semantic_evidence_required"
 
 
 @pytest.mark.asyncio

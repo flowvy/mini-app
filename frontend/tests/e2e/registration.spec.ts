@@ -176,6 +176,64 @@ test("admin configures registration policy and the global access profile", async
 	expect(serious).toEqual([]);
 });
 
+test("automation-managed profile stores no local expiry and stays out of registration", async ({
+	page,
+	mockApi,
+}) => {
+	await page.goto("/admin/settings/access");
+	await page.getByRole("button", { name: "Create profile" }).click();
+	await page.getByLabel("Name").fill("Sponsor benefits");
+	await page.getByRole("radio", { name: "Automation" }).click();
+	await expect(
+		page.getByText(
+			"No duration or date is stored. A payment rule or another automation must provide the expiry",
+		),
+	).toBeVisible();
+	await expect(page.getByLabel("Number of days")).toHaveCount(0);
+	await expect(page.getByRole("textbox", { name: "Expires at" })).toHaveCount(0);
+
+	const requestPromise = page.waitForRequest(
+		(request) =>
+			request.method() === "POST" &&
+			new URL(request.url()).pathname === "/api/debug/admin/registration/access-profiles",
+	);
+	await page
+		.getByRole("dialog", { name: "Create access profile" })
+		.getByRole("button", { name: "Create profile", exact: true })
+		.click();
+	const request = await requestPromise;
+	expect(request.postDataJSON()).toMatchObject({
+		name: "Sponsor benefits",
+		validityMode: "automation",
+		validityDays: null,
+		fixedExpireAt: null,
+	});
+	await expect(page.getByText("Sponsor benefits", { exact: true })).toBeVisible();
+	await expect(page.getByText(/set by automation, unlimited traffic/)).toBeVisible();
+	await expect(
+		page.getByLabel("Default access").getByRole("option", { name: "Sponsor benefits" }),
+	).toHaveCount(0);
+	expect(mockApi.calls).toContain("POST /api/debug/admin/registration/access-profiles");
+	await assertNoHorizontalOverflow(page);
+});
+
+test("registration default explains why automation-managed expiry cannot be selected", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.goto("/admin/settings/access");
+	await page.getByLabel("Default access").selectOption({ label: "Free 30 days" });
+	await page.getByRole("button", { name: "Edit access profile" }).click();
+	await page.getByRole("radio", { name: "Automation" }).click();
+	await expect(
+		page.getByText(
+			"This profile is the registration default. Choose another default access profile before using automation-controlled expiry",
+		),
+	).toBeVisible();
+	await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+	await assertNoHorizontalOverflow(page);
+});
+
 test("access editor waits for provider choices without changing the create control geometry", async ({
 	page,
 	mockApi,

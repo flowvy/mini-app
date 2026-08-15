@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import type { Locator } from "@playwright/test";
 import {
 	assertNoHorizontalOverflow,
 	entitlementOperation,
@@ -7,6 +8,18 @@ import {
 	test,
 } from "./fixtures/mock-api.ts";
 import { installVisualViewportMock, setTestVisualViewport } from "./fixtures/visual-viewport.ts";
+
+async function selectElementContents(locator: Locator) {
+	await locator.evaluate((element) => {
+		const selection = window.getSelection();
+		if (!selection) throw new Error("Selection API is unavailable");
+		const range = document.createRange();
+		range.selectNodeContents(element);
+		selection.removeAllRanges();
+		selection.addRange(range);
+		document.dispatchEvent(new Event("selectionchange"));
+	});
+}
 
 function sponsorSubscriptionOffer(
 	checkoutUrl = "https://t.me/tribute/app?startapp=subscription_12",
@@ -41,6 +54,18 @@ function sponsorYearlySubscriptionOffer() {
 		commerceRuleId: "10000000-0000-4000-8000-000000000014",
 		externalItemId: "13",
 		priceOptions: [{ priceMajor: "3500", currency: "RUB", period: "yearly" as const }],
+	};
+}
+
+function sponsorMultiPeriodOffer() {
+	return {
+		...sponsorSubscriptionOffer(),
+		title: "Sponsor access",
+		priceOptions: [
+			{ priceMajor: "100", currency: "RUB", period: "monthly" as const },
+			{ priceMajor: "270", currency: "RUB", period: "quarterly" as const },
+			{ priceMajor: "900", currency: "RUB", period: "yearly" as const },
+		],
 	};
 }
 
@@ -166,9 +191,7 @@ test("Tribute setup and provider failures remain explicit without fake payment r
 	await expect(page.getByText("Missing on server", { exact: true })).toBeVisible();
 	await expect(page.getByText(/Set TRIBUTE_API_KEY/)).toBeVisible();
 	await expect(page.getByRole("button", { name: "Check API" })).toBeDisabled();
-	await expect(page.getByText("Authenticated", { exact: true })).toBeVisible();
-	await expect(page.getByText("Planning only", { exact: true })).toBeVisible();
-	await expect(page.getByText(/Subscriptions reconcile Tribute's exact expiration/)).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Webhook delivery" })).toHaveCount(0);
 	await assertNoHorizontalOverflow(page);
 
 	mockApi.seedSettings({ tributeCredentialsConfigured: true });
@@ -388,11 +411,13 @@ test("subscription rule uses Tribute expiry without local day calculation", asyn
 		await page.getByLabel("Tribute offer").selectOption("12");
 
 		const editor = page.getByLabel("Create automation rule");
-		const providerExpiry = editor.getByText("Tribute controls the expiration date", {
+		const providerExpiry = editor.getByText("One benefits profile for every billing option", {
 			exact: true,
 		});
 		await expect(providerExpiry).toBeVisible();
-		await expect(editor.getByText(/applies the subscription's expires_at value/)).toBeVisible();
+		await expect(editor.getByLabel("Sponsor benefits profile")).toBeVisible();
+		await expect(editor.getByText(/signed expires_at as the exact end date/)).toBeVisible();
+		await expect(editor.getByText(/create separate Tribute subscriptions/)).toBeVisible();
 		await expect(editor.getByText("Activation policy", { exact: true })).toHaveCount(0);
 		await expect(editor.getByText("Duration calculation", { exact: true })).toHaveCount(0);
 		await expect(editor.getByText("Rule preview", { exact: true })).toHaveCount(0);
@@ -671,7 +696,7 @@ test("provider failures expose only the server-approved retry and resolve decisi
 	await page.getByRole("button", { name: "Retry", exact: true }).click();
 	const dialog = page.getByRole("dialog", { name: "Queue another provider attempt?" });
 	await expect(dialog).toContainText(
-		"Automatic delivery is currently off. This attempt will stay queued",
+		"Flowvy will make one more idempotent provider attempt using the stored plan",
 	);
 	const scrollBeforeRetry = await page.evaluate(() => window.scrollY);
 	await dialog.getByRole("button", { name: "Queue retry", exact: true }).click();
@@ -899,9 +924,10 @@ test("saved rule can be disabled, edited, and deleted with explicit confirmation
 	page,
 	mockApi,
 }) => {
+	const ruleId = "10000000-0000-4000-8000-000000000001";
 	mockApi.seedCommerceRules([
 		{
-			id: "10000000-0000-4000-8000-000000000001",
+			id: ruleId,
 			provider: "tribute",
 			name: "Monthly donation access",
 			commerceType: "donation",
@@ -917,7 +943,15 @@ test("saved rule can be disabled, edited, and deleted with explicit confirmation
 			isEnabled: true,
 		},
 	]);
+	mockApi.seedSponsorOffers([
+		{
+			...sponsorDonationOffer(),
+			commerceRuleId: ruleId,
+			title: "Linked support choice",
+		},
+	]);
 	await page.goto("/admin/settings/tribute");
+	await expect(page.getByRole("article", { name: "Linked support choice" })).toBeVisible();
 
 	const toggle = page.getByRole("switch", { name: "Enable or disable Monthly donation access" });
 	await toggle.click();
@@ -930,13 +964,69 @@ test("saved rule can be disabled, edited, and deleted with explicit confirmation
 	await expect(page.getByText("Updated donation access", { exact: true })).toBeVisible();
 
 	await page.getByRole("button", { name: /Updated donation access/ }).click();
-	await page.getByRole("button", { name: "Delete", exact: true }).click();
-	await expect(page.getByText(/will be removed from Flowvy configuration/)).toBeVisible();
 	await page
-		.getByRole("dialog", { name: "Delete automation rule?" })
+		.getByRole("dialog", { name: "Edit automation rule" })
 		.getByRole("button", { name: "Delete", exact: true })
 		.click();
+	const confirmation = page
+		.getByRole("heading", { name: "Delete automation rule?" })
+		.locator("xpath=ancestor::dialog[1]");
+	await expect(confirmation).toContainText(/payment choices linked to it will be removed/);
+	await expect(confirmation).toContainText(
+		/Pending payments will no longer be matched automatically/,
+	);
+	await confirmation.getByRole("button", { name: "Cancel", exact: true }).click();
+	await expect(confirmation).toHaveCount(0);
+	await expect(
+		page
+			.getByRole("dialog", { name: "Edit automation rule" })
+			.getByRole("button", { name: "Delete", exact: true }),
+	).toBeFocused();
+	await page
+		.getByRole("dialog", { name: "Edit automation rule" })
+		.getByRole("button", { name: "Delete", exact: true })
+		.click();
+	const reopenedConfirmation = page
+		.getByRole("heading", { name: "Delete automation rule?" })
+		.locator("xpath=ancestor::dialog[1]");
+	await reopenedConfirmation.getByRole("button", { name: "Delete", exact: true }).click();
 	await expect(page.getByText("No automation rules", { exact: true })).toBeVisible();
+	await expect(page.getByRole("article", { name: "Linked support choice" })).toHaveCount(0);
+	expect(mockApi.calls).toContain(`DELETE /api/debug/admin/commerce/rules/${ruleId}`);
+});
+
+test("rule delete failure stays retryable and hides backend diagnostics", async ({
+	page,
+	mockApi,
+}) => {
+	const rule = sponsorDonationRule();
+	const offer = { ...sponsorDonationOffer(), commerceRuleId: rule.id };
+	mockApi.seedCommerceRules([rule]);
+	mockApi.seedSponsorOffers([offer]);
+	mockApi.mock("DELETE", `/api/debug/admin/commerce/rules/${rule.id}`, {
+		status: 503,
+		body: { detail: "private database diagnostic" },
+		delayMs: 400,
+	});
+	await page.goto("/admin/settings/tribute");
+	await page.getByRole("button", { name: /Flexible sponsor donations/ }).click();
+	await page
+		.getByRole("dialog", { name: "Edit automation rule" })
+		.getByRole("button", { name: "Delete", exact: true })
+		.click();
+	const confirmation = page
+		.getByRole("heading", { name: "Delete automation rule?" })
+		.locator("xpath=ancestor::dialog[1]");
+	const deleteButton = confirmation.getByRole("button", { name: "Delete", exact: true });
+	await deleteButton.click();
+	await expect(deleteButton).toHaveAttribute("aria-busy", "true");
+	await expect(deleteButton).toBeDisabled();
+	await expect(confirmation.getByRole("alert")).toContainText(
+		"Could not delete the automation rule. Try again",
+	);
+	await expect(confirmation.getByText("private database diagnostic")).toHaveCount(0);
+	await expect(page.getByRole("button", { name: /Flexible sponsor donations/ })).toBeVisible();
+	await expect(page.getByRole("article", { name: offer.title })).toBeVisible();
 });
 
 test("rule editor exposes safe no-match and save-failure states", async ({ page, mockApi }) => {
@@ -1038,8 +1128,9 @@ test("commerce rules expose loading, load-error, and unavailable-profile states"
 
 test("Tribute settings pass serious accessibility and overflow checks", async ({
 	page,
-	mockApi: _mock,
+	mockApi,
 }) => {
+	mockApi.seedCommerceRules([sponsorSubscriptionRule()]);
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
 		await page.goto("/admin/settings/tribute");
@@ -1109,6 +1200,40 @@ test("commerce rule editor is accessible and responsive in both themes", async (
 	}
 });
 
+test("rule deletion consequence is accessible in light and dark themes", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	const rule = sponsorDonationRule();
+	mockApi.seedCommerceRules([rule]);
+	mockApi.seedSponsorOffers([{ ...sponsorDonationOffer(), commerceRuleId: rule.id }]);
+
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/admin/settings/tribute");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await page.getByRole("button", { name: /Flexible sponsor donations/ }).click();
+		await page
+			.getByRole("dialog", { name: "Edit automation rule" })
+			.getByRole("button", { name: "Delete", exact: true })
+			.click();
+		const confirmation = page
+			.getByRole("heading", { name: "Delete automation rule?" })
+			.locator("xpath=ancestor::dialog[1]");
+		await expect(confirmation).toContainText(/payment choices linked to it will be removed/);
+		const result = await new AxeBuilder({ page }).analyze();
+		const serious = result.violations.filter((violation) =>
+			["serious", "critical"].includes(violation.impact ?? ""),
+		);
+		expect(serious).toEqual([]);
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({ path: testInfo.outputPath(`rule-delete-${colorScheme}.png`) });
+		await confirmation.getByRole("button", { name: "Cancel", exact: true }).click();
+	}
+});
+
 test("admin creates a user-facing sponsor offer from an automation rule", async ({
 	page,
 	mockApi,
@@ -1120,25 +1245,211 @@ test("admin creates a user-facing sponsor offer from an automation rule", async 
 	await page.getByRole("button", { name: "Create first offer" }).click();
 	await expect(page.getByRole("heading", { name: "Create sponsor offer" })).toBeVisible();
 	await page.getByLabel("Offer title").fill("Monthly sponsor access");
-	await expect(page.getByLabel("Description")).toHaveAttribute(
-		"placeholder",
-		"Help us keep the service running and receive sponsor access",
+	await expect(page.getByLabel("Description").locator("p").first()).toHaveAttribute(
+		"data-placeholder",
+		"Enter the message shown under this offer",
 	);
 	await page.getByLabel("Description").fill("Automatic monthly support with extended access.");
-	await expect(page.getByRole("switch", { name: "Publish this sponsor offer" })).toBeDisabled();
-	await expect(page.getByText(/This offer can stay as a draft/)).toBeVisible();
+	await expect(page.getByRole("switch", { name: "Publish this sponsor offer" })).toBeEnabled();
+	await expect(page.getByText("Payment options from Tribute", { exact: true })).toBeVisible();
+	await expect(page.getByText(/user chooses one on the Tribute checkout screen/)).toBeVisible();
 	await page.getByRole("heading", { name: "Payment and access" }).click();
 	await page.getByRole("button", { name: "Create offer" }).click();
 
 	await expect(page.getByRole("heading", { name: "Create sponsor offer" })).toHaveCount(0);
-	await expect(page.getByText("Monthly sponsor access", { exact: true })).toBeVisible();
-	await expect(page.getByText("Price checked when published", { exact: true })).toBeVisible();
+	const createdOffer = page.getByRole("article", { name: "Monthly sponsor access" });
+	await expect(createdOffer).toBeVisible();
+	await expect(createdOffer.getByText("Billed monthly", { exact: true })).toBeVisible();
+	await expect(createdOffer.getByText("Billed yearly", { exact: true })).toBeVisible();
+	await expect(createdOffer).toContainText("500");
+	await expect(createdOffer).toContainText("3,500");
+	await expect(createdOffer.getByRole("button", { name: "Edit" })).toBeVisible();
 	expect(mockApi.calls).toContain("POST /api/debug/admin/commerce/offers");
 	await assertNoHorizontalOverflow(page);
 });
 
+test("formatted offer copy keeps one fixed toolbar and renders safely on Home", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	testInfo.setTimeout(60_000);
+	const offer = {
+		...sponsorSubscriptionOffer(),
+		description: "Support keeps the service available",
+	};
+	mockApi.seedCommerceRules([sponsorSubscriptionRule()]);
+	mockApi.seedSponsorOffers([offer]);
+
+	await page.goto("/admin/settings/tribute");
+	await page
+		.getByRole("article", { name: offer.title })
+		.getByRole("button", { name: "Edit" })
+		.click();
+	const editor = page.getByRole("dialog", { name: "Edit sponsor offer" });
+	const description = editor.getByLabel("Description");
+	if (testInfo.project.use.hasTouch) {
+		await expect(description).toHaveCSS("font-size", "16px");
+	} else {
+		await expect(description).toHaveCSS("font-size", "13px");
+	}
+	await description.click();
+	await description.press("End");
+	await description.press("Enter");
+	await description.pressSequentially("Faster support");
+	await description.press("Enter");
+	await description.pressSequentially("More traffic");
+	const formattingToolbar = page.getByRole("toolbar", { name: "Text formatting" });
+	await expect(formattingToolbar).toBeVisible();
+	await expect(formattingToolbar).toHaveAttribute("aria-controls", "sponsor-offer-description");
+	await editor.screenshot({ path: testInfo.outputPath("formatted-offer-fixed-toolbar.png") });
+	await selectElementContents(description.locator("p").first());
+	const boldTool = formattingToolbar.getByRole("button", { name: "Bold" });
+	await boldTool.click();
+	await expect(description.locator("strong")).toHaveText("Support keeps the service available");
+
+	await selectElementContents(description.locator("strong"));
+	await boldTool.focus();
+	await boldTool.press("ArrowRight");
+	await expect(formattingToolbar.getByRole("button", { name: "Italic" })).toBeFocused();
+	await selectElementContents(description);
+	await formattingToolbar.getByRole("button", { name: "Bulleted list" }).click();
+	await expect(description.getByRole("list")).toContainText("Faster support");
+
+	await selectElementContents(description.locator("strong"));
+	await formattingToolbar.getByRole("button", { name: "Add or edit link" }).click();
+	const linkAddress = page.getByRole("textbox", { name: "Link address" });
+	if (testInfo.project.use.hasTouch) {
+		await expect(linkAddress).toHaveCSS("font-size", "16px");
+	} else {
+		await expect(linkAddress).toHaveCSS("font-size", "11px");
+	}
+	await linkAddress.fill("javascript:alert(1)");
+	await page.getByRole("button", { name: "Apply link" }).click();
+	await expect(page.getByRole("alert")).toHaveText("Enter a valid http or https address");
+	await linkAddress.fill("example.com/sponsor");
+	await page.getByRole("button", { name: "Apply link" }).click();
+	await expect(
+		description.getByRole("link", { name: "Support keeps the service available" }),
+	).toHaveAttribute("href", "https://example.com/sponsor");
+
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		// Axe/WebKit can sample color tokens from different animation frames after a live theme
+		// switch. Contrast is inspected from the captured stable light/dark evidence below.
+		const accessibility = await new AxeBuilder({ page }).disableRules(["color-contrast"]).analyze();
+		const serious = accessibility.violations.filter((violation) =>
+			["serious", "critical"].includes(violation.impact ?? ""),
+		);
+		expect(serious).toEqual([]);
+		await assertNoHorizontalOverflow(page);
+		await editor.screenshot({
+			path: testInfo.outputPath(`formatted-offer-editor-${colorScheme}.png`),
+		});
+	}
+	await page.evaluate(() => {
+		if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+	});
+	await expect(editor.getByRole("button", { name: "Save offer" })).toBeVisible();
+
+	const saveRequest = page.waitForRequest(
+		(request) =>
+			request.method() === "PUT" &&
+			new URL(request.url()).pathname === `/api/debug/admin/commerce/offers/${offer.id}`,
+	);
+	await editor.getByRole("button", { name: "Save offer" }).click();
+	const request = await saveRequest;
+	const savedDescription = String(request.postDataJSON().description);
+	expect(savedDescription).toContain("[**Support keeps the service available**]");
+	expect(savedDescription).toContain("https://example.com/sponsor");
+	expect(savedDescription).toContain("- Faster support");
+
+	const formattedOffer = { ...offer, description: savedDescription };
+	mockApi.seedSponsorState({
+		status: "base_access",
+		accessLevel: "base",
+		primaryAction: "choose_offer",
+		paidExpiresAt: null,
+		baseExpiresAt: "2099-12-31T23:59:59Z",
+		currentOfferId: null,
+		managementUrl: null,
+		pendingCheckout: null,
+		offers: [formattedOffer],
+	});
+	await page.goto("/");
+	const homeOffer = page.getByRole("article", { name: offer.title });
+	await expect(homeOffer.locator("strong").filter({ hasText: "Support keeps" })).toBeVisible();
+	await expect(
+		homeOffer.getByRole("link", { name: "Support keeps the service available" }),
+	).toHaveAttribute("href", "https://example.com/sponsor");
+	await expect(homeOffer.getByRole("list").filter({ hasText: "More traffic" })).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+	await page.screenshot({ path: testInfo.outputPath("formatted-offer-home-dark.png") });
+});
+
+test("admin can relink an existing sponsor offer to another automation rule", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	const currentRule = sponsorSubscriptionRule();
+	const nextRule = {
+		...currentRule,
+		id: "10000000-0000-4000-8000-000000000099",
+		name: "Believer benefits",
+		accessProfileId: "00000000-0000-4000-8000-000000000002",
+	};
+	const offer = sponsorSubscriptionOffer();
+	mockApi.seedCommerceRules([currentRule, nextRule]);
+	mockApi.seedSponsorOffers([offer]);
+
+	await page.goto("/admin/settings/tribute");
+	await page
+		.getByRole("article", { name: offer.title })
+		.getByRole("button", { name: "Edit" })
+		.click();
+	const editor = page.getByRole("dialog", { name: "Edit sponsor offer" });
+	const ruleSelect = editor.getByLabel("Automation rule");
+	await expect(ruleSelect).toBeEnabled();
+	await ruleSelect.selectOption(nextRule.id);
+	await expect(ruleSelect).toHaveValue(nextRule.id);
+	await expect(
+		editor.getByText("A payment already started keeps the rule captured when it began", {
+			exact: false,
+		}),
+	).toBeVisible();
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		const accessibility = await new AxeBuilder({ page }).analyze();
+		const serious = accessibility.violations.filter((violation) =>
+			["serious", "critical"].includes(violation.impact ?? ""),
+		);
+		expect(serious).toEqual([]);
+		await editor.screenshot({ path: testInfo.outputPath(`offer-rule-relink-${colorScheme}.png`) });
+	}
+
+	const requestPromise = page.waitForRequest(
+		(request) =>
+			request.method() === "PUT" &&
+			new URL(request.url()).pathname === `/api/debug/admin/commerce/offers/${offer.id}`,
+	);
+	await editor.getByRole("button", { name: "Save offer" }).click();
+	const request = await requestPromise;
+	expect(request.postDataJSON()).toMatchObject({ commerceRuleId: nextRule.id });
+	await expect(page.getByRole("dialog", { name: "Edit sponsor offer" })).toHaveCount(0);
+	await expect(
+		page
+			.getByRole("article", { name: offer.title })
+			.getByText("Access: Believer benefits", { exact: true }),
+	).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+});
+
 test("admin hides a published sponsor offer from its list toggle", async ({ page, mockApi }) => {
-	mockApi.seedSettings({ tributeEntitlementExecutionEnabled: true });
 	mockApi.seedCommerceRules([sponsorSubscriptionRule()]);
 	mockApi.seedSponsorOffers([sponsorSubscriptionOffer()]);
 
@@ -1159,18 +1470,88 @@ test("admin hides a published sponsor offer from its list toggle", async ({ page
 
 	expect(request.postDataJSON()).toMatchObject({ isPublished: false });
 	await expect(visibility).not.toBeChecked();
-	await expect(page.getByText("Draft", { exact: true })).toBeVisible();
 	await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("admin groups legacy subscription cards around one readable plan preview", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	const sharedOffer = {
+		...sponsorMultiPeriodOffer(),
+		isPublished: false,
+		availability: "draft",
+	};
+	mockApi.seedCommerceRules([sponsorSubscriptionRule()]);
+	mockApi.seedSponsorOffers([
+		{ ...sharedOffer, title: "One month", id: "30000000-0000-4000-8000-000000000001" },
+		{ ...sharedOffer, title: "Three months", id: "30000000-0000-4000-8000-000000000002" },
+		{ ...sharedOffer, title: "One year", id: "30000000-0000-4000-8000-000000000003" },
+	]);
+
+	await page.goto("/admin/settings/tribute");
+	const offersSection = page
+		.getByRole("heading", { name: "Sponsor offers" })
+		.locator("xpath=ancestor::section[1]");
+	await expect(offersSection.getByText(/Some saved cards reuse/)).toBeVisible();
+	await expect(offersSection.getByText("Billed monthly", { exact: true })).toHaveCount(1);
+	await expect(offersSection.getByText("Billed every 3 months", { exact: true })).toHaveCount(1);
+	await expect(offersSection.getByText("Billed yearly", { exact: true })).toHaveCount(1);
+	await expect(offersSection.locator("details:not([open])")).toHaveCount(2);
+	await expect(offersSection.getByRole("button", { name: "Edit" })).toHaveCount(1);
+
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await offersSection.screenshot({
+			path: testInfo.outputPath(`admin-subscription-cards-${colorScheme}.png`),
+		});
+		const result = await new AxeBuilder({ page }).analyze();
+		const serious = result.violations.filter((violation) =>
+			["serious", "critical"].includes(violation.impact ?? ""),
+		);
+		expect(serious).toEqual([]);
+		await assertNoHorizontalOverflow(page);
+	}
+
+	await offersSection.locator("details", { hasText: "Three months" }).locator("summary").click();
+	await offersSection.locator("details", { hasText: "One year" }).locator("summary").click();
+	await expect(offersSection.locator("details[open]")).toHaveCount(2);
+	await expect(offersSection.getByRole("button", { name: "Edit" })).toHaveCount(3);
+	const publishedToggle = offersSection.getByRole("switch", {
+		name: "Publish or hide Three months",
+	});
+	await expect(publishedToggle).toBeEnabled();
+	await publishedToggle.click();
+	await expect(publishedToggle).toBeChecked();
+	const oneMonthDetails = offersSection.locator("details", { hasText: "One month" });
+	await oneMonthDetails.locator("summary").click();
+	await expect(
+		offersSection.getByRole("switch", { name: "Publish or hide One month" }),
+	).toBeDisabled();
+	const oneYearDetails = offersSection.locator("details", { hasText: "One year" });
+	if (!(await oneYearDetails.evaluate((element) => (element as HTMLDetailsElement).open))) {
+		await oneYearDetails.locator("summary").click();
+	}
+	await expect(
+		offersSection.getByRole("switch", { name: "Publish or hide One year" }),
+	).toBeDisabled();
+	await expect(
+		offersSection
+			.getByRole("article", { name: "Three months" })
+			.getByText("Billed monthly", { exact: true }),
+	).toBeVisible();
+	expect(mockApi.calls).toContain(
+		"PUT /api/debug/admin/commerce/offers/30000000-0000-4000-8000-000000000002",
+	);
 });
 
 test("admin publishes exact one-time and recurring donation choices from one rule", async ({
 	page,
 	mockApi,
 }) => {
-	mockApi.seedSettings({
-		tributeEntitlementExecutionEnabled: true,
-		tributeIdentifiedDonationAutomationEnabled: true,
-	});
 	mockApi.seedCommerceRules([sponsorDonationRule()]);
 
 	await page.goto("/admin/settings/tribute");
@@ -1218,9 +1599,9 @@ test("admin publishes exact one-time and recurring donation choices from one rul
 	const offersSection = page
 		.getByRole("heading", { name: "Sponsor offers" })
 		.locator("xpath=ancestor::section[1]");
-	await expect(offersSection.getByText("Flexible sponsor donations", { exact: true })).toHaveCount(
-		2,
-	);
+	await expect(
+		offersSection.getByText("Access: Flexible sponsor donations", { exact: true }),
+	).toHaveCount(2);
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -1252,14 +1633,19 @@ test("Home starts a subscription checkout without treating the redirect as payme
 	await page.goto("/");
 	await expect(page.getByText("No active subscription", { exact: true })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Get sponsor access" })).toBeVisible();
-	await expect(page.getByText("Monthly sponsor access", { exact: true })).toBeVisible();
-	await expect(page.getByText(/500.*month/)).toBeVisible();
+	const subscriptionOffer = page.getByRole("article", { name: "Monthly sponsor access" });
+	await expect(subscriptionOffer).toBeVisible();
+	await expect(subscriptionOffer.getByText("Billed monthly", { exact: true })).toBeVisible();
+	await expect(subscriptionOffer).toContainText("500");
+	await expect(subscriptionOffer).toContainText(
+		"Prices and billing intervals come from Tribute. Choose the payment option there",
+	);
 	const requestPromise = page.waitForRequest(
 		(request) =>
 			request.method() === "POST" &&
 			new URL(request.url()).pathname === "/api/me/sponsor/checkouts",
 	);
-	await page.getByRole("button", { name: /Monthly sponsor access/ }).click();
+	await subscriptionOffer.getByRole("button", { name: "Continue in Tribute" }).click();
 	const request = await requestPromise;
 	expect(request.postDataJSON()).toEqual({ offerId: offer.id });
 	expect(mockApi.calls).toContain("POST /api/me/sponsor/checkouts");
@@ -1306,7 +1692,10 @@ test("Home reports confirmed subscription access without guessing cancellation s
 			"You can choose another subscription after your current paid period ends on Sep 14, 2026",
 		),
 	).toBeVisible();
-	const yearlyButton = page.getByRole("button", { name: /Yearly sponsor access/ });
+	const yearlyOfferCard = page.getByRole("article", { name: "Yearly sponsor access" });
+	const yearlyButton = yearlyOfferCard.getByRole("button", {
+		name: "Available after current period",
+	});
 	await expect(yearlyButton).toBeDisabled();
 	await expect(yearlyButton).toHaveAttribute("aria-describedby", "other-subscriptions-warning");
 	await expect(page.getByText("One month sponsor", { exact: true })).toHaveCount(0);
@@ -1520,6 +1909,110 @@ test("Home blocks duplicate payment while confirmation or access delivery is pen
 	await assertNoHorizontalOverflow(page);
 });
 
+test("pending checkout reports an unchanged check and can be safely abandoned", async ({
+	page,
+	mockApi,
+}) => {
+	const offer = sponsorSubscriptionOffer();
+	const pendingState = {
+		status: "checkout_pending",
+		accessLevel: "base",
+		primaryAction: "continue_checkout",
+		paidExpiresAt: null,
+		baseExpiresAt: "2027-01-01T00:00:00Z",
+		currentOfferId: null,
+		managementUrl: null,
+		pendingCheckout: {
+			id: "40000000-0000-4000-8000-000000000001",
+			offerId: offer.id,
+			status: "pending",
+			checkoutUrl: offer.checkoutUrl,
+			expiresAt: "2026-08-14T12:30:00Z",
+		},
+		offers: [offer],
+	};
+	mockApi.seedSponsorState(pendingState);
+
+	await page.goto("/");
+	await expect(page.getByRole("heading", { name: "Payment not confirmed yet" })).toBeVisible();
+	mockApi.mock("GET", "/api/me/sponsor", [
+		{ delayMs: 350, body: pendingState },
+		{
+			body: {
+				...pendingState,
+				status: "base_access",
+				primaryAction: "choose_offer",
+				pendingCheckout: null,
+			},
+		},
+	]);
+
+	const checkStatus = page.getByRole("button", { name: "Check payment status" });
+	await checkStatus.click();
+	await expect(checkStatus).toHaveAttribute("aria-busy", "true");
+	await expect(checkStatus).toBeDisabled();
+	await expect(page.getByRole("status")).toContainText(
+		"Checked just now. Tribute has not confirmed a payment yet",
+	);
+
+	const chooseAnother = page.getByRole("button", { name: "Choose another option" });
+	await chooseAnother.click();
+	const dialog = page.getByRole("dialog", { name: "Stop waiting for this payment?" });
+	await expect(dialog).toBeVisible();
+	await expect(dialog).toContainText("This does not cancel anything in Tribute");
+	await dialog.getByRole("button", { name: "Cancel" }).click();
+	await expect(dialog).toHaveCount(0);
+	await expect(chooseAnother).toBeFocused();
+
+	await chooseAnother.click();
+	await dialog.getByRole("button", { name: "Stop waiting" }).click();
+	await expect(page.getByRole("heading", { name: "Upgrade your access" })).toBeVisible();
+	await expect(page.getByText("Monthly sponsor access", { exact: true })).toBeVisible();
+	await expect(page.getByRole("status")).toContainText(
+		"Payment attempt closed. You can choose another option",
+	);
+	expect(mockApi.calls).toContain(
+		"DELETE /api/me/sponsor/checkouts/40000000-0000-4000-8000-000000000001",
+	);
+	await assertNoHorizontalOverflow(page);
+});
+
+test("failed pending-checkout cancellation keeps the safe waiting state", async ({
+	page,
+	mockApi,
+}) => {
+	const offer = sponsorSubscriptionOffer();
+	mockApi.seedSponsorState({
+		status: "checkout_pending",
+		accessLevel: "base",
+		primaryAction: "continue_checkout",
+		paidExpiresAt: null,
+		baseExpiresAt: "2027-01-01T00:00:00Z",
+		currentOfferId: null,
+		managementUrl: null,
+		pendingCheckout: {
+			id: "40000000-0000-4000-8000-000000000001",
+			offerId: offer.id,
+			status: "pending",
+			checkoutUrl: offer.checkoutUrl,
+			expiresAt: "2026-08-14T12:30:00Z",
+		},
+		offers: [offer],
+	});
+	mockApi.mock("DELETE", "/api/me/sponsor/checkouts/40000000-0000-4000-8000-000000000001", {
+		status: 503,
+		body: { detail: "Unavailable" },
+	});
+
+	await page.goto("/");
+	await page.getByRole("button", { name: "Choose another option" }).click();
+	await page.getByRole("dialog").getByRole("button", { name: "Stop waiting" }).click();
+	await expect(page.getByRole("heading", { name: "Payment not confirmed yet" })).toBeVisible();
+	await expect(page.getByRole("alert")).toContainText(
+		"Could not close this payment attempt. It is still waiting for confirmation",
+	);
+});
+
 test("checking a completed donation refreshes access and offers every renewal type", async ({
 	page,
 	mockApi,
@@ -1595,7 +2088,7 @@ test("sponsor checkout card produces reviewable light and dark evidence", async 
 	page,
 	mockApi,
 }, testInfo) => {
-	const offer = sponsorSubscriptionOffer();
+	const offer = sponsorMultiPeriodOffer();
 
 	for (const colorScheme of ["light", "dark"] as const) {
 		mockApi.seedSponsorState({
@@ -1618,12 +2111,57 @@ test("sponsor checkout card produces reviewable light and dark evidence", async 
 		await expect(card).toBeVisible();
 		await expect(card.getByText("Basic access", { exact: true })).toBeVisible();
 		await expect(card.getByText("No expiry", { exact: true })).toBeVisible();
+		const paymentOptions = card.getByRole("list", { name: "Payment options from Tribute" });
+		await expect(paymentOptions.getByText("Billed monthly", { exact: true })).toBeVisible();
+		await expect(paymentOptions.getByText("Billed every 3 months", { exact: true })).toBeVisible();
+		await expect(paymentOptions.getByText("Billed yearly", { exact: true })).toBeVisible();
+		await expect(
+			card.getByText(
+				"Prices and billing intervals come from Tribute. Choose the payment option there",
+			),
+		).toBeVisible();
 		await card.screenshot({ path: testInfo.outputPath(`sponsor-card-${colorScheme}.png`) });
 		const result = await new AxeBuilder({ page }).analyze();
 		const serious = result.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),
 		);
 		expect(serious).toEqual([]);
+		await assertNoHorizontalOverflow(page);
+
+		mockApi.seedSponsorState({
+			status: "checkout_pending",
+			accessLevel: "base",
+			primaryAction: "continue_checkout",
+			paidExpiresAt: null,
+			baseExpiresAt: "2099-12-31T23:59:59Z",
+			currentOfferId: null,
+			managementUrl: null,
+			pendingCheckout: {
+				id: "40000000-0000-4000-8000-000000000001",
+				offerId: offer.id,
+				status: "pending",
+				checkoutUrl: offer.checkoutUrl,
+				expiresAt: "2026-08-14T12:30:00Z",
+			},
+			offers: [offer],
+		});
+		await page.reload();
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		const pendingCard = page.getByRole("region", { name: "Payment not confirmed yet" });
+		await expect(pendingCard).toBeVisible();
+		await pendingCard.screenshot({
+			path: testInfo.outputPath(`sponsor-pending-${colorScheme}.png`),
+		});
+		await pendingCard.getByRole("button", { name: "Choose another option" }).click();
+		const pendingDialog = page.getByRole("dialog", { name: "Stop waiting for this payment?" });
+		await expect(pendingDialog).toBeVisible();
+		await page.screenshot({
+			path: testInfo.outputPath(`sponsor-pending-dialog-${colorScheme}.png`),
+			fullPage: true,
+		});
+		await pendingDialog.getByRole("button", { name: "Cancel" }).click();
 		await assertNoHorizontalOverflow(page);
 
 		mockApi.seedSponsorState({
@@ -1745,10 +2283,6 @@ test("sponsor offer editor stays native to the design system in both themes", as
 	page,
 	mockApi,
 }, testInfo) => {
-	mockApi.seedSettings({
-		tributeEntitlementExecutionEnabled: true,
-		tributeIdentifiedDonationAutomationEnabled: true,
-	});
 	mockApi.seedCommerceRules([sponsorDonationRule()]);
 
 	for (const colorScheme of ["light", "dark"] as const) {

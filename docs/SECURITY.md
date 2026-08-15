@@ -66,19 +66,17 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
   прежнего paid access, чтобы пользователь не платил повторно.
 - Успешная аутентификация Tribute webhook разрешает только inbox/ledger transaction. HTTP request
   не выполняет Remnawave mutation. Subscription deduplicates absolute state
-  `subscription/user/expires_at`. Donation fingerprint — derived boundary, а не provider
-  transaction ID, поэтому default-off
-  `TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED` оставляет его review-only до controlled evidence.
-  Anonymous donation всегда review-only. Cancellation не считается refund.
-- Pending grant содержит immutable rule/profile snapshots, но executor запускается только при
-  server-only `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED=true`; default — `false`. Перед каждым provider
-  call worker повторно проверяет live Remnawave/Telegram identity. Первый provider user создаётся
+  `subscription/user/expires_at`. Donation fingerprint — derived boundary, а не provider transaction
+  ID, поэтому identified donation автоматизируется только после полного checkout/rule match;
+  anonymous или неоднозначный donation всегда review-only. Cancellation не считается refund.
+- Pending grant содержит immutable rule/profile snapshots. Отдельный durable worker перед каждым
+  provider call повторно проверяет live Remnawave/Telegram identity. Первый provider user создаётся
   только для уже существующего active local user после exact lookup miss; ambiguity и неизвестный
   create timeout fail closed/read-only reconcile. До paid mutation сохраняется immutable base
   snapshot, nullable provider fields восстанавливаются явно, а внешний state conflict останавливает
   overwrite. Один user не имеет двух одновременных processing operations.
 - Webhook request никогда не создаёт Flowvy/Remnawave user; provider create выполняет только
-  feature-gated worker. Неподдерживаемые подписанные события сохраняются как `ignored` audit
+  отдельный durable worker. Неподдерживаемые подписанные события сохраняются как `ignored` audit
   metadata и не создают checkout match, entitlement operation или provider mutation.
 - Admin activity API требует актуального active admin и возвращает только allow-listed journal
   projection без raw payload/signature, transaction ID, rule/profile snapshots и provider secrets.

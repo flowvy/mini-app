@@ -1,21 +1,28 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, HeartHandshake, LockKeyhole, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSponsorState, useStartSponsorCheckout } from "../../hooks/use-sponsor.ts";
+import {
+	useAbandonSponsorCheckout,
+	useSponsorState,
+	useStartSponsorCheckout,
+} from "../../hooks/use-sponsor.ts";
+import { TRIBUTE_PERIOD_KEYS } from "../../lib/commerce-labels.ts";
 import { formatExpiryDate, isUnlimitedExpiry } from "../../lib/format.ts";
 import { hapticImpact } from "../../lib/haptics.ts";
-import { formatMajorMoney } from "../../lib/money.ts";
+import { formatMajorMoney, formatPlanMoney } from "../../lib/money.ts";
 import { queryKeys } from "../../lib/query.ts";
 import { openExternalDestination } from "../../lib/telegram-link.ts";
 import type {
 	SponsorOffer,
 	SponsorPrimaryAction,
 	SponsorStateStatus,
-	TributeSubscriptionPeriod,
 } from "../../types/commerce.ts";
 import { useCurrentUser } from "../auth-guard.tsx";
+import { SubscriptionBillingList } from "../commerce/subscription-billing-list.tsx";
+import { FormattedText } from "../content/formatted-text.tsx";
 import { ActionBtn } from "../ui/action-btn.tsx";
+import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { Skeleton } from "../ui/skeleton.tsx";
 import styles from "./sponsor-card.module.css";
@@ -85,20 +92,17 @@ const ACTION_KEYS: Partial<Record<SponsorPrimaryAction, string>> = {
 	resume_recurring: "home.sponsor.action.resume",
 };
 
-const PERIOD_KEYS: Record<TributeSubscriptionPeriod, string> = {
-	trial: "settings.tribute.rules.period.trial",
-	onetime: "settings.tribute.rules.period.onetime",
-	weekly: "settings.tribute.rules.period.weekly",
-	monthly: "settings.tribute.rules.period.monthly",
-	quarterly: "settings.tribute.rules.period.quarterly",
-	halfyearly: "settings.tribute.rules.period.halfyearly",
-	yearly: "settings.tribute.rules.period.yearly",
-};
-
 const TYPE_KEYS: Record<SponsorOffer["commerceType"], string> = {
 	donation: "home.sponsor.type.donation",
 	subscription: "home.sponsor.type.subscription",
 };
+
+const PAYMENT_FEEDBACK_KEYS = {
+	unchanged: "home.sponsor.paymentFeedback.unchanged",
+	checkError: "home.sponsor.paymentFeedback.checkError",
+	cancelled: "home.sponsor.paymentFeedback.cancelled",
+	cancelError: "home.sponsor.paymentFeedback.cancelError",
+} as const;
 
 function navigateToProvider(url: string): void {
 	if (!openExternalDestination(url)) window.location.assign(url);
@@ -110,6 +114,7 @@ export function SponsorCard() {
 	const appName = branding.appName || t("common.appName");
 	const sponsor = useSponsorState();
 	const checkout = useStartSponsorCheckout();
+	const abandonCheckout = useAbandonSponsorCheckout();
 	const queryClient = useQueryClient();
 	const state = sponsor.data;
 	const blockedSubscriptionOffers =
@@ -123,6 +128,12 @@ export function SponsorCard() {
 		state?.primaryAction === "renew" ||
 		state?.primaryAction === "resume_recurring";
 	const [offersVisible, setOffersVisible] = useState(state?.primaryAction === "choose_offer");
+	const [checkingPayment, setCheckingPayment] = useState(false);
+	const [paymentFeedback, setPaymentFeedback] = useState<
+		"unchanged" | "checkError" | "cancelled" | "cancelError" | null
+	>(null);
+	const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+	const cancelAttemptRef = useRef<HTMLButtonElement>(null);
 
 	useEffect(() => {
 		if (state?.primaryAction === "choose_offer") setOffersVisible(true);
@@ -177,6 +188,35 @@ export function SponsorCard() {
 		await sponsor.refetch();
 		await queryClient.invalidateQueries({ queryKey: queryKeys.subscription });
 	};
+	const checkPaymentStatus = async () => {
+		setPaymentFeedback(null);
+		setCheckingPayment(true);
+		try {
+			const result = await sponsor.refetch();
+			await queryClient.invalidateQueries({ queryKey: queryKeys.subscription });
+			setPaymentFeedback(
+				result.isError
+					? "checkError"
+					: result.data?.status === "checkout_pending"
+						? "unchanged"
+						: null,
+			);
+		} finally {
+			setCheckingPayment(false);
+		}
+	};
+	const confirmAbandonCheckout = async () => {
+		if (!state.pendingCheckout) return;
+		setPaymentFeedback(null);
+		try {
+			await abandonCheckout.mutateAsync(state.pendingCheckout.id);
+			setCancelDialogOpen(false);
+			setPaymentFeedback("cancelled");
+		} catch {
+			setCancelDialogOpen(false);
+			setPaymentFeedback("cancelError");
+		}
+	};
 
 	const handlePrimaryAction = () => {
 		hapticImpact("light");
@@ -199,6 +239,7 @@ export function SponsorCard() {
 	};
 
 	const startCheckout = async (offer: SponsorOffer) => {
+		setPaymentFeedback(null);
 		try {
 			const attempt = await checkout.mutateAsync(offer.id);
 			hapticImpact("medium");
@@ -218,7 +259,7 @@ export function SponsorCard() {
 		if (offer.expectedPaymentMode === "recurring" && offer.expectedProviderPeriod) {
 			return t("home.sponsor.donationInstruction.recurring", {
 				amount,
-				period: t(PERIOD_KEYS[offer.expectedProviderPeriod]),
+				period: t(TRIBUTE_PERIOD_KEYS[offer.expectedProviderPeriod]),
 			});
 		}
 		return t("home.sponsor.nonAnonymousWarning");
@@ -226,37 +267,73 @@ export function SponsorCard() {
 
 	const renderOffer = (offer: SponsorOffer, blocked = false) => {
 		const instruction = donationInstruction(offer);
+		const isSubscription = offer.commerceType === "subscription";
+		const donationPrice = !isSubscription ? offer.priceOptions[0] : null;
 		return (
-			<button
-				type="button"
-				className={styles.offer}
+			<article
+				className={styles.offerCard}
 				key={offer.id}
-				disabled={blocked || checkout.isPending}
-				aria-describedby={blocked ? "other-subscriptions-warning" : undefined}
-				onClick={blocked ? undefined : () => void startCheckout(offer)}
+				data-blocked={blocked ? "true" : undefined}
+				aria-label={offer.title}
 			>
-				<span className={styles.offerCopy}>
-					<span className={styles.offerTitleLine}>
+				<div className={styles.offerHeader}>
+					<div className={styles.offerTitleLine}>
 						<strong>{offer.title}</strong>
 						<small>{t(TYPE_KEYS[offer.commerceType])}</small>
-					</span>
-					{offer.description && <span>{offer.description}</span>}
-					<span className={styles.prices}>
-						{offer.priceOptions.map((price) => (
-							<b key={`${price.priceMajor}-${price.currency}-${price.period ?? "once"}`}>
-								{formatMajorMoney(price.priceMajor, price.currency, i18n.language)}
-								{price.period ? ` / ${t(PERIOD_KEYS[price.period])}` : ""}
-							</b>
-						))}
-					</span>
-					{offer.requiresNonAnonymous && instruction && <em>{instruction}</em>}
-				</span>
-				{blocked ? (
-					<LockKeyhole size={15} aria-hidden="true" />
+					</div>
+					{offer.description && (
+						<FormattedText className={styles.offerDescription}>{offer.description}</FormattedText>
+					)}
+				</div>
+
+				{isSubscription ? (
+					<>
+						<SubscriptionBillingList options={offer.priceOptions} tone="plain" />
+						<p className={styles.providerSelectionHint}>
+							{t("home.sponsor.subscriptionPeriodHint")}
+						</p>
+					</>
 				) : (
-					<ExternalLink size={15} aria-hidden="true" />
+					donationPrice && (
+						<div className={styles.donationPrice}>
+							<strong>
+								{formatPlanMoney(donationPrice.priceMajor, donationPrice.currency, i18n.language)}
+							</strong>
+							<span>
+								{donationPrice.period
+									? t(TRIBUTE_PERIOD_KEYS[donationPrice.period])
+									: t("home.sponsor.donationOnce")}
+							</span>
+						</div>
+					)
 				)}
-			</button>
+
+				{offer.requiresNonAnonymous && instruction && (
+					<p className={styles.offerInstruction}>{instruction}</p>
+				)}
+
+				<ActionBtn
+					variant={blocked ? "action" : "confirm"}
+					size="md"
+					className={styles.offerAction}
+					disabled={blocked || checkout.isPending}
+					aria-describedby={blocked ? "other-subscriptions-warning" : undefined}
+					onClick={blocked ? undefined : () => void startCheckout(offer)}
+				>
+					{blocked ? (
+						<LockKeyhole size={14} aria-hidden="true" />
+					) : (
+						<ExternalLink size={14} aria-hidden="true" />
+					)}
+					{t(
+						blocked
+							? "home.sponsor.offerAction.locked"
+							: isSubscription
+								? "home.sponsor.action.continue"
+								: "home.sponsor.offerAction.donation",
+					)}
+				</ActionBtn>
+			</article>
 		);
 	};
 
@@ -338,14 +415,41 @@ export function SponsorCard() {
 			)}
 
 			{state.primaryAction === "continue_checkout" && (
-				<ActionBtn
-					variant="ghost"
-					size="sm"
-					className={styles.refreshAction}
-					onClick={() => void refreshAccess()}
+				<div className={styles.pendingActions}>
+					<ActionBtn
+						variant="action"
+						size="md"
+						className={styles.pendingAction}
+						loading={checkingPayment}
+						disabled={abandonCheckout.isPending}
+						onClick={() => void checkPaymentStatus()}
+					>
+						<RefreshCw size={13} aria-hidden="true" /> {t("home.sponsor.checkStatus")}
+					</ActionBtn>
+					<ActionBtn
+						ref={cancelAttemptRef}
+						variant="ghost"
+						size="sm"
+						disabled={checkingPayment || abandonCheckout.isPending}
+						onClick={() => setCancelDialogOpen(true)}
+					>
+						{t("home.sponsor.cancelAttempt.action")}
+					</ActionBtn>
+				</div>
+			)}
+
+			{paymentFeedback && (
+				<InlineFeedback
+					tone={
+						paymentFeedback === "unchanged"
+							? "info"
+							: paymentFeedback === "cancelled"
+								? "success"
+								: "error"
+					}
 				>
-					<RefreshCw size={13} aria-hidden="true" /> {t("home.sponsor.checkStatus")}
-				</ActionBtn>
+					{t(PAYMENT_FEEDBACK_KEYS[paymentFeedback], { appName })}
+				</InlineFeedback>
 			)}
 
 			{offersVisible && state.offers.length > 0 && (
@@ -358,6 +462,20 @@ export function SponsorCard() {
 			{checkout.isError && (
 				<InlineFeedback>{t("home.sponsor.checkoutError", { appName })}</InlineFeedback>
 			)}
+
+			<ConfirmDialog
+				open={cancelDialogOpen}
+				title={t("home.sponsor.cancelAttempt.title")}
+				confirmLabel={t("home.sponsor.cancelAttempt.confirm")}
+				cancelLabel={t("common.cancel")}
+				confirmLoading={abandonCheckout.isPending}
+				initialFocus="title"
+				onConfirm={() => void confirmAbandonCheckout()}
+				onCancel={() => setCancelDialogOpen(false)}
+				returnFocusRef={cancelAttemptRef}
+			>
+				<p>{t("home.sponsor.cancelAttempt.description", { appName })}</p>
+			</ConfirmDialog>
 		</section>
 	);
 }

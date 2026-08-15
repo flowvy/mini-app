@@ -112,7 +112,6 @@ export type SponsorOfferAvailability =
 	| "ready"
 	| "rule_disabled"
 	| "profile_unavailable"
-	| "delivery_disabled"
 	| "configuration_changed";
 
 export interface SponsorOfferPriceOption {

@@ -75,14 +75,12 @@ class SponsorOfferService:
         profiles: AccessProfileRepository,
         provider_settings: ProviderSettingsRepository,
         catalog: CommerceCatalogService,
-        config: Settings,
     ) -> None:
         self._offers = offers
         self._rules = rules
         self._profiles = profiles
         self._provider_settings = provider_settings
         self._catalog = catalog
-        self._config = config
 
     async def list_admin(self) -> list[SponsorOfferResponse]:
         return [await self._response(offer) for offer in await self._offers.list_all()]
@@ -102,7 +100,11 @@ class SponsorOfferService:
     ) -> SponsorOfferResponse:
         rule = await self._require_rule(payload.commerce_rule_id)
         self._validate_destination_shape(rule, payload)
-        snapshot = await self._resolve_snapshot(rule, payload) if payload.is_published else None
+        snapshot = (
+            await self._resolve_snapshot(rule, payload, current_offer_id=None)
+            if payload.is_published
+            else None
+        )
         offer = await self._offers.create(
             provider=rule.provider,
             commerce_rule_id=rule.id,
@@ -129,7 +131,11 @@ class SponsorOfferService:
             raise SponsorOfferNotFoundError("Sponsor offer was not found")
         rule = await self._require_rule(payload.commerce_rule_id)
         self._validate_destination_shape(rule, payload)
-        snapshot = await self._resolve_snapshot(rule, payload) if payload.is_published else None
+        snapshot = (
+            await self._resolve_snapshot(rule, payload, current_offer_id=offer.id)
+            if payload.is_published
+            else None
+        )
         updated = await self._offers.update(
             offer,
             provider=rule.provider,
@@ -190,9 +196,9 @@ class SponsorOfferService:
         self,
         rule: CommerceRule,
         payload: SponsorOfferInput,
+        *,
+        current_offer_id: uuid.UUID | None,
     ) -> SponsorOfferCheckoutSnapshot:
-        if not self._config.tribute_entitlement_execution_enabled:
-            raise SponsorOfferError("Access delivery must be enabled before publishing an offer")
         if not rule.is_enabled:
             raise SponsorOfferError("Enable the commerce rule before publishing its offer")
         if await self._profiles.get_active(rule.access_profile_id) is None:
@@ -204,10 +210,6 @@ class SponsorOfferService:
         requires_non_anonymous = False
 
         if rule.commerce_type == "donation":
-            if not self._config.tribute_identified_donation_automation_enabled:
-                raise SponsorOfferError(
-                    "Identified donation delivery must be enabled before publishing",
-                )
             if (
                 payload.checkout_url is None
                 or payload.expected_amount_minor is None
@@ -227,6 +229,7 @@ class SponsorOfferService:
                 )
             ]
         else:
+            await self._require_unique_published_subscription(rule, current_offer_id)
             try:
                 catalog = await self._catalog.get_tribute()
             except CommerceCatalogUnavailableError as exc:
@@ -276,6 +279,26 @@ class SponsorOfferService:
             requires_non_anonymous=requires_non_anonymous,
         )
 
+    async def _require_unique_published_subscription(
+        self,
+        rule: CommerceRule,
+        current_offer_id: uuid.UUID | None,
+    ) -> None:
+        """Keep one public card for one provider subscription and all its periods."""
+        for offer in await self._offers.list_all():
+            if offer.id == current_offer_id or not offer.is_published:
+                continue
+            existing_rule = await self._rules.get_by_id(offer.commerce_rule_id)
+            if (
+                existing_rule is not None
+                and existing_rule.commerce_type == "subscription"
+                and existing_rule.external_item_id == rule.external_item_id
+            ):
+                raise SponsorOfferError(
+                    "This Tribute subscription is already published; "
+                    "one offer includes all periods",
+                )
+
     async def _response(self, offer: SponsorOffer) -> SponsorOfferResponse:
         rule = await self._rules.get_by_id(offer.commerce_rule_id)
         if rule is None:
@@ -300,8 +323,6 @@ class SponsorOfferService:
         )
         if not offer.is_published:
             availability = "draft"
-        elif not self._config.tribute_entitlement_execution_enabled:
-            availability = "delivery_disabled"
         elif not rule.is_enabled:
             availability = "rule_disabled"
         elif await self._profiles.get_active(rule.access_profile_id) is None:
@@ -625,6 +646,13 @@ class SponsorStateService:
             expires_at=expires_at,
         )
         return self._checkout_response(checkout)
+
+    async def abandon_checkout(self, user_id: int, checkout_id: uuid.UUID) -> None:
+        """Abandon only Flowvy's local redirect intent; a late signed event still wins."""
+        user = await self._users.get_by_telegram_id_for_update(user_id)
+        if user is None or not user.is_active:
+            raise SponsorOfferError("Active user account required")
+        await self._checkouts.abandon_pending(user_id, checkout_id)
 
     async def _base_access(
         self,

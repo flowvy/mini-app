@@ -93,10 +93,11 @@ select {
 /* iOS/WKWebView zooms focused controls whose rendered text is below 16px.
    Apply the threshold only to touch UIs so desktop forms keep the app type scale. */
 @media (pointer: coarse) {
-	input[type],
-	input:not([type]),
+	input[type]:not([data-allow-focus-zoom]),
+	input:not([type]):not([data-allow-focus-zoom]),
 	textarea:not([data-allow-focus-zoom]),
-	select:not([data-allow-focus-zoom]) {
+	select:not([data-allow-focus-zoom]),
+	[contenteditable="true"]:not([data-allow-focus-zoom]) {
 		font-size: max(16px, 1em);
 	}
 }

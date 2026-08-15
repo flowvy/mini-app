@@ -68,8 +68,6 @@ export const mockData = {
 		beszelUrl: "https://monitor.example.test",
 		beszelCredentialsConfigured: true,
 		tributeCredentialsConfigured: true,
-		tributeEntitlementExecutionEnabled: false,
-		tributeIdentifiedDonationAutomationEnabled: false,
 		tributeDonationUrl: null,
 		tributeSubscriptionUrls: {},
 		appName: "Flowvy",
@@ -397,6 +395,10 @@ async function handleApi(
 		state.sponsorOffers[index] = {
 			...state.sponsorOffers[index],
 			...input,
+			provider: "tribute",
+			commerceType: rule?.commerceType ?? state.sponsorOffers[index]?.commerceType,
+			paymentMode: rule?.paymentMode ?? state.sponsorOffers[index]?.paymentMode,
+			externalItemId: rule?.externalItemId ?? null,
 			...sponsorOfferPaymentFields(input, rule),
 			id: sponsorOfferMatch[1],
 			availability: input.isPublished ? "ready" : "draft",
@@ -429,6 +431,9 @@ async function handleApi(
 	}
 	if (commerceRuleMatch && method === "DELETE") {
 		state.commerceRules = state.commerceRules.filter((rule) => rule.id !== commerceRuleMatch[1]);
+		state.sponsorOffers = state.sponsorOffers.filter(
+			(offer) => offer.commerceRuleId !== commerceRuleMatch[1],
+		);
 		await reply(route, { status: 204 });
 		return;
 	}
@@ -564,6 +569,21 @@ async function handleApi(
 			pendingCheckout: checkout,
 		};
 		await reply(route, { status: 201, body: checkout });
+		return;
+	}
+	if (
+		method === "DELETE" &&
+		(/^\/api\/me\/sponsor\/checkouts\/[^/]+$/.test(path) ||
+			/^\/api\/debug\/sponsor\/\d+\/checkouts\/[^/]+$/.test(path))
+	) {
+		const hasBaseAccess = state.sponsorState.accessLevel === "base";
+		state.sponsorState = {
+			...state.sponsorState,
+			status: hasBaseAccess ? "base_access" : "no_access",
+			primaryAction: "choose_offer",
+			pendingCheckout: null,
+		};
+		await reply(route, { status: 204 });
 		return;
 	}
 	if (method === "GET" && path === "/api/me/devices") {

@@ -34,11 +34,31 @@ OFFER_ID = uuid.UUID("22222222-2222-4222-8222-222222222222")
 PROFILE_ID = uuid.UUID("33333333-3333-4333-8333-333333333333")
 
 
-def _settings(monkeypatch: pytest.MonkeyPatch, *, execution: bool = True) -> Settings:
-    monkeypatch.setenv("TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED", str(execution).lower())
-    if execution:
-        monkeypatch.setenv("REMNAWAVE_URL", "https://panel.example.test")
-        monkeypatch.setenv("REMNAWAVE_API_TOKEN", "placeholder")
+def test_sponsor_offer_copy_preserves_portable_formatting() -> None:
+    payload = SponsorOfferInput(
+        title="  Sponsor   access  ",
+        description="  **Thank you**\r\n\r\n- Faster support\r- More traffic  ",
+        commerce_rule_id=RULE_ID,
+    )
+
+    assert payload.title == "Sponsor access"
+    assert payload.description == "**Thank you**\n\n- Faster support\n- More traffic"
+
+
+def test_sponsor_offer_copy_allows_formatting_source_overhead() -> None:
+    visible_copy = "A" * 300
+    payload = SponsorOfferInput(
+        title="Sponsor",
+        description=f"**{visible_copy}**",
+        commerce_rule_id=uuid.uuid4(),
+    )
+
+    assert payload.description == f"**{visible_copy}**"
+
+
+def _settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
+    monkeypatch.setenv("REMNAWAVE_URL", "https://panel.example.test")
+    monkeypatch.setenv("REMNAWAVE_API_TOKEN", "placeholder")
     return Settings()
 
 
@@ -77,12 +97,11 @@ def _offer(snapshot: dict[str, object]) -> SponsorOffer:
 
 
 @pytest.mark.asyncio
-async def test_subscription_offer_preserves_all_documented_provider_periods(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+async def test_subscription_offer_preserves_all_documented_provider_periods() -> None:
     rule = _rule("subscription")
     offers = AsyncMock()
     offers.get_by_rule_id.return_value = None
+    offers.list_all.return_value = []
     offers.create.side_effect = lambda **values: SponsorOffer(id=OFFER_ID, **values)
     rules = AsyncMock()
     rules.get_by_id.return_value = rule
@@ -121,7 +140,6 @@ async def test_subscription_offer_preserves_all_documented_provider_periods(
         profiles,
         provider_settings,
         catalog,
-        _settings(monkeypatch),
     )
 
     result = await service.create(
@@ -140,39 +158,50 @@ async def test_subscription_offer_preserves_all_documented_provider_periods(
 
 
 @pytest.mark.asyncio
-async def test_offer_cannot_publish_while_delivery_is_disabled(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+async def test_one_published_subscription_offer_contains_all_provider_periods() -> None:
+    rule = _rule("subscription")
+    existing = _offer(
+        {
+            "provider": "tribute",
+            "commerce_type": "subscription",
+            "payment_mode": "recurring",
+            "external_item_id": "42",
+            "checkout_url": "https://t.me/tribute/app?startapp=subscription",
+            "price_options": [
+                {"price_major": "500", "currency": "RUB", "period": "monthly"},
+                {"price_major": "3500", "currency": "RUB", "period": "yearly"},
+            ],
+        },
+    )
     offers = AsyncMock()
-    offers.get_by_rule_id.return_value = None
+    offers.list_all.return_value = [existing]
     rules = AsyncMock()
-    rules.get_by_id.return_value = _rule()
+    rules.get_by_id.return_value = rule
+    profiles = AsyncMock()
+    profiles.get_active.return_value = SimpleNamespace(id=PROFILE_ID)
     service = SponsorOfferService(
         offers,
         rules,
+        profiles,
         AsyncMock(),
         AsyncMock(),
-        AsyncMock(),
-        _settings(monkeypatch, execution=False),
     )
 
-    with pytest.raises(SponsorOfferError, match="delivery"):
+    with pytest.raises(SponsorOfferError, match="one offer includes all periods"):
         await service.create(
             SponsorOfferInput(
-                title="Hidden until safe",
+                title="Duplicate yearly card",
                 commerce_rule_id=RULE_ID,
                 is_published=True,
             ),
             admin_id=1,
         )
+
     offers.create.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_identified_donation_offer_publishes_its_own_link_and_expected_amount(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED", "true")
+async def test_identified_donation_offer_publishes_its_own_link_and_expected_amount() -> None:
     rule = _rule("donation")
     rule.calculation_type = "volume"
     rule.calculator = {
@@ -201,7 +230,6 @@ async def test_identified_donation_offer_publishes_its_own_link_and_expected_amo
         profiles,
         provider_settings,
         catalog,
-        _settings(monkeypatch),
     )
 
     result = await service.create(
@@ -226,10 +254,7 @@ async def test_identified_donation_offer_publishes_its_own_link_and_expected_amo
 
 
 @pytest.mark.asyncio
-async def test_multiple_donation_offers_can_reuse_one_flexible_rule(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED", "true")
+async def test_multiple_donation_offers_can_reuse_one_flexible_rule() -> None:
     rule = _rule("donation")
     rule.calculation_type = "volume"
     rule.calculator = {
@@ -256,7 +281,6 @@ async def test_multiple_donation_offers_can_reuse_one_flexible_rule(
         profiles,
         provider_settings,
         AsyncMock(),
-        _settings(monkeypatch),
     )
 
     for title, url, amount in (
@@ -280,10 +304,7 @@ async def test_multiple_donation_offers_can_reuse_one_flexible_rule(
 
 
 @pytest.mark.asyncio
-async def test_recurring_donation_offer_freezes_the_exact_provider_period(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED", "true")
+async def test_recurring_donation_offer_freezes_the_exact_provider_period() -> None:
     rule = _rule("donation")
     rule.payment_mode = "any"
     offers = AsyncMock()
@@ -298,7 +319,6 @@ async def test_recurring_donation_offer_freezes_the_exact_provider_period(
         profiles,
         AsyncMock(),
         AsyncMock(),
-        _settings(monkeypatch),
     )
 
     result = await service.create(
@@ -320,10 +340,7 @@ async def test_recurring_donation_offer_freezes_the_exact_provider_period(
 
 
 @pytest.mark.asyncio
-async def test_donation_offer_schedule_must_fit_a_narrow_rule(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED", "true")
+async def test_donation_offer_schedule_must_fit_a_narrow_rule() -> None:
     offers = AsyncMock()
     rules = AsyncMock()
     rules.get_by_id.return_value = _rule("donation")
@@ -333,7 +350,6 @@ async def test_donation_offer_schedule_must_fit_a_narrow_rule(
         AsyncMock(),
         AsyncMock(),
         AsyncMock(),
-        _settings(monkeypatch),
     )
 
     with pytest.raises(SponsorOfferError, match="schedule"):
@@ -353,10 +369,7 @@ async def test_donation_offer_schedule_must_fit_a_narrow_rule(
 
 
 @pytest.mark.asyncio
-async def test_published_offer_fails_closed_after_its_rule_no_longer_matches(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED", "true")
+async def test_published_offer_fails_closed_after_its_rule_no_longer_matches() -> None:
     rule = _rule("donation")
     rule.calculation_type = "volume"
     rule.calculator = {
@@ -392,7 +405,6 @@ async def test_published_offer_fails_closed_after_its_rule_no_longer_matches(
         profiles,
         AsyncMock(),
         AsyncMock(),
-        _settings(monkeypatch),
     )
 
     result = await service.list_admin()
@@ -797,6 +809,34 @@ async def test_same_pending_offer_is_reused_instead_of_creating_duplicate(
     assert result.id == pending.id
     offers.get_ready.assert_not_awaited()
     checkouts.create.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_abandon_checkout_expires_only_the_local_pending_intent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, _offers, checkouts = _checkout_service(monkeypatch, pending=None)
+    checkout_id = uuid.UUID("44444444-4444-4444-8444-444444444444")
+
+    await service.abandon_checkout(123, checkout_id)
+
+    checkouts.abandon_pending.assert_awaited_once_with(123, checkout_id)
+
+
+@pytest.mark.asyncio
+async def test_abandon_checkout_requires_an_active_local_user(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, _offers, checkouts = _checkout_service(monkeypatch, pending=None)
+    service._users.get_by_telegram_id_for_update.return_value = None
+
+    with pytest.raises(SponsorOfferError, match="Active user account required"):
+        await service.abandon_checkout(
+            123,
+            uuid.UUID("44444444-4444-4444-8444-444444444444"),
+        )
+
+    checkouts.abandon_pending.assert_not_awaited()
 
 
 @pytest.mark.asyncio

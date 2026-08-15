@@ -199,7 +199,6 @@ class ServiceProvider(Provider):
         profiles: AccessProfileRepository,
         provider_settings: ProviderSettingsRepository,
         catalog: CommerceCatalogService,
-        config: Settings,
     ) -> SponsorOfferService:
         return SponsorOfferService(
             offers,
@@ -207,7 +206,6 @@ class ServiceProvider(Provider):
             profiles,
             provider_settings,
             catalog,
-            config,
         )
 
     @provide(scope=Scope.REQUEST)

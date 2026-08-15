@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import uuid
+
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, HTTPException, Request, status
 
@@ -66,6 +68,23 @@ async def debug_sponsor_checkout(
         return await service.start_checkout(telegram_id, payload.offer_id)
     except SponsorCheckoutConflictError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    except SponsorOfferError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+
+
+@router.delete(
+    "/sponsor/{telegram_id}/checkouts/{checkout_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def debug_abandon_sponsor_checkout(
+    telegram_id: int,
+    checkout_id: uuid.UUID,
+    request: Request,
+    service: FromDishka[SponsorStateService],
+) -> None:
+    check_debug(request)
+    try:
+        await service.abandon_checkout(telegram_id, checkout_id)
     except SponsorOfferError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
 

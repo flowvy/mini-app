@@ -8,6 +8,7 @@ import {
 	useSaveCommerceRule,
 } from "../../hooks/use-commerce-rules.ts";
 import { ApiError } from "../../lib/api.ts";
+import { TRIBUTE_PERIOD_KEYS } from "../../lib/commerce-labels.ts";
 import { getLocalizedError } from "../../lib/error-copy.ts";
 import {
 	formatMajorMoney,
@@ -23,7 +24,6 @@ import type {
 	CommerceType,
 	GrantMode,
 	PaymentMode,
-	TributeSubscriptionPeriod,
 } from "../../types/commerce.ts";
 import type { AccessProfile } from "../../types/registration.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
@@ -175,6 +175,7 @@ function toInput(draft: RuleDraft, profiles: AccessProfile[]): CommerceRuleInput
 
 interface CommerceRuleEditorProps {
 	rule: CommerceRule | null;
+	rules: CommerceRule[];
 	profiles: AccessProfile[];
 	returnFocusTo: HTMLElement | null;
 	onClose: () => void;
@@ -182,6 +183,7 @@ interface CommerceRuleEditorProps {
 
 export function CommerceRuleEditor({
 	rule,
+	rules,
 	profiles,
 	returnFocusTo,
 	onClose,
@@ -229,8 +231,22 @@ export function CommerceRuleEditor({
 		options.push(
 			...(catalog.data?.subscriptions ?? []).map((subscription) => ({
 				value: subscription.externalItemId,
-				label: subscriptionLabel(subscription, t),
-				disabled: false,
+				label: rules.some(
+					(existing) =>
+						existing.id !== rule?.id &&
+						existing.commerceType === "subscription" &&
+						existing.externalItemId === subscription.externalItemId,
+				)
+					? t("settings.tribute.rules.catalogConfiguredItem", {
+							name: subscriptionLabel(subscription, t),
+						})
+					: subscriptionLabel(subscription, t),
+				disabled: rules.some(
+					(existing) =>
+						existing.id !== rule?.id &&
+						existing.commerceType === "subscription" &&
+						existing.externalItemId === subscription.externalItemId,
+				),
 			})),
 		);
 		return options;
@@ -437,7 +453,11 @@ export function CommerceRuleEditor({
 							<InlineFeedback>{t("settings.tribute.rules.noActiveProfiles")}</InlineFeedback>
 						)}
 						<FormField
-							label={t("settings.tribute.rules.accessProfile")}
+							label={t(
+								draft.commerceType === "subscription"
+									? "settings.tribute.rules.subscriptionProfile"
+									: "settings.tribute.rules.accessProfile",
+							)}
 							htmlFor="commerce-access-profile"
 							hint={t(
 								draft.commerceType === "subscription"
@@ -687,7 +707,10 @@ export function CommerceRuleEditor({
 							ref={deleteTriggerRef}
 							variant="dangerOutline"
 							size="sm"
-							onClick={() => setConfirmDelete(true)}
+							onClick={() => {
+								remove.reset();
+								setConfirmDelete(true);
+							}}
 						>
 							{t("settings.tribute.rules.deleteAction")}
 						</ActionBtn>
@@ -699,11 +722,6 @@ export function CommerceRuleEditor({
 						{getLocalizedError(save.error, "settings.tribute.rules.saveError")}
 					</InlineFeedback>
 				)}
-				{remove.isError && (
-					<InlineFeedback>
-						{getLocalizedError(remove.error, "settings.tribute.rules.deleteError")}
-					</InlineFeedback>
-				)}
 			</EditorDialog>
 
 			<ConfirmDialog
@@ -712,14 +730,28 @@ export function CommerceRuleEditor({
 				confirmLabel={t("settings.tribute.rules.deleteAction")}
 				cancelLabel={t("access.cancel")}
 				confirmVariant="danger"
+				confirmLoading={remove.isPending}
 				returnFocusRef={deleteTriggerRef}
-				onCancel={() => setConfirmDelete(false)}
+				onCancel={() => {
+					remove.reset();
+					setConfirmDelete(false);
+				}}
 				onConfirm={() => {
 					if (!rule) return;
-					remove.mutate(rule.id, { onSuccess: onClose });
+					remove.mutate(rule.id, {
+						onSuccess: () => {
+							setConfirmDelete(false);
+							onClose();
+						},
+					});
 				}}
 			>
 				{t("settings.tribute.rules.deleteConfirmBody", { name: rule?.name })}
+				{remove.isError && (
+					<InlineFeedback>
+						{getLocalizedError(remove.error, "settings.tribute.rules.deleteError")}
+					</InlineFeedback>
+				)}
 			</ConfirmDialog>
 		</>
 	);
@@ -727,22 +759,12 @@ export function CommerceRuleEditor({
 
 type Translate = ReturnType<typeof useTranslation>["t"];
 
-const SUBSCRIPTION_PERIOD_KEYS: Record<TributeSubscriptionPeriod, string> = {
-	trial: "settings.tribute.rules.period.trial",
-	onetime: "settings.tribute.rules.period.onetime",
-	weekly: "settings.tribute.rules.period.weekly",
-	monthly: "settings.tribute.rules.period.monthly",
-	quarterly: "settings.tribute.rules.period.quarterly",
-	halfyearly: "settings.tribute.rules.period.halfyearly",
-	yearly: "settings.tribute.rules.period.yearly",
-};
-
 function subscriptionLabel(subscription: CommerceCatalogSubscription, t: Translate): string {
 	const prices = subscription.periods
 		.map(
 			(period) =>
 				`${formatMajorMoney(period.priceMajor, subscription.currency)} / ${t(
-					SUBSCRIPTION_PERIOD_KEYS[period.period],
+					TRIBUTE_PERIOD_KEYS[period.period],
 				)}`,
 		)
 		.join(", ");

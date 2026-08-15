@@ -1,47 +1,47 @@
-import { Pencil, Plus } from "lucide-react";
-import { type FormEvent, useRef, useState } from "react";
+import { ChevronDown, Pencil, Plus } from "lucide-react";
+import { type FormEvent, Suspense, lazy, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+	useCommerceCatalog,
 	useCommerceRules,
 	useDeleteSponsorOffer,
 	useSaveSponsorOffer,
 	useSponsorOffers,
 } from "../../hooks/use-commerce-rules.ts";
+import { TRIBUTE_PERIOD_KEYS } from "../../lib/commerce-labels.ts";
 import { getLocalizedError } from "../../lib/error-copy.ts";
-import { formatMajorMoney, majorToMinor, minorToMajorInput } from "../../lib/money.ts";
+import { formatPlanMoney, majorToMinor, minorToMajorInput } from "../../lib/money.ts";
 import {
 	PAYMENT_DESTINATION_ISSUE_KEYS,
 	paymentDestinationIssue,
 } from "../../lib/payment-destination.ts";
-import type { AdminSettings } from "../../types/admin-settings.ts";
 import type {
 	CommerceRule,
 	SponsorDonationPaymentMode,
 	SponsorOffer,
 	SponsorOfferAvailability,
 	SponsorOfferInput,
+	SponsorOfferPriceOption,
 	TributeDonationPeriod,
-	TributeSubscriptionPeriod,
 } from "../../types/commerce.ts";
+import { SubscriptionBillingList } from "../commerce/subscription-billing-list.tsx";
+import { FormattedText } from "../content/formatted-text.tsx";
 import { ActionBtn } from "../ui/action-btn.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { EditorDialog } from "../ui/editor-dialog.tsx";
-import {
-	FormField,
-	FormFieldInput,
-	FormFieldSelect,
-	FormFieldTextarea,
-} from "../ui/form-section.tsx";
+import { FormField, FormFieldInput, FormFieldSelect } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { SegmentedControl } from "../ui/segmented-control.tsx";
 import { Toggle } from "../ui/toggle.tsx";
 import editorStyles from "./commerce-rule-editor.module.css";
 import styles from "./commerce-rules-config.module.css";
 import { SettingsDivider, SettingsSection } from "./settings-surface.tsx";
+import offerStyles from "./sponsor-offers-config.module.css";
 
-interface SponsorOffersConfigProps {
-	settings: AdminSettings;
-}
+const FormattedTextEditor = lazy(async () => {
+	const module = await import("../content/formatted-text-editor.tsx");
+	return { default: module.FormattedTextEditor };
+});
 
 interface EditorState {
 	offer: SponsorOffer | null;
@@ -60,16 +60,6 @@ interface OfferDraft {
 	isPublished: boolean;
 }
 
-const PERIOD_KEYS: Record<TributeSubscriptionPeriod, string> = {
-	trial: "settings.tribute.rules.period.trial",
-	onetime: "settings.tribute.rules.period.onetime",
-	weekly: "settings.tribute.rules.period.weekly",
-	monthly: "settings.tribute.rules.period.monthly",
-	quarterly: "settings.tribute.rules.period.quarterly",
-	halfyearly: "settings.tribute.rules.period.halfyearly",
-	yearly: "settings.tribute.rules.period.yearly",
-};
-
 const DONATION_PERIODS: TributeDonationPeriod[] = [
 	"weekly",
 	"monthly",
@@ -87,7 +77,6 @@ const AVAILABILITY_KEYS: Record<SponsorOfferAvailability, string> = {
 	ready: "settings.tribute.offers.availability.ready",
 	rule_disabled: "settings.tribute.offers.availability.ruleDisabled",
 	profile_unavailable: "settings.tribute.offers.availability.profileUnavailable",
-	delivery_disabled: "settings.tribute.offers.availability.deliveryDisabled",
 	configuration_changed: "settings.tribute.offers.availability.configurationChanged",
 };
 
@@ -97,7 +86,7 @@ function initialDraft(offer: SponsorOffer | null, rules: CommerceRule[]): OfferD
 				title: offer.title,
 				description: offer.description,
 				commerceRuleId: offer.commerceRuleId,
-				checkoutUrl: offer.checkoutUrl ?? "",
+				checkoutUrl: offer.commerceType === "donation" ? (offer.checkoutUrl ?? "") : "",
 				amountMajor:
 					offer.expectedAmountMinor === null
 						? ""
@@ -137,16 +126,24 @@ function offerInput(offer: SponsorOffer): SponsorOfferInput {
 	};
 }
 
-function canPublish(
-	rule: CommerceRule | undefined,
-	settings: AdminSettings,
-	donationConfigured = true,
+function canPublish(rule: CommerceRule | undefined, donationConfigured = true): boolean {
+	return Boolean(rule?.isEnabled && (rule.commerceType !== "donation" || donationConfigured));
+}
+
+function hasPublishedSubscription(
+	offers: SponsorOffer[],
+	externalItemId: string | null,
+	exceptOfferId?: string,
 ): boolean {
 	return Boolean(
-		settings.tributeEntitlementExecutionEnabled &&
-			rule?.isEnabled &&
-			(rule.commerceType !== "donation" ||
-				(settings.tributeIdentifiedDonationAutomationEnabled && donationConfigured)),
+		externalItemId &&
+			offers.some(
+				(offer) =>
+					offer.id !== exceptOfferId &&
+					offer.isPublished &&
+					offer.commerceType === "subscription" &&
+					offer.externalItemId === externalItemId,
+			),
 	);
 }
 
@@ -159,23 +156,26 @@ function donationOfferConfigured(offer: SponsorOffer): boolean {
 	);
 }
 
-export function SponsorOffersConfig({ settings }: SponsorOffersConfigProps) {
+export function SponsorOffersConfig() {
 	const { t, i18n } = useTranslation();
 	const offers = useSponsorOffers();
 	const rules = useCommerceRules();
+	const catalog = useCommerceCatalog();
 	const save = useSaveSponsorOffer();
 	const [editor, setEditor] = useState<EditorState | null>(null);
 	const rulesById = new Map((rules.data ?? []).map((rule) => [rule.id, rule]));
-
-	const priceSummary = (offer: SponsorOffer): string => {
-		if (offer.priceOptions.length === 0) return t("settings.tribute.offers.pricePending");
-		return offer.priceOptions
-			.map((price) => {
-				const money = formatMajorMoney(price.priceMajor, price.currency, i18n.language);
-				return price.period ? `${money} / ${t(PERIOD_KEYS[price.period])}` : money;
-			})
-			.join(", ");
-	};
+	const allOffers = offers.data ?? [];
+	const subscriptionGroups = new Map<string, SponsorOffer[]>();
+	for (const offer of allOffers) {
+		if (offer.commerceType !== "subscription" || !offer.externalItemId) continue;
+		const group = subscriptionGroups.get(offer.externalItemId) ?? [];
+		group.push(offer);
+		subscriptionGroups.set(offer.externalItemId, group);
+	}
+	const legacyDuplicateCount = [...subscriptionGroups.values()].reduce(
+		(count, group) => count + Math.max(group.length - 1, 0),
+		0,
+	);
 
 	return (
 		<>
@@ -196,6 +196,14 @@ export function SponsorOffersConfig({ settings }: SponsorOffersConfigProps) {
 					<strong>{t("settings.tribute.offers.introTitle")}</strong>
 					<span>{t("settings.tribute.offers.introHint")}</span>
 				</div>
+
+				{legacyDuplicateCount > 0 && (
+					<div className={offerStyles.duplicateNotice}>
+						<InlineFeedback tone="warning">
+							{t("settings.tribute.offers.legacyDuplicates")}
+						</InlineFeedback>
+					</div>
+				)}
 
 				{(offers.isPending || rules.isPending) && (
 					<>
@@ -245,57 +253,183 @@ export function SponsorOffersConfig({ settings }: SponsorOffersConfigProps) {
 					</>
 				)}
 
-				{offers.data?.map((offer) => {
-					const rule = rulesById.get(offer.commerceRuleId);
-					const mayPublish = canPublish(
-						rule,
-						settings,
-						donationOfferConfigured(offer) &&
-							Boolean(
-								rule &&
-									(rule.paymentMode === "any" || rule.paymentMode === offer.expectedPaymentMode),
-							),
-					);
-					return (
-						<div className={styles.ruleBlock} key={offer.id}>
-							<SettingsDivider />
-							<div className={styles.ruleRow} data-enabled={offer.isPublished ? "true" : "false"}>
-								<button
-									type="button"
-									className={styles.editRule}
-									onClick={(event) => setEditor({ offer, returnFocusTo: event.currentTarget })}
+				{allOffers.length > 0 && (
+					<div className={offerStyles.offerList}>
+						{allOffers.map((offer) => {
+							const rule = rulesById.get(offer.commerceRuleId);
+							const subscriptionGroup = offer.externalItemId
+								? subscriptionGroups.get(offer.externalItemId)
+								: undefined;
+							const groupLead =
+								subscriptionGroup?.find((candidate) => candidate.isPublished) ??
+								subscriptionGroup?.[0];
+							const siblingCount = Math.max((subscriptionGroup?.length ?? 1) - 1, 0);
+							const compactDuplicate = siblingCount > 0 && groupLead?.id !== offer.id;
+							const catalogSubscription = catalog.data?.subscriptions.find(
+								(subscription) => subscription.externalItemId === rule?.externalItemId,
+							);
+							const periodOptions: SponsorOfferPriceOption[] =
+								offer.priceOptions.length > 0
+									? offer.priceOptions
+									: (catalogSubscription?.periods.map((period) => ({
+											priceMajor: period.priceMajor,
+											currency: catalogSubscription.currency,
+											period: period.period,
+										})) ?? []);
+							const duplicateSubscription =
+								offer.commerceType === "subscription" &&
+								hasPublishedSubscription(allOffers, offer.externalItemId, offer.id);
+							const mayPublish =
+								!duplicateSubscription &&
+								canPublish(
+									rule,
+									donationOfferConfigured(offer) &&
+										Boolean(
+											rule &&
+												(rule.paymentMode === "any" ||
+													rule.paymentMode === offer.expectedPaymentMode),
+										),
+								);
+							if (compactDuplicate) {
+								return (
+									<details className={offerStyles.legacyOffer} key={offer.id}>
+										<summary>
+											<span>{offer.title}</span>
+											<span className={offerStyles.legacyMeta}>
+												<span data-availability={offer.availability}>
+													{t(AVAILABILITY_KEYS[offer.availability])}
+												</span>
+												<ChevronDown size={15} aria-hidden="true" />
+											</span>
+										</summary>
+										<div className={offerStyles.legacyBody}>
+											{offer.description && (
+												<FormattedText className={offerStyles.legacyDescription}>
+													{offer.description}
+												</FormattedText>
+											)}
+											<p className={offerStyles.duplicateHint}>
+												{t("settings.tribute.offers.duplicateExtraHint")}
+											</p>
+											<div className={offerStyles.legacyActions}>
+												<div className={offerStyles.visibility}>
+													<span>{t("settings.tribute.offers.visibilityLabel")}</span>
+													<Toggle
+														checked={offer.isPublished}
+														disabled={save.isPending || (!offer.isPublished && !mayPublish)}
+														ariaLabel={t("settings.tribute.offers.toggleLabel", {
+															name: offer.title,
+														})}
+														onChange={(isPublished) =>
+															save.mutate({
+																id: offer.id,
+																input: { ...offerInput(offer), isPublished },
+															})
+														}
+													/>
+												</div>
+												<ActionBtn
+													variant="action"
+													size="sm"
+													onClick={(event) =>
+														setEditor({ offer, returnFocusTo: event.currentTarget })
+													}
+												>
+													<Pencil size={13} aria-hidden="true" />
+													{t("settings.tribute.offers.editAction")}
+												</ActionBtn>
+											</div>
+											<span className={offerStyles.legacyRule}>
+												{t("settings.tribute.offers.linkedRule", {
+													name: rule?.name ?? t("settings.tribute.offers.ruleUnavailable"),
+												})}
+											</span>
+										</div>
+									</details>
+								);
+							}
+							return (
+								<article
+									className={offerStyles.offerCard}
+									key={offer.id}
+									data-published={offer.isPublished ? "true" : "false"}
+									aria-label={offer.title}
 								>
-									<span className={styles.ruleCopy}>
-										<span className={styles.ruleTitleLine}>
-											<strong>{offer.title}</strong>
-											<span>{t(AVAILABILITY_KEYS[offer.availability])}</span>
+									<div className={offerStyles.cardHeader}>
+										<div className={offerStyles.cardTitle}>
+											<div>
+												<strong>{offer.title}</strong>
+												<span data-availability={offer.availability}>
+													{t(AVAILABILITY_KEYS[offer.availability])}
+												</span>
+											</div>
+											{offer.description && (
+												<FormattedText className={offerStyles.offerDescription}>
+													{offer.description}
+												</FormattedText>
+											)}
+										</div>
+										<div className={offerStyles.visibility}>
+											<span>{t("settings.tribute.offers.visibilityLabel")}</span>
+											<Toggle
+												checked={offer.isPublished}
+												disabled={save.isPending || (!offer.isPublished && !mayPublish)}
+												ariaLabel={t("settings.tribute.offers.toggleLabel", {
+													name: offer.title,
+												})}
+												onChange={(isPublished) =>
+													save.mutate({
+														id: offer.id,
+														input: { ...offerInput(offer), isPublished },
+													})
+												}
+											/>
+										</div>
+									</div>
+
+									{offer.commerceType === "subscription" ? (
+										!compactDuplicate &&
+										periodOptions.length > 0 && (
+											<>
+												<SubscriptionBillingList options={periodOptions} tone="plain" />
+												<p className={offerStyles.periodHint}>
+													{t("settings.tribute.offers.cardPeriodHint")}
+												</p>
+											</>
+										)
+									) : periodOptions[0] ? (
+										<div className={offerStyles.donationFact}>
+											<strong>
+												{formatPlanMoney(
+													periodOptions[0].priceMajor,
+													periodOptions[0].currency,
+													i18n.language,
+												)}
+											</strong>
+											<span>{t("settings.tribute.offers.donationPaymentFact")}</span>
+										</div>
+									) : null}
+
+									<div className={offerStyles.cardFooter}>
+										<span>
+											{t("settings.tribute.offers.linkedRule", {
+												name: rule?.name ?? t("settings.tribute.offers.ruleUnavailable"),
+											})}
 										</span>
-										<small>
-											<span>{priceSummary(offer)}</span>
-											<span>{rule?.name ?? t("settings.tribute.offers.ruleUnavailable")}</span>
-										</small>
-									</span>
-									<Pencil size={14} aria-hidden="true" />
-								</button>
-								<div className={styles.toggleCell}>
-									<Toggle
-										checked={offer.isPublished}
-										disabled={save.isPending || (!offer.isPublished && !mayPublish)}
-										ariaLabel={t("settings.tribute.offers.toggleLabel", {
-											name: offer.title,
-										})}
-										onChange={(isPublished) =>
-											save.mutate({
-												id: offer.id,
-												input: { ...offerInput(offer), isPublished },
-											})
-										}
-									/>
-								</div>
-							</div>
-						</div>
-					);
-				})}
+										<ActionBtn
+											variant="action"
+											size="sm"
+											onClick={(event) => setEditor({ offer, returnFocusTo: event.currentTarget })}
+										>
+											<Pencil size={13} aria-hidden="true" />
+											{t("settings.tribute.offers.editAction")}
+										</ActionBtn>
+									</div>
+								</article>
+							);
+						})}
+					</div>
+				)}
 			</SettingsSection>
 
 			{save.isError && (
@@ -308,7 +442,7 @@ export function SponsorOffersConfig({ settings }: SponsorOffersConfigProps) {
 				<SponsorOfferEditor
 					offer={editor.offer}
 					rules={rules.data}
-					settings={settings}
+					offers={offers.data ?? []}
 					returnFocusTo={editor.returnFocusTo}
 					onClose={() => setEditor(null)}
 				/>
@@ -320,7 +454,7 @@ export function SponsorOffersConfig({ settings }: SponsorOffersConfigProps) {
 interface SponsorOfferEditorProps {
 	offer: SponsorOffer | null;
 	rules: CommerceRule[];
-	settings: AdminSettings;
+	offers: SponsorOffer[];
 	returnFocusTo: HTMLElement | null;
 	onClose: () => void;
 }
@@ -328,7 +462,7 @@ interface SponsorOfferEditorProps {
 function SponsorOfferEditor({
 	offer,
 	rules,
-	settings,
+	offers,
 	returnFocusTo,
 	onClose,
 }: SponsorOfferEditorProps) {
@@ -338,7 +472,22 @@ function SponsorOfferEditor({
 	const deleteTriggerRef = useRef<HTMLButtonElement>(null);
 	const save = useSaveSponsorOffer();
 	const remove = useDeleteSponsorOffer();
+	const catalog = useCommerceCatalog();
 	const selectedRule = rules.find((rule) => rule.id === draft.commerceRuleId);
+	const selectedSubscription = catalog.data?.subscriptions.find(
+		(subscription) => subscription.externalItemId === selectedRule?.externalItemId,
+	);
+	const selectableRules = offer
+		? rules
+		: rules.filter(
+				(rule) =>
+					rule.commerceType === "donation" ||
+					!offers.some(
+						(existing) =>
+							existing.commerceType === "subscription" &&
+							existing.externalItemId === rule.externalItemId,
+					),
+			);
 	const sortOrder = /^\d+$/.test(draft.sortOrder) ? Number(draft.sortOrder) : 0;
 	const isDonation = selectedRule?.commerceType === "donation";
 	const checkoutIssue = paymentDestinationIssue(draft.checkoutUrl);
@@ -360,16 +509,21 @@ function SponsorOfferEditor({
 	);
 	const donationDestinationValid =
 		!isDonation || donationDestinationEmpty || donationDestinationComplete;
+	const duplicateSubscription = Boolean(
+		selectedRule?.commerceType === "subscription" &&
+			hasPublishedSubscription(offers, selectedRule.externalItemId, offer?.id),
+	);
 	const valid =
 		draft.title.trim().length >= 1 &&
 		draft.title.trim().length <= 100 &&
-		draft.description.trim().length <= 300 &&
+		draft.description.trim().length <= 2_000 &&
 		Boolean(selectedRule) &&
 		Number.isSafeInteger(sortOrder) &&
 		sortOrder >= 1 &&
 		sortOrder <= 10_000 &&
 		donationDestinationValid &&
-		(!draft.isPublished || canPublish(selectedRule, settings, donationDestinationComplete));
+		(!draft.isPublished ||
+			(!duplicateSubscription && canPublish(selectedRule, donationDestinationComplete)));
 	const busy = save.isPending || remove.isPending;
 
 	const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -446,14 +600,22 @@ function SponsorOfferEditor({
 							htmlFor="sponsor-offer-description"
 							hint={t("settings.tribute.offers.descriptionHint")}
 						>
-							<FormFieldTextarea
-								id="sponsor-offer-description"
-								value={draft.description}
-								maxLength={300}
-								rows={4}
-								placeholder={t("settings.tribute.offers.descriptionPlaceholder")}
-								onChange={(event) => setDraft({ ...draft, description: event.target.value })}
-							/>
+							<Suspense
+								fallback={
+									<output className={offerStyles.editorLoading}>
+										{t("common.formattedText.loading")}
+									</output>
+								}
+							>
+								<FormattedTextEditor
+									id="sponsor-offer-description"
+									ariaLabel={t("settings.tribute.offers.descriptionLabel")}
+									value={draft.description}
+									maxLength={300}
+									placeholder={t("settings.tribute.offers.descriptionPlaceholder")}
+									onChange={(description) => setDraft({ ...draft, description })}
+								/>
+							</Suspense>
 						</FormField>
 					</div>
 				</section>
@@ -471,8 +633,8 @@ function SponsorOfferEditor({
 							<FormFieldSelect
 								id="sponsor-offer-rule"
 								value={draft.commerceRuleId}
-								disabled={Boolean(offer)}
-								options={rules.map((rule) => ({ value: rule.id, label: rule.name }))}
+								disabled={busy || selectableRules.length === 0}
+								options={selectableRules.map((rule) => ({ value: rule.id, label: rule.name }))}
 								onChange={(event) => {
 									const nextRule = rules.find((rule) => rule.id === event.target.value);
 									setDraft({
@@ -483,6 +645,20 @@ function SponsorOfferEditor({
 								}}
 							/>
 						</FormField>
+						{selectedSubscription && (
+							<div className={`${editorStyles.providerExpiry} ${offerStyles.editorPeriods}`}>
+								<strong>{t("settings.tribute.offers.subscriptionPeriodsTitle")}</strong>
+								<SubscriptionBillingList
+									options={selectedSubscription.periods.map((period) => ({
+										priceMajor: period.priceMajor,
+										currency: selectedSubscription.currency,
+										period: period.period,
+									}))}
+									tone="plain"
+								/>
+								<span>{t("settings.tribute.offers.subscriptionPeriodsHint")}</span>
+							</div>
+						)}
 						{isDonation && (
 							<>
 								<FormField
@@ -583,7 +759,7 @@ function SponsorOfferEditor({
 											value={draft.expectedProviderPeriod}
 											options={DONATION_PERIODS.map((period) => ({
 												value: period,
-												label: t(PERIOD_KEYS[period]),
+												label: t(TRIBUTE_PERIOD_KEYS[period]),
 											}))}
 											onChange={(event) =>
 												setDraft({
@@ -614,15 +790,19 @@ function SponsorOfferEditor({
 						<div className={editorStyles.providerExpiry}>
 							<strong>{t("settings.tribute.offers.publishTitle")}</strong>
 							<span>
-								{canPublish(selectedRule, settings, donationDestinationComplete)
+								{!duplicateSubscription && canPublish(selectedRule, donationDestinationComplete)
 									? t("settings.tribute.offers.publishHint")
-									: t("settings.tribute.offers.publishUnavailable")}
+									: t(
+											duplicateSubscription
+												? "settings.tribute.offers.publishDuplicateSubscription"
+												: "settings.tribute.offers.publishUnavailable",
+										)}
 							</span>
 							<Toggle
 								checked={draft.isPublished}
 								disabled={
 									!draft.isPublished &&
-									!canPublish(selectedRule, settings, donationDestinationComplete)
+									(duplicateSubscription || !canPublish(selectedRule, donationDestinationComplete))
 								}
 								ariaLabel={t("settings.tribute.offers.publishLabel")}
 								onChange={(isPublished) => setDraft({ ...draft, isPublished })}

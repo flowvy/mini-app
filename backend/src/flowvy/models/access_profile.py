@@ -33,6 +33,7 @@ class AccessValidityMode(enum.StrEnum):
     DURATION = "duration"
     FIXED = "fixed"
     LIFETIME = "lifetime"
+    AUTOMATION = "automation"
 
 
 class AccessProfile(Base):
@@ -42,7 +43,7 @@ class AccessProfile(Base):
     __table_args__ = (
         UniqueConstraint("name", name="uq_access_profiles_name"),
         CheckConstraint(
-            "validity_mode IN ('duration', 'fixed', 'lifetime')",
+            "validity_mode IN ('duration', 'fixed', 'lifetime', 'automation')",
             name="ck_access_profiles_validity_mode",
         ),
         CheckConstraint(
@@ -67,6 +68,8 @@ class AccessProfile(Base):
             "(validity_mode = 'fixed' AND validity_days IS NULL "
             "AND fixed_expire_at IS NOT NULL) OR "
             "(validity_mode = 'lifetime' AND validity_days IS NULL "
+            "AND fixed_expire_at IS NULL) OR "
+            "(validity_mode = 'automation' AND validity_days IS NULL "
             "AND fixed_expire_at IS NULL)",
             name="ck_access_profiles_validity_fields",
         ),

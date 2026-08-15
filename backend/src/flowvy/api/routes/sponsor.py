@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Annotated
 
 from aiogram.utils.web_app import WebAppInitData
@@ -48,6 +49,19 @@ async def start_sponsor_checkout(
         return await service.start_checkout(init_data.user.id, payload.offer_id)
     except SponsorCheckoutConflictError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+    except SponsorOfferError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+
+
+@router.delete("/checkouts/{checkout_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def abandon_sponsor_checkout(
+    checkout_id: uuid.UUID,
+    init_data: CurrentInitData,
+    service: FromDishka[SponsorStateService],
+) -> None:
+    """Stop waiting for an owned local redirect attempt; never mutate Tribute."""
+    try:
+        await service.abandon_checkout(init_data.user.id, checkout_id)
     except SponsorOfferError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
 

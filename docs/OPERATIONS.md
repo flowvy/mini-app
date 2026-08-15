@@ -57,26 +57,19 @@ Alembic загружает отдельный `MigrationSettings`, содерж�
 
 ## Tribute entitlement worker
 
-Безопасный runtime default — `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED=false`. В этом режиме
-authenticated events и entitlement decisions сохраняются, admin UI показывает `Planning only`, но
-Remnawave mutation не выполняется. Переключатель намеренно server-only и не находится в Mini App.
-Identified donation имеет второй независимый безопасный default
-`TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED=false`: до controlled live evidence его derived
-fingerprint создаёт review, а не pending grant. Anonymous donation всегда остаётся review-only.
+Durable entitlement worker является обычной частью runtime и запускается вместе с приложением.
+Автоматизацию будущих платежей включает и выключает enabled-тогл соответствующего commerce rule в
+Mini App; published-тогл sponsor offer независимо управляет только видимостью payment choice на Home.
+Identified donation планируется после полного checkout/rule match. Anonymous donation и любые
+неоднозначные или несовпавшие payment facts всегда остаются review-only.
 
 Для безопасной локальной проверки donation semantics из корня используется
 `.\scripts\verify-tribute-entitlements.ps1`. Команда работает только с disposable test PostgreSQL
 и fake credentials, не читает runtime key и не выполняет внешние provider requests. Fixture
-оставляет executor выключенным и проверяет signed HTTP intake, dedupe, planner decisions, bands и
-review paths.
+проверяет signed HTTP intake, dedupe, planner decisions, bands и review paths.
 
 Параметры worker:
 
-- `TRIBUTE_ENTITLEMENT_EXECUTION_ENABLED` — запускает lifespan worker; при `true` startup также
-  требует полный `REMNAWAVE_URL`/`REMNAWAVE_API_TOKEN`;
-- `TRIBUTE_IDENTIFIED_DONATION_AUTOMATION_ENABLED` — разрешает planner переводить доказанно
-  неанонимные donation events в очередь; включается только после controlled live fingerprint
-  evidence и не запускает worker самостоятельно;
 - `TRIBUTE_ENTITLEMENT_WORKER_INTERVAL_SECONDS` — пауза пустой очереди, default 10 секунд;
 - `TRIBUTE_ENTITLEMENT_LEASE_SECONDS` — после этого interrupted `processing` возвращается в retry,
   default 120 секунд;
@@ -84,20 +77,19 @@ review paths.
 - `SPONSOR_CHECKOUT_PENDING_MINUTES` — срок одного локального redirect intent, default 30 минут,
   допустимый диапазон 5–180. Это не provider payment timeout и не доказательство оплаты.
 
-Admin может сохранять sponsor offer как hidden draft при выключенном worker. Publish доступен только
-когда backend видит включённый executor, enabled commerce rule, active access profile и валидный
-Creator destination/catalog item. Для donation дополнительно нужен identified-donation flag. Home
-никогда не читает draft и не вызывает Tribute catalog; published offer использует frozen snapshot.
+Admin может сохранять sponsor offer как hidden draft. Publish доступен только при enabled commerce
+rule, active access profile и валидном Creator destination/catalog item. Home никогда не читает
+draft и не вызывает Tribute catalog; published offer использует frozen snapshot. Для одной Tribute
+subscription публикуется один offer со всеми period/price из catalog.
 
 Минимальный controlled rollout:
 
 1. Создать в Tribute subscription либо donation destination; donation использовать автоматически
    только при принятом identity/fingerprint риске.
 2. Сохранить destination, создать и preview automation rule, затем создать hidden sponsor offer.
-3. Прогнать `verify-tribute-entitlements.ps1`, migration verifier и browser matrix. Убедиться, что
-   executor/identified-donation gates остаются в ожидаемом состоянии.
-4. Только по отдельному разрешению включить delivery на test target, опубликовать один offer и
-   выполнить одну реальную оплату тем же Telegram account. Redirect сам по себе не успех: должны
+3. Прогнать `verify-tribute-entitlements.ps1`, migration verifier и browser matrix.
+4. Только по отдельному разрешению опубликовать один offer на test target и выполнить одну реальную
+   оплату тем же Telegram account. Redirect сам по себе не успех: должны
    появиться authenticated inbox event, одна operation, confirmed checkout и applied access.
 5. Проверить duplicate delivery, exact expiry, cancellation и base restoration до расширения
    rollout. Не создавать второй payment, пока Home показывает pending/provisioning/review.

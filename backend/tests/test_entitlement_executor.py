@@ -26,7 +26,6 @@ def _settings(**overrides: object) -> Settings:
     values: dict[str, object] = {
         "remnawave_url": "https://panel.example.com",
         "remnawave_api_token": "test-token",
-        "tribute_entitlement_execution_enabled": True,
         "tribute_entitlement_worker_interval_seconds": 1,
         "tribute_entitlement_lease_seconds": 30,
         "tribute_entitlement_max_attempts": 3,
@@ -70,8 +69,8 @@ def _provider_user(
 def _profile_snapshot() -> dict[str, object]:
     return AccessProfileInput(
         name="Paid access",
-        validity_mode="duration",
-        validity_days=30,
+        validity_mode="automation",
+        validity_days=None,
         traffic_limit_bytes=0,
         traffic_limit_strategy="NO_RESET",
         hwid_device_limit=2,
@@ -770,9 +769,8 @@ async def test_due_restore_waits_for_new_paid_work_for_the_same_user(
     assert claimed.operation_kind == "grant"
 
 
-def test_executor_is_disabled_by_default_and_requires_a_complete_remnawave_target() -> None:
+def test_executor_retry_settings_have_bounded_defaults() -> None:
     settings = Settings(_env_file=None)
-    assert settings.tribute_entitlement_execution_enabled is False
-    assert settings.tribute_identified_donation_automation_enabled is False
-    with pytest.raises(ValueError, match="REMNAWAVE_URL"):
-        Settings(_env_file=None, tribute_entitlement_execution_enabled=True)
+    assert settings.tribute_entitlement_worker_interval_seconds == 10
+    assert settings.tribute_entitlement_lease_seconds == 120
+    assert settings.tribute_entitlement_max_attempts == 5

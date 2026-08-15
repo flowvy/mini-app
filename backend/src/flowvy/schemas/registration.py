@@ -13,7 +13,7 @@ from flowvy.schemas.base import CamelModel
 from flowvy.schemas.user_status import ProviderUserStatus
 
 RegistrationMode = Literal["open", "invite_only"]
-ValidityMode = Literal["duration", "fixed", "lifetime"]
+ValidityMode = Literal["duration", "fixed", "lifetime", "automation"]
 TrafficStrategy = Literal["NO_RESET", "DAY", "WEEK", "MONTH", "MONTH_ROLLING"]
 ReferralStatus = Literal["ready", "main_app_not_configured", "telegram_unavailable"]
 
@@ -89,7 +89,7 @@ class AccessProfileInput(CamelModel):
             if self.fixed_expire_at is None or self.validity_days is not None:
                 raise ValueError("Fixed access requires fixedExpireAt only")
         elif self.validity_days is not None or self.fixed_expire_at is not None:
-            raise ValueError("Lifetime access cannot include an expiration value")
+            raise ValueError("This validity mode cannot include an expiration value")
         return self
 
 

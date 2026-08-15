@@ -65,17 +65,18 @@ malformed normalized fields, typed documented event payloads, обязатель
 отдельный authenticated `test_event` ping без persistence, safe schema-shape diagnostics без values,
 ignored unknown event, exact replay, конкурентный DB duplicate и retention без raw
 payload/signature/username. Entitlement tests отдельно доказывают subscription absolute `expires_at`
-state, default-off/explicitly enabled
-identified-donation fingerprint, anonymous review, unknown-user fail closed, rule/profile snapshots,
+state, safely matched identified-donation fingerprint, anonymous review, unknown-user fail closed,
+rule/profile snapshots,
 generic compensation/recovery semantics, first paid provider create,
 base/lifetime overlay, full-profile/disabled restoration, paid-work priority над due restore,
 per-user worker serialization, absolute-target reconciliation после timeout, explicit nullable
 provider clears и отсутствие второго provider mutation.
-Sponsor fixtures отдельно проверяют publish validation для всех subscription periods и identified
-donation bands, exact one-time/recurring donation schedule,
-disabled delivery, immutable checkout snapshot,
+Sponsor fixtures отдельно проверяют one-rule/one-offer contract со всеми subscription periods,
+identified donation bands, exact one-time/recurring donation schedule и immutable checkout snapshot,
 trial/cancellation exact expiry, review visibility поверх active access, provisioning priority,
-повтор того же pending offer и conflict другого offer. PostgreSQL repository suite доказывает, что
+повтор того же pending offer, conflict другого offer и idempotent abandon только своего pending
+intent. PostgreSQL repository suite доказывает, что abandoned/`expired` intent остаётся доступен для
+позднего matching signed event, а чужой checkout не изменяется. Она также доказывает, что
 subscription подтверждает только matching signed user/family/item/mode event, а donation — только
 bounded user/family/time/amount/currency/mode/provider-period match. Mismatch попадает в
 review до planner grant, а подтверждённый checkout разрешает только linked offer rule. Provider `donation_request_id` не
@@ -87,14 +88,21 @@ resolve note, retry без сброса attempt history, повтор одног
 запрет reuse для другого решения и конкурентные retry/resolve под operation row lock. HTTP fixture
 проверяет active-admin boundary, safe projection и `409` для stale action.
 Commerce fixtures отдельно проверяют conditional rule validation, active-profile gate,
-CRUD, no-match/fixed/volume preview и целочисленные 500/1000/3500/4000 RUB boundaries без webhook
-или access side effect. Media tests сканируют ложный declared size и действительно читают aiogram `InputFile`
+CRUD, атомарное удаление rule со всеми linked offers, authenticated admin boundary,
+no-match/fixed/volume preview и целочисленные 500/1000/3500/4000 RUB boundaries без webhook или
+access side effect. Browser regression дополнительно проверяет честное consequence confirmation,
+client cache invalidation, retryable safe failure и light/dark contrast/overflow/Axe matrix. Media tests сканируют ложный declared size и действительно читают aiogram `InputFile`
 chunks. Remnawave tests
 используют locked 2.8.1/3.0.0/3.1.0 response fixtures: проверяют выбор route/body, metadata version,
 cursor stream, UUID-less 3.x user, version-specific 2.8.1/3.1.0 update identity, absolute
 `expireAt`, `204`, ownership и safe future-major failure. Они отдельно
 доказывают, что upstream body/extra dashboard fields не проходят в BFF. Ни один из этих suites не
 должен использовать значения из `.env`.
+
+Registration/access-profile fixtures отдельно доказывают, что `automation` не хранит дни/дату,
+принимается commerce/entitlement snapshots, не появляется среди registration defaults и fail-closed
+отклоняется даже при повреждённой policy-ссылке. Browser matrix проверяет создание, summary,
+отсутствие expiry inputs/default option и блокировку перевода текущего registration default.
 
 Текущие fixtures создают таблицы через `Base.metadata.create_all()`, поэтому pytest сам по себе не
 доказывает Alembic chain. `scripts/verify-migrations.ps1` создаёт случайно названную disposable БД,
@@ -103,8 +111,8 @@ upgrade и `alembic check`, затем удаляет БД в `finally`. Fixture
 delivery-key backfill, удаление legacy raw payload, timezone conversion, создание уникального
 числового Remnawave identity, сохранность старого nullable UUID и перенос старого `kuma_enabled` в
 новый Pulse provider selector с обратимым downgrade. После каждого zero-to-head fixture выполняет
-rollback-only реальные INSERT в `sponsor_offers` и `sponsor_checkouts` без явных ID, поэтому
-расхождение ORM и Alembic UUID defaults не может пройти migration gate.
+rollback-only реальные INSERT профиля `automation`, `sponsor_offers` и `sponsor_checkouts` без явных
+ID, поэтому расхождение ORM и Alembic constraints/defaults не может пройти migration gate.
 `test_sponsor_checkout_repository.py` отдельно выполняет published → draft переход на PostgreSQL и
 проверяет, что nullable JSONB snapshot становится SQL `NULL`, а не JSON-скаляром `null`.
 
@@ -119,9 +127,11 @@ pnpm test
 pnpm build
 ```
 
-Vitest настроен на `tests/unit/**/*.test.ts` в Node environment. Текущий seed проверяет decisions в
-`src/lib/format.ts`, same-origin API path, `204 No Content` и безопасное отображение JSON/HTML ошибок.
-Component DOM tests пока отсутствуют. Для новой логики
+Vitest настроен на `tests/unit/**/*.test.{ts,tsx}` в Node environment. Текущий seed проверяет
+decisions в `src/lib/format.ts`, same-origin API path, `204 No Content` и безопасное отображение
+JSON/HTML ошибок. Formatted-text cases проверяют нормализацию допустимых http/https ссылок,
+CommonMark semantic render и отказ от raw HTML/опасных URL через React server render.
+Полноценные component DOM tests пока отсутствуют. Для новой логики
 добавляйте success/boundary/error case и фиксируйте clock/locale, если они влияют на результат.
 
 ## Browser smoke
@@ -142,10 +152,17 @@ subscription catalog loading/select/empty/error/retry и сохранение le
 payment destination loading/empty/error/retry/save/clear, unavailable subscription mapping,
 local URL validation, dirty/discard, safe mutation failure и success,
 admin sponsor-offer empty/draft/create/publish-guard presentation, donation amount/mode/frequency
-controls и truthful предупреждение о том, что Creator link их не фиксирует, Home no/base access, one-time
+controls, один постоянно видимый fixed toolbar и link validation во всех input modes, отсутствие
+pointer-dependent app popup, немедленное WYSIWYG-форматирование, roving tab stop и
+arrow/Home/End-навигацию toolbar, сохранение CommonMark source и тот
+же semantic result на Home,
+truthful предупреждение о том, что Creator link их не
+фиксирует, Home no/base access, one-time
 renewal, recurring active/cancelled, pending/provisioning/review duplicate-payment guard,
 identified-donation exact amount/schedule/anonymity instructions и redirect-intent POST без
 client-side payment proof,
+pending check loading/unchanged result, локальный abandon dialog с focus return, success/failure и
+немедленный возврат published offers без provider mutation,
 pending donation → status check → one-time active transition, совместный sponsor/subscription
 refetch, исчезновение stale pending controls, multi-type renewal chooser и neutral/active icon states,
 payment-activity loading/empty/populated/error/retry и безопасные applied/review reason codes,

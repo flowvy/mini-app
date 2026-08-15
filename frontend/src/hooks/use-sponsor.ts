@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiGet, apiPost } from "../lib/api.ts";
+import { apiDelete, apiGet, apiPost } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";
 import { isMockAuth } from "../lib/runtime.ts";
 import type { SponsorCheckout, SponsorState } from "../types/commerce.ts";
@@ -23,6 +23,17 @@ export function useStartSponsorCheckout() {
 	return useMutation({
 		mutationFn: (offerId: string) =>
 			apiPost<SponsorCheckout>(`${sponsorPrefix()}/checkouts`, { offerId }),
+		onSuccess: async () => {
+			await queryClient.invalidateQueries({ queryKey: queryKeys.sponsorState });
+		},
+	});
+}
+
+export function useAbandonSponsorCheckout() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (checkoutId: string) =>
+			apiDelete(`${sponsorPrefix()}/checkouts/${encodeURIComponent(checkoutId)}`),
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({ queryKey: queryKeys.sponsorState });
 		},

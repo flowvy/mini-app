@@ -115,7 +115,11 @@ export function useDeleteCommerceRule() {
 	return useMutation({
 		mutationFn: (id: string) => apiDelete(`${prefix}/rules/${id}`),
 		onSuccess: async () => {
-			await queryClient.invalidateQueries({ queryKey: queryKeys.commerceRules("tribute") });
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: queryKeys.commerceRules("tribute") }),
+				queryClient.invalidateQueries({ queryKey: queryKeys.sponsorOffers }),
+				queryClient.invalidateQueries({ queryKey: queryKeys.sponsorState }),
+			]);
 		},
 	});
 }

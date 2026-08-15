@@ -298,7 +298,9 @@ test("admin routes render deterministic success and placeholder states", async (
 		.locator("xpath=ancestor::section[1]");
 	await expect(profilesPanel.getByRole("button", { name: "Create profile" })).toBeVisible();
 	await expect(
-		profilesPanel.getByText(/Define access, limits, and provider options/),
+		profilesPanel.getByText(
+			/Define benefits, limits, and provider options for registration or automations/,
+		),
 	).toBeVisible();
 	await expect(page.getByRole("button", { name: "Back" })).toHaveCount(0);
 
