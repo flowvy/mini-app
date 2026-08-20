@@ -6,7 +6,11 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "common.ps1")
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$backendDir = Join-Path $repoRoot "backend"
+$frontendDir = Join-Path $repoRoot "frontend"
+$composeFile = Join-Path $repoRoot "docker-compose.dev.yml"
 
 function Invoke-Checked {
     param(
@@ -49,37 +53,41 @@ $docsChanged = $Scope -in @("Docs", "Full") -or
 $uiChanged = $Scope -in @("Frontend", "Full") -or
     ($Scope -eq "Changed" -and ($changedFiles | Where-Object { $_ -match '^frontend/(src/.*\.(tsx|css)|tests/e2e/|playwright\.config\.ts|vite\.config\.ts)' }))
 
+if ($Scope -eq "Full" -or $toolingChanged) {
+    & (Join-Path $PSScriptRoot "verify-tooling.ps1")
+}
+
 if ($backendChanged) {
-    Invoke-Checked "uv lock" "$repoRoot\backend" "uv" @("lock", "--check")
-    Invoke-Checked "Ruff format" "$repoRoot\backend" "uv" @("run", "--frozen", "ruff", "format", "--check", ".")
-    Invoke-Checked "Ruff lint" "$repoRoot\backend" "uv" @("run", "--frozen", "ruff", "check", ".")
+    Invoke-Checked "uv lock" $backendDir "uv" @("lock", "--check")
+    Invoke-Checked "Ruff format" $backendDir "uv" @("run", "--frozen", "ruff", "format", "--check", ".")
+    Invoke-Checked "Ruff lint" $backendDir "uv" @("run", "--frozen", "ruff", "check", ".")
 
     if ($Scope -eq "Full") {
-        docker compose -f "$repoRoot\docker-compose.dev.yml" up -d --wait postgres redis
+        docker compose -f $composeFile up -d --wait postgres redis
         if ($LASTEXITCODE -ne 0) { throw "Disposable test services are not ready." }
-        & "$PSScriptRoot\verify-migrations.ps1"
-        Invoke-Checked "Backend full tests" "$repoRoot\backend" "uv" @("run", "--frozen", "pytest", "-q")
-        & "$PSScriptRoot\verify-contracts.ps1"
+        & (Join-Path $PSScriptRoot "verify-migrations.ps1")
+        Invoke-Checked "Backend full tests" $backendDir "uv" @("run", "--frozen", "pytest", "-q")
+        & (Join-Path $PSScriptRoot "verify-contracts.ps1")
     }
     else {
-        Invoke-Checked "Backend service-free tests" "$repoRoot\backend" "uv" @("run", "--frozen", "pytest", "-m", "not integration", "-q")
+        Invoke-Checked "Backend service-free tests" $backendDir "uv" @("run", "--frozen", "pytest", "-m", "not integration", "-q")
     }
 }
 
 if ($frontendChanged) {
-    Invoke-Checked "Frontend install" "$repoRoot\frontend" "pnpm" @("install", "--frozen-lockfile")
-    Invoke-Checked "Frontend lint" "$repoRoot\frontend" "pnpm" @("lint")
-    Invoke-Checked "Frontend typecheck" "$repoRoot\frontend" "pnpm" @("typecheck")
-    Invoke-Checked "Frontend unit tests" "$repoRoot\frontend" "pnpm" @("test")
-    Invoke-Checked "Frontend production build" "$repoRoot\frontend" "pnpm" @("build")
+    Invoke-Checked "Frontend install" $frontendDir "pnpm" @("install", "--frozen-lockfile")
+    Invoke-Checked "Frontend lint" $frontendDir "pnpm" @("lint")
+    Invoke-Checked "Frontend typecheck" $frontendDir "pnpm" @("typecheck")
+    Invoke-Checked "Frontend unit tests" $frontendDir "pnpm" @("test")
+    Invoke-Checked "Frontend production build" $frontendDir "pnpm" @("build")
 
     if (-not $SkipE2E -and $uiChanged) {
-        Invoke-Checked "Frontend Playwright smoke" "$repoRoot\frontend" "pnpm" @("test:e2e")
+        Invoke-Checked "Frontend Playwright smoke" $frontendDir "pnpm" @("test:e2e")
     }
 }
 
 if ($docsChanged) {
-    & "$PSScriptRoot\verify-docs.ps1"
+    & (Join-Path $PSScriptRoot "verify-docs.ps1")
 }
 
 if (-not ($backendChanged -or $frontendChanged -or $docsChanged)) {

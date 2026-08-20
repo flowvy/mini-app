@@ -3,10 +3,19 @@ param()
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$docsDir = Join-Path $repoRoot "docs"
+$plansDir = Join-Path $repoRoot "plans"
+$agentsDir = Join-Path $repoRoot ".agents"
+$backendDir = Join-Path $repoRoot "backend"
+$frontendDir = Join-Path $repoRoot "frontend"
 $docFiles = @(
-    Get-Item "$repoRoot\README.md", "$repoRoot\AGENTS.md", "$repoRoot\PLANS.md" -ErrorAction SilentlyContinue
-    Get-ChildItem "$repoRoot\docs", "$repoRoot\plans", "$repoRoot\.agents" -Recurse -File -Filter "*.md" -ErrorAction SilentlyContinue
-    Get-ChildItem "$repoRoot\backend", "$repoRoot\frontend" -Recurse -File -Filter "AGENTS.md" -ErrorAction SilentlyContinue
+    Get-Item `
+        (Join-Path $repoRoot "README.md"), `
+        (Join-Path $repoRoot "AGENTS.md"), `
+        (Join-Path $repoRoot "PLANS.md") `
+        -ErrorAction SilentlyContinue
+    Get-ChildItem $docsDir, $plansDir, $agentsDir -Recurse -File -Filter "*.md" -ErrorAction SilentlyContinue
+    Get-ChildItem $backendDir, $frontendDir -Recurse -File -Filter "AGENTS.md" -ErrorAction SilentlyContinue
 ) | Sort-Object FullName -Unique
 
 $broken = [System.Collections.Generic.List[string]]::new()

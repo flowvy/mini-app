@@ -67,7 +67,8 @@ Source-of-truth order:
 
 ## Commands
 
-From the repository root, prefer the checked-in PowerShell workflows:
+From the repository root, prefer the checked-in PowerShell 7 workflows. They support Windows and
+macOS; use the shown `.\scripts\...` prefix on Windows and `./scripts/...` on macOS:
 
 ```powershell
 .\scripts\bootstrap.ps1                 # locked backend/frontend dependencies
@@ -87,6 +88,9 @@ the safe public preview, and the existing `dev-app.flowvy.io` route. Use plain `
 the user explicitly asks for localhost-only or integration-free development. The full command assumes
 Docker Desktop and the system `cloudflared` connector are running and must not start a second polling
 process for the same test bot. It never authorizes printing credentials or Telegram init data.
+The named preview origin is `http://localhost:80` on Windows and the unprivileged
+`http://localhost:4173` on macOS. Repository scripts never modify the external Cloudflare route;
+the owner must switch its Service URL during machine cutover without running both bot pollers.
 
 Use the narrowest verification scope while iterating and `Full` for a final handoff when Docker and
 browsers are available. Run from the stated directory below when diagnosing a helper or when a direct

@@ -5,10 +5,15 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "common.ps1")
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $backendDir = Join-Path $repoRoot "backend"
-$artifactDir = Join-Path $repoRoot ".artifacts\tunnel-smoke"
+$artifactRoot = Join-Path $repoRoot ".artifacts"
+$artifactDir = Join-Path $artifactRoot "tunnel-smoke"
 $backendProcessFile = Join-Path $artifactDir "backend-process.json"
+$tunnelProcessFile = Join-Path (Join-Path $artifactRoot "tunnel") "processes.json"
+$curlPath = $null
+$nullDevice = Get-FlowvyNullDevice
 
 function Get-HttpStatus {
     param(
@@ -17,11 +22,11 @@ function Get-HttpStatus {
         [Parameter(Mandatory)][string]$EdgeIp
     )
 
-    $statusCode = & curl.exe `
+    $statusCode = & $curlPath `
         --resolve "${PublicHost}:443:${EdgeIp}" `
         --silent `
         --show-error `
-        --output NUL `
+        --output $nullDevice `
         --write-out "%{http_code}" `
         $Uri
     if ($LASTEXITCODE -ne 0) { throw "Public tunnel request failed for $Uri." }
@@ -45,20 +50,8 @@ function Wait-HttpStatus {
     return $statusCode
 }
 
-function Stop-SmokeProcessTree {
-    param([Parameter(Mandatory)][int]$TargetProcessId)
-
-    $children = Get-CimInstance Win32_Process -Filter "ParentProcessId = $TargetProcessId" -ErrorAction SilentlyContinue
-    foreach ($child in $children) {
-        Stop-SmokeProcessTree -TargetProcessId $child.ProcessId
-    }
-    if (Get-Process -Id $TargetProcessId -ErrorAction SilentlyContinue) {
-        Stop-Process -Id $TargetProcessId -Force -ErrorAction SilentlyContinue
-    }
-}
-
 if ($Cleanup) {
-    if (Test-Path (Join-Path $repoRoot ".artifacts\tunnel\processes.json")) {
+    if (Test-Path $tunnelProcessFile) {
         & (Join-Path $PSScriptRoot "tunnel-down.ps1")
     }
     if (Test-Path $backendProcessFile) {
@@ -76,14 +69,19 @@ if ($Cleanup) {
         ) {
             throw "Recorded backend PID no longer belongs to the Flowvy smoke process."
         }
-        if ($target) { Stop-SmokeProcessTree -TargetProcessId $targetId }
+        if ($target) {
+            Stop-FlowvyOwnedProcessTree `
+                -TargetProcessId $targetId `
+                -AllowedRootNames @([string]$record.backendProcessName) `
+                -ExpectedStartTime ([datetime]$record.backendStartedAt)
+        }
         Remove-Item -LiteralPath $backendProcessFile -Force
     }
     Write-Host "External tunnel probe processes are stopped."
     exit 0
 }
 
-if (Get-NetTCPConnection -State Listen -LocalPort 8001 -ErrorAction SilentlyContinue) {
+if (Test-FlowvyTcpPort -Port 8001) {
     throw "Port 8001 is already owned by another process; synthetic tunnel verification refused."
 }
 
@@ -106,7 +104,6 @@ foreach ($name in $safeNames) {
 }
 
 $backendProcess = $null
-$backendServerProcess = $null
 $leaveRunning = $false
 try {
     $env:BOT_TOKEN = ""
@@ -120,14 +117,13 @@ try {
     $env:DATABASE_URL = "postgresql+asyncpg://flowvy:flowvy_dev@127.0.0.1:5432/flowvy"
     $env:REDIS_URL = "redis://127.0.0.1:6379/0"
 
-    $uvPath = (Get-Command "uv").Source
-    $backendProcess = Start-Process -FilePath $uvPath `
+    $uvPath = Resolve-FlowvyExecutable -Name "uv"
+    $backendProcess = Start-FlowvyBackgroundProcess `
+        -FilePath $uvPath `
         -ArgumentList @("run", "--frozen", "python", "-m", "flowvy") `
         -WorkingDirectory $backendDir `
-        -RedirectStandardOutput (Join-Path $artifactDir "backend.stdout.log") `
-        -RedirectStandardError (Join-Path $artifactDir "backend.stderr.log") `
-        -WindowStyle Hidden `
-        -PassThru
+        -StandardOutputPath (Join-Path $artifactDir "backend.stdout.log") `
+        -StandardErrorPath (Join-Path $artifactDir "backend.stderr.log")
 
     $backendReady = $false
     for ($attempt = 0; $attempt -lt 60; $attempt++) {
@@ -143,23 +139,16 @@ try {
         }
     }
     if (-not $backendReady) { throw "Synthetic backend did not become ready." }
-    $backendListener = Get-NetTCPConnection -State Listen -LocalPort 8001 -ErrorAction Stop
-    $backendServerProcess = Get-Process -Id $backendListener.OwningProcess -ErrorAction Stop
 
-    if ($ExternalProbe) {
-        & (Join-Path $PSScriptRoot "tunnel-up.ps1") -ConfirmPublic -SkipLocalReachability
-    }
-    else {
-        & (Join-Path $PSScriptRoot "tunnel-up.ps1") -ConfirmPublic -SkipLocalReachability
-    }
-    $owned = Get-Content -Raw (Join-Path $repoRoot ".artifacts\tunnel\processes.json") | ConvertFrom-Json
+    & (Join-Path $PSScriptRoot "tunnel-up.ps1") -ConfirmPublic -SkipLocalReachability
+    $owned = Get-Content -Raw -LiteralPath $tunnelProcessFile | ConvertFrom-Json
     $publicUrl = [string]$owned.publicUrl
 
     if ($ExternalProbe) {
         @{
-            backend = $backendServerProcess.Id
-            backendProcessName = $backendServerProcess.ProcessName
-            backendStartedAt = $backendServerProcess.StartTime.ToString("o")
+            backend = $backendProcess.Id
+            backendProcessName = $backendProcess.ProcessName
+            backendStartedAt = $backendProcess.StartTime.ToString("o")
             startedAt = (Get-Date).ToString("o")
         } | ConvertTo-Json | Set-Content -LiteralPath $backendProcessFile -Encoding utf8
         $leaveRunning = $true
@@ -168,9 +157,7 @@ try {
         return
     }
 
-    if (-not (Get-Command "curl.exe" -ErrorAction SilentlyContinue)) {
-        throw "curl.exe is required for the external tunnel probe."
-    }
+    $curlPath = Resolve-FlowvyExecutable -Name "curl"
     $publicHost = ([uri]$publicUrl).DnsSafeHost
     $dnsResponse = Invoke-RestMethod `
         -Uri "https://dns.google/resolve?name=trycloudflare.com&type=A" `
@@ -183,12 +170,12 @@ try {
     $authStatus = Wait-HttpStatus "$publicUrl/api/me" 401 $publicHost $edgeIp
     $debugStatus = Wait-HttpStatus "$publicUrl/api/debug/devices/empty" 404 $publicHost $edgeIp
     $webhookStatus = Wait-HttpStatus "$publicUrl/webhook" 404 $publicHost $edgeIp
-    $sourceHeaders = & curl.exe `
+    $sourceHeaders = & $curlPath `
         --resolve "${publicHost}:443:${edgeIp}" `
         --silent `
         --show-error `
         --dump-header - `
-        --output NUL `
+        --output $nullDevice `
         "$publicUrl/src/main.tsx"
     if ($LASTEXITCODE -ne 0) { throw "Public source-path probe failed." }
     $sourceType = [string](@(
@@ -218,14 +205,14 @@ try {
 }
 finally {
     if (-not $leaveRunning) {
-        if (Test-Path (Join-Path $repoRoot ".artifacts\tunnel\processes.json")) {
+        if (Test-Path $tunnelProcessFile) {
             & (Join-Path $PSScriptRoot "tunnel-down.ps1")
         }
         if ($backendProcess) {
-            Stop-SmokeProcessTree -TargetProcessId $backendProcess.Id
-        }
-        if ($backendServerProcess) {
-            Stop-SmokeProcessTree -TargetProcessId $backendServerProcess.Id
+            Stop-FlowvyOwnedProcessTree `
+                -TargetProcessId $backendProcess.Id `
+                -AllowedRootNames @($backendProcess.ProcessName) `
+                -ExpectedStartTime $backendProcess.StartTime
         }
     }
     foreach ($name in $savedEnvironment.Keys) {

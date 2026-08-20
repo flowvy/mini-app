@@ -25,8 +25,9 @@ backend-потоки реализованы; добавлены единые п�
 
 ## Быстрый локальный запуск
 
-Нужны Python 3.12+, [uv](https://docs.astral.sh/uv/), Node.js с pnpm и Docker Desktop/Engine.
-Команды ниже рассчитаны на PowerShell и запускаются из корня репозитория.
+Нужны Python 3.12+, [uv](https://docs.astral.sh/uv/), Node.js с pnpm, Docker Desktop/Engine и
+PowerShell 7. Одни и те же checked-in `.ps1` workflows работают на Windows и macOS. Команды ниже
+запускаются из корня; на macOS используйте `./scripts/...` вместо `.\scripts\...`.
 
 ```powershell
 docker compose -f docker-compose.dev.yml up -d postgres redis
@@ -82,7 +83,8 @@ Frontend доступен на `http://localhost:5173`, API — на `http://loc
 
 Команда предполагает, что `backend/.env` содержит локальные test credentials, BotFather Main App
 указывает на тот же URL, а Cloudflare published application route уже направляет hostname на
-`http://localhost:80`. Полный контракт и безопасная очистка dev-данных описаны в
+platform origin: `http://localhost:80` на Windows или `http://localhost:4173` на macOS. Полный
+контракт, Mac cutover и безопасная очистка dev-данных описаны в
 [`docs/DEV_ENVIRONMENT.md`](docs/DEV_ENVIRONMENT.md#штатный-flowvy-dev-контур).
 
 Первичная установка отдельно доступна через `scripts/bootstrap.ps1`; ключ `-InstallBrowsers`

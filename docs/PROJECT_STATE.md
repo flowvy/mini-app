@@ -1,7 +1,7 @@
 # Текущее состояние Flowvy
 
-Последняя полная проверка: **2026-08-15**; последний change-aware gate: **2026-08-15**
-Проверенное текущее состояние: **`dev` с always-on Tribute delivery, multi-period sponsor offers и paid/base reconciliation**
+Последняя полная проверка: **2026-08-21**; последний change-aware gate: **2026-08-21**
+Проверенное текущее состояние: **`dev` с always-on Tribute delivery, multi-period sponsor offers, paid/base reconciliation и кроссплатформенным dev-tooling**
 Последний полный baseline: **`dd3b5c8`** (`dev`, 2026-08-04)
 Стадия: **незавершённый MVP; production readiness не подтверждена**
 
@@ -272,12 +272,14 @@
 - `.gitignore` и `.gitattributes` фиксируют public-safe snapshot: локальные `.env`, credentials,
   browser auth state, logs, dumps, databases, dependencies, builds и verification artifacts не
   попадают в Git; tracked env examples не содержат форматоподобных bot/admin credentials.
-- PowerShell scripts для bootstrap, запуска/остановки, change-aware/full verification, migrations,
-  явного reset только локальных Flowvy PostgreSQL/Redis данных, Remnawave snapshot/client tests,
-  безопасного Quick Tunnel и проверки документации.
+- Единые PowerShell 7 scripts для Windows/macOS/Linux: locked bootstrap, запуск/остановка,
+  change-aware/full verification, migrations, явный reset только локальных Flowvy PostgreSQL/Redis
+  данных, Remnawave snapshot/client tests, безопасный Quick Tunnel и проверка документации.
+  Platform helper выбирает native executables/TCP/process-tree lifecycle; named preview остаётся на
+  `80` в Windows и использует непривилегированный `4173` на macOS/Linux.
 - GitHub Actions CI с PostgreSQL/Redis, Ruff, Alembic, pytest, Biome/TypeScript/Vitest/build и
   Playwright Chromium smoke.
-- Десять Vitest unit файлов (44 теста), включая автоматический запрет неиспользуемых locale leaves,
+- Двенадцать Vitest unit файлов (49 тестов), включая автоматический запрет неиспользуемых locale leaves,
   прямого видимого JSX-copy, raw error message и неверной терминологии Xray-доступа;
   детерминированная Playwright state matrix на четырёх
   browser/viewport проектах и отдельный read-only live-smoke.
@@ -297,6 +299,9 @@
   только на уровне перехваченных ошибок, а не реальным отключением браузера.
 - Новый GitHub Actions workflow ещё не выполнялся в удалённом репозитории; его зелёный статус не
   подтверждён этой локальной проверкой.
+- Кроссплатформенный lifecycle прошёл parser/contracts, безопасный Windows localhost smoke и Full
+  gate. Фактические bootstrap, process-tree shutdown и named preview `:4173` ещё нужно принять на
+  новом Mac до переключения Cloudflare origin и Telegram polling.
 - Telegram Desktop 7.0.6 на Windows имеет открытый multi-monitor fullscreen bug `#30963`. Flowvy
   выходит из fullscreen при старте на `tdesktop`; live recovery подтверждён. Исправить нативное
   fullscreen-размещение или задать другой стартовый оконный размер через WebApp API невозможно.
@@ -501,6 +506,7 @@ Tribute показал success, endpoint вернул `200`, inbox осталс�
 | Tribute provider-authored offer presentation | official Creator API/OpenAPI `1.0.0`; Apple HIG Lists/Layout; GOV.UK Summary list; shared frontend presenter; focused admin/Home four-project Playwright; frontend full gate | Flowvy больше не превращает provider period enum в названия услуг и не предлагает маркетинговое название периода. Название и описание одной offer-card задаёт оператор; общий `SubscriptionBillingList` на Home, в admin list и editor показывает только подтверждённые Tribute цену и нейтральное условие списания. CTA открывает Tribute, где пользователь делает реальный выбор. Focused admin/Home matrix прошла 8/8 на 430x932, 320x568, iOS WebKit и desktop; light/dark evidence просмотрены без overflow/Axe/console/network ошибок. Frontend lint/typecheck, 44 unit и production build прошли. |
 | Sponsor-offer automation-rule relink | статический аудит admin edit locks; focused four-project Playwright; eight light/dark screenshots; `scripts\verify.ps1 -Scope Changed -SkipE2E` | Искусственная create-only блокировка rule select удалена. Существующий draft или published offer можно связать с другим rule; UI отправляет новый `commerceRuleId`, backend повторно валидирует и пересобирает published snapshot, начатые checkouts сохраняют прежние immutable facts. Focused matrix прошла 4/4 на 430x932, 320x568, iOS WebKit и desktop; light/dark screenshots просмотрены, Axe/overflow/console/network guards зелёные. В admin source больше нет `disabled`, зависящих только от существования entity. Changed gate прошёл Ruff, 387 service-free backend tests, frontend lint/typecheck/44 unit/build и docs. |
 | Inline WYSIWYG formatted offer content | official Tiptap React fixed-menu/StarterKit/CharacterCount/Markdown contracts and WAI-ARIA toolbar pattern; 23 focused sponsor backend tests; 5 focused frontend unit tests; focused four-project Playwright; 109 mobile Playwright; `scripts\verify.ps1 -Scope Changed -SkipE2E` | Описания offer хранят ограниченный CommonMark в прежнем строковом поле, но автор работает с provider-neutral inline WYSIWYG. Один постоянный toolbar с bold/italic/strike/link/quote/lists расположен над editor surface для touch, keyboard и fine pointer; pointer heuristics, conditional trigger и selection-bound app popup отсутствуют. Native Cut/Copy/Paste/Format menu остаётся системным. Home/admin используют один безопасный renderer без raw HTML; 300-character limit считается по видимому тексту, source contract допускает до 2 000 символов для formatting syntax. Редактор загружается lazy только в admin form. Light/dark mobile/small-mobile/desktop evidence просмотрены; Axe/overflow/console/network guards зелёные. Fresh gates: 389 service-free backend, Ruff, frontend lint/typecheck/49 unit/build, 109/109 mobile и 4/4 focused all-project browser scenarios. Компоненты готовы к будущему Broadcast composer; его transport serializer пока не реализован. |
+| macOS developer migration preparation | official PowerShell 7.6 platform variables; official Docker Desktop, uv and Cloudflare macOS/routing docs; `scripts\verify-tooling.ps1`; safe localhost lifecycle smoke; `scripts\verify.ps1 -Scope Changed`; `scripts\verify.ps1 -Scope Full` | Общий helper убирает Windows-only TCP/process/executable assumptions, сохраняет PID ownership checks и Docker volumes, а runbook задаёт Apple Silicon bootstrap и controlled named-Tunnel cutover с Windows `:80` на Mac `:4173`. Full Windows gate: migrations/drift, Ruff, 495 backend, 56 pinned Remnawave contracts, frontend lint/typecheck/49 unit/build, 109 mobile Playwright и docs passed. Реальные Telegram/Cloudflare/provider calls и внешние mutations не выполнялись; runtime acceptance на новом Mac остаётся обязательным. |
 ## Следующее действие
 
 Следующие live evidence зависят от внешнего события Tribute: фактический period-end

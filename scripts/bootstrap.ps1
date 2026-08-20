@@ -4,18 +4,10 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "common.ps1")
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-
-function Assert-Tool {
-    param([Parameter(Mandatory)][string]$Name)
-
-    if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
-        throw "Required tool '$Name' was not found on PATH."
-    }
-}
-
-Assert-Tool "uv"
-Assert-Tool "pnpm"
+$null = Resolve-FlowvyExecutable -Name "uv"
+$null = Resolve-FlowvyExecutable -Name "pnpm"
 
 Push-Location (Join-Path $repoRoot "backend")
 try {

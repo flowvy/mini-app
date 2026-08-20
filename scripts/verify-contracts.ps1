@@ -3,7 +3,7 @@ param()
 
 $ErrorActionPreference = "Stop"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$snapshot = Join-Path $repoRoot "docs\api-remnawave.json"
+$snapshot = Join-Path (Join-Path $repoRoot "docs") "api-remnawave.json"
 
 if (-not (Test-Path $snapshot)) { throw "Remnawave OpenAPI snapshot is missing: $snapshot" }
 $null = Get-Content -Raw -LiteralPath $snapshot | ConvertFrom-Json

@@ -16,6 +16,10 @@ Kuma, Beszel и пользовательских данных. Последни�
 .\scripts\verify.ps1 -Scope Full
 ```
 
+Команды требуют PowerShell 7. На macOS замените префикс `.\scripts\` на `./scripts/`; scopes и
+результаты одинаковы. Tooling/full gate дополнительно парсит все `.ps1` и проверяет Windows/macOS
+port selection через `scripts/verify-tooling.ps1`.
+
 `Changed` выбирает области по tracked/untracked diff. `Full` добавляет Compose services, Alembic,
 полный pytest, Remnawave snapshot/client check и Playwright smoke. `-SkipE2E` допустим только когда
 UI не менялся либо browser binary объективно недоступен; пропуск нужно указать в handoff.

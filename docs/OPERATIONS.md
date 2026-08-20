@@ -21,6 +21,9 @@ URL вместо случайных process-level `DATABASE_URL`/`REDIS_URL`, п
 long polling при пустом `WEBHOOK_URL`; одновременно должен работать только один polling-процесс
 test bot. PID и stdout/stderr находятся в `.artifacts/dev`. `dev-down` останавливает только
 записанные process trees и Compose services, не удаляя `pgdata`.
+Lifecycle работает в PowerShell 7 на Windows и macOS. Windows использует native process/CIM branch,
+macOS — `pgrep` и тот же PID/start-time ownership contract; неизвестный или переиспользованный PID
+останавливать запрещено.
 
 Это намеренно непубличный режим без Telegram. На машине владельца запрос **полноценного** или
 **штатного** Flowvy dev означает named-Tunnel lifecycle из раздела
@@ -139,7 +142,8 @@ backup/rollback, одного контролируемого donation/subscripti
 проверки публичного edge.
 
 Для заранее созданного named Tunnel published application route должен указывать exact test
-hostname на `http://localhost:80`. Repository поднимает только безопасную production-сборку и не
+hostname на platform-local service: `http://localhost:80` на Windows или
+`http://localhost:4173` на macOS. Repository поднимает только безопасную production-сборку и не
 управляет connector/DNS/route:
 
 ```powershell
@@ -160,7 +164,9 @@ hostname на `http://localhost:80`. Repository поднимает только 
 
 Команда передаёт тот же origin backend как `WEBAPP_URL`, разрешает Vite только этот hostname,
 проверяет public root и `/api/health`. `dev-down` останавливает repo-owned preview, но не системный
-`cloudflared`. Контракт сверён 2026-08-04 с
+`cloudflared`. При Windows → Mac cutover public hostname/BotFather URL остаются прежними; владелец
+останавливает старые connector/polling, меняет только Cloudflare Service URL на `4173`, затем
+запускает Mac origin. Контракт повторно сверён 2026-08-21 с
 [Cloudflare published application routes](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/routing-to-tunnel/)
 и [Vite `server.allowedHosts`](https://vite.dev/config/server-options#server-allowedhosts); глобальный
 `allowedHosts: true` запрещён.

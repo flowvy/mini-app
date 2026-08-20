@@ -23,8 +23,10 @@ capability не подтверждена, share link не публикуется
 
 В локальном named-Tunnel режиме `scripts/dev-up.ps1 -EnableTelegram -NamedTunnelUrl
 'https://<test-host>'` задаёт этот exact origin только запускаемому backend как `WEBAPP_URL` и
-поднимает repo-owned safe preview на `127.0.0.1:80`. Cloudflare route и BotFather state остаются
-внешней явной конфигурацией; script их не создаёт и не изменяет.
+поднимает repo-owned safe preview на `127.0.0.1:80` в Windows или `127.0.0.1:4173` на macOS.
+Cloudflare route и BotFather state остаются внешней явной конфигурацией; script их не создаёт и не
+изменяет. При смене машины public hostname остаётся тем же, меняется только Cloudflare Service URL;
+старый connector и Telegram polling останавливаются до запуска Mac origin.
 
 Нативную ширину, позицию и drag-area окна Mini App контролирует клиент Telegram, не frontend.
 Адаптер Flowvy распознаёт официальный platform value `tdesktop` и не отправляет этому клиенту

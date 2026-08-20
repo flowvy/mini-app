@@ -2,10 +2,12 @@
 param(
     [switch]$ConfirmPublic,
     [switch]$SkipLocalReachability,
-    [string]$NamedTunnelUrl = ""
+    [string]$NamedTunnelUrl = "",
+    [ValidateRange(0, 65535)][int]$PreviewPort = 0
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "common.ps1")
 if (-not $ConfirmPublic) {
     throw "This publishes Flowvy. Re-run with -ConfirmPublic after confirming test-only data and DEBUG=false."
 }
@@ -32,29 +34,25 @@ if ($namedTunnelMode) {
     $NamedTunnelUrl = $namedTunnelUri.GetLeftPart([System.UriPartial]::Authority)
 }
 
-$previewPort = if ($namedTunnelMode) { 80 } else { 4173 }
-$previewUri = "http://127.0.0.1:$previewPort"
+$resolvedPreviewPort = if ($PreviewPort -gt 0) {
+    $PreviewPort
+}
+elseif ($namedTunnelMode) {
+    Get-FlowvyNamedPreviewPort
+}
+else {
+    4173
+}
+$previewUri = "http://127.0.0.1:$resolvedPreviewPort"
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $frontendDir = Join-Path $repoRoot "frontend"
-$artifactDir = Join-Path $repoRoot ".artifacts\tunnel"
+$artifactDir = Join-Path (Join-Path $repoRoot ".artifacts") "tunnel"
 $processFile = Join-Path $artifactDir "processes.json"
 $previewOut = Join-Path $artifactDir "preview.stdout.log"
 $previewErr = Join-Path $artifactDir "preview.stderr.log"
 $tunnelOut = Join-Path $artifactDir "cloudflared.stdout.log"
 $tunnelErr = Join-Path $artifactDir "cloudflared.stderr.log"
-
-function Stop-StartedProcessTree {
-    param([Parameter(Mandatory)][int]$TargetProcessId)
-
-    $children = Get-CimInstance Win32_Process -Filter "ParentProcessId = $TargetProcessId" -ErrorAction SilentlyContinue
-    foreach ($child in $children) {
-        Stop-StartedProcessTree -TargetProcessId $child.ProcessId
-    }
-    if (Get-Process -Id $TargetProcessId -ErrorAction SilentlyContinue) {
-        Stop-Process -Id $TargetProcessId -Force -ErrorAction SilentlyContinue
-    }
-}
 
 if (Test-Path $processFile) {
     throw "A Flowvy-owned tunnel is already recorded. Run scripts/tunnel-down.ps1 first."
@@ -62,8 +60,8 @@ if (Test-Path $processFile) {
 if (-not $namedTunnelMode -and -not (Get-Command "cloudflared" -ErrorAction SilentlyContinue)) {
     throw "cloudflared is required."
 }
-if (Get-NetTCPConnection -State Listen -LocalPort $previewPort -ErrorAction SilentlyContinue) {
-    throw "Port $previewPort is already in use; refusing to attach a public tunnel to an unknown process."
+if (Test-FlowvyTcpPort -Port $resolvedPreviewPort) {
+    throw "Port $resolvedPreviewPort is already in use; refusing to attach a public tunnel to an unknown process."
 }
 
 try {
@@ -114,9 +112,13 @@ finally {
     }
 }
 
-$pnpmPath = (Get-Command "pnpm.cmd" -ErrorAction SilentlyContinue).Source
-if (-not $pnpmPath) { $pnpmPath = (Get-Command "pnpm").Source }
-$cloudflaredPath = if ($namedTunnelMode) { $null } else { (Get-Command "cloudflared").Source }
+$pnpmPath = Resolve-FlowvyExecutable -Name "pnpm"
+$cloudflaredPath = if ($namedTunnelMode) {
+    $null
+}
+else {
+    Resolve-FlowvyExecutable -Name "cloudflared"
+}
 $previewProcess = $null
 $tunnelProcess = $null
 $savedAllowedHosts = [Environment]::GetEnvironmentVariable(
@@ -133,15 +135,14 @@ try {
                 "Process"
             )
         }
-        $previewProcess = Start-Process -FilePath $pnpmPath `
+        $previewProcess = Start-FlowvyBackgroundProcess `
+            -FilePath $pnpmPath `
             -ArgumentList @(
-                "preview", "--host", "127.0.0.1", "--port", "$previewPort", "--strictPort"
+                "preview", "--host", "127.0.0.1", "--port", "$resolvedPreviewPort", "--strictPort"
             ) `
             -WorkingDirectory $frontendDir `
-            -RedirectStandardOutput $previewOut `
-            -RedirectStandardError $previewErr `
-            -WindowStyle Hidden `
-            -PassThru
+            -StandardOutputPath $previewOut `
+            -StandardErrorPath $previewErr
     }
     finally {
         [Environment]::SetEnvironmentVariable(
@@ -166,17 +167,16 @@ try {
         $publicUrl = $NamedTunnelUrl
     }
     else {
-        $tunnelProcess = Start-Process -FilePath $cloudflaredPath `
+        $tunnelProcess = Start-FlowvyBackgroundProcess `
+            -FilePath $cloudflaredPath `
             -ArgumentList @(
                 "tunnel", "--no-autoupdate", "--metrics", "127.0.0.1:0",
                 "--loglevel", "info", "--url", $previewUri,
-                "--http-host-header", "127.0.0.1:$previewPort"
+                "--http-host-header", "127.0.0.1:$resolvedPreviewPort"
             ) `
             -WorkingDirectory $repoRoot `
-            -RedirectStandardOutput $tunnelOut `
-            -RedirectStandardError $tunnelErr `
-            -WindowStyle Hidden `
-            -PassThru
+            -StandardOutputPath $tunnelOut `
+            -StandardErrorPath $tunnelErr
 
         $publicUrl = $null
         for ($attempt = 0; $attempt -lt 80; $attempt++) {
@@ -238,12 +238,15 @@ try {
     $processState = @{
         mode = if ($namedTunnelMode) { "named" } else { "quick" }
         preview = $previewProcess.Id
+        previewProcessName = $previewProcess.ProcessName
         previewStartedAt = $previewProcess.StartTime.ToString("o")
+        previewPort = $resolvedPreviewPort
         publicUrl = $publicUrl
         startedAt = (Get-Date).ToString("o")
     }
     if ($tunnelProcess) {
         $processState.cloudflared = $tunnelProcess.Id
+        $processState.cloudflaredProcessName = $tunnelProcess.ProcessName
         $processState.cloudflaredStartedAt = $tunnelProcess.StartTime.ToString("o")
     }
     $processState | ConvertTo-Json | Set-Content -LiteralPath $processFile -Encoding utf8
@@ -259,10 +262,16 @@ try {
 }
 catch {
     if ($tunnelProcess -and -not $tunnelProcess.HasExited) {
-        Stop-StartedProcessTree -TargetProcessId $tunnelProcess.Id
+        Stop-FlowvyOwnedProcessTree `
+            -TargetProcessId $tunnelProcess.Id `
+            -AllowedRootNames @($tunnelProcess.ProcessName) `
+            -ExpectedStartTime $tunnelProcess.StartTime
     }
     if ($previewProcess -and -not $previewProcess.HasExited) {
-        Stop-StartedProcessTree -TargetProcessId $previewProcess.Id
+        Stop-FlowvyOwnedProcessTree `
+            -TargetProcessId $previewProcess.Id `
+            -AllowedRootNames @($previewProcess.ProcessName) `
+            -ExpectedStartTime $previewProcess.StartTime
     }
     throw
 }

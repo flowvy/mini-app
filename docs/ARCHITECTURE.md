@@ -441,11 +441,13 @@ mutation сразу кладёт полученного user в общий TanSt
 
 ## Автоматизация разработки
 
-`scripts/bootstrap.ps1` устанавливает locked Python/Node dependencies. `dev-up.ps1` и
-`dev-down.ps1` управляют локальными процессами и Compose services с PID/log artifacts под
+`scripts/bootstrap.ps1` устанавливает locked Python/Node dependencies. Общий `scripts/common.ps1`
+выбирает Windows/macOS process, TCP и executable contracts; `dev-up.ps1` и `dev-down.ps1` управляют
+локальными процессами и Compose services с проверенными PID/start-time и log artifacts под
 `.artifacts/`. `scripts/verify.ps1` выбирает backend, frontend, docs и UI gates по diff либо запускает
 полный контур; специализированные scripts проверяют Alembic, Remnawave snapshot/client tests и
-локальные Markdown links.
+локальные Markdown links. Named Tunnel сохраняет один public hostname, но platform-local preview
+слушает `80` на Windows и непривилегированный `4173` на macOS.
 
 Frontend имеет Vitest unit seed и Playwright mock state matrix. Browser suite запускает только Vite,
 перехватывает каждый `/api/*` request и проверяет critical user/admin routes, роли, ошибки, mutations,

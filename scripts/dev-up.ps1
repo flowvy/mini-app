@@ -6,10 +6,11 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "common.ps1")
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $backendDir = Join-Path $repoRoot "backend"
 $frontendDir = Join-Path $repoRoot "frontend"
-$artifactDir = Join-Path $repoRoot ".artifacts\dev"
+$artifactDir = Join-Path (Join-Path $repoRoot ".artifacts") "dev"
 $processFile = Join-Path $artifactDir "processes.json"
 $namedTunnelMode = -not [string]::IsNullOrWhiteSpace($NamedTunnelUrl)
 
@@ -46,8 +47,7 @@ if (Test-Path $processFile) {
 }
 
 foreach ($port in 8001, 5173) {
-    $listener = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue
-    if ($listener) {
+    if (Test-FlowvyTcpPort -Port $port) {
         throw "Port $port is already in use. Stop the existing process instead of starting a stale Flowvy server."
     }
 }
@@ -90,29 +90,30 @@ try {
 
     New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
 
-    $uvPath = (Get-Command "uv").Source
-    $pnpmPath = (Get-Command "pnpm.cmd" -ErrorAction SilentlyContinue).Source
-    if (-not $pnpmPath) { $pnpmPath = (Get-Command "pnpm").Source }
+    $uvPath = Resolve-FlowvyExecutable -Name "uv"
+    $pnpmPath = Resolve-FlowvyExecutable -Name "pnpm"
 
-    $backendProcess = Start-Process -FilePath $uvPath `
+    $backendProcess = Start-FlowvyBackgroundProcess `
+        -FilePath $uvPath `
         -ArgumentList @("run", "--frozen", "python", "-m", "flowvy") `
         -WorkingDirectory $backendDir `
-        -RedirectStandardOutput (Join-Path $artifactDir "backend.stdout.log") `
-        -RedirectStandardError (Join-Path $artifactDir "backend.stderr.log") `
-        -WindowStyle Hidden `
-        -PassThru
+        -StandardOutputPath (Join-Path $artifactDir "backend.stdout.log") `
+        -StandardErrorPath (Join-Path $artifactDir "backend.stderr.log")
 
-    $frontendProcess = Start-Process -FilePath $pnpmPath `
+    $frontendProcess = Start-FlowvyBackgroundProcess `
+        -FilePath $pnpmPath `
         -ArgumentList @("dev", "--host", "127.0.0.1", "--strictPort") `
         -WorkingDirectory $frontendDir `
-        -RedirectStandardOutput (Join-Path $artifactDir "frontend.stdout.log") `
-        -RedirectStandardError (Join-Path $artifactDir "frontend.stderr.log") `
-        -WindowStyle Hidden `
-        -PassThru
+        -StandardOutputPath (Join-Path $artifactDir "frontend.stdout.log") `
+        -StandardErrorPath (Join-Path $artifactDir "frontend.stderr.log")
 
     @{
         backend = $backendProcess.Id
+        backendProcessName = $backendProcess.ProcessName
+        backendStartedAt = $backendProcess.StartTime.ToString("o")
         frontend = $frontendProcess.Id
+        frontendProcessName = $frontendProcess.ProcessName
+        frontendStartedAt = $frontendProcess.StartTime.ToString("o")
         startedAt = (Get-Date).ToString("o")
     } | ConvertTo-Json | Set-Content -LiteralPath $processFile -Encoding utf8
 

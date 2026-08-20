@@ -2,28 +2,41 @@
 param()
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "common.ps1")
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$processFile = Join-Path $repoRoot ".artifacts\dev\processes.json"
-$tunnelProcessFile = Join-Path $repoRoot ".artifacts\tunnel\processes.json"
-
-function Stop-ProcessTree {
-    param([Parameter(Mandatory)][int]$TargetProcessId)
-
-    $children = Get-CimInstance Win32_Process -Filter "ParentProcessId = $TargetProcessId" -ErrorAction SilentlyContinue
-    foreach ($child in $children) {
-        Stop-ProcessTree -TargetProcessId $child.ProcessId
-    }
-
-    if (Get-Process -Id $TargetProcessId -ErrorAction SilentlyContinue) {
-        Stop-Process -Id $TargetProcessId -Force -ErrorAction SilentlyContinue
-    }
-}
+$artifactRoot = Join-Path $repoRoot ".artifacts"
+$processFile = Join-Path (Join-Path $artifactRoot "dev") "processes.json"
+$tunnelProcessFile = Join-Path (Join-Path $artifactRoot "tunnel") "processes.json"
 
 if (Test-Path $processFile) {
     $processes = Get-Content -Raw -LiteralPath $processFile | ConvertFrom-Json
     foreach ($name in "frontend", "backend") {
         $targetId = [int]$processes.$name
-        if ($targetId -gt 0) { Stop-ProcessTree -TargetProcessId $targetId }
+        if ($targetId -le 0) { continue }
+        $processNameProperty = "${name}ProcessName"
+        $startedAtProperty = "${name}StartedAt"
+        $allowedNames = if ($name -eq "frontend") {
+            @("pnpm", "cmd", "node")
+        }
+        else {
+            @("uv", "python", "python3", "python3.12", "flowvy")
+        }
+        if ($null -ne $processes.$processNameProperty) {
+            $allowedNames = @([string]$processes.$processNameProperty)
+        }
+        $expectedStart = if ($null -ne $processes.$startedAtProperty) {
+            [datetime]$processes.$startedAtProperty
+        }
+        elseif ($null -ne $processes.startedAt) {
+            [datetime]$processes.startedAt
+        }
+        else {
+            $null
+        }
+        Stop-FlowvyOwnedProcessTree `
+            -TargetProcessId $targetId `
+            -AllowedRootNames $allowedNames `
+            -ExpectedStartTime $expectedStart
     }
     Remove-Item -LiteralPath $processFile -Force
 }

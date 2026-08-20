@@ -4,10 +4,11 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "common.ps1")
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $backendDir = Join-Path $repoRoot "backend"
 $composeFile = Join-Path $repoRoot "docker-compose.dev.yml"
-$processFile = Join-Path $repoRoot ".artifacts\dev\processes.json"
+$processFile = Join-Path (Join-Path (Join-Path $repoRoot ".artifacts") "dev") "processes.json"
 
 if (-not $ConfirmDevDataReset) {
     throw (
@@ -26,7 +27,7 @@ if (Test-Path -LiteralPath $processFile) {
     throw "Flowvy dev is running. Run scripts/dev-down.ps1 before clearing its data."
 }
 foreach ($port in 8001, 5173) {
-    if (Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue) {
+    if (Test-FlowvyTcpPort -Port $port) {
         throw "Port $port is in use. Stop the process before clearing Flowvy development data."
     }
 }
