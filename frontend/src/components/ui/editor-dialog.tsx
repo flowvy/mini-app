@@ -29,6 +29,7 @@ function isVisibleFocusTarget(element: HTMLElement): boolean {
 interface TelegramFooterActions {
 	primaryText: string;
 	primaryDisabled: boolean;
+	primaryVisible?: boolean;
 }
 
 interface EditorDialogProps {
@@ -74,6 +75,7 @@ export function EditorDialog({
 	const restoreFocusFrameRef = useRef<number | null>(null);
 	const telegramPrimaryText = telegramFooter?.primaryText;
 	const telegramPrimaryDisabled = telegramFooter?.primaryDisabled;
+	const telegramPrimaryVisible = telegramFooter?.primaryVisible;
 	busyRef.current = busy;
 
 	useEffect(() => {
@@ -102,6 +104,7 @@ export function EditorDialog({
 				primaryText: initialTelegramFooter.primaryText,
 				primaryEnabled: !initialTelegramFooter.primaryDisabled && !busyRef.current,
 				primaryLoading: busyRef.current,
+				primaryVisible: initialTelegramFooter.primaryVisible,
 			},
 			{
 				onPrimary: () => formRef.current?.requestSubmit(),
@@ -128,13 +131,14 @@ export function EditorDialog({
 			primaryText: telegramPrimaryText,
 			primaryEnabled: !telegramPrimaryDisabled && !busy,
 			primaryLoading: busy,
+			primaryVisible: telegramPrimaryVisible,
 		});
 		if (!updated) {
 			telegramButtonsRef.current.destroy();
 			telegramButtonsRef.current = null;
 			setUsesTelegramFooter(false);
 		}
-	}, [busy, telegramPrimaryDisabled, telegramPrimaryText]);
+	}, [busy, telegramPrimaryDisabled, telegramPrimaryText, telegramPrimaryVisible]);
 
 	const handleKeyDown = useCallback(
 		(event: KeyboardEvent<HTMLDialogElement>) => {

@@ -319,3 +319,120 @@ test("supported Telegram clients receive native editor bottom buttons", async ({
 		)
 		.toEqual(expect.objectContaining({ is_visible: false }));
 });
+
+test("dedicated settings routes use one native save action with modal-safe cleanup", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.seedCommerceRules([
+		{
+			id: "10000000-0000-4000-8000-000000000001",
+			provider: "tribute",
+			name: "Monthly donation access",
+			commerceType: "donation",
+			paymentMode: "any",
+			externalItemId: null,
+			currency: "RUB",
+			calculationType: "fixed",
+			fixedDurationDays: 30,
+			amountBands: [],
+			accessProfileId: "00000000-0000-4000-8000-000000000001",
+			grantMode: "extend",
+			priority: 100,
+			isEnabled: true,
+		},
+	]);
+	await page.addInitScript(() => {
+		const telegramWindow = window as typeof window & {
+			__telegramEvents?: Array<{ eventType: string; eventData?: string }>;
+		};
+		telegramWindow.__telegramEvents = [];
+		Object.defineProperty(window, "TelegramWebviewProxy", {
+			configurable: true,
+			value: {
+				postEvent: (eventType: string, eventData?: string) => {
+					telegramWindow.__telegramEvents?.push({ eventType, eventData });
+				},
+			},
+		});
+	});
+	const launchParams = new URLSearchParams({
+		tgWebAppPlatform: "ios",
+		tgWebAppVersion: "9.6",
+		tgWebAppThemeParams: JSON.stringify({
+			bg_color: "#171717",
+			button_color: "#31d58b",
+			button_text_color: "#111111",
+			bottom_bar_bg_color: "#171717",
+		}),
+	});
+	const latestMainButton = () =>
+		page.evaluate(() => {
+			const telegramWindow = window as typeof window & {
+				__telegramEvents?: Array<{ eventType: string; eventData?: string }>;
+			};
+			const mainEvents = telegramWindow.__telegramEvents?.filter(
+				(event) => event.eventType === "web_app_setup_main_button",
+			);
+			const eventData = mainEvents?.at(-1)?.eventData;
+			return eventData ? JSON.parse(eventData) : null;
+		});
+
+	await page.goto(`/admin/settings?${launchParams.toString()}`);
+	await page.getByRole("button", { name: /^Beszel Hub and read-only access/ }).click();
+	await expect(page).toHaveURL(/\/admin\/settings\/beszel$/);
+	await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
+	await expect
+		.poll(latestMainButton)
+		.toEqual(expect.objectContaining({ text: "Save", is_active: false, is_visible: true }));
+
+	const urlInput = page.getByLabel("Hub URL");
+	await urlInput.fill("https://native-save.example.test");
+	await expect
+		.poll(latestMainButton)
+		.toEqual(expect.objectContaining({ text: "Save", is_active: true, is_visible: true }));
+
+	await page.evaluate(() => window.history.back());
+	const discardDialog = page.getByRole("dialog", { name: "Discard changes?" });
+	await expect(discardDialog).toBeVisible();
+	await expect.poll(latestMainButton).toEqual(expect.objectContaining({ is_visible: false }));
+	await discardDialog.getByRole("button", { name: "Keep editing" }).click();
+	await expect(discardDialog).toHaveCount(0);
+	await expect
+		.poll(latestMainButton)
+		.toEqual(expect.objectContaining({ is_active: true, is_visible: true }));
+
+	await page.evaluate(() => {
+		const telegramWindow = window as typeof window & {
+			Telegram?: { WebView?: { receiveEvent?: (event: string) => void } };
+		};
+		telegramWindow.Telegram?.WebView?.receiveEvent?.("main_button_pressed");
+	});
+	await expect
+		.poll(() => mockApi.calls.filter((call) => call === "PATCH /api/debug/admin/settings").length)
+		.toBe(1);
+	await expect
+		.poll(latestMainButton)
+		.toEqual(expect.objectContaining({ is_active: false, is_visible: true }));
+	await page.getByRole("button", { name: "User mode" }).click();
+	await expect(page).toHaveURL(/\/$/);
+	await expect.poll(latestMainButton).toEqual(expect.objectContaining({ is_visible: false }));
+
+	await page.goto(`/admin/settings/tribute?${launchParams.toString()}`);
+	await expect(page.getByRole("button", { name: "Save payment links", exact: true })).toBeVisible();
+	await expect.poll(latestMainButton).toBeNull();
+
+	await page.getByRole("button", { name: /Monthly donation access/ }).click();
+	const ruleEditor = page.getByRole("dialog", { name: "Edit automation rule" });
+	await expect(ruleEditor).toBeVisible();
+	await expect
+		.poll(latestMainButton)
+		.toEqual(expect.objectContaining({ text: "Save", is_active: true, is_visible: true }));
+	await ruleEditor.getByRole("button", { name: "Delete", exact: true }).click();
+	const deleteDialog = page.getByRole("dialog", { name: "Delete automation rule?" });
+	await expect(deleteDialog).toBeVisible();
+	await expect.poll(latestMainButton).toEqual(expect.objectContaining({ is_visible: false }));
+	await deleteDialog.getByRole("button", { name: "Cancel", exact: true }).click();
+	await expect(deleteDialog).toHaveCount(0);
+	await expect.poll(latestMainButton).toEqual(expect.objectContaining({ is_visible: true }));
+});

@@ -1,5 +1,9 @@
-import type { FC } from "react";
+import { type FC, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+	type TelegramEditorButtonsController,
+	mountTelegramEditorButtons,
+} from "../../lib/telegram-editor-buttons.ts";
 import styles from "./form-save-button.module.css";
 import { SpinnerIcon } from "./spinner-icon.tsx";
 
@@ -9,6 +13,8 @@ interface FormSaveButtonProps {
 	disabled?: boolean;
 	label?: string;
 	onSave: () => void;
+	telegramMainButton?: boolean;
+	telegramMainButtonVisible?: boolean;
 }
 
 export const FormSaveButton: FC<FormSaveButtonProps> = ({
@@ -17,10 +23,61 @@ export const FormSaveButton: FC<FormSaveButtonProps> = ({
 	disabled = false,
 	label,
 	onSave,
+	telegramMainButton = false,
+	telegramMainButtonVisible = true,
 }) => {
 	const { t } = useTranslation();
 	const active = dirty && !disabled;
 	const buttonLabel = label ?? t("common.save");
+	const onSaveRef = useRef(onSave);
+	const nativeStateRef = useRef({
+		primaryText: buttonLabel,
+		primaryEnabled: active && !loading,
+		primaryLoading: Boolean(loading),
+		primaryVisible: telegramMainButtonVisible,
+	});
+	const controllerRef = useRef<TelegramEditorButtonsController | null>(null);
+	const [usesTelegramMainButton, setUsesTelegramMainButton] = useState(false);
+	onSaveRef.current = onSave;
+	nativeStateRef.current = {
+		primaryText: buttonLabel,
+		primaryEnabled: active && !loading,
+		primaryLoading: Boolean(loading),
+		primaryVisible: telegramMainButtonVisible,
+	};
+
+	useEffect(() => {
+		if (!telegramMainButton) return;
+		const controller = mountTelegramEditorButtons(nativeStateRef.current, {
+			onPrimary: () => onSaveRef.current(),
+		});
+		controllerRef.current = controller;
+		setUsesTelegramMainButton(controller !== null);
+		return () => {
+			controller?.destroy();
+			controllerRef.current = null;
+		};
+	}, [telegramMainButton]);
+
+	useEffect(() => {
+		const controller = controllerRef.current;
+		if (!controller) return;
+		if (
+			controller.update({
+				primaryText: buttonLabel,
+				primaryEnabled: active && !loading,
+				primaryLoading: Boolean(loading),
+				primaryVisible: telegramMainButtonVisible,
+			})
+		) {
+			return;
+		}
+		controller.destroy();
+		controllerRef.current = null;
+		setUsesTelegramMainButton(false);
+	}, [active, buttonLabel, loading, telegramMainButtonVisible]);
+
+	if (usesTelegramMainButton) return null;
 
 	return (
 		<div className={styles.wrapper}>

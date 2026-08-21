@@ -313,6 +313,7 @@ export function CommerceRuleEditor({
 				telegramFooter={{
 					primaryText: rule ? t("common.save") : t("settings.tribute.rules.createAction"),
 					primaryDisabled: !input,
+					primaryVisible: !confirmDelete,
 				}}
 				footer={
 					<ActionBtn

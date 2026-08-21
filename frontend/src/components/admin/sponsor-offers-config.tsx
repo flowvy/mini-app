@@ -564,6 +564,7 @@ function SponsorOfferEditor({
 						? t("settings.tribute.offers.saveAction")
 						: t("settings.tribute.offers.createAction"),
 					primaryDisabled: !valid,
+					primaryVisible: !confirmDelete,
 				}}
 				footer={
 					<ActionBtn

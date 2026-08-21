@@ -98,6 +98,8 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings }) => {
 				dirty={dirty && !saved}
 				loading={updateMutation.isPending}
 				onSave={handleSave}
+				telegramMainButton
+				telegramMainButtonVisible={blocker.status !== "blocked"}
 			/>
 
 			<ConfirmDialog

@@ -104,11 +104,13 @@ Primary evidence, проверено 2026-08-04, 2026-08-08 и 2026-08-21:
   завершения жеста или анимации. Flowvy не привязывает shell или dialog к этим значениям.
 - [Telegram Mini Apps BottomButton](https://core.telegram.org/bots/webapps#bottombutton), проверено
   2026-08-21: `MainButton` и Bot API 7.10+ `SecondaryButton` рисуются в нижнем интерфейсе самого
-  Telegram. Flowvy fullscreen editors используют только `MainButton` для primary create/save action;
-  `SecondaryButton` не создаётся, потому что закрытие уже доступно через header close и `Escape`.
-  Locked Telegram Apps SDK 3.11.8 проверяет capability `MainButton`; обычный DOM footer с одной
-  primary-кнопкой остаётся UI fallback для browser и старых клиентов. `color`, `text_color` и
-  `is_active` передаются явно:
+  Telegram. Flowvy fullscreen editors и выделенные Kuma/Beszel/Identity/Welcome settings task routes
+  используют только `MainButton` для primary create/save action; section-scoped Tribute payment-link
+  save остаётся DOM action внутри общего route. `SecondaryButton` не создаётся, потому что закрытие
+  editor уже доступно через header close и `Escape`. Locked Telegram Apps SDK 3.11.8 проверяет
+  capability `MainButton`; одна обычная DOM primary-кнопка остаётся UI fallback для browser и старых
+  клиентов. Native action скрывается при открытом discard/delete confirmation и уничтожается при
+  уходе с task. `color`, `text_color` и `is_active` передаются явно:
   native footer повторяет adaptive Flowvy tokens, а недоступный primary action визуально сохраняет
   прежнюю 40% disabled-палитру вместо активной Telegram-blue заливки.
 - [MDN VisualViewport](https://developer.mozilla.org/en-US/docs/Web/API/VisualViewport): экранная

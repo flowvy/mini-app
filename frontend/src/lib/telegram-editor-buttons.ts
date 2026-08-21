@@ -4,6 +4,7 @@ export interface TelegramEditorButtonState {
 	primaryText: string;
 	primaryEnabled: boolean;
 	primaryLoading: boolean;
+	primaryVisible?: boolean;
 }
 
 interface TelegramEditorButtonHandlers {
@@ -62,8 +63,8 @@ function resolveButtonColors(state: TelegramEditorButtonState): TelegramEditorBu
 }
 
 /**
- * Uses Telegram's rendered MainButton for an editor's primary action.
- * Callers keep their DOM footer as the browser and older-client fallback.
+ * Uses Telegram's rendered MainButton for a screen's primary action.
+ * Callers keep their DOM action as the browser and older-client fallback.
  */
 export function mountTelegramEditorButtons(
 	state: TelegramEditorButtonState,
@@ -86,7 +87,7 @@ export function mountTelegramEditorButtons(
 				text: nextState.primaryText,
 				isEnabled: nextState.primaryEnabled,
 				isLoaderVisible: nextState.primaryLoading,
-				isVisible: true,
+				isVisible: nextState.primaryVisible ?? true,
 				hasShineEffect: false,
 				backgroundColor: colors.primaryBackground,
 				textColor: colors.primaryText,

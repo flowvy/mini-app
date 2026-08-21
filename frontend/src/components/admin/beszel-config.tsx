@@ -117,6 +117,8 @@ export const BeszelConfig: FC<BeszelConfigProps> = ({ settings }) => {
 				dirty={dirty && !saved}
 				loading={updateMutation.isPending}
 				onSave={handleSave}
+				telegramMainButton
+				telegramMainButtonVisible={blocker.status !== "blocked"}
 			/>
 
 			<ConfirmDialog

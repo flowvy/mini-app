@@ -66,6 +66,7 @@ describe("Telegram editor main button", () => {
 				primaryText: "Save",
 				primaryEnabled: false,
 				primaryLoading: true,
+				primaryVisible: false,
 			}),
 		).toBe(true);
 		expect(sdk.mainButton.setParams).toHaveBeenLastCalledWith(
@@ -73,6 +74,7 @@ describe("Telegram editor main button", () => {
 				text: "Save",
 				isEnabled: false,
 				isLoaderVisible: true,
+				isVisible: false,
 				backgroundColor: "#ffffff",
 				textColor: "#171717",
 			}),
