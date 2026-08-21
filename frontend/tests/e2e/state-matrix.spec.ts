@@ -464,6 +464,7 @@ test("users support empty search, missing detail, and failed actions", async ({
 
 	await page.goto("/admin/users");
 	await expect(page.getByText("alice")).toBeVisible();
+	await page.getByRole("button", { name: "Search users" }).click();
 	await page.getByRole("textbox", { name: "Search users" }).fill("not-present");
 	await expect(page.getByText("No users found")).toBeVisible();
 	await page.getByRole("button", { name: "Clear search" }).click();

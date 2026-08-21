@@ -101,6 +101,7 @@ export function FormattedTextEditor({
 					"aria-label": ariaLabel,
 					"aria-multiline": "true",
 					"aria-describedby": `${id}-formatted-text-hint`,
+					enterkeyhint: "enter",
 				},
 			},
 			onUpdate: ({ editor: currentEditor }) => onChange(currentEditor.getMarkdown()),
@@ -237,6 +238,7 @@ export function FormattedTextEditor({
 	};
 
 	const handleLinkKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+		if (event.nativeEvent.isComposing) return;
 		if (event.key === "Enter") {
 			event.preventDefault();
 			applyLink();
@@ -285,6 +287,10 @@ export function FormattedTextEditor({
 						id={linkInputId}
 						type="url"
 						inputMode="url"
+						enterKeyHint="done"
+						autoCapitalize="none"
+						autoCorrect="off"
+						spellCheck={false}
 						aria-label={t("common.formattedText.linkAddress")}
 						value={linkDraft}
 						aria-invalid={linkError}

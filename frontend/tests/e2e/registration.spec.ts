@@ -50,7 +50,7 @@ test("invite-only onboarding handles an invalid code and enters the app without 
 	);
 
 	await code.fill("FVY-TEST-CODE-1");
-	await page.getByRole("button", { name: "Continue" }).click();
+	await code.press("Enter");
 	await expect(page.getByText("Account Info")).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });

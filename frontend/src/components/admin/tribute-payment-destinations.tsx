@@ -130,7 +130,7 @@ export const TributePaymentDestinations: FC<TributePaymentDestinationsProps> = (
 					{catalogQuery.isSuccess && catalogQuery.data.subscriptions.length === 0 && (
 						<p className={styles.catalogState}>{t("settings.tribute.destinations.empty")}</p>
 					)}
-					{catalogQuery.data?.subscriptions.map((subscription) => {
+					{catalogQuery.data?.subscriptions.map((subscription, index, subscriptions) => {
 						const inputId = `tribute-subscription-url-${subscription.externalItemId}`;
 						const issue = subscriptionIssues[subscription.externalItemId] ?? null;
 						const prices = subscription.periods
@@ -159,6 +159,9 @@ export const TributePaymentDestinations: FC<TributePaymentDestinationsProps> = (
 									id={inputId}
 									type="url"
 									inputMode="url"
+									enterKeyHint={
+										index < subscriptions.length - 1 || unavailableIds.length > 0 ? "next" : "done"
+									}
 									value={subscriptionUrls[subscription.externalItemId] ?? ""}
 									onChange={(event) =>
 										updateSubscription(subscription.externalItemId, event.target.value)
@@ -173,7 +176,7 @@ export const TributePaymentDestinations: FC<TributePaymentDestinationsProps> = (
 							</FormField>
 						);
 					})}
-					{unavailableIds.map((id) => {
+					{unavailableIds.map((id, index) => {
 						const inputId = `tribute-subscription-url-${id}`;
 						const issue = subscriptionIssues[id] ?? null;
 						return (
@@ -194,6 +197,7 @@ export const TributePaymentDestinations: FC<TributePaymentDestinationsProps> = (
 									id={inputId}
 									type="url"
 									inputMode="url"
+									enterKeyHint={index < unavailableIds.length - 1 ? "next" : "done"}
 									value={subscriptionUrls[id] ?? ""}
 									onChange={(event) => updateSubscription(id, event.target.value)}
 									placeholder={t("settings.tribute.destinations.placeholder")}

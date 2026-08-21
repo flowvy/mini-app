@@ -43,7 +43,7 @@ test("read-only live routes render against the local BFF and configured Remnawav
 	await expect(page.getByRole("tab", { name: "Flowvy Mini-App" })).toBeVisible();
 
 	await page.goto("/admin/users");
-	await expect(page.getByRole("textbox", { name: "Search users" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Search users" })).toBeVisible();
 	await expect(page.getByRole("button", { name: /^All / })).toBeVisible();
 	await page.getByRole("list").getByRole("button").first().click();
 	await expect(page).toHaveURL(/\/admin\/users\/\d+$/);

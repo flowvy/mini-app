@@ -61,6 +61,7 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings }) => {
 						<FormFieldInput
 							id="branding-app-name"
 							value={appName}
+							enterKeyHint="next"
 							onChange={(event) => {
 								setAppName(event.target.value);
 								setSaved(false);
@@ -78,6 +79,7 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings }) => {
 							id="branding-logo-url"
 							type="url"
 							inputMode="url"
+							enterKeyHint="done"
 							value={logoUrl}
 							onChange={(event) => {
 								setLogoUrl(event.target.value);

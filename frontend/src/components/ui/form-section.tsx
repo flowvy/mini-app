@@ -8,6 +8,7 @@ import {
 	forwardRef,
 	useId,
 } from "react";
+import { type ImeActionHint, handleImeKeyDown } from "../../lib/ime.ts";
 import styles from "./form-section.module.css";
 
 interface FormSectionProps {
@@ -89,12 +90,21 @@ export const FormField: FC<FormFieldProps> = ({ label, htmlFor, hint, notice, ch
 	</div>
 );
 
-export const FormFieldInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
-	({ className, enterKeyHint = "done", ...props }, ref) => (
+interface FormFieldInputProps extends InputHTMLAttributes<HTMLInputElement> {
+	enterKeyHint: ImeActionHint;
+	onImeAction?: () => void;
+}
+
+export const FormFieldInput = forwardRef<HTMLInputElement, FormFieldInputProps>(
+	({ className, enterKeyHint, onImeAction, onKeyDown, ...props }, ref) => (
 		<input
 			ref={ref}
 			className={`${styles.fieldControl} ${className ?? ""}`}
 			enterKeyHint={enterKeyHint}
+			onKeyDown={(event) => {
+				onKeyDown?.(event);
+				if (!event.defaultPrevented) handleImeKeyDown(event, enterKeyHint, onImeAction);
+			}}
 			{...props}
 		/>
 	),
@@ -159,6 +169,7 @@ export const FormFieldTextarea = forwardRef<
 	<textarea
 		ref={ref}
 		className={`${styles.fieldControl} ${styles.fieldTextarea} ${className ?? ""}`}
+		enterKeyHint="enter"
 		{...props}
 	/>
 ));
@@ -254,6 +265,7 @@ export const FormTextarea: FC<FormTextareaProps> = ({
 			onChange={(e) => onChange(e.target.value)}
 			placeholder={placeholder}
 			rows={rows}
+			enterKeyHint="enter"
 			disabled={disabled}
 			className={styles.textarea}
 		/>
@@ -268,6 +280,7 @@ interface FormInlineInputProps {
 	mono?: boolean;
 	disabled?: boolean;
 	type?: "text" | "url";
+	enterKeyHint: ImeActionHint;
 }
 
 export const FormInlineInput: FC<FormInlineInputProps> = ({
@@ -278,6 +291,7 @@ export const FormInlineInput: FC<FormInlineInputProps> = ({
 	mono,
 	disabled,
 	type = "text",
+	enterKeyHint,
 }) => (
 	<input
 		id={id}
@@ -286,7 +300,8 @@ export const FormInlineInput: FC<FormInlineInputProps> = ({
 		onChange={(e) => onChange(e.target.value)}
 		placeholder={placeholder}
 		disabled={disabled}
-		enterKeyHint="done"
+		enterKeyHint={enterKeyHint}
+		onKeyDown={(event) => handleImeKeyDown(event, enterKeyHint)}
 		inputMode={type === "url" ? "url" : "text"}
 		autoCapitalize={type === "url" || mono ? "none" : undefined}
 		autoCorrect={type === "url" || mono ? "off" : undefined}

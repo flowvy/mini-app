@@ -13,7 +13,7 @@ import { AdminTributeConfig } from "./pages/admin/settings-tribute.tsx";
 import { AdminWelcomeConfig } from "./pages/admin/settings-welcome.tsx";
 import { AdminSettings } from "./pages/admin/settings.tsx";
 import { AdminUserDetailPage } from "./pages/admin/user-detail-page.tsx";
-import { AdminUsers } from "./pages/admin/users.tsx";
+import { AdminUsers, AdminUsersSearch } from "./pages/admin/users.tsx";
 import { Devices } from "./pages/devices.tsx";
 import { Home } from "./pages/home.tsx";
 import { Pulse } from "./pages/pulse.tsx";
@@ -57,6 +57,12 @@ const adminUsersRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/users",
 	component: AdminUsers,
+});
+
+const adminUsersSearchRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/users/search",
+	component: AdminUsersSearch,
 });
 
 const adminUserDetailRoute = createRoute({
@@ -120,6 +126,7 @@ const routeTree = rootRoute.addChildren([
 	supportRoute,
 	adminDashboardRoute,
 	adminUsersRoute,
+	adminUsersSearchRoute,
 	adminUserDetailRoute,
 	adminBroadcastRoute,
 	adminSettingsRoute,

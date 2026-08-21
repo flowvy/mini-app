@@ -83,6 +83,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings }) => {
 							id="kuma-url"
 							type="url"
 							inputMode="url"
+							enterKeyHint="next"
 							value={url}
 							onChange={(event) => {
 								setUrl(event.target.value);
@@ -99,6 +100,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings }) => {
 						<FormFieldInput
 							id="kuma-slug"
 							value={slug}
+							enterKeyHint="done"
 							onChange={(event) => {
 								setSlug(event.target.value);
 								setSaved(false);

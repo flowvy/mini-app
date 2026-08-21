@@ -146,8 +146,8 @@ test("user and admin pages share one external vertical rhythm", async ({
 	await expectAttachedSection(usersHeading);
 
 	await page.goto("/admin/users");
-	const usersGap = await page.getByRole("textbox", { name: "Search users" }).evaluate((input) => {
-		const searchBlock = input.parentElement?.parentElement;
+	const usersGap = await page.getByRole("button", { name: "Search users" }).evaluate((trigger) => {
+		const searchBlock = trigger.parentElement;
 		const list = searchBlock?.nextElementSibling;
 		if (!searchBlock || !list) throw new Error("Admin users list structure is incomplete");
 		return list.getBoundingClientRect().top - searchBlock.getBoundingClientRect().bottom;
@@ -229,7 +229,7 @@ test("admin routes render deterministic success and placeholder states", async (
 	await expect(page.getByText("Remnawave unavailable")).toBeVisible();
 
 	await page.goto("/admin/users");
-	await expect(page.getByRole("textbox", { name: "Search users" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Search users" })).toBeVisible();
 	await expect(page.getByText("alice")).toBeVisible();
 	await page.goto("/admin/users/1");
 	await expect(page.getByText("alice", { exact: true })).toBeVisible();

@@ -16,7 +16,7 @@ These instructions apply to deterministic UI and end-to-end tests. Follow `front
 Maintain a small smoke path for every user-visible route and focused cases for changed behavior:
 
 - User: `/`, `/devices`, `/pulse`, `/support`.
-- Admin: `/admin/dashboard`, `/admin/users`, `/admin/users/:id`, `/admin/broadcast`, and settings
+- Admin: `/admin/dashboard`, `/admin/users`, `/admin/users/search`, `/admin/users/:id`, `/admin/broadcast`, and settings
   routes for Kuma, Beszel, Tribute, branding, registration/access, and welcome content.
 - Roles/states: normal user, admin, denied; loading, populated, empty, `401`, `403`, `404`, provider
   failure, timeout, and retry where the screen supports them.

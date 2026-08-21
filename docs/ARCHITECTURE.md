@@ -418,9 +418,9 @@ worker сейчас нет.
   URL.
 - `components/` содержит feature и reusable UI; страницы остаются composition boundary.
 - `styles/tokens.css`, CSS Modules и Telegram theme/safe-area интеграция задают внешний вид.
-- Один frontend browser adapter нормализует editable focus, pointer activation и геометрию
-  `VisualViewport`; shell и top-layer editors подписываются на общий snapshot и CSS variables,
-  поэтому не создают собственные keyboard listeners или event-cancellation workaround.
+- App shell не вычисляет состояние клавиатуры и не переписывает геометрию из `VisualViewport`.
+  Web-owned tab navigation монтируется только на точных top-level tab routes; detail/settings task
+  routes используют Telegram BackButton и не вводят нижнее меню в lifecycle экранной клавиатуры.
 - `i18n/locales/en.json` — единственный текущий locale resource и источник product-owned UI-copy.
   Operator-owned identity и bot welcome приходят через branding/settings contract;
   provider facts остаются typed runtime data. Полная граница описана в
@@ -435,7 +435,7 @@ mutation сразу кладёт полученного user в общий TanSt
 
 Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Support остаётся локализованной
 заглушкой будущего встроенного support flow и не перенаправляет во внешний канал. Admin URL:
-`/admin/dashboard`, `/admin/users`, `/admin/users/$userId`, `/admin/broadcast`, `/admin/settings` и
+`/admin/dashboard`, `/admin/users`, `/admin/users/search`, `/admin/users/$userId`, `/admin/broadcast`, `/admin/settings` и
 отдельные Kuma, Beszel, Tribute, branding, welcome и registration/access subroutes. Broadcast пока остаётся
 заглушкой.
 

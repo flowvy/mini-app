@@ -211,6 +211,7 @@ export function AccessProfileEditor({
 							<FormFieldInput
 								id="access-profile-name"
 								value={draft.name}
+								enterKeyHint="next"
 								onChange={(event) => setDraft({ ...draft, name: event.target.value })}
 								placeholder={t("access.namePlaceholder")}
 								autoComplete="off"
@@ -252,6 +253,7 @@ export function AccessProfileEditor({
 										id="access-profile-days"
 										type="number"
 										inputMode="numeric"
+										enterKeyHint="next"
 										min="1"
 										max="3650"
 										value={draft.validityDays ?? ""}
@@ -303,6 +305,7 @@ export function AccessProfileEditor({
 									id="access-profile-traffic"
 									type="number"
 									inputMode="decimal"
+									enterKeyHint="next"
 									min="0"
 									step="0.1"
 									value={trafficGb}
@@ -316,6 +319,7 @@ export function AccessProfileEditor({
 									id="access-profile-devices"
 									type="number"
 									inputMode="numeric"
+									enterKeyHint="done"
 									min="0"
 									max="1000"
 									value={devices}

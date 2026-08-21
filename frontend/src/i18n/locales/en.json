@@ -895,6 +895,7 @@
 		"users": {
 			"searchPlaceholder": "Search by name, ID or tag",
 			"searchLabel": "Search users",
+			"closeSearch": "Cancel",
 			"listLabel": "Users list",
 			"clearSearchLabel": "Clear search",
 			"filter": {

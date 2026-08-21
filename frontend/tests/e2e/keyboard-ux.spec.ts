@@ -1,9 +1,63 @@
-import { expect, test } from "./fixtures/mock-api.ts";
+import { expect, mockData, test } from "./fixtures/mock-api.ts";
 import { installVisualViewportMock, setTestVisualViewport } from "./fixtures/visual-viewport.ts";
 
-test("single-line and multiline inputs keep native keyboard semantics", async ({
+test("tab navigation renders only on primary routes and leaves before focused search", async ({
 	page,
 	mockApi: _mock,
+}) => {
+	for (const path of ["/", "/devices", "/admin/dashboard", "/admin/users", "/admin/settings"]) {
+		await page.goto(path);
+		await expect(page.getByRole("navigation")).toBeVisible();
+	}
+
+	for (const path of [
+		"/admin/users/1",
+		"/admin/settings/kuma",
+		"/admin/settings/access",
+		"/admin/users/search",
+	]) {
+		await page.goto(path);
+		await expect(page.getByRole("navigation")).toHaveCount(0);
+	}
+
+	await page.goto("/admin/users");
+	await page.getByRole("button", { name: "Search users" }).click();
+	await expect(page).toHaveURL(/\/admin\/users\/search$/);
+	await expect(page.getByRole("navigation")).toHaveCount(0);
+	await expect(page.getByRole("textbox", { name: "Search users" })).toBeFocused();
+	await expect(page.getByRole("group", { name: "Filter by status" })).toBeInViewport();
+	await expect(page.getByText("alice", { exact: true })).toBeInViewport();
+
+	await page.getByRole("button", { name: "Cancel" }).click();
+	await expect(page).toHaveURL(/\/admin\/users$/);
+	await expect(page.getByRole("navigation")).toBeVisible();
+
+	await page.goto("/admin/dashboard");
+	await page.getByRole("link", { name: "Users" }).click();
+	await page.getByRole("button", { name: "Search users" }).click();
+	await page.getByRole("button", { name: "Cancel" }).click();
+	await page.goBack();
+	await expect(page).toHaveURL(/\/admin\/dashboard$/);
+});
+
+test("direct focused search waits for its user list before focusing the input", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.mock("GET", "/api/debug/admin/users/all", {
+		body: { users: [mockData.adminUser], total: 1 },
+		delayMs: 250,
+	});
+
+	await page.goto("/admin/users/search");
+	await expect(page.getByRole("navigation")).toHaveCount(0);
+	await expect(page.getByRole("textbox", { name: "Search users" })).toBeFocused();
+	await expect(page.getByText("alice", { exact: true })).toBeInViewport();
+});
+
+test("IME actions search, advance, finish, and preserve multiline editing", async ({
+	page,
+	mockApi,
 }) => {
 	await page.addInitScript(() => {
 		const testWindow = window as typeof window & { __hideKeyboardCalls?: number };
@@ -21,18 +75,45 @@ test("single-line and multiline inputs keep native keyboard semantics", async ({
 	});
 
 	await page.goto("/admin/users");
+	await expect(page.getByRole("navigation")).toBeVisible();
+	await page.getByRole("button", { name: "Search users" }).click();
+	await expect(page).toHaveURL(/\/admin\/users\/search$/);
+	await expect(page.getByRole("navigation")).toHaveCount(0);
 	const search = page.getByRole("textbox", { name: "Search users" });
 	await search.fill("alice");
 	await search.press("Enter");
-	await expect(search).toBeFocused();
+	await expect(search).not.toBeFocused();
+	await expect(page.getByText("alice", { exact: true })).toBeVisible();
+
+	await page.goto("/admin/settings/kuma");
+	const kumaUrl = page.getByLabel("URL");
+	const kumaSlug = page.getByLabel("Slug");
+	await kumaUrl.focus();
+	await kumaUrl.press("Enter");
+	await expect(kumaSlug).toBeFocused();
+	await kumaSlug.press("Enter");
+	await expect(kumaSlug).not.toBeFocused();
 
 	await page.goto("/admin/settings/access");
+	await expect(page.getByRole("navigation")).toHaveCount(0);
 	await page.getByRole("button", { name: "Create profile" }).click();
 	const name = page.getByLabel("Name");
 	await name.focus();
 	await name.press("Enter");
-	await expect(name).toBeFocused();
+	const days = page.getByLabel("Number of days");
+	const traffic = page.getByLabel("Traffic (GB, 0 = unlimited)");
+	const devices = page.getByLabel("Device limit");
+	await expect(days).toBeFocused();
+	await days.press("Enter");
+	await expect(traffic).toBeFocused();
+	await traffic.press("Enter");
+	await expect(devices).toBeFocused();
+	await devices.press("Enter");
+	await expect(devices).not.toBeFocused();
 	await expect(page.getByRole("dialog", { name: "Create access profile" })).toBeVisible();
+	expect(
+		mockApi.calls.filter((call) => call === "POST /api/debug/admin/registration/access-profiles"),
+	).toHaveLength(0);
 
 	await page.getByText("Advanced Remnawave fields").click();
 	const description = page.getByLabel("Description");
@@ -49,7 +130,7 @@ test("single-line and multiline inputs keep native keyboard semantics", async ({
 		.toBe(0);
 });
 
-test("visual viewport changes do not rewrite app geometry or hide controls", async ({
+test("nested task routes keep tab navigation out of the keyboard lifecycle", async ({
 	page,
 	mockApi: _mock,
 }) => {
@@ -60,7 +141,6 @@ test("visual viewport changes do not rewrite app geometry or hide controls", asy
 
 	const shell = page.locator('main[data-scroll-restoration-id="main-content"]').locator("..");
 	const dialog = page.getByRole("dialog", { name: "Create access profile" });
-	const navigation = page.getByRole("navigation");
 	const footer = dialog.locator("footer");
 	const name = page.getByLabel("Name");
 	const restoredViewportHeight = await page.evaluate(() => window.innerHeight);
@@ -83,7 +163,7 @@ test("visual viewport changes do not rewrite app geometry or hide controls", asy
 
 	const shrunkGeometry = await Promise.all([shell.boundingBox(), dialog.boundingBox()]);
 	expect(shrunkGeometry).toEqual(initialGeometry);
-	await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
+	await expect(page.getByRole("navigation")).toHaveCount(0);
 	await expect(footer).not.toHaveAttribute("aria-hidden", "true");
 	await expect(footer).toBeVisible();
 	await expect(name).toBeFocused();

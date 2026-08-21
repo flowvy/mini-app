@@ -278,6 +278,14 @@ export function CommerceRuleEditor({
 		}));
 	};
 
+	const runPreview = () => {
+		if (!input || previewAmountMinor === null) return;
+		const fingerprint = JSON.stringify({ input, previewAmountMinor });
+		preview.reset();
+		setPreviewFingerprint(fingerprint);
+		preview.mutate({ rule: input, amountMinor: previewAmountMinor });
+	};
+
 	const previewErrorCopy = () => {
 		if (!(previewError instanceof ApiError)) return t("settings.tribute.rules.previewError");
 		if (previewError.status === 401) return t("settings.tribute.rules.previewSessionExpired");
@@ -327,6 +335,7 @@ export function CommerceRuleEditor({
 							<FormFieldInput
 								id="commerce-rule-name"
 								value={draft.name}
+								enterKeyHint="next"
 								maxLength={100}
 								autoComplete="off"
 								placeholder={t("settings.tribute.rules.namePlaceholder")}
@@ -416,8 +425,11 @@ export function CommerceRuleEditor({
 								<FormFieldInput
 									id="commerce-currency"
 									value={draft.currency}
+									enterKeyHint="next"
 									maxLength={3}
 									autoCapitalize="characters"
+									autoCorrect="off"
+									spellCheck={false}
 									readOnly={draft.commerceType !== "donation" && Boolean(selectedCatalogItem)}
 									onChange={(event) =>
 										setDraft({ ...draft, currency: event.target.value.toUpperCase() })
@@ -433,6 +445,7 @@ export function CommerceRuleEditor({
 									id="commerce-priority"
 									type="number"
 									inputMode="numeric"
+									enterKeyHint={draft.commerceType === "subscription" ? "done" : "next"}
 									min="1"
 									max="10000"
 									value={draft.priority}
@@ -519,6 +532,7 @@ export function CommerceRuleEditor({
 											id="commerce-fixed-days"
 											type="number"
 											inputMode="numeric"
+											enterKeyHint="done"
 											min="1"
 											max="36500"
 											value={draft.fixedDurationDays}
@@ -567,6 +581,7 @@ export function CommerceRuleEditor({
 																id={`commerce-band-from-${band.key}`}
 																className={styles.bandInput}
 																inputMode="decimal"
+																enterKeyHint="next"
 																value={band.from}
 																onChange={(event) =>
 																	updateBand(band.key, { from: event.target.value })
@@ -585,6 +600,7 @@ export function CommerceRuleEditor({
 																id={`commerce-band-unit-${band.key}`}
 																className={styles.bandInput}
 																inputMode="decimal"
+																enterKeyHint="next"
 																value={band.unitAmount}
 																onChange={(event) =>
 																	updateBand(band.key, { unitAmount: event.target.value })
@@ -604,6 +620,7 @@ export function CommerceRuleEditor({
 																className={styles.bandInput}
 																type="number"
 																inputMode="numeric"
+																enterKeyHint={index < draft.bands.length - 1 ? "next" : "done"}
 																min="1"
 																max="36500"
 																value={band.unitDays}
@@ -650,6 +667,8 @@ export function CommerceRuleEditor({
 									<FormFieldInput
 										id="commerce-preview-amount"
 										inputMode="decimal"
+										enterKeyHint="go"
+										onImeAction={runPreview}
 										value={previewAmount}
 										onChange={(event) => setPreviewAmount(event.target.value)}
 									/>
@@ -659,13 +678,7 @@ export function CommerceRuleEditor({
 									size="md"
 									loading={preview.isPending}
 									disabled={!input || previewAmountMinor === null}
-									onClick={() => {
-										if (!input || previewAmountMinor === null) return;
-										const fingerprint = JSON.stringify({ input, previewAmountMinor });
-										preview.reset();
-										setPreviewFingerprint(fingerprint);
-										preview.mutate({ rule: input, amountMinor: previewAmountMinor });
-									}}
+									onClick={runPreview}
 								>
 									{t("settings.tribute.rules.previewAction")}
 								</ActionBtn>

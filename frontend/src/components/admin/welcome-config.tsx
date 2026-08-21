@@ -151,6 +151,7 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 						<FormFieldInput
 							id="welcome-button-text"
 							value={buttonText}
+							enterKeyHint="done"
 							onChange={(event) => {
 								setButtonText(event.target.value);
 								setSaved(false);

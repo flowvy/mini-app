@@ -6,17 +6,7 @@ import { backButton } from "@telegram-apps/sdk-react";
  * on drill-down routes it navigates back via router history.
  */
 import { useEffect } from "react";
-
-const TAB_PATHS = new Set([
-	"/",
-	"/pulse",
-	"/devices",
-	"/support",
-	"/admin/dashboard",
-	"/admin/users",
-	"/admin/broadcast",
-	"/admin/settings",
-]);
+import { isPrimaryTabRoute } from "../lib/navigation-routes.ts";
 
 export function getBackFallback(pathname: string): string {
 	if (pathname.startsWith("/admin/settings/")) return "/admin/settings";
@@ -28,7 +18,7 @@ export function getBackFallback(pathname: string): string {
 export function useBackButton(): void {
 	const location = useLocation();
 	const router = useRouter();
-	const isTabRoute = TAB_PATHS.has(location.pathname);
+	const isTabRoute = isPrimaryTabRoute(location.pathname);
 	const fallback = getBackFallback(location.pathname);
 
 	useEffect(() => {

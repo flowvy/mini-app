@@ -70,6 +70,7 @@ export const BeszelConfig: FC<BeszelConfigProps> = ({ settings }) => {
 							id="beszel-url"
 							type="url"
 							inputMode="url"
+							enterKeyHint="done"
 							value={url}
 							onChange={(event) => {
 								setUrl(event.target.value);

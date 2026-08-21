@@ -20,6 +20,20 @@ async function selectElementContents(locator: Locator) {
 	});
 }
 
+async function placeCaretAtEnd(locator: Locator) {
+	await locator.evaluate((element) => {
+		const selection = window.getSelection();
+		if (!selection) throw new Error("Selection API is unavailable");
+		const range = document.createRange();
+		range.selectNodeContents(element);
+		range.collapse(false);
+		selection.removeAllRanges();
+		selection.addRange(range);
+		(element as HTMLElement).focus();
+		document.dispatchEvent(new Event("selectionchange"));
+	});
+}
+
 function sponsorSubscriptionOffer(
 	checkoutUrl = "https://t.me/tribute/app?startapp=subscription_12",
 ) {
@@ -831,9 +845,11 @@ test("reported donation draft keeps auth, clears stale errors, and previews afte
 	await expect(page.getByRole("alert")).toContainText("Telegram session expired");
 	await expect(page.getByText("private authentication diagnostic")).toHaveCount(0);
 
-	await page.getByLabel("Payment amount (RUB)").fill("600");
+	const retryAmount = page.getByLabel("Payment amount (RUB)");
+	await retryAmount.fill("600");
 	await expect(page.getByText("Telegram session expired")).toHaveCount(0);
-	await page.getByRole("button", { name: "Preview", exact: true }).click();
+	await retryAmount.press("Enter");
+	await expect(retryAmount).not.toBeFocused();
 	await expect(page.getByText("5 access days", { exact: true })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
@@ -877,7 +893,7 @@ test("rule editor keeps native controls and actions stable while inputs are focu
 	const footer = dialog.locator("footer");
 	await expect(footer).toBeVisible();
 	await expect(footer).not.toHaveAttribute("aria-hidden", "true");
-	await expect(page.getByRole("navigation")).not.toHaveAttribute("aria-hidden", "true");
+	await expect(page.getByRole("navigation")).toHaveCount(0);
 	await focusedInput.blur();
 	await assertNoHorizontalOverflow(page);
 });
@@ -920,8 +936,13 @@ test("saved rule can be disabled, edited, and deleted with explicit confirmation
 	await expect(toggle).toHaveAttribute("aria-checked", "false");
 
 	await page.getByRole("button", { name: /Monthly donation access/ }).click();
-	await page.getByLabel("Rule name").fill("Updated donation access");
-	await page.getByLabel("Rule name").press("Enter");
+	const ruleDialog = page.getByRole("dialog", { name: "Edit automation rule" });
+	const ruleName = page.getByLabel("Rule name");
+	await ruleName.fill("Updated donation access");
+	await ruleName.press("Enter");
+	await expect(page.getByLabel("Currency")).toBeFocused();
+	await expect(ruleDialog).toBeVisible();
+	await ruleDialog.getByRole("button", { name: "Save", exact: true }).click();
 	await expect(page.getByText("Updated donation access", { exact: true })).toBeVisible();
 
 	await page.getByRole("button", { name: /Updated donation access/ }).click();
@@ -1255,8 +1276,7 @@ test("formatted offer copy keeps one fixed toolbar and renders safely on Home", 
 	} else {
 		await expect(description).toHaveCSS("font-size", "13px");
 	}
-	await description.click();
-	await description.press("End");
+	await placeCaretAtEnd(description);
 	await description.press("Enter");
 	await description.pressSequentially("Faster support");
 	await description.press("Enter");
@@ -1286,14 +1306,28 @@ test("formatted offer copy keeps one fixed toolbar and renders safely on Home", 
 	} else {
 		await expect(linkAddress).toHaveCSS("font-size", "11px");
 	}
+	await linkAddress.fill("example.com/composing");
+	await linkAddress.evaluate((element) =>
+		element.dispatchEvent(
+			new KeyboardEvent("keydown", {
+				key: "Enter",
+				isComposing: true,
+				bubbles: true,
+				cancelable: true,
+			}),
+		),
+	);
+	await expect(linkAddress).toBeFocused();
+	await expect(description.getByRole("link")).toHaveCount(0);
 	await linkAddress.fill("javascript:alert(1)");
 	await page.getByRole("button", { name: "Apply link" }).click();
 	await expect(page.getByRole("alert")).toHaveText("Enter a valid http or https address");
 	await linkAddress.fill("example.com/sponsor");
-	await page.getByRole("button", { name: "Apply link" }).click();
+	await linkAddress.press("Enter");
 	await expect(
 		description.getByRole("link", { name: "Support keeps the service available" }),
 	).toHaveAttribute("href", "https://example.com/sponsor");
+	await expect(description).toBeFocused();
 
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });

@@ -11,6 +11,10 @@
 	overflow: hidden;
 }
 
+.withoutTabBar {
+	--shell-bottom: max(16px, var(--tg-viewport-safe-area-inset-bottom, 0px));
+}
+
 .content {
 	height: 100%;
 	overflow-y: auto;

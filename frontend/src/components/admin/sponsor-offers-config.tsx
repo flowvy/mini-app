@@ -591,6 +591,7 @@ function SponsorOfferEditor({
 							<FormFieldInput
 								id="sponsor-offer-title"
 								value={draft.title}
+								enterKeyHint="next"
 								maxLength={100}
 								placeholder={t("settings.tribute.offers.titlePlaceholder")}
 								onChange={(event) => setDraft({ ...draft, title: event.target.value })}
@@ -678,6 +679,7 @@ function SponsorOfferEditor({
 										id="sponsor-offer-checkout-url"
 										type="url"
 										inputMode="url"
+										enterKeyHint="next"
 										value={draft.checkoutUrl}
 										placeholder={t("settings.tribute.destinations.placeholder")}
 										autoCapitalize="none"
@@ -708,6 +710,7 @@ function SponsorOfferEditor({
 										id="sponsor-offer-expected-amount"
 										type="number"
 										inputMode="decimal"
+										enterKeyHint="next"
 										min="0.01"
 										step="0.01"
 										value={draft.amountMajor}
@@ -782,6 +785,7 @@ function SponsorOfferEditor({
 								id="sponsor-offer-sort-order"
 								type="number"
 								inputMode="numeric"
+								enterKeyHint="done"
 								min="1"
 								max="10000"
 								value={draft.sortOrder}
