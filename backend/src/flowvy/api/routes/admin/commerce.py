@@ -55,7 +55,10 @@ def _sponsor_offer_error(exc: SponsorOfferError) -> HTTPException:
         if isinstance(exc, SponsorOfferNotFoundError)
         else status.HTTP_422_UNPROCESSABLE_CONTENT
     )
-    return HTTPException(code, str(exc))
+    return HTTPException(
+        code,
+        detail={"code": exc.code, "message": str(exc)},
+    )
 
 
 @router.get("/offers", response_model=list[SponsorOfferResponse])

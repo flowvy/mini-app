@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from flowvy.api.routes.admin.commerce import _sponsor_offer_error
 from flowvy.config import Settings
 from flowvy.models.commerce_rule import CommerceRule
 from flowvy.models.entitlement_operation import EntitlementOperation
@@ -23,6 +24,7 @@ from flowvy.schemas.commerce import (
 )
 from flowvy.services.sponsor import (
     SponsorCheckoutConflictError,
+    SponsorOfferDestinationMissingError,
     SponsorOfferError,
     SponsorOfferService,
     SponsorStateService,
@@ -155,6 +157,68 @@ async def test_subscription_offer_preserves_all_documented_provider_periods() ->
         ("500", "monthly"),
         ("3500", "yearly"),
     ]
+
+
+@pytest.mark.asyncio
+async def test_subscription_offer_reports_missing_destination_with_stable_code() -> None:
+    rule = _rule("subscription")
+    offers = AsyncMock()
+    offers.list_all.return_value = []
+    rules = AsyncMock()
+    rules.get_by_id.return_value = rule
+    profiles = AsyncMock()
+    profiles.get_active.return_value = SimpleNamespace(id=PROFILE_ID)
+    provider_settings = AsyncMock()
+    provider_settings.get.return_value = SimpleNamespace(tribute_subscription_urls={})
+    catalog = AsyncMock()
+    catalog.get_tribute.return_value = CommerceCatalogResponse(
+        subscriptions=[
+            CommerceCatalogSubscription(
+                external_item_id="42",
+                name="Sponsor",
+                currency="RUB",
+                periods=[
+                    CommerceCatalogSubscriptionPeriod(
+                        period_id="1",
+                        period="monthly",
+                        price_major="500",
+                    )
+                ],
+            )
+        ],
+    )
+    service = SponsorOfferService(
+        offers,
+        rules,
+        profiles,
+        provider_settings,
+        catalog,
+    )
+
+    with pytest.raises(SponsorOfferDestinationMissingError) as error:
+        await service.create(
+            SponsorOfferInput(
+                title="Recurring sponsor",
+                commerce_rule_id=RULE_ID,
+                is_published=True,
+            ),
+            admin_id=1,
+        )
+
+    assert error.value.code == "tribute_subscription_destination_missing"
+    offers.create.assert_not_awaited()
+
+
+def test_missing_destination_error_has_stable_admin_http_contract() -> None:
+    response = _sponsor_offer_error(
+        SponsorOfferDestinationMissingError("Tribute subscription destination is not configured")
+    )
+
+    assert response.status_code == 422
+    assert response.detail == {
+        "code": "tribute_subscription_destination_missing",
+        "message": "Tribute subscription destination is not configured",
+    }
 
 
 @pytest.mark.asyncio

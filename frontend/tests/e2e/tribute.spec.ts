@@ -7,6 +7,16 @@ import {
 	mockData,
 	test,
 } from "./fixtures/mock-api.ts";
+import {
+	installTelegramMainButton,
+	latestTelegramMainButton,
+	pressTelegramMainButton,
+	withTelegramMainButton,
+} from "./fixtures/telegram-main-button.ts";
+
+async function submitEditor(dialog: Locator): Promise<void> {
+	await dialog.locator("form").evaluate((form) => (form as HTMLFormElement).requestSubmit());
+}
 
 async function selectElementContents(locator: Locator) {
 	await locator.evaluate((element) => {
@@ -369,7 +379,7 @@ test("admin creates and previews flexible donation amount bands without executin
 	).toBeVisible();
 	expect(mockApi.calls).not.toContain("PUT /api/debug/admin/commerce/rules");
 
-	await page.getByRole("button", { name: "Create rule" }).click();
+	await submitEditor(page.getByRole("dialog", { name: "Create automation rule" }));
 	await expect(page.getByRole("heading", { name: "Create automation rule" })).toHaveCount(0);
 	await expect(page.getByText("Donation access", { exact: true })).toBeVisible();
 	await expect(page.getByText(/From .*500/)).toBeVisible();
@@ -449,7 +459,7 @@ test("subscription rule uses Tribute expiry without local day calculation", asyn
 		if (colorScheme === "light") {
 			await editor.getByRole("button", { name: "Close rule editor" }).click();
 		} else {
-			await editor.getByRole("button", { name: "Create rule", exact: true }).click();
+			await submitEditor(editor);
 		}
 	}
 
@@ -483,6 +493,7 @@ test("an existing rule keeps a Tribute item missing from the current catalog", a
 	page,
 	mockApi,
 }) => {
+	await installTelegramMainButton(page);
 	mockApi.seedCommerceRules([
 		{
 			id: "10000000-0000-4000-8000-000000000099",
@@ -502,12 +513,15 @@ test("an existing rule keeps a Tribute item missing from the current catalog", a
 		},
 	]);
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto(withTelegramMainButton("/admin/settings/tribute"));
 	await page.getByRole("button", { name: /Legacy subscription/ }).click();
 	const offer = page.getByLabel("Tribute offer");
 	await expect(offer).toHaveValue("999");
 	await expect(offer.locator('option[value="999"]')).toHaveText("Current Tribute item · ID 999");
-	await expect(page.getByRole("button", { name: "Save", exact: true })).toBeEnabled();
+	await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
+	await expect
+		.poll(() => latestTelegramMainButton(page))
+		.toEqual(expect.objectContaining({ text: "Save", is_active: true, is_visible: true }));
 });
 
 test("payment activity exposes loading, failure recovery, and a safe empty state", async ({
@@ -891,8 +905,7 @@ test("rule editor keeps native controls and actions stable while inputs are focu
 	await expect(focusedInput).toBeFocused();
 	await expect(focusedInput).toHaveValue("500");
 	const footer = dialog.locator("footer");
-	await expect(footer).toBeVisible();
-	await expect(footer).not.toHaveAttribute("aria-hidden", "true");
+	await expect(footer).toHaveCount(0);
 	await expect(page.getByRole("navigation")).toHaveCount(0);
 	await focusedInput.blur();
 	await assertNoHorizontalOverflow(page);
@@ -942,7 +955,7 @@ test("saved rule can be disabled, edited, and deleted with explicit confirmation
 	await ruleName.press("Enter");
 	await expect(page.getByLabel("Currency")).toBeFocused();
 	await expect(ruleDialog).toBeVisible();
-	await ruleDialog.getByRole("button", { name: "Save", exact: true }).click();
+	await submitEditor(ruleDialog);
 	await expect(page.getByText("Updated donation access", { exact: true })).toBeVisible();
 
 	await page.getByRole("button", { name: /Updated donation access/ }).click();
@@ -1012,12 +1025,13 @@ test("rule delete failure stays retryable and hides backend diagnostics", async 
 });
 
 test("rule editor exposes safe no-match and save-failure states", async ({ page, mockApi }) => {
+	await installTelegramMainButton(page);
 	mockApi.mock("POST", "/api/debug/admin/commerce/rules", {
 		status: 422,
 		body: { detail: "private persistence diagnostic" },
 		delayMs: 600,
 	});
-	await page.goto("/admin/settings/tribute");
+	await page.goto(withTelegramMainButton("/admin/settings/tribute"));
 	await page.getByRole("button", { name: "Create first rule" }).click();
 	await page.getByLabel("Rule name").fill("Donation access");
 	await page.getByLabel("Starts at").fill("500");
@@ -1027,13 +1041,11 @@ test("rule editor exposes safe no-match and save-failure states", async ({ page,
 	await page.getByRole("button", { name: "Preview", exact: true }).click();
 	await expect(page.getByText("No matching amount band", { exact: true })).toBeVisible();
 
-	const createButton = page.getByRole("button", { name: "Create rule" });
-	await createButton.click();
-	await expect(createButton).toHaveAttribute("aria-busy", "true");
-	const loadingIndicator = createButton.locator('[data-loading-indicator=""]');
-	await expect(loadingIndicator).toBeVisible();
-	await expect(loadingIndicator.locator("svg")).toHaveCount(0);
-	await expect(loadingIndicator).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+	await expect(page.getByRole("button", { name: "Create rule", exact: true })).toHaveCount(0);
+	await pressTelegramMainButton(page);
+	await expect
+		.poll(() => latestTelegramMainButton(page))
+		.toEqual(expect.objectContaining({ is_active: false, is_progress_visible: true }));
 	await expect(page.getByRole("alert")).toContainText("Could not save the automation rule");
 	await expect(page.getByText("private persistence diagnostic")).toHaveCount(0);
 });
@@ -1042,11 +1054,12 @@ test("commerce rules expose loading, load-error, and unavailable-profile states"
 	page,
 	mockApi,
 }) => {
+	await installTelegramMainButton(page);
 	mockApi.mock("GET", "/api/debug/admin/commerce/rules", {
 		delayMs: 600,
 		body: [],
 	});
-	await page.goto("/admin/settings/tribute");
+	await page.goto(withTelegramMainButton("/admin/settings/tribute"));
 	await expect(page.getByText("Loading automation rules…", { exact: true })).toBeVisible();
 	await expect(page.getByText("No automation rules", { exact: true })).toBeVisible();
 
@@ -1105,7 +1118,10 @@ test("commerce rules expose loading, load-error, and unavailable-profile states"
 	await expect(page.getByRole("alert")).toContainText(
 		"Create or activate an access profile before saving",
 	);
-	await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+	await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
+	await expect
+		.poll(() => latestTelegramMainButton(page))
+		.toEqual(expect.objectContaining({ text: "Save", is_active: false, is_visible: true }));
 });
 
 test("Tribute settings pass serious accessibility and overflow checks", async ({
@@ -1221,7 +1237,7 @@ test("rule deletion consequence is accessible in light and dark themes", async (
 test("admin creates a user-facing sponsor offer from an automation rule", async ({
 	page,
 	mockApi,
-}) => {
+}, testInfo) => {
 	mockApi.seedCommerceRules([sponsorSubscriptionRule()]);
 
 	await page.goto("/admin/settings/tribute");
@@ -1234,11 +1250,37 @@ test("admin creates a user-facing sponsor offer from an automation rule", async 
 		"Enter the message shown under this offer",
 	);
 	await page.getByLabel("Description").fill("Automatic monthly support with extended access.");
-	await expect(page.getByRole("switch", { name: "Publish this sponsor offer" })).toBeEnabled();
+	const publish = page.getByRole("switch", { name: "Publish this sponsor offer" });
+	await expect(publish).toHaveAttribute("aria-disabled", "true");
+	await expect(
+		page.getByText(
+			"Add a Tribute payment link for this subscription in Payment links before making it visible on Home",
+			{ exact: true },
+		),
+	).toBeVisible();
+	await publish.focus();
+	await expect(publish).toBeFocused();
+	await publish.press("Space");
+	await expect(publish).not.toBeChecked();
 	await expect(page.getByText("Payment options from Tribute", { exact: true })).toBeVisible();
 	await expect(page.getByText(/user chooses one on the Tribute checkout screen/)).toBeVisible();
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		const accessibility = await new AxeBuilder({ page }).analyze();
+		const serious = accessibility.violations.filter((violation) =>
+			["serious", "critical"].includes(violation.impact ?? ""),
+		);
+		expect(serious).toEqual([]);
+		await assertNoHorizontalOverflow(page);
+		await page
+			.getByRole("dialog", { name: "Create sponsor offer" })
+			.screenshot({ path: testInfo.outputPath(`missing-destination-${colorScheme}.png`) });
+	}
 	await page.getByRole("heading", { name: "Payment and access" }).click();
-	await page.getByRole("button", { name: "Create offer" }).click();
+	await submitEditor(page.getByRole("dialog", { name: "Create sponsor offer" }));
 
 	await expect(page.getByRole("heading", { name: "Create sponsor offer" })).toHaveCount(0);
 	const createdOffer = page.getByRole("article", { name: "Monthly sponsor access" });
@@ -1252,6 +1294,44 @@ test("admin creates a user-facing sponsor offer from an automation rule", async 
 	await assertNoHorizontalOverflow(page);
 });
 
+test("sponsor offer maps a stale missing-destination response to actionable copy", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.seedCommerceRules([sponsorSubscriptionRule()]);
+	mockApi.mock("POST", "/api/debug/admin/commerce/offers", {
+		status: 422,
+		body: {
+			detail: {
+				code: "tribute_subscription_destination_missing",
+				message: "Tribute subscription destination is not configured",
+			},
+		},
+	});
+
+	await page.goto("/admin/settings/tribute");
+	await page
+		.getByLabel("Supporter", { exact: true })
+		.fill("https://t.me/tribute/app?startapp=subscription_12");
+	await page.getByRole("button", { name: "Save payment links", exact: true }).click();
+	await expect(page.getByText("Payment links saved", { exact: true })).toBeVisible();
+	await page.getByRole("button", { name: "Create first offer" }).click();
+	await page.getByLabel("Offer title").fill("Monthly sponsor access");
+	const publish = page.getByRole("switch", { name: "Publish this sponsor offer" });
+	await expect(publish).not.toHaveAttribute("aria-disabled", "true");
+	await publish.click();
+	await submitEditor(page.getByRole("dialog", { name: "Create sponsor offer" }));
+
+	await expect(
+		page.getByText(
+			"Add a Tribute payment link for this subscription in Payment links before making it visible on Home",
+			{ exact: true },
+		),
+	).toBeVisible();
+	await expect(page.getByText(/Could not save this sponsor offer/)).toHaveCount(0);
+	await expect(page.getByLabel("Offer title")).toHaveValue("Monthly sponsor access");
+});
+
 test("formatted offer copy keeps one fixed toolbar and renders safely on Home", async ({
 	page,
 	mockApi,
@@ -1261,6 +1341,11 @@ test("formatted offer copy keeps one fixed toolbar and renders safely on Home", 
 		...sponsorSubscriptionOffer(),
 		description: "Support keeps the service available",
 	};
+	mockApi.seedSettings({
+		tributeSubscriptionUrls: {
+			"12": "https://t.me/tribute/app?startapp=subscription_12",
+		},
+	});
 	mockApi.seedCommerceRules([sponsorSubscriptionRule()]);
 	mockApi.seedSponsorOffers([offer]);
 
@@ -1349,14 +1434,14 @@ test("formatted offer copy keeps one fixed toolbar and renders safely on Home", 
 	await page.evaluate(() => {
 		if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
 	});
-	await expect(editor.getByRole("button", { name: "Save offer" })).toBeVisible();
+	await expect(editor.getByRole("button", { name: "Save offer" })).toHaveCount(0);
 
 	const saveRequest = page.waitForRequest(
 		(request) =>
 			request.method() === "PUT" &&
 			new URL(request.url()).pathname === `/api/debug/admin/commerce/offers/${offer.id}`,
 	);
-	await editor.getByRole("button", { name: "Save offer" }).click();
+	await submitEditor(editor);
 	const request = await saveRequest;
 	const savedDescription = String(request.postDataJSON().description);
 	expect(savedDescription).toContain("[**Support keeps the service available**]");
@@ -1398,6 +1483,11 @@ test("admin can relink an existing sponsor offer to another automation rule", as
 		accessProfileId: "00000000-0000-4000-8000-000000000002",
 	};
 	const offer = sponsorSubscriptionOffer();
+	mockApi.seedSettings({
+		tributeSubscriptionUrls: {
+			"12": "https://t.me/tribute/app?startapp=subscription_12",
+		},
+	});
 	mockApi.seedCommerceRules([currentRule, nextRule]);
 	mockApi.seedSponsorOffers([offer]);
 
@@ -1434,7 +1524,7 @@ test("admin can relink an existing sponsor offer to another automation rule", as
 			request.method() === "PUT" &&
 			new URL(request.url()).pathname === `/api/debug/admin/commerce/offers/${offer.id}`,
 	);
-	await editor.getByRole("button", { name: "Save offer" }).click();
+	await submitEditor(editor);
 	const request = await requestPromise;
 	expect(request.postDataJSON()).toMatchObject({ commerceRuleId: nextRule.id });
 	await expect(page.getByRole("dialog", { name: "Edit sponsor offer" })).toHaveCount(0);
@@ -1480,6 +1570,11 @@ test("admin groups legacy subscription cards around one readable plan preview", 
 		availability: "draft",
 	};
 	mockApi.seedCommerceRules([sponsorSubscriptionRule()]);
+	mockApi.seedSettings({
+		tributeSubscriptionUrls: {
+			"12": "https://t.me/tribute/app?startapp=subscription_12",
+		},
+	});
 	mockApi.seedSponsorOffers([
 		{ ...sharedOffer, title: "One month", id: "30000000-0000-4000-8000-000000000001" },
 		{ ...sharedOffer, title: "Three months", id: "30000000-0000-4000-8000-000000000002" },
@@ -1582,7 +1677,7 @@ test("admin publishes exact one-time and recurring donation choices from one rul
 				request.method() === "POST" &&
 				new URL(request.url()).pathname === "/api/debug/admin/commerce/offers",
 		);
-		await page.getByRole("button", { name: "Create offer" }).click();
+		await submitEditor(page.getByRole("dialog", { name: "Create sponsor offer" }));
 		const request = await requestPromise;
 		const input = request.postDataJSON() as Record<string, unknown>;
 		expect(input.checkoutUrl).toBe(link);

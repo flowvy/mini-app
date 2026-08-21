@@ -141,7 +141,6 @@ test("nested task routes keep tab navigation out of the keyboard lifecycle", asy
 
 	const shell = page.locator('main[data-scroll-restoration-id="main-content"]').locator("..");
 	const dialog = page.getByRole("dialog", { name: "Create access profile" });
-	const footer = dialog.locator("footer");
 	const name = page.getByLabel("Name");
 	const restoredViewportHeight = await page.evaluate(() => window.innerHeight);
 
@@ -164,8 +163,7 @@ test("nested task routes keep tab navigation out of the keyboard lifecycle", asy
 	const shrunkGeometry = await Promise.all([shell.boundingBox(), dialog.boundingBox()]);
 	expect(shrunkGeometry).toEqual(initialGeometry);
 	await expect(page.getByRole("navigation")).toHaveCount(0);
-	await expect(footer).not.toHaveAttribute("aria-hidden", "true");
-	await expect(footer).toBeVisible();
+	await expect(dialog.locator("footer")).toHaveCount(0);
 	await expect(name).toBeFocused();
 	expect(
 		await page.evaluate(() => ({
@@ -183,6 +181,58 @@ test("nested task routes keep tab navigation out of the keyboard lifecycle", asy
 			),
 	);
 	expect(await Promise.all([shell.boundingBox(), dialog.boundingBox()])).toEqual(initialGeometry);
+});
+
+test("native-only save actions never render DOM fallback buttons", async ({ page, mockApi }) => {
+	await page.goto("/admin/settings/access");
+	await page.getByRole("button", { name: "Create profile" }).click();
+	const accessEditor = page.getByRole("dialog", { name: "Create access profile" });
+	await expect(
+		accessEditor.getByRole("button", { name: "Create profile", exact: true }),
+	).toHaveCount(0);
+	await expect(accessEditor.locator("footer")).toHaveCount(0);
+	await accessEditor.getByRole("button", { name: "Close editor" }).click();
+
+	for (const path of [
+		"/admin/settings/kuma",
+		"/admin/settings/beszel",
+		"/admin/settings/branding",
+		"/admin/settings/welcome",
+	]) {
+		await page.goto(path);
+		await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
+	}
+
+	mockApi.seedCommerceRules([
+		{
+			id: "10000000-0000-4000-8000-000000000001",
+			provider: "tribute",
+			name: "Native-only automation rule",
+			commerceType: "donation",
+			paymentMode: "any",
+			externalItemId: null,
+			currency: "RUB",
+			calculationType: "fixed",
+			fixedDurationDays: 30,
+			amountBands: [],
+			accessProfileId: "00000000-0000-4000-8000-000000000001",
+			grantMode: "extend",
+			priority: 100,
+			isEnabled: true,
+		},
+	]);
+	await page.goto("/admin/settings/tribute");
+	await page.getByRole("button", { name: /Native-only automation rule/ }).click();
+	const ruleEditor = page.getByRole("dialog", { name: "Edit automation rule" });
+	await expect(ruleEditor.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
+	await ruleEditor.getByRole("button", { name: "Close rule editor" }).click();
+
+	await page.getByRole("button", { name: "Create first offer" }).click();
+	const offerEditor = page.getByRole("dialog", { name: "Create sponsor offer" });
+	await expect(offerEditor.getByRole("button", { name: "Create offer", exact: true })).toHaveCount(
+		0,
+	);
+	await expect(offerEditor.locator("footer")).toHaveCount(0);
 });
 
 test("supported Telegram clients receive native editor bottom buttons", async ({

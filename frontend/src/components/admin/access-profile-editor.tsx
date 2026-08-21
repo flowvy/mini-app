@@ -14,7 +14,6 @@ import {
 	type ProviderUserStatus,
 	isProviderUserStatus,
 } from "../../types/user-status.ts";
-import { ActionBtn } from "../ui/action-btn.tsx";
 import { EditorDialog } from "../ui/editor-dialog.tsx";
 import {
 	FormField,
@@ -184,18 +183,6 @@ export function AccessProfileEditor({
 				primaryText: profile ? t("common.save") : t("access.createProfile"),
 				primaryDisabled: !valid,
 			}}
-			footer={
-				<ActionBtn
-					type="submit"
-					variant="confirm"
-					size="md"
-					className={styles.submitButton}
-					disabled={!valid}
-					loading={save.isPending}
-				>
-					{profile ? t("common.save") : t("access.createProfile")}
-				</ActionBtn>
-			}
 		>
 			{optionsState === "error" && (
 				<InlineFeedback>{t("access.providerOptionsUnavailable")}</InlineFeedback>

@@ -386,8 +386,7 @@ test("capture the flexible Tribute donation rule editor", async ({ page, mockApi
 		const ruleDialog = page.getByRole("dialog", { name: "Create automation rule" });
 		const focusedCurrency = page.getByLabel("Currency");
 		await focusedCurrency.focus();
-		await expect(ruleDialog.locator("footer")).not.toHaveAttribute("aria-hidden", "true");
-		await expect(ruleDialog.locator("footer")).toBeVisible();
+		await expect(ruleDialog.locator("footer")).toHaveCount(0);
 		await page.screenshot({
 			path: testInfo.outputPath(`admin-settings-tribute-rule-focused-${colorScheme}.png`),
 			animations: "disabled",

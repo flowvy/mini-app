@@ -119,11 +119,6 @@
 	flex: 0 0 20px;
 }
 
-.submitButton {
-	min-width: 124px;
-	min-height: 42px;
-}
-
 @media (max-width: 350px) {
 	.fields {
 		padding: 12px;
@@ -131,11 +126,5 @@
 
 	.twoColumns {
 		grid-template-columns: 1fr;
-	}
-}
-
-@media (max-width: 600px) {
-	.submitButton {
-		min-width: 0;
 	}
 }

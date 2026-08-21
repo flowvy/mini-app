@@ -7,7 +7,6 @@ import {
 	useEffect,
 	useId,
 	useRef,
-	useState,
 } from "react";
 import { createPortal } from "react-dom";
 import { useBackNavigationHandler } from "../../contexts/back-navigation-context.tsx";
@@ -20,7 +19,6 @@ import styles from "./editor-dialog.module.css";
 
 const FOCUSABLE =
 	'button:not([disabled]), summary, [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
 function isVisibleFocusTarget(element: HTMLElement): boolean {
 	const closedDetails = element.closest("details:not([open])");
 	if (closedDetails && closedDetails.querySelector(":scope > summary") !== element) return false;
@@ -43,7 +41,6 @@ interface EditorDialogProps {
 	onClose: () => void;
 	onSubmit: FormEventHandler<HTMLFormElement>;
 	children: ReactNode;
-	footer: ReactNode;
 	telegramFooter?: TelegramFooterActions;
 }
 
@@ -58,7 +55,6 @@ export function EditorDialog({
 	onClose,
 	onSubmit,
 	children,
-	footer,
 	telegramFooter,
 }: EditorDialogProps) {
 	const titleId = useId();
@@ -68,7 +64,6 @@ export function EditorDialog({
 	const busyRef = useRef(busy);
 	const telegramButtonsRef = useRef<TelegramEditorButtonsController | null>(null);
 	const initialTelegramFooterRef = useRef(telegramFooter);
-	const [usesTelegramFooter, setUsesTelegramFooter] = useState(false);
 	const previousFocusRef = useRef<HTMLElement | null>(
 		returnFocusTo ??
 			(document.activeElement instanceof HTMLElement ? document.activeElement : null),
@@ -115,7 +110,6 @@ export function EditorDialog({
 			},
 		);
 		telegramButtonsRef.current = controller;
-		setUsesTelegramFooter(controller !== null);
 
 		return () => {
 			controller?.destroy();
@@ -140,7 +134,6 @@ export function EditorDialog({
 		if (!updated) {
 			telegramButtonsRef.current.destroy();
 			telegramButtonsRef.current = null;
-			setUsesTelegramFooter(false);
 		}
 	}, [busy, telegramPrimaryDisabled, telegramPrimaryText, telegramPrimaryVisible]);
 
@@ -202,7 +195,6 @@ export function EditorDialog({
 					</ActionBtn>
 				</header>
 				<div className={styles.body}>{children}</div>
-				{!usesTelegramFooter && <footer className={styles.footer}>{footer}</footer>}
 			</form>
 		</dialog>,
 		document.body,

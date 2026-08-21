@@ -103,14 +103,17 @@ Primary evidence, проверено 2026-08-04, 2026-08-08 и 2026-08-21:
   недостаточно часто для плавной привязки нижнего UI, а `viewportStableHeight` меняется только после
   завершения жеста или анимации. Flowvy не привязывает shell или dialog к этим значениям.
 - [Telegram Mini Apps BottomButton](https://core.telegram.org/bots/webapps#bottombutton), проверено
-  2026-08-21: `MainButton` и Bot API 7.10+ `SecondaryButton` рисуются в нижнем интерфейсе самого
+  2026-08-22: `MainButton` и Bot API 7.10+ `SecondaryButton` рисуются в нижнем интерфейсе самого
   Telegram. Flowvy fullscreen editors и выделенные Kuma/Beszel/Identity/Welcome settings task routes
   используют только `MainButton` для primary create/save action; section-scoped Tribute payment-link
   save остаётся DOM action внутри общего route. `SecondaryButton` не создаётся, потому что закрытие
   editor уже доступно через header close и `Escape`. Locked Telegram Apps SDK 3.11.8 проверяет
-  capability `MainButton`; одна обычная DOM primary-кнопка остаётся UI fallback для browser и старых
-  клиентов. Native action скрывается при открытом discard/delete confirmation и уничтожается при
-  уходе с task. `color`, `text_color` и `is_active` передаются явно:
+  capability `MainButton`; Flowvy намеренно не рисует DOM replacement для этих native primary
+  actions. Если client bridge отсутствует или отвергает mount/update, fullscreen editor либо
+  выделенный settings task остаётся без create/save action. Это fail-closed поведение позволяет
+  отдельно подтвердить фактическую совместимость Swiftgram. Native action скрывается при открытом
+  discard/delete confirmation и уничтожается при уходе с task. `color`, `text_color` и `is_active`
+  передаются явно:
   native footer повторяет adaptive Flowvy tokens, а недоступный primary action визуально сохраняет
   прежнюю 40% disabled-палитру вместо активной Telegram-blue заливки.
 - [MDN VisualViewport](https://developer.mozilla.org/en-US/docs/Web/API/VisualViewport): экранная
@@ -469,7 +472,12 @@ target expiry всегда приходит из проверенного rule r
 
 `sponsor_offers` отделяет пользовательское название, мотивационное описание и порядок от
 платёжного правила. Draft не требует provider request. Публикация fail-closed проверяет enabled
-rule, active profile и актуальный subscription catalog либо точные donation условия. Снятие с
+rule, active profile, сохранённый subscription destination и актуальный subscription catalog либо
+точные donation условия. Admin editor заранее помечает `Visible on Home` как `aria-disabled`, если
+для выбранной subscription нет сохранённого destination, и указывает исправление в `Payment links`.
+Backend повторяет проверку на случай гонки и возвращает стабильный
+`tribute_subscription_destination_missing`; frontend локализует code, не разбирая English detail.
+Снятие с
 публикации не зависит от Tribute: snapshot очищается в SQL `NULL`, а редактируемые поля сохраняются;
 повторная публикация снова проверяет provider facts и создаёт новый snapshot. Одна catalog
 subscription представлена одним rule и одним опубликованным offer со всеми provider periods/prices;

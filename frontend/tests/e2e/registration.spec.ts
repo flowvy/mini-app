@@ -1,5 +1,15 @@
 import AxeBuilder from "@axe-core/playwright";
+import type { Locator } from "@playwright/test";
 import { assertNoHorizontalOverflow, expect, test } from "./fixtures/mock-api.ts";
+import {
+	installTelegramMainButton,
+	latestTelegramMainButton,
+	withTelegramMainButton,
+} from "./fixtures/telegram-main-button.ts";
+
+async function submitEditor(dialog: Locator): Promise<void> {
+	await dialog.locator("form").evaluate((form) => (form as HTMLFormElement).requestSubmit());
+}
 
 const registeredUser = {
 	id: 42,
@@ -146,10 +156,7 @@ test("admin configures registration policy and the global access profile", async
 	await page.getByLabel("Remnawave tag").selectOption("FREE_TRIAL");
 	await page.getByRole("checkbox", { name: "Primary" }).check();
 	await page.getByLabel("External squad").selectOption({ label: "Public" });
-	await page
-		.getByRole("dialog", { name: "Create access profile" })
-		.getByRole("button", { name: "Create profile", exact: true })
-		.click();
+	await submitEditor(page.getByRole("dialog", { name: "Create access profile" }));
 	await expect(page.getByRole("strong").filter({ hasText: "Weekend trial" })).toBeVisible();
 	await page.getByRole("button", { name: "Edit access profile" }).last().click();
 	await page.getByText("Advanced Remnawave fields").focus();
@@ -197,10 +204,7 @@ test("automation-managed profile stores no local expiry and stays out of registr
 			request.method() === "POST" &&
 			new URL(request.url()).pathname === "/api/debug/admin/registration/access-profiles",
 	);
-	await page
-		.getByRole("dialog", { name: "Create access profile" })
-		.getByRole("button", { name: "Create profile", exact: true })
-		.click();
+	await submitEditor(page.getByRole("dialog", { name: "Create access profile" }));
 	const request = await requestPromise;
 	expect(request.postDataJSON()).toMatchObject({
 		name: "Sponsor benefits",
@@ -221,7 +225,8 @@ test("registration default explains why automation-managed expiry cannot be sele
 	page,
 	mockApi: _mock,
 }) => {
-	await page.goto("/admin/settings/access");
+	await installTelegramMainButton(page);
+	await page.goto(withTelegramMainButton("/admin/settings/access"));
 	await page.getByLabel("Default access").selectOption({ label: "Free 30 days" });
 	await page.getByRole("button", { name: "Edit access profile" }).click();
 	await page.getByRole("radio", { name: "Automation" }).click();
@@ -230,7 +235,10 @@ test("registration default explains why automation-managed expiry cannot be sele
 			"This profile is the registration default. Choose another default access profile before using automation-controlled expiry",
 		),
 	).toBeVisible();
-	await expect(page.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+	await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
+	await expect
+		.poll(() => latestTelegramMainButton(page))
+		.toEqual(expect.objectContaining({ text: "Save", is_active: false, is_visible: true }));
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -321,7 +329,7 @@ test("access profile editor traps focus, passes Axe, and returns focus to its tr
 	await expect(dialog.locator("summary")).toBeFocused();
 	await page.keyboard.press("Tab");
 	await expect(closeEditor).toBeFocused();
-	await expect(dialog.getByRole("button", { name: "Create profile" })).toBeDisabled();
+	await expect(dialog.getByRole("button", { name: "Create profile", exact: true })).toHaveCount(0);
 	await expect(dialog.getByRole("button", { name: "Cancel" })).toHaveCount(0);
 
 	const result = await new AxeBuilder({ page }).include("dialog").analyze();
@@ -371,11 +379,7 @@ test("access editor fails safely when Remnawave options are unavailable", async 
 	await page.keyboard.press("Enter");
 	await expect(page.getByLabel("Remnawave tag")).toBeDisabled();
 	await page.getByPlaceholder("Free 30 days").fill("Local trial");
-	const submit = page
-		.getByRole("dialog", { name: "Create access profile" })
-		.getByRole("button", { name: "Create profile", exact: true });
-	await expect(submit).toBeEnabled();
-	await submit.click();
+	await submitEditor(page.getByRole("dialog", { name: "Create access profile" }));
 	await expect(page.getByRole("strong").filter({ hasText: "Local trial" })).toBeVisible();
 });
 

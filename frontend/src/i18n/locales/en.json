@@ -658,6 +658,7 @@
 				"publishHint": "Publishing validates the current destination and freezes its payment facts for display and checkout matching",
 				"publishLabel": "Publish this sponsor offer",
 				"publishUnavailable": "Enable the linked automation rule before publishing. Donation offers also need a link, an amount, and an exact payment choice",
+				"publishMissingSubscriptionDestination": "Add a Tribute payment link for this subscription in Payment links before making it visible on Home",
 				"publishDuplicateSubscription": "This Tribute subscription is already published. One offer contains all of its billing periods",
 				"createAction": "Create offer",
 				"saveAction": "Save offer",

@@ -1,5 +1,10 @@
 import AxeBuilder from "@axe-core/playwright";
 import { assertNoHorizontalOverflow, expect, mockData, test } from "./fixtures/mock-api.ts";
+import {
+	installTelegramMainButton,
+	pressTelegramMainButton,
+	withTelegramMainButton,
+} from "./fixtures/telegram-main-button.ts";
 
 test("authentication retry and direct admin denial are explicit", async ({
 	page,
@@ -495,6 +500,7 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 	page,
 	mockApi,
 }) => {
+	await installTelegramMainButton(page);
 	mockApi.mock("PATCH", "/api/debug/admin/settings", {
 		status: 500,
 		body: { detail: "Save failed" },
@@ -504,7 +510,7 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 		body: { detail: "Test failed" },
 	});
 
-	await page.goto("/admin/settings");
+	await page.goto(withTelegramMainButton("/admin/settings"));
 	await page.getByRole("button", { name: /^Uptime Kuma Public status page/ }).click();
 	const urlInput = page.getByPlaceholder("https://status.example.com");
 	await urlInput.fill("https://new-status.example.test");
@@ -521,14 +527,14 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 
 	await page.getByRole("button", { name: "Test" }).click();
 	await expect(page.getByRole("alert")).toContainText("Connection test failed");
-	await page.getByRole("button", { name: "Save" }).click();
+	await pressTelegramMainButton(page);
 	await expect(page.getByText("Could not save changes. Try again")).toBeVisible();
 
 	mockApi.mock("POST", "/api/debug/admin/settings/welcome-media", [
 		{ status: 413, body: { detail: "Too large" } },
 		{ body: { fileId: "telegram-file-1", fileName: "welcome.mp4", mediaType: "animation" } },
 	]);
-	await page.goto("/admin/settings/welcome");
+	await page.goto(withTelegramMainButton("/admin/settings/welcome"));
 	const fileInput = page.locator('input[type="file"]');
 	await fileInput.setInputFiles({
 		name: "too-large.mp4",
@@ -549,9 +555,10 @@ test("provider identity updates the user experience without a reload", async ({
 	page,
 	mockApi: _mock,
 }) => {
-	await page.goto("/admin/settings/branding");
+	await installTelegramMainButton(page);
+	await page.goto(withTelegramMainButton("/admin/settings/branding"));
 	await page.getByLabel("App Name").fill("Northstar Proxy");
-	await page.getByRole("button", { name: "Save" }).click();
+	await pressTelegramMainButton(page);
 
 	await expect(page).toHaveTitle("Northstar Proxy");
 	await page.getByRole("button", { name: "User mode" }).click();
@@ -612,8 +619,9 @@ test("enabling a configured Beszel source exposes Pulse without reloading", asyn
 	page,
 	mockApi,
 }) => {
+	await installTelegramMainButton(page);
 	mockApi.seedSettings({ pulseProvider: "disabled", beszelUrl: null });
-	await page.goto("/admin/settings");
+	await page.goto(withTelegramMainButton("/admin/settings"));
 	await page.evaluate(() => {
 		(window as typeof window & { __flowvyDocumentMarker?: string }).__flowvyDocumentMarker =
 			"same-document";
@@ -625,12 +633,12 @@ test("enabling a configured Beszel source exposes Pulse without reloading", asyn
 	const settingsReadsBeforeSave = mockApi.calls.filter(
 		(call) => call === "GET /api/debug/admin/settings",
 	).length;
-	await page.getByRole("button", { name: "Save" }).click();
+	await pressTelegramMainButton(page);
 	await expect
 		.poll(() => mockApi.calls.filter((call) => call === "GET /api/debug/admin/settings").length)
 		.toBeGreaterThan(settingsReadsBeforeSave);
 	await page.goBack();
-	await expect(page).toHaveURL(/\/admin\/settings$/);
+	await expect(page).toHaveURL(/\/admin\/settings(?:\?|$)/);
 	await expect(page.getByRole("dialog", { name: "Discard changes?" })).toHaveCount(0);
 	const currentProvider = page.getByRole("radiogroup", { name: "Pulse source" });
 	await expect(currentProvider).toBeVisible();

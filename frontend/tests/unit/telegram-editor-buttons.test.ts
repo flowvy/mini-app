@@ -118,7 +118,7 @@ describe("Telegram editor main button", () => {
 		controller?.destroy();
 	});
 
-	it("keeps the DOM fallback when Telegram MainButton is not available", async () => {
+	it("reports unavailable MainButton without mounting a native action", async () => {
 		sdk.mainButton.mount.isAvailable.mockReturnValue(false);
 		const { mountTelegramEditorButtons } = await import("../../src/lib/telegram-editor-buttons.ts");
 

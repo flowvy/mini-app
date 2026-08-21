@@ -46,9 +46,19 @@ TRIBUTE_MANAGEMENT_URL = "https://t.me/tribute"
 class SponsorOfferError(ValueError):
     """Safe offer validation error."""
 
+    code = "sponsor_offer_invalid"
+
 
 class SponsorOfferNotFoundError(SponsorOfferError):
     """Requested offer is absent."""
+
+    code = "sponsor_offer_not_found"
+
+
+class SponsorOfferDestinationMissingError(SponsorOfferError):
+    """The selected provider item has no configured checkout destination."""
+
+    code = "tribute_subscription_destination_missing"
 
 
 class SponsorCheckoutConflictError(ValueError):
@@ -250,7 +260,9 @@ class SponsorOfferService:
                 subscription.external_item_id,
             )
             if checkout_url is None:
-                raise SponsorOfferError("Tribute subscription destination is not configured")
+                raise SponsorOfferDestinationMissingError(
+                    "Tribute subscription destination is not configured"
+                )
             price_options = [
                 SponsorOfferPriceOption(
                     price_major=period.price_major,
@@ -692,6 +704,7 @@ class SponsorStateService:
 __all__ = [
     "TRIBUTE_MANAGEMENT_URL",
     "SponsorCheckoutConflictError",
+    "SponsorOfferDestinationMissingError",
     "SponsorOfferError",
     "SponsorOfferNotFoundError",
     "SponsorOfferService",

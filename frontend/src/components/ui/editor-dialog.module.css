@@ -92,20 +92,6 @@
 	flex: 0 0 auto;
 }
 
-.footer {
-	display: flex;
-	align-items: center;
-	justify-content: flex-end;
-	gap: 8px;
-	padding: 12px 18px 14px;
-	border-top: 1px solid var(--v2-border-tertiary);
-	background: var(--v2-floor-0);
-}
-
-.footer > button {
-	min-height: 42px;
-}
-
 @media (max-width: 350px) {
 	.body {
 		padding: 12px;
@@ -135,13 +121,5 @@
 			var(--tg-viewport-safe-area-inset-top, 0px) +
 			var(--tg-viewport-content-safe-area-inset-top, 0px)
 		);
-	}
-
-	.footer {
-		padding-bottom: max(14px, var(--tg-viewport-safe-area-inset-bottom, 0px));
-	}
-
-	.footer > button {
-		flex: 1;
 	}
 }

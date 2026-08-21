@@ -155,7 +155,8 @@ preview/no-match, subscription provider-expiry без локального ра�
 subscription catalog loading/select/empty/error/retry и сохранение legacy item ID,
 payment destination loading/empty/error/retry/save/clear, unavailable subscription mapping,
 local URL validation, dirty/discard, safe mutation failure и success,
-admin sponsor-offer empty/draft/create/publish-guard presentation, donation amount/mode/frequency
+admin sponsor-offer empty/draft/create, focusable missing-destination publish guard, сохранение
+destination без reload и stable-code race fallback, donation amount/mode/frequency
 controls, один постоянно видимый fixed toolbar и link validation во всех input modes, отсутствие
 pointer-dependent app popup, немедленное WYSIWYG-форматирование, roving tab stop и
 arrow/Home/End-навигацию toolbar, сохранение CommonMark source и тот
@@ -174,8 +175,9 @@ server-approved operator retry/resolve, обязательную resolution note
 mutation failure с повтором того же request UUID, success feedback и resolved/retry audit copy,
 нативные input/IME semantics без synthetic blur, отсутствие application-owned viewport CSS
 variables и неизменную shell/dialog geometry при visual viewport resize, loading spinner без SVG
-backing box, Telegram-native Main-only editor actions с enabled/loading/cleanup bridge events и
-DOM fallback вне поддерживаемого client, light-mode axe, overflow и визуальные evidence screenshots.
+backing box, Telegram-native Main-only editor actions с enabled/loading/cleanup bridge events,
+отсутствие DOM replacement при недоступном client bridge, light-mode axe, overflow и визуальные
+evidence screenshots.
 
 `test:e2e:live` намеренно исключён из обычного/CI suite. Сначала запустите `scripts/dev-up.ps1`,
 проверьте redacted target и только затем выполняйте его: сценарий читает Home, Devices, admin

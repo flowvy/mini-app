@@ -126,8 +126,16 @@ function offerInput(offer: SponsorOffer): SponsorOfferInput {
 	};
 }
 
-function canPublish(rule: CommerceRule | undefined, donationConfigured = true): boolean {
-	return Boolean(rule?.isEnabled && (rule.commerceType !== "donation" || donationConfigured));
+function canPublish(
+	rule: CommerceRule | undefined,
+	donationConfigured = true,
+	subscriptionConfigured = true,
+): boolean {
+	return Boolean(
+		rule?.isEnabled &&
+			(rule.commerceType !== "donation" || donationConfigured) &&
+			(rule.commerceType !== "subscription" || subscriptionConfigured),
+	);
 }
 
 function hasPublishedSubscription(
@@ -156,7 +164,11 @@ function donationOfferConfigured(offer: SponsorOffer): boolean {
 	);
 }
 
-export function SponsorOffersConfig() {
+interface SponsorOffersConfigProps {
+	subscriptionUrls: Record<string, string>;
+}
+
+export function SponsorOffersConfig({ subscriptionUrls }: SponsorOffersConfigProps) {
 	const { t, i18n } = useTranslation();
 	const offers = useSponsorOffers();
 	const rules = useCommerceRules();
@@ -257,6 +269,13 @@ export function SponsorOffersConfig() {
 					<div className={offerStyles.offerList}>
 						{allOffers.map((offer) => {
 							const rule = rulesById.get(offer.commerceRuleId);
+							const subscriptionDestination = rule?.externalItemId
+								? subscriptionUrls[rule.externalItemId]
+								: undefined;
+							const subscriptionDestinationConfigured = Boolean(
+								subscriptionDestination?.trim() &&
+									paymentDestinationIssue(subscriptionDestination) === null,
+							);
 							const subscriptionGroup = offer.externalItemId
 								? subscriptionGroups.get(offer.externalItemId)
 								: undefined;
@@ -289,6 +308,7 @@ export function SponsorOffersConfig() {
 												(rule.paymentMode === "any" ||
 													rule.paymentMode === offer.expectedPaymentMode),
 										),
+									subscriptionDestinationConfigured,
 								);
 							if (compactDuplicate) {
 								return (
@@ -443,6 +463,7 @@ export function SponsorOffersConfig() {
 					offer={editor.offer}
 					rules={rules.data}
 					offers={offers.data ?? []}
+					subscriptionUrls={subscriptionUrls}
 					returnFocusTo={editor.returnFocusTo}
 					onClose={() => setEditor(null)}
 				/>
@@ -455,6 +476,7 @@ interface SponsorOfferEditorProps {
 	offer: SponsorOffer | null;
 	rules: CommerceRule[];
 	offers: SponsorOffer[];
+	subscriptionUrls: Record<string, string>;
 	returnFocusTo: HTMLElement | null;
 	onClose: () => void;
 }
@@ -463,6 +485,7 @@ function SponsorOfferEditor({
 	offer,
 	rules,
 	offers,
+	subscriptionUrls,
 	returnFocusTo,
 	onClose,
 }: SponsorOfferEditorProps) {
@@ -490,6 +513,12 @@ function SponsorOfferEditor({
 			);
 	const sortOrder = /^\d+$/.test(draft.sortOrder) ? Number(draft.sortOrder) : 0;
 	const isDonation = selectedRule?.commerceType === "donation";
+	const subscriptionDestination = selectedRule?.externalItemId
+		? subscriptionUrls[selectedRule.externalItemId]
+		: undefined;
+	const subscriptionDestinationConfigured = Boolean(
+		subscriptionDestination?.trim() && paymentDestinationIssue(subscriptionDestination) === null,
+	);
 	const checkoutIssue = paymentDestinationIssue(draft.checkoutUrl);
 	const amountMinor = selectedRule ? majorToMinor(draft.amountMajor, selectedRule.currency) : null;
 	const donationDestinationEmpty = !draft.checkoutUrl.trim() && !draft.amountMajor.trim();
@@ -513,6 +542,9 @@ function SponsorOfferEditor({
 		selectedRule?.commerceType === "subscription" &&
 			hasPublishedSubscription(offers, selectedRule.externalItemId, offer?.id),
 	);
+	const publishReady =
+		!duplicateSubscription &&
+		canPublish(selectedRule, donationDestinationComplete, subscriptionDestinationConfigured);
 	const valid =
 		draft.title.trim().length >= 1 &&
 		draft.title.trim().length <= 100 &&
@@ -522,8 +554,7 @@ function SponsorOfferEditor({
 		sortOrder >= 1 &&
 		sortOrder <= 10_000 &&
 		donationDestinationValid &&
-		(!draft.isPublished ||
-			(!duplicateSubscription && canPublish(selectedRule, donationDestinationComplete)));
+		(!draft.isPublished || publishReady);
 	const busy = save.isPending || remove.isPending;
 
 	const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -566,19 +597,6 @@ function SponsorOfferEditor({
 					primaryDisabled: !valid,
 					primaryVisible: !confirmDelete,
 				}}
-				footer={
-					<ActionBtn
-						type="submit"
-						variant="confirm"
-						size="md"
-						loading={save.isPending}
-						disabled={!valid}
-					>
-						{offer
-							? t("settings.tribute.offers.saveAction")
-							: t("settings.tribute.offers.createAction")}
-					</ActionBtn>
-				}
 			>
 				<section className={editorStyles.card} aria-labelledby="sponsor-offer-copy-title">
 					<h3 id="sponsor-offer-copy-title" className={editorStyles.cardTitle}>
@@ -795,21 +813,23 @@ function SponsorOfferEditor({
 						</FormField>
 						<div className={editorStyles.providerExpiry}>
 							<strong>{t("settings.tribute.offers.publishTitle")}</strong>
-							<span>
-								{!duplicateSubscription && canPublish(selectedRule, donationDestinationComplete)
+							<span id="sponsor-offer-publish-hint">
+								{publishReady
 									? t("settings.tribute.offers.publishHint")
 									: t(
 											duplicateSubscription
 												? "settings.tribute.offers.publishDuplicateSubscription"
-												: "settings.tribute.offers.publishUnavailable",
+												: selectedRule?.commerceType === "subscription" &&
+														!subscriptionDestinationConfigured
+													? "settings.tribute.offers.publishMissingSubscriptionDestination"
+													: "settings.tribute.offers.publishUnavailable",
 										)}
 							</span>
 							<Toggle
 								checked={draft.isPublished}
-								disabled={
-									!draft.isPublished &&
-									(duplicateSubscription || !canPublish(selectedRule, donationDestinationComplete))
-								}
+								disabled={!draft.isPublished && duplicateSubscription}
+								ariaDisabled={!draft.isPublished && !duplicateSubscription && !publishReady}
+								ariaDescribedBy="sponsor-offer-publish-hint"
 								ariaLabel={t("settings.tribute.offers.publishLabel")}
 								onChange={(isPublished) => setDraft({ ...draft, isPublished })}
 							/>

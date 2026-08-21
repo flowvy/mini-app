@@ -12,7 +12,8 @@
 	box-sizing: border-box;
 }
 
-.track:disabled {
+.track:disabled,
+.track[aria-disabled="true"] {
 	opacity: 0.4;
 	cursor: not-allowed;
 }

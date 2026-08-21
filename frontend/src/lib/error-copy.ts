@@ -8,6 +8,8 @@ const ERROR_CODE_KEYS: Record<string, string> = {
 	invite_rate_limited: "onboarding.error.rateLimited",
 	registration_failed: "onboarding.error.unavailable",
 	registration_unavailable: "onboarding.error.unavailable",
+	tribute_subscription_destination_missing:
+		"settings.tribute.offers.publishMissingSubscriptionDestination",
 };
 
 /** Resolve stable machine error codes to locale copy without exposing transport diagnostics. */

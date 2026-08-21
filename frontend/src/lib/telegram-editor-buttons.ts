@@ -64,7 +64,7 @@ function resolveButtonColors(state: TelegramEditorButtonState): TelegramEditorBu
 
 /**
  * Uses Telegram's rendered MainButton for a screen's primary action.
- * Callers keep their DOM action as the browser and older-client fallback.
+ * Native-only callers deliberately render no DOM replacement when this capability is unavailable.
  */
 export function mountTelegramEditorButtons(
 	state: TelegramEditorButtonState,

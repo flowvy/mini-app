@@ -36,13 +36,29 @@ from flowvy.services.entitlements import (
     EntitlementOperationConflictError,
     EntitlementOperationNotFoundError,
 )
-from flowvy.services.sponsor import SponsorOfferError, SponsorOfferService
+from flowvy.services.sponsor import (
+    SponsorOfferError,
+    SponsorOfferNotFoundError,
+    SponsorOfferService,
+)
 
 router = APIRouter(
     prefix="/api/debug/admin/commerce",
     tags=["debug-admin-commerce"],
     route_class=DishkaRoute,
 )
+
+
+def _sponsor_offer_error(exc: SponsorOfferError) -> HTTPException:
+    code = (
+        status.HTTP_404_NOT_FOUND
+        if isinstance(exc, SponsorOfferNotFoundError)
+        else status.HTTP_422_UNPROCESSABLE_CONTENT
+    )
+    return HTTPException(
+        code,
+        detail={"code": exc.code, "message": str(exc)},
+    )
 
 
 @router.get("/offers", response_model=list[SponsorOfferResponse])
@@ -68,7 +84,7 @@ async def debug_create_sponsor_offer(
     try:
         return await service.create(payload, None)
     except SponsorOfferError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+        raise _sponsor_offer_error(exc) from exc
 
 
 @router.put("/offers/{offer_id}", response_model=SponsorOfferResponse)
@@ -82,7 +98,7 @@ async def debug_update_sponsor_offer(
     try:
         return await service.update(offer_id, payload)
     except SponsorOfferError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+        raise _sponsor_offer_error(exc) from exc
 
 
 @router.delete("/offers/{offer_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -95,7 +111,7 @@ async def debug_delete_sponsor_offer(
     try:
         await service.delete(offer_id)
     except SponsorOfferError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(exc)) from exc
+        raise _sponsor_offer_error(exc) from exc
 
 
 @router.get("/catalog", response_model=CommerceCatalogResponse)

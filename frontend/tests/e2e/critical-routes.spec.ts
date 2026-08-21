@@ -201,22 +201,10 @@ test("user and admin pages share one external vertical rhythm", async ({
 
 	await page.goto("/admin/settings/welcome");
 	await expect(page.getByRole("heading", { name: "Content" })).toBeVisible();
-	const welcomeSaveGap = await page.getByRole("button", { name: "Save" }).evaluate((button) => {
-		const wrapper = button.parentElement;
-		const section = wrapper?.previousElementSibling;
-		if (!wrapper || !section) throw new Error("Welcome save structure is incomplete");
-		return wrapper.getBoundingClientRect().top - section.getBoundingClientRect().bottom;
-	});
-	expect(welcomeSaveGap).toBeCloseTo(SECTION_GAP, 1);
+	await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
 
 	await page.goto("/admin/settings/beszel");
-	const saveGap = await page.getByRole("button", { name: "Save" }).evaluate((button) => {
-		const wrapper = button.parentElement;
-		const footer = wrapper?.previousElementSibling;
-		if (!wrapper || !footer) throw new Error("Settings save structure is incomplete");
-		return wrapper.getBoundingClientRect().top - footer.getBoundingClientRect().bottom;
-	});
-	expect(saveGap).toBeCloseTo(SECTION_GAP, 1);
+	await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
 });
 
 test("admin routes render deterministic success and placeholder states", async ({

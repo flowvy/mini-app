@@ -1,4 +1,4 @@
-import { type FC, useEffect, useRef, useState } from "react";
+import { type FC, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	type TelegramEditorButtonsController,
@@ -37,7 +37,6 @@ export const FormSaveButton: FC<FormSaveButtonProps> = ({
 		primaryVisible: telegramMainButtonVisible,
 	});
 	const controllerRef = useRef<TelegramEditorButtonsController | null>(null);
-	const [usesTelegramMainButton, setUsesTelegramMainButton] = useState(false);
 	onSaveRef.current = onSave;
 	nativeStateRef.current = {
 		primaryText: buttonLabel,
@@ -52,7 +51,6 @@ export const FormSaveButton: FC<FormSaveButtonProps> = ({
 			onPrimary: () => onSaveRef.current(),
 		});
 		controllerRef.current = controller;
-		setUsesTelegramMainButton(controller !== null);
 		return () => {
 			controller?.destroy();
 			controllerRef.current = null;
@@ -74,10 +72,9 @@ export const FormSaveButton: FC<FormSaveButtonProps> = ({
 		}
 		controller.destroy();
 		controllerRef.current = null;
-		setUsesTelegramMainButton(false);
 	}, [active, buttonLabel, loading, telegramMainButtonVisible]);
 
-	if (usesTelegramMainButton) return null;
+	if (telegramMainButton) return null;
 
 	return (
 		<div className={styles.wrapper}>

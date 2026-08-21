@@ -88,7 +88,7 @@ export const TributeConfig: FC<TributeConfigProps> = ({ settings }) => {
 
 			<TributePaymentDestinations settings={settings} />
 			<CommerceRulesConfig />
-			<SponsorOffersConfig />
+			<SponsorOffersConfig subscriptionUrls={settings.tributeSubscriptionUrls} />
 			<CommerceActivity />
 		</div>
 	);

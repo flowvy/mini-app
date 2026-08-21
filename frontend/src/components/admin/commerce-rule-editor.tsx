@@ -315,17 +315,6 @@ export function CommerceRuleEditor({
 					primaryDisabled: !input,
 					primaryVisible: !confirmDelete,
 				}}
-				footer={
-					<ActionBtn
-						type="submit"
-						variant="confirm"
-						size="md"
-						disabled={!input}
-						loading={save.isPending}
-					>
-						{rule ? t("common.save") : t("settings.tribute.rules.createAction")}
-					</ActionBtn>
-				}
 			>
 				<section className={styles.card} aria-labelledby="commerce-match-title">
 					<h3 id="commerce-match-title" className={styles.cardTitle}>
