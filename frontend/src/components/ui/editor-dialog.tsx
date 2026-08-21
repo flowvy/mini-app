@@ -10,6 +10,7 @@ import {
 	useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useBackNavigationHandler } from "../../contexts/back-navigation-context.tsx";
 import {
 	type TelegramEditorButtonsController,
 	mountTelegramEditorButtons,
@@ -77,6 +78,9 @@ export function EditorDialog({
 	const telegramPrimaryDisabled = telegramFooter?.primaryDisabled;
 	const telegramPrimaryVisible = telegramFooter?.primaryVisible;
 	busyRef.current = busy;
+	useBackNavigationHandler(() => {
+		if (!busy) onClose();
+	});
 
 	useEffect(() => {
 		const dialog = dialogRef.current;

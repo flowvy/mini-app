@@ -3,9 +3,11 @@ import { backButton } from "@telegram-apps/sdk-react";
 /**
  * Global Telegram BackButton hook — shows/hides based on route depth.
  * Call once in AppShell. On tab routes the button is hidden;
- * on drill-down routes it navigates back via router history.
+ * on drill-down routes it first lets the topmost overlay consume Back,
+ * then navigates to the route family's semantic parent.
  */
 import { useEffect } from "react";
+import { useBackNavigationController } from "../contexts/back-navigation-context.tsx";
 import { isPrimaryTabRoute } from "../lib/navigation-routes.ts";
 
 export function getBackFallback(pathname: string): string {
@@ -18,11 +20,13 @@ export function getBackFallback(pathname: string): string {
 export function useBackButton(): void {
 	const location = useLocation();
 	const router = useRouter();
+	const { consumeBack, hasBackHandler } = useBackNavigationController();
 	const isTabRoute = isPrimaryTabRoute(location.pathname);
+	const shouldShow = !isTabRoute || hasBackHandler;
 	const fallback = getBackFallback(location.pathname);
 
 	useEffect(() => {
-		if (isTabRoute) {
+		if (!shouldShow) {
 			try {
 				if (backButton.hide.isAvailable()) backButton.hide();
 			} catch {
@@ -32,11 +36,9 @@ export function useBackButton(): void {
 		}
 
 		const handleBack = () => {
-			if (router.history.canGoBack()) {
-				router.history.back();
-			} else {
-				void router.navigate({ to: fallback });
-			}
+			if (consumeBack()) return;
+			if (isTabRoute) return;
+			void router.navigate({ to: fallback, replace: true });
 		};
 
 		try {
@@ -56,5 +58,5 @@ export function useBackButton(): void {
 				/* non-critical */
 			}
 		};
-	}, [isTabRoute, router, fallback]);
+	}, [consumeBack, fallback, isTabRoute, router, shouldShow]);
 }

@@ -66,6 +66,7 @@ export const TributePaymentDestinations: FC<TributePaymentDestinationsProps> = (
 
 	const blocker = useBlocker({
 		shouldBlockFn: () => dirty && !saved,
+		enableBeforeUnload: dirty && !saved,
 		withResolver: true,
 	});
 

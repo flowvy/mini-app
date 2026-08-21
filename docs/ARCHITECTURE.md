@@ -401,7 +401,8 @@ worker сейчас нет.
 
 ## Frontend
 
-`App` собирает `QueryClientProvider`, `AuthGuard`, `ModeProvider` и TanStack `RouterProvider`.
+`App` собирает `QueryClientProvider`, `AuthGuard`, общий `BackNavigationProvider` и TanStack
+`RouterProvider`. Route-aware `ModeProvider` живёт внутри app shell, где доступен router location.
 
 - `lib/api.ts` добавляет Telegram init data и является общим fetch wrapper.
 - `hooks/` описывают query/mutation lifecycles и переключаются на debug endpoints в mock mode.
@@ -414,13 +415,16 @@ worker сейчас нет.
   [mutation response updates](https://tanstack.com/query/latest/docs/framework/react/guides/updates-from-mutation-responses)
   и [related-query invalidation](https://tanstack.com/query/latest/docs/framework/react/guides/invalidations-from-mutations),
   проверено 2026-08-02.
-- `contexts/mode-context.tsx` хранит user/admin presentation mode; начальное значение выводится из
-  URL.
+- `contexts/mode-context.tsx` хранит user/admin presentation mode и синхронизирует его с URL при
+  direct navigation и browser Back/Forward.
 - `components/` содержит feature и reusable UI; страницы остаются composition boundary.
 - `styles/tokens.css`, CSS Modules и Telegram theme/safe-area интеграция задают внешний вид.
 - App shell не вычисляет состояние клавиатуры и не переписывает геометрию из `VisualViewport`.
   Web-owned tab navigation монтируется только на точных top-level tab routes; detail/settings task
   routes используют Telegram BackButton и не вводят нижнее меню в lifecycle экранной клавиатуры.
+- Telegram BackButton сначала передаёт событие верхнему confirmation/editor слою. Если overlay не
+  открыт, detail route заменяется явным semantic parent route (`settings/*` → `settings`,
+  `users/*` → `users`), поэтому dirty confirmation открывается до изменения browser history.
 - `i18n/locales/en.json` — единственный текущий locale resource и источник product-owned UI-copy.
   Operator-owned identity и bot welcome приходят через branding/settings contract;
   provider facts остаются typed runtime data. Полная граница описана в

@@ -2,6 +2,7 @@
  * App shell — floating header + scrollable content + floating tab bar + edge blur overlays.
  */
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { ModeProvider } from "../../contexts/mode-context.tsx";
 import { useBackButton } from "../../hooks/use-back-button.ts";
 import { useScrollCompact } from "../../hooks/use-scroll-compact.ts";
 import { isPrimaryTabRoute } from "../../lib/navigation-routes.ts";
@@ -14,6 +15,14 @@ import { TabBar } from "./tab-bar.tsx";
 
 export function AppShell() {
 	useBackButton();
+	return (
+		<ModeProvider>
+			<AppShellContent />
+		</ModeProvider>
+	);
+}
+
+function AppShellContent() {
 	const user = useCurrentUser();
 	const navigate = useNavigate();
 	const location = useLocation();

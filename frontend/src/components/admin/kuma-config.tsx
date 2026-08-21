@@ -38,6 +38,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings }) => {
 
 	const blocker = useBlocker({
 		shouldBlockFn: () => dirty && !saved,
+		enableBeforeUnload: dirty && !saved,
 		withResolver: true,
 	});
 

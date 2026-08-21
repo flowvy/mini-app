@@ -1,7 +1,16 @@
 /**
  * App mode context — switches between user and admin tab sets.
  */
-import { type ReactNode, createContext, useCallback, useContext, useMemo, useState } from "react";
+import { useLocation } from "@tanstack/react-router";
+import {
+	type ReactNode,
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import { useCurrentUser } from "../components/auth-guard.tsx";
 
 export type AppMode = "user" | "admin";
@@ -27,9 +36,16 @@ interface ModeProviderProps {
 
 export function ModeProvider({ children }: ModeProviderProps) {
 	const user = useCurrentUser();
+	const location = useLocation();
 	const [mode, setModeState] = useState<AppMode>(() =>
 		user.role === "admin" && window.location.pathname.startsWith("/admin/") ? "admin" : "user",
 	);
+
+	useEffect(() => {
+		setModeState(
+			user.role === "admin" && location.pathname.startsWith("/admin/") ? "admin" : "user",
+		);
+	}, [location.pathname, user.role]);
 
 	const setMode = useCallback(
 		(next: AppMode) => {

@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { type FC, type ReactNode, type RefObject, useId, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
+import { useBackNavigationHandler } from "../../contexts/back-navigation-context.tsx";
 import { hapticImpact, hapticNotification } from "../../lib/haptics.ts";
 import { ActionBtn } from "./action-btn.tsx";
 import styles from "./confirm-dialog.module.css";
@@ -82,6 +83,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 		if (confirmLoading || confirmDisabled) return;
 		onConfirm();
 	};
+	useBackNavigationHandler(cancel, open);
 
 	if (!open) return null;
 

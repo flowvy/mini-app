@@ -30,7 +30,11 @@ export const BeszelConfig: FC<BeszelConfigProps> = ({ settings }) => {
 	const testMutation = useTestBeszel();
 	const initialUrl = settings.beszelUrl ?? "";
 	const dirty = url !== initialUrl;
-	const blocker = useBlocker({ shouldBlockFn: () => dirty && !saved, withResolver: true });
+	const blocker = useBlocker({
+		shouldBlockFn: () => dirty && !saved,
+		enableBeforeUnload: dirty && !saved,
+		withResolver: true,
+	});
 
 	useEffect(() => {
 		if (!saved) return;
