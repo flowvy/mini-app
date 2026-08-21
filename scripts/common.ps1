@@ -105,16 +105,18 @@ function Get-FlowvyChildProcessIds {
     return @($childIds | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ })
 }
 
+$script:FlowvyAllowedChildProcessNames = @(
+    "uv", "python", "python3", "python3.12", "flowvy",
+    "pnpm", "node", "esbuild", "cmd", "conhost", "sh", "bash", "zsh", "cloudflared"
+)
+
 function Stop-FlowvyOwnedProcessTree {
     param(
         [Parameter(Mandatory)][int]$TargetProcessId,
         [string[]]$AllowedRootNames = @(),
         [Nullable[datetime]]$ExpectedStartTime,
         [switch]$SkipIfOwnershipChanged,
-        [string[]]$AllowedChildNames = @(
-            "uv", "python", "python3", "python3.12", "flowvy",
-            "pnpm", "node", "cmd", "conhost", "sh", "bash", "zsh", "cloudflared"
-        )
+        [string[]]$AllowedChildNames = $script:FlowvyAllowedChildProcessNames
     )
 
     $target = Get-Process -Id $TargetProcessId -ErrorAction SilentlyContinue
@@ -158,6 +160,9 @@ function Stop-FlowvyOwnedProcessTree {
         throw "PID $TargetProcessId changed ownership before shutdown; refusing to stop it."
     }
     Stop-Process -Id $TargetProcessId -Force -ErrorAction SilentlyContinue
+    if (-not $current.WaitForExit(5000)) {
+        throw "Flowvy-owned PID $TargetProcessId did not exit after shutdown."
+    }
 }
 
 function Get-FlowvyNullDevice {

@@ -11,6 +11,12 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $backendDir = Join-Path $repoRoot "backend"
 $frontendDir = Join-Path $repoRoot "frontend"
 $composeFile = Join-Path $repoRoot "docker-compose.dev.yml"
+$savedPythonPath = [Environment]::GetEnvironmentVariable("PYTHONPATH", "Process")
+[Environment]::SetEnvironmentVariable(
+    "PYTHONPATH",
+    (Join-Path $backendDir "src"),
+    "Process"
+)
 
 function Invoke-Checked {
     param(
@@ -33,6 +39,7 @@ function Invoke-Checked {
     }
 }
 
+try {
 $changedFiles = @()
 if ($Scope -eq "Changed") {
     $changedFiles = @(
@@ -95,4 +102,8 @@ if (-not ($backendChanged -or $frontendChanged -or $docsChanged)) {
 }
 else {
     Write-Host "`nFlowvy verification completed for scope: $Scope"
+}
+}
+finally {
+    [Environment]::SetEnvironmentVariable("PYTHONPATH", $savedPythonPath, "Process")
 }

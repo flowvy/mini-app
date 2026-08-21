@@ -1,6 +1,6 @@
 # Кроссплатформенный Flowvy dev-контур для macOS
 
-Status: active
+Status: completed
 Owner: Codex
 Started: 2026-08-21
 Updated: 2026-08-21
@@ -67,6 +67,23 @@ Telegram-enabled named Tunnel и штатная остановка без пот
   bootstrap/cutover runbook с Windows `:80` → macOS `:4173` origin transition.
 - [x] 2026-08-21 01:35 +03:00 — safe localhost lifecycle smoke, Changed и Full gates прошли;
   diff подготовлен к отдельному подтверждению коммита.
+- [x] 2026-08-20 18:44 -07:00 — на новом Mac localhost startup подтверждён тремя fresh `200` для
+  frontend и `/api/ready`; PostgreSQL/Redis healthy, Docker volumes сохранены.
+- [x] 2026-08-20 18:47 -07:00 — исправлены выявленные macOS lifecycle gaps: hidden editable package
+  обойдён process-level `PYTHONPATH`, TCP readiness использует explicit `int` cast, Vite-owned
+  `esbuild` разрешён в process tree, shutdown ждёт фактический exit. Codex runner lifecycle
+  закреплён в `AGENTS.md`, а tooling regression — в `verify-tooling.ps1`.
+- [x] 2026-08-20 18:50 -07:00 — `verify.ps1` получил тот же process-local `PYTHONPATH`; удалён
+  противоречащий `.gitattributes` одиночный Biome CRLF override. Fresh Changed gate прошёл: tooling,
+  Ruff, 389 service-free backend tests, frontend lint/typecheck/49 unit/build и docs.
+- [x] 2026-08-20 18:51 -07:00 — controlled named-Tunnel cutover ожидал установки Mac connector:
+  `cloudflared 2026.8.2` установлен, но connector credentials/config и LaunchAgent отсутствуют;
+  public root/health возвращали Cloudflare `530`. Telegram polling намеренно не запускался.
+- [x] 2026-08-20 18:59 -07:00 — владелец остановил Windows connector/poller, установил Mac
+  `cloudflared` LaunchDaemon и переключил exact `dev-app.flowvy.io` Service URL на
+  `http://localhost:4173`. Full Telegram-enabled named-Tunnel startup прошёл: local frontend,
+  backend ready и preview, public root/health/ready — `200`; public debug — `404`, backend подтвердил
+  `telegram_main_app_ready`.
 
 ## Surprises & Discoveries
 
@@ -80,6 +97,17 @@ Telegram-enabled named Tunnel и штатная остановка без пот
 - Безопасный localhost smoke выявил только неверное синтетическое значение
   `ADMIN_TELEGRAM_IDS='[]'`; повтор с валидным пустым значением подтвердил health/ready/frontend
   `200` и штатную остановку owned process trees без внешних интеграций.
+- На macOS PowerShell распаковывает nullable port parameter до `Int32`; обращение к `.Value`
+  передавало TCP helper значение `0`. Explicit `[int]` cast устраняет ошибку.
+- Vite запускает отдельный дочерний `esbuild`; без него fail-closed process allowlist не мог штатно
+  завершить frontend tree. Сам `Stop-Process` также требует bounded `WaitForExit`, иначе immediate
+  macOS verification видит ещё не исчезнувший PID.
+- Codex command runner завершает descendants после закрытия owning shell. Для runtime acceptance
+  его session нужно удерживать живым и проверять endpoints отдельной командой; обычный interactive
+  Terminal такого runner teardown не выполняет.
+- Hidden `.venv` затрагивает не только runtime startup, но и direct `verify.ps1`; verification
+  entrypoint также должен задавать `backend/src` process-locally. Одиночный Biome `crlf` override
+  конфликтовал с repository-wide LF attributes и воспроизводимо ломал lint на Mac.
 
 ## Decision Log
 
@@ -118,8 +146,9 @@ Telegram-enabled named Tunnel и штатная остановка без пот
   downgrade/re-upgrade/runtime inserts/drift, Ruff, 495 backend, 56 pinned Remnawave contracts,
   frontend lint/typecheck/49 unit/build, 109 mobile Chromium Playwright and docs passed on Windows.
   macOS runtime acceptance remains for the new machine.
-- Manual macOS acceptance after clone: localhost health/ready, owned process shutdown, named preview
-  on `4173`, public root/health `200`, public debug `404`, then one permitted test-bot launch.
+- `/Users/x_kit_/Documents/Projects/mini-app`: manual macOS acceptance → localhost frontend/ready,
+  named preview on `4173`, public root/health/ready `200`, public debug `404`, system connector
+  running, `telegram_main_app_ready` confirmed for the permitted test bot.
 
 ## Recovery and rollback
 
@@ -131,6 +160,7 @@ Telegram acceptance.
 
 ## Outcomes & Retrospective
 
-Windows implementation и verification завершены без business-code изменений или внешних calls.
-План остаётся active до первого macOS acceptance и controlled cutover; commit/push выполняются
-только после отдельного подтверждения владельца.
+Windows implementation и verification сохранены, первый macOS localhost/full named-Tunnel lifecycle
+и controlled Telegram cutover подтверждены. Найденные Mac gaps закрыты минимально и покрыты tooling,
+Changed gate и реальным runtime. Commit/push выполняются только после отдельного подтверждения
+владельца.

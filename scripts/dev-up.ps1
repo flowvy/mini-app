@@ -59,6 +59,9 @@ if (-not $SkipInstall) {
 $devEnvironment = @{
     DATABASE_URL = "postgresql+asyncpg://flowvy:flowvy_dev@127.0.0.1:5432/flowvy"
     REDIS_URL = "redis://127.0.0.1:6379/0"
+    # Ensure the src-layout package is importable even when a virtualenv's
+    # editable .pth file is unavailable on the host filesystem.
+    PYTHONPATH = (Join-Path $backendDir "src")
 }
 if ($namedTunnelMode) {
     $devEnvironment.WEBAPP_URL = $NamedTunnelUrl
@@ -120,10 +123,14 @@ try {
     function Wait-Ready {
         param(
             [Parameter(Mandatory)][string]$Name,
-            [Parameter(Mandatory)][string]$Uri
+            [Parameter(Mandatory)][string]$Uri,
+            [Nullable[int]]$TcpPort
         )
 
         for ($attempt = 0; $attempt -lt 60; $attempt++) {
+            if ($null -ne $TcpPort -and (Test-FlowvyTcpPort -Port ([int]$TcpPort))) {
+                return
+            }
             try {
                 $response = Invoke-WebRequest -Uri $Uri -UseBasicParsing -TimeoutSec 2
                 if ($response.StatusCode -eq 200) { return }
@@ -137,7 +144,7 @@ try {
 
     try {
         Wait-Ready -Name "Backend" -Uri "http://127.0.0.1:8001/api/ready"
-        Wait-Ready -Name "Frontend" -Uri "http://127.0.0.1:5173"
+        Wait-Ready -Name "Frontend" -Uri "http://127.0.0.1:5173" -TcpPort 5173
 
         if ($namedTunnelMode) {
             & (Join-Path $PSScriptRoot "tunnel-up.ps1") `

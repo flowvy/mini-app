@@ -92,6 +92,18 @@ The named preview origin is `http://localhost:80` on Windows and the unprivilege
 `http://localhost:4173` on macOS. Repository scripts never modify the external Cloudflare route;
 the owner must switch its Service URL during machine cutover without running both bot pollers.
 
+When Codex launches `dev-up.ps1` on macOS through the command runner, keep that runner session alive
+after the script returns (for example, append `tail -f /dev/null` and retain the session id). The
+runner terminates descendant processes when its shell exits even though a normal interactive Terminal
+does not. Verify `5173` and `8001` from a separate command after startup; the readiness message alone
+does not prove that the processes survived runner teardown. Before retrying a failed or interrupted
+start, run `dev-down.ps1` to clear only recorded Flowvy processes and markers while preserving Docker
+volumes. Keep the macOS lifecycle protections intact: backend `PYTHONPATH=backend/src`, frontend TCP
+readiness with an explicit `[int]` port cast, `esbuild` as an allowed Vite child, and bounded waiting
+for owned processes to exit. Apply that process-local `PYTHONPATH` in both development and
+verification entry points. Keep frontend formatter line endings aligned with the root `.gitattributes`
+LF contract; do not add file-specific CRLF overrides.
+
 Use the narrowest verification scope while iterating and `Full` for a final handoff when Docker and
 browsers are available. Run from the stated directory below when diagnosing a helper or when a direct
 command is the clearer fallback.

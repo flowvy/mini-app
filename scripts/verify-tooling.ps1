@@ -56,6 +56,9 @@ finally {
 if (Test-FlowvyTcpPort -Port $testPort) {
     throw "Cross-platform TCP probe reported a stopped listener."
 }
+if ("esbuild" -notin $script:FlowvyAllowedChildProcessNames) {
+    throw "Vite's esbuild child must remain in the owned-process allowlist."
+}
 
 $toolingArtifactDir = Join-Path (Join-Path $repoRoot ".artifacts") "tooling"
 New-Item -ItemType Directory -Force -Path $toolingArtifactDir | Out-Null

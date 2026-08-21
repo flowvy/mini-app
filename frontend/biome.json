@@ -26,12 +26,6 @@
 	},
 	"overrides": [
 		{
-			"include": ["src/components/ui/action-btn.module.css"],
-			"formatter": {
-				"lineEnding": "crlf"
-			}
-		},
-		{
 			"include": ["src/components/pulse/heartbeat-bar.tsx"],
 			"linter": {
 				"rules": {
