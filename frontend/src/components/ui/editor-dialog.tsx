@@ -7,14 +7,29 @@ import {
 	useEffect,
 	useId,
 	useRef,
+	useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { useTouchEditing } from "../../hooks/use-touch-editing.ts";
+import {
+	type TelegramEditorButtonsController,
+	mountTelegramEditorButtons,
+} from "../../lib/telegram-editor-buttons.ts";
 import { ActionBtn } from "./action-btn.tsx";
 import styles from "./editor-dialog.module.css";
 
 const FOCUSABLE =
-	'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+	'button:not([disabled]), summary, [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function isVisibleFocusTarget(element: HTMLElement): boolean {
+	const closedDetails = element.closest("details:not([open])");
+	if (closedDetails && closedDetails.querySelector(":scope > summary") !== element) return false;
+	return element.getClientRects().length > 0;
+}
+
+interface TelegramFooterActions {
+	primaryText: string;
+	primaryDisabled: boolean;
+}
 
 interface EditorDialogProps {
 	eyebrow: string;
@@ -27,6 +42,7 @@ interface EditorDialogProps {
 	onSubmit: FormEventHandler<HTMLFormElement>;
 	children: ReactNode;
 	footer: ReactNode;
+	telegramFooter?: TelegramFooterActions;
 }
 
 /** Shared accessible, responsive editor shell for administrator configuration forms. */
@@ -41,16 +57,24 @@ export function EditorDialog({
 	onSubmit,
 	children,
 	footer,
+	telegramFooter,
 }: EditorDialogProps) {
 	const titleId = useId();
-	const touchEditing = useTouchEditing();
 	const dialogRef = useRef<HTMLDialogElement>(null);
+	const formRef = useRef<HTMLFormElement>(null);
 	const titleRef = useRef<HTMLHeadingElement>(null);
+	const busyRef = useRef(busy);
+	const telegramButtonsRef = useRef<TelegramEditorButtonsController | null>(null);
+	const initialTelegramFooterRef = useRef(telegramFooter);
+	const [usesTelegramFooter, setUsesTelegramFooter] = useState(false);
 	const previousFocusRef = useRef<HTMLElement | null>(
 		returnFocusTo ??
 			(document.activeElement instanceof HTMLElement ? document.activeElement : null),
 	);
 	const restoreFocusFrameRef = useRef<number | null>(null);
+	const telegramPrimaryText = telegramFooter?.primaryText;
+	const telegramPrimaryDisabled = telegramFooter?.primaryDisabled;
+	busyRef.current = busy;
 
 	useEffect(() => {
 		const dialog = dialogRef.current;
@@ -70,6 +94,48 @@ export function EditorDialog({
 		};
 	}, []);
 
+	useEffect(() => {
+		const initialTelegramFooter = initialTelegramFooterRef.current;
+		if (!initialTelegramFooter) return;
+		const controller = mountTelegramEditorButtons(
+			{
+				primaryText: initialTelegramFooter.primaryText,
+				primaryEnabled: !initialTelegramFooter.primaryDisabled && !busyRef.current,
+				primaryLoading: busyRef.current,
+			},
+			{
+				onPrimary: () => formRef.current?.requestSubmit(),
+			},
+		);
+		telegramButtonsRef.current = controller;
+		setUsesTelegramFooter(controller !== null);
+
+		return () => {
+			controller?.destroy();
+			telegramButtonsRef.current = null;
+		};
+	}, []);
+
+	useEffect(() => {
+		if (
+			telegramPrimaryText === undefined ||
+			telegramPrimaryDisabled === undefined ||
+			!telegramButtonsRef.current
+		) {
+			return;
+		}
+		const updated = telegramButtonsRef.current.update({
+			primaryText: telegramPrimaryText,
+			primaryEnabled: !telegramPrimaryDisabled && !busy,
+			primaryLoading: busy,
+		});
+		if (!updated) {
+			telegramButtonsRef.current.destroy();
+			telegramButtonsRef.current = null;
+			setUsesTelegramFooter(false);
+		}
+	}, [busy, telegramPrimaryDisabled, telegramPrimaryText]);
+
 	const handleKeyDown = useCallback(
 		(event: KeyboardEvent<HTMLDialogElement>) => {
 			if (event.key === "Escape" && !busy) {
@@ -78,7 +144,9 @@ export function EditorDialog({
 				return;
 			}
 			if (event.key !== "Tab" || !dialogRef.current) return;
-			const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+			const focusable = Array.from(
+				dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE),
+			).filter(isVisibleFocusTarget);
 			if (focusable.length === 0) return;
 			const first = focusable[0];
 			const last = focusable[focusable.length - 1];
@@ -97,7 +165,6 @@ export function EditorDialog({
 		<dialog
 			ref={dialogRef}
 			className={styles.panel}
-			data-touch-editing={touchEditing ? "true" : undefined}
 			aria-modal="true"
 			aria-labelledby={titleId}
 			aria-busy={busy}
@@ -107,7 +174,7 @@ export function EditorDialog({
 				if (!busy) onClose();
 			}}
 		>
-			<form className={styles.form} onSubmit={onSubmit} noValidate>
+			<form ref={formRef} className={styles.form} onSubmit={onSubmit} noValidate>
 				<header className={styles.header}>
 					<div>
 						<p className={styles.eyebrow}>{eyebrow}</p>
@@ -127,13 +194,7 @@ export function EditorDialog({
 					</ActionBtn>
 				</header>
 				<div className={styles.body}>{children}</div>
-				<footer
-					className={styles.footer}
-					aria-hidden={touchEditing || undefined}
-					inert={touchEditing || undefined}
-				>
-					{footer}
-				</footer>
+				{!usesTelegramFooter && <footer className={styles.footer}>{footer}</footer>}
 			</form>
 		</dialog>,
 		document.body,

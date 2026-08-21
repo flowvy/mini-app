@@ -5,7 +5,6 @@ import {
 	mockData,
 	test,
 } from "./fixtures/mock-api.ts";
-import { installVisualViewportMock, setTestVisualViewport } from "./fixtures/visual-viewport.ts";
 
 const screens = [
 	{ name: "home", path: "/", marker: "Account Info" },
@@ -252,7 +251,6 @@ test("capture Tribute operator review actions and safe resolution dialog", async
 	page,
 	mockApi,
 }, testInfo) => {
-	await installVisualViewportMock(page);
 	const reviewOperation = entitlementOperation({
 		status: "review",
 		reasonCode: "provider_unavailable",
@@ -318,26 +316,8 @@ test("capture Tribute operator review actions and safe resolution dialog", async
 			const resolutionNote = page.getByLabel("Resolution note");
 			await resolutionNote.fill("Verified in Tribute");
 			await resolutionNote.focus();
-			const touchInput = await page.evaluate(
-				() => window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
-			);
-			const keyboardViewport = viewport.width <= 430 && touchInput;
-			if (keyboardViewport) {
-				await setTestVisualViewport(page, Math.max(240, viewport.height - 300));
-			}
 			await resolutionDialog.getByRole("button", { name: "Resolve", exact: true }).click();
 			const resolvedEntry = page.getByRole("article").filter({ hasText: "Resolved" });
-			if (keyboardViewport) {
-				await expect(resolvedEntry.getByText("Resolved", { exact: true })).toBeVisible();
-				await expect(resolutionDialog).toBeVisible();
-				await page.screenshot({
-					path: testInfo.outputPath(
-						`admin-settings-tribute-resolving-keyboard-${viewport.name}-${colorScheme}.png`,
-					),
-					animations: "disabled",
-				});
-				await setTestVisualViewport(page, viewport.height);
-			}
 			await expect(resolutionDialog).toHaveCount(0);
 			await expect(resolvedEntry).toBeFocused();
 			await page.screenshot({
@@ -370,15 +350,13 @@ test("capture the flexible Tribute donation rule editor", async ({ page, mockApi
 		const ruleDialog = page.getByRole("dialog", { name: "Create automation rule" });
 		const focusedCurrency = page.getByLabel("Currency");
 		await focusedCurrency.focus();
-		await expect(ruleDialog.locator("footer")).toHaveAttribute("aria-hidden", "true");
-		await page.waitForTimeout(1_100);
-		await expect(ruleDialog.locator("footer")).toBeHidden();
+		await expect(ruleDialog.locator("footer")).not.toHaveAttribute("aria-hidden", "true");
+		await expect(ruleDialog.locator("footer")).toBeVisible();
 		await page.screenshot({
 			path: testInfo.outputPath(`admin-settings-tribute-rule-focused-${colorScheme}.png`),
 			animations: "disabled",
 		});
-		await focusedCurrency.press("Enter");
-		await expect(ruleDialog.locator("footer")).toBeVisible();
+		await focusedCurrency.blur();
 		await page.getByLabel("Payment amount (RUB)").fill("4000");
 		mockApi.mock("POST", "/api/debug/admin/commerce/preview", {
 			delayMs: 1_000,
@@ -477,15 +455,7 @@ test("capture the lifetime access editor in light and dark themes", async ({
 			animations: "disabled",
 		});
 		await page.getByRole("button", { name: "Create profile" }).click();
-		const daysRestingValue = page.getByLabel("Number of days").locator("..").getByText("30");
-		const touchInput = await page.evaluate(
-			() => window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
-		);
-		if (touchInput) {
-			await expect(daysRestingValue).toBeVisible();
-		} else {
-			await expect(daysRestingValue).not.toBeVisible();
-		}
+		await expect(page.getByLabel("Number of days")).toHaveValue("30");
 		await assertNoHorizontalOverflow(page);
 		await page.screenshot({
 			path: testInfo.outputPath(`admin-access-days-${colorScheme}.png`),
@@ -557,27 +527,25 @@ test("capture contextual empty access profiles in light and dark themes", async 
 	}
 });
 
-test("capture access editor focus with keyboard-aware bottom chrome", async ({
+test("capture access editor with native focused input", async ({
 	page,
 	mockApi: _mock,
 }, testInfo) => {
-	await page.goto("/admin/settings/access");
-	await page.getByRole("button", { name: "Create profile" }).click();
-	await page.getByLabel("Name").focus();
-	const touchInput = await page.evaluate(
-		() => window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
-	);
-	const navigation = page.getByRole("navigation", { includeHidden: true });
-	if (touchInput) {
-		await expect(navigation).toHaveAttribute("aria-hidden", "true");
-	} else {
-		await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/admin/settings/access");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await page.getByRole("button", { name: "Create profile" }).click();
+		await page.getByLabel("Name").focus();
+		await expect(page.getByRole("navigation")).not.toHaveAttribute("aria-hidden", "true");
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`admin-access-focused-${colorScheme}.png`),
+			animations: "disabled",
+		});
 	}
-	await assertNoHorizontalOverflow(page);
-	await page.screenshot({
-		path: testInfo.outputPath("admin-access-focused.png"),
-		animations: "disabled",
-	});
 });
 
 test("capture the unconfigured Pulse source selector", async ({ page, mockApi }, testInfo) => {

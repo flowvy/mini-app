@@ -121,30 +121,6 @@
 	margin-top: 2px;
 }
 
-.inputShell {
-	position: relative;
-	display: block;
-	min-width: 0;
-}
-
-.inputRestingValue {
-	position: absolute;
-	inset: 0;
-	display: none;
-	align-items: center;
-	min-width: 0;
-	padding: 10px 12px;
-	overflow: hidden;
-	color: var(--v2-text-primary);
-	font-family: var(--font-sans);
-	font-size: 13px;
-	font-weight: 400;
-	line-height: 1.25;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	pointer-events: none;
-}
-
 .fieldControl {
 	width: 100%;
 	min-height: 44px;
@@ -333,17 +309,6 @@
 	:global(:root:not([data-theme])) .nativeSelect,
 	:global(:root:not([data-theme])) .nativeDate {
 		color-scheme: dark;
-	}
-}
-
-@media (pointer: coarse) {
-	.fieldControl[data-compact-resting-value]:not(:focus) {
-		color: transparent;
-		-webkit-text-fill-color: transparent;
-	}
-
-	.fieldControl[data-compact-resting-value]:not(:focus) + .inputRestingValue {
-		display: flex;
 	}
 }
 

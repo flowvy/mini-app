@@ -7,7 +7,6 @@ import {
 	mockData,
 	test,
 } from "./fixtures/mock-api.ts";
-import { installVisualViewportMock, setTestVisualViewport } from "./fixtures/visual-viewport.ts";
 
 async function selectElementContents(locator: Locator) {
 	await locator.evaluate((element) => {
@@ -219,6 +218,7 @@ test("admin saves per-subscription payment links without creating a payment", as
 		}
 	});
 
+	await page.emulateMedia({ reducedMotion: "reduce" });
 	await page.goto("/admin/settings/tribute");
 	await expect(page.getByRole("heading", { name: "Payment links" })).toBeVisible();
 	await page.getByLabel("Supporter").fill(" https://t.me/tribute/app?startapp=subscription_12 ");
@@ -624,6 +624,16 @@ test("admin resolution is explicit, audited, idempotent across retry, and return
 	).toBeFocused();
 	await expect(dialog.getByRole("button", { name: "Close" })).not.toBeFocused();
 	await expect(dialog.getByRole("button", { name: "Resolve", exact: true })).toBeDisabled();
+	await expect
+		.poll(() =>
+			dialog.evaluate(
+				(element) =>
+					element
+						.getAnimations({ subtree: true })
+						.filter((animation) => animation.playState !== "finished").length,
+			),
+		)
+		.toBe(0);
 	const accessibility = await new AxeBuilder({ page }).analyze();
 	expect(
 		accessibility.violations.filter((violation) =>
@@ -709,11 +719,7 @@ test("provider failures expose only the server-approved retry and resolve decisi
 	await assertNoHorizontalOverflow(page);
 });
 
-test("resolution closes the native dialog before paint while the keyboard viewport restores", async ({
-	page,
-	mockApi,
-}) => {
-	await installVisualViewportMock(page);
+test("resolution closes the native dialog immediately after success", async ({ page, mockApi }) => {
 	const operation = entitlementOperation({
 		operationKind: "review",
 		status: "review",
@@ -741,20 +747,11 @@ test("resolution closes the native dialog before paint while the keyboard viewpo
 	});
 
 	await page.goto("/admin/settings/tribute");
-	const touchInput = await page.evaluate(
-		() => window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
-	);
-	test.skip(!touchInput, "Software-keyboard viewport lifecycle applies only to touch clients");
 	await page.getByRole("button", { name: "Resolve", exact: true }).click();
 	const dialog = page.getByRole("dialog", { name: "Resolve without changing access?" });
 	const note = page.getByLabel("Resolution note");
 	await note.fill("Verified in Tribute");
 	await note.focus();
-	const restoredViewportHeight = await page.evaluate(() => window.innerHeight);
-	const keyboardViewportHeight = Math.max(240, restoredViewportHeight - 300);
-	await setTestVisualViewport(page, keyboardViewportHeight);
-	const navigation = page.getByRole("navigation", { includeHidden: true });
-	await expect(navigation).toHaveAttribute("aria-hidden", "true");
 
 	await page.evaluate(() => {
 		const nativeDialog = document.querySelector("dialog");
@@ -775,14 +772,6 @@ test("resolution closes the native dialog before paint while the keyboard viewpo
 
 	await dialog.getByRole("button", { name: "Resolve", exact: true }).click();
 	await expect(page.getByText("Resolved", { exact: true })).toBeVisible();
-	await expect(dialog).toBeVisible();
-	await expect(dialog.getByRole("button", { name: "Resolve", exact: true })).toHaveAttribute(
-		"aria-busy",
-		"true",
-	);
-	await expect(navigation).toHaveAttribute("aria-hidden", "true");
-
-	await setTestVisualViewport(page, restoredViewportHeight);
 	await expect(dialog).toHaveCount(0);
 	await expect
 		.poll(() =>
@@ -796,7 +785,6 @@ test("resolution closes the native dialog before paint while the keyboard viewpo
 			),
 		)
 		.toEqual({ observed: true, openAtRemoval: false });
-	await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -850,11 +838,10 @@ test("reported donation draft keeps auth, clears stale errors, and previews afte
 	await assertNoHorizontalOverflow(page);
 });
 
-test("rule editor reveals focused inputs and keeps actions hidden through keyboard close", async ({
+test("rule editor keeps native controls and actions stable while inputs are focused", async ({
 	page,
 	mockApi: _mock,
 }) => {
-	await installVisualViewportMock(page);
 	await page.goto("/admin/settings/tribute");
 	await page.getByRole("button", { name: "Create first rule" }).click();
 	const dialog = page.getByRole("dialog", { name: "Create automation rule" });
@@ -887,36 +874,11 @@ test("rule editor reveals focused inputs and keeps actions hidden through keyboa
 	await page.keyboard.type("500");
 	await expect(focusedInput).toBeFocused();
 	await expect(focusedInput).toHaveValue("500");
-	const restoredViewportHeight = await page.evaluate(() => window.innerHeight);
-	const keyboardViewportHeight = Math.max(240, restoredViewportHeight - 300);
-	await setTestVisualViewport(page, keyboardViewportHeight);
-	const touchInput = await page.evaluate(
-		() => window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
-	);
 	const footer = dialog.locator("footer");
-	if (touchInput) {
-		await expect(footer).toHaveAttribute("aria-hidden", "true");
-		await expect(footer).toBeHidden();
-		await expect
-			.poll(async () => {
-				const box = await focusedInput.boundingBox();
-				return box ? box.y + box.height : Number.POSITIVE_INFINITY;
-			})
-			.toBeLessThan(keyboardViewportHeight - 10);
-
-		await focusedInput.blur();
-		await expect(focusedInput).not.toBeFocused();
-		await expect(footer).toBeHidden();
-		await expect(page.getByRole("navigation", { includeHidden: true })).toHaveAttribute(
-			"aria-hidden",
-			"true",
-		);
-		await setTestVisualViewport(page, restoredViewportHeight);
-	} else {
-		await expect(footer).toBeVisible();
-		await focusedInput.blur();
-	}
 	await expect(footer).toBeVisible();
+	await expect(footer).not.toHaveAttribute("aria-hidden", "true");
+	await expect(page.getByRole("navigation")).not.toHaveAttribute("aria-hidden", "true");
+	await focusedInput.blur();
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -960,7 +922,6 @@ test("saved rule can be disabled, edited, and deleted with explicit confirmation
 	await page.getByRole("button", { name: /Monthly donation access/ }).click();
 	await page.getByLabel("Rule name").fill("Updated donation access");
 	await page.getByLabel("Rule name").press("Enter");
-	await page.getByRole("button", { name: "Save", exact: true }).click();
 	await expect(page.getByText("Updated donation access", { exact: true })).toBeVisible();
 
 	await page.getByRole("button", { name: /Updated donation access/ }).click();
@@ -1189,6 +1150,8 @@ test("commerce rule editor is accessible and responsive in both themes", async (
 				document.documentElement.setAttribute("data-theme", theme);
 			}, colorScheme);
 			await page.getByRole("button", { name: "Create first rule" }).click();
+			const dialog = page.getByRole("dialog", { name: "Create automation rule" });
+			await expect(dialog.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
 			const result = await new AxeBuilder({ page }).analyze();
 			const serious = result.violations.filter((violation) =>
 				["serious", "critical"].includes(violation.impact ?? ""),
@@ -2294,6 +2257,7 @@ test("sponsor offer editor stays native to the design system in both themes", as
 		await page.getByRole("button", { name: "Create first offer" }).click();
 		const dialog = page.getByRole("dialog", { name: "Create sponsor offer" });
 		await expect(dialog).toBeVisible();
+		await expect(dialog.getByRole("button", { name: "Cancel", exact: true })).toHaveCount(0);
 		await dialog.getByRole("radio", { name: "Auto-donation" }).click();
 		await expect(dialog.getByLabel("Auto-donation frequency")).toBeVisible();
 		await dialog.screenshot({

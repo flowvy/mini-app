@@ -172,9 +172,10 @@ refetch, исчезновение stale pending controls, multi-type renewal cho
 payment-activity loading/empty/populated/error/retry и безопасные applied/review reason codes,
 server-approved operator retry/resolve, обязательную resolution note, dialog cancel/focus,
 mutation failure с повтором того же request UUID, success feedback и resolved/retry audit copy,
-раскрытие focused input внутри visual viewport, непрерывный touch-editing lifecycle при закрытии
-клавиатуры, loading spinner без SVG backing box, light-mode axe, overflow и визуальные evidence
-screenshots.
+нативные input/IME semantics без synthetic blur, отсутствие application-owned viewport CSS
+variables и неизменную shell/dialog geometry при visual viewport resize, loading spinner без SVG
+backing box, Telegram-native Main-only editor actions с enabled/loading/cleanup bridge events и
+DOM fallback вне поддерживаемого client, light-mode axe, overflow и визуальные evidence screenshots.
 
 `test:e2e:live` намеренно исключён из обычного/CI suite. Сначала запустите `scripts/dev-up.ps1`,
 проверьте redacted target и только затем выполняйте его: сценарий читает Home, Devices, admin

@@ -6,7 +6,6 @@ import { FILTER_KEYS, FilterChips, type FilterKey } from "../../components/admin
 import { VirtualizedUserList } from "../../components/admin/virtualized-user-list.tsx";
 import { ErrorState } from "../../components/ui/error-state.tsx";
 import { useAllAdminUsers } from "../../hooks/use-all-admin-users.ts";
-import { dismissKeyboardOnEnter } from "../../lib/keyboard.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
 import { UsersListSkeleton } from "./users-skeleton.tsx";
 import styles from "./users.module.css";
@@ -102,7 +101,6 @@ export const AdminUsers: FC = () => {
 						type="text"
 						value={searchInput}
 						onChange={(e) => setSearchInput(e.target.value)}
-						onKeyDown={dismissKeyboardOnEnter}
 						placeholder={t("admin.users.searchPlaceholder")}
 						enterKeyHint="search"
 						inputMode="search"

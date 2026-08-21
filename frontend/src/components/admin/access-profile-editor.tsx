@@ -180,22 +180,21 @@ export function AccessProfileEditor({
 			returnFocusTo={returnFocusTo}
 			onClose={onClose}
 			onSubmit={submit}
+			telegramFooter={{
+				primaryText: profile ? t("common.save") : t("access.createProfile"),
+				primaryDisabled: !valid,
+			}}
 			footer={
-				<>
-					<ActionBtn variant="ghost" size="md" onClick={onClose} disabled={save.isPending}>
-						{t("access.cancel")}
-					</ActionBtn>
-					<ActionBtn
-						type="submit"
-						variant="confirm"
-						size="md"
-						className={styles.submitButton}
-						disabled={!valid}
-						loading={save.isPending}
-					>
-						{profile ? t("common.save") : t("access.createProfile")}
-					</ActionBtn>
-				</>
+				<ActionBtn
+					type="submit"
+					variant="confirm"
+					size="md"
+					className={styles.submitButton}
+					disabled={!valid}
+					loading={save.isPending}
+				>
+					{profile ? t("common.save") : t("access.createProfile")}
+				</ActionBtn>
 			}
 		>
 			{optionsState === "error" && (

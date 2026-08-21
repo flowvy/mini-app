@@ -220,18 +220,22 @@
   этот app name, а не жёстко заданный Flowvy. Support остаётся отдельной локализованной
   заглушкой будущей встроенной поддержки без внешнего action. Access editor не
   дублирует список во время редактирования, явно объясняет бессрочный/безлимитный grant и использует
-  общие FormField/Input/Select/Textarea. Select/date разделяют app-owned видимый слой Geist 13px и
-  нативный semantic/editing слой 16px на touch: системный picker и защита от iOS focus zoom
-  сохраняются, а закрытые select/input/date показывают единое Geist 13px значение. Touch picker не
+  общие FormField/Input/Select/Textarea. Input использует один нативный control; select/date
+  разделяют app-owned видимый слой Geist 13px и нативный semantic/picker layer. Защита от iOS focus
+  zoom сохраняет 16px editing text на touch. Touch picker не
   оставляет зелёную рамку после выбора; keyboard focus на desktop остаётся видимым. Compact date
   стоит в одной строке с label и внутри editor без лишнего helper; pending Remnawave options не
   меняют геометрию editor после открытия.
-- Один browser adapter отслеживает editable focus, pointer activation и `VisualViewport`, публикует
-  фактические offset/height как CSS variables и раскрывает активный control через `scrollIntoView()`.
-  Tab bar и editor footer скрываются на всём touch-editing lifecycle и возвращаются только после
-  восстановления visual viewport, а не на раннем `focusout`; локальных `preventDefault`, ручного
-  blur или Telegram keyboard workaround в редакторах нет. Native select/date picker и desktop focus
-  навигацию это состояние не включают.
+- App shell и fullscreen editor остаются в layout viewport и не переписывают pixel geometry из
+  `VisualViewport`. Нативные input/form/IME semantics не дополняются глобальными focus/pointer
+  listeners, `scrollIntoView()`, synthetic blur или `Telegram.WebApp.hideKeyboard()`. Keyboard
+  перекрывает web-owned tab bar нативно; приложение не ведёт его за клавиатурой отдельным React
+  state. Fullscreen-editor actions в поддерживаемом Telegram client передаются одним нативным
+  `MainButton`, а browser и старые клиенты сохраняют DOM footer с одной primary create/save кнопкой.
+  Отдельный `Cancel` удалён из access-profile, commerce-rule и sponsor-offer editors, потому что
+  закрытие остаётся доступно через header close и `Escape`.
+  Их явные background/text colors берутся из тех же adaptive tokens, что прежний DOM footer;
+  disabled primary action остаётся неактивным и получает прежнюю 40% приглушённую палитру.
 - Общие `ActionBtn` и `FormSaveButton` используют CSS border spinner с прозрачным фоном и стабильной
   геометрией вместо вращения inline SVG; loading state сохраняет accessible label и не создаёт
   отдельный WebKit compositing rectangle.
@@ -414,6 +418,27 @@ chrome не возвращается между `focusout` и завершени
 непрерывность lifecycle, loading/Axe/overflow и console/network guards прошли 72/72 сценария на
 430x932 Chromium, 320x568 Chromium, iPhone/WebKit и desktop Chromium; affected light/dark evidence
 просмотрены вручную. Реальный Tribute, webhook и access mutation не вызывались.
+Live iOS evidence 2026-08-21 показал, что этот adapter сам создаёт двухфазное восстановление:
+клавиатура уже скрыта, но shell/dialog ещё удерживают последний `visualViewport.height`, после чего
+страница скачком получает полную высоту. Follow-up удалил adapter, 96px keyboard heuristic,
+application-owned viewport CSS variables, delayed dialog close, synthetic input blur/hideKeyboard и
+compact resting-value overlay; shell/dialog вернулись к нативной layout viewport geometry.
+Fresh verification 2026-08-21: `verify.ps1 -Scope Changed` прошёл backend service-free 389 tests,
+frontend lint/typecheck, 49 unit tests, production build и 109 mobile Chromium Playwright scenarios.
+Клавиатурные regression tests дополнительно прошли на 430x932 Chromium, 320x568 Chromium,
+iPhone/WebKit и desktop Chromium; focused access editor просмотрен в light/dark на Chromium/WebKit.
+Следующая live iOS запись дважды показала примерно 0,5-секундный разрыв между появлением keyboard и
+поздним layout перерасчётом DOM footer. Telegram прямо запрещает использовать `viewportHeight` для
+плавной нижней привязки, а WebKit не реализует `interactive-widget=resizes-content` и VirtualKeyboard
+API. Изначально общий editor использовал locked SDK 3.11.8 `MainButton` + Bot API 7.10+
+`SecondaryButton`; capability, enabled/loading updates, click wiring, cleanup и DOM fallback были
+покрыты unit и browser bridge regressions без keyboard/focus heuristics. Последующий live iOS acceptance
+подтвердил синхронное появление кнопок с keyboard. Follow-up вернул нативным кнопкам прежнюю
+light/dark палитру Flowvy и сделал disabled primary action визуально отличимым; смена темы во время
+открытого editor также обновляет native button parameters.
+Editor follow-up убрал дублирующий `Cancel` со всех fullscreen forms: Telegram получает только
+`MainButton`, а DOM fallback показывает одну create/save кнопку. Header close, `Escape`,
+focus trap/return и busy guard сохранены; неиспользуемая `SecondaryButton` branch удалена.
 Observe-only Tribute receiver 2026-08-14 добавил защищённый raw-body ingress, минимальный
 PostgreSQL inbox, atomic exact replay и bounded retention. Ни постоянный callback, ни реальные
 payment deliveries, ни commerce/access/provider mutation не включались.
@@ -507,6 +532,7 @@ Tribute показал success, endpoint вернул `200`, inbox осталс�
 | Sponsor-offer automation-rule relink | статический аудит admin edit locks; focused four-project Playwright; eight light/dark screenshots; `scripts\verify.ps1 -Scope Changed -SkipE2E` | Искусственная create-only блокировка rule select удалена. Существующий draft или published offer можно связать с другим rule; UI отправляет новый `commerceRuleId`, backend повторно валидирует и пересобирает published snapshot, начатые checkouts сохраняют прежние immutable facts. Focused matrix прошла 4/4 на 430x932, 320x568, iOS WebKit и desktop; light/dark screenshots просмотрены, Axe/overflow/console/network guards зелёные. В admin source больше нет `disabled`, зависящих только от существования entity. Changed gate прошёл Ruff, 387 service-free backend tests, frontend lint/typecheck/44 unit/build и docs. |
 | Inline WYSIWYG formatted offer content | official Tiptap React fixed-menu/StarterKit/CharacterCount/Markdown contracts and WAI-ARIA toolbar pattern; 23 focused sponsor backend tests; 5 focused frontend unit tests; focused four-project Playwright; 109 mobile Playwright; `scripts\verify.ps1 -Scope Changed -SkipE2E` | Описания offer хранят ограниченный CommonMark в прежнем строковом поле, но автор работает с provider-neutral inline WYSIWYG. Один постоянный toolbar с bold/italic/strike/link/quote/lists расположен над editor surface для touch, keyboard и fine pointer; pointer heuristics, conditional trigger и selection-bound app popup отсутствуют. Native Cut/Copy/Paste/Format menu остаётся системным. Home/admin используют один безопасный renderer без raw HTML; 300-character limit считается по видимому тексту, source contract допускает до 2 000 символов для formatting syntax. Редактор загружается lazy только в admin form. Light/dark mobile/small-mobile/desktop evidence просмотрены; Axe/overflow/console/network guards зелёные. Fresh gates: 389 service-free backend, Ruff, frontend lint/typecheck/49 unit/build, 109/109 mobile и 4/4 focused all-project browser scenarios. Компоненты готовы к будущему Broadcast composer; его transport serializer пока не реализован. |
 | macOS developer migration preparation | official PowerShell 7.6 platform variables; official Docker Desktop, uv and Cloudflare macOS/routing docs; `scripts\verify-tooling.ps1`; safe localhost lifecycle smoke; `scripts\verify.ps1 -Scope Changed`; `scripts\verify.ps1 -Scope Full` | Общий helper убирает Windows-only TCP/process/executable assumptions, сохраняет PID ownership checks и Docker volumes, а runbook задаёт Apple Silicon bootstrap и controlled named-Tunnel cutover с Windows `:80` на Mac `:4173`. Full Windows gate: migrations/drift, Ruff, 495 backend, 56 pinned Remnawave contracts, frontend lint/typecheck/49 unit/build, 109 mobile Playwright и docs passed. Реальные Telegram/Cloudflare/provider calls и внешние mutations не выполнялись; runtime acceptance на новом Mac остаётся обязательным. |
+| Native Telegram editor bottom buttons | official Telegram viewport/BottomButton contract; locked SDK 3.11.8 source and types; open WebKit interactive-widget/VirtualKeyboard bugs; unit bridge lifecycle and color payloads; focused four-project keyboard and visual matrices; `scripts/verify.ps1 -Scope Changed`; standard dev restart | Покадровый разбор live iOS записи подтвердил два разрыва примерно по 0,5 с между keyboard и DOM footer. Поддерживаемые Telegram clients теперь получают один `MainButton`; дублирующий `Cancel` и неиспользуемая `SecondaryButton` branch удалены из access-profile, commerce-rule и sponsor-offer editors, а header close/`Escape` сохранены. Последующий live iOS acceptance подтвердил синхронное появление button и keyboard. Native action повторяет прежние adaptive footer colors; disabled primary сохраняет `is_active=false` и получает отдельную приглушённую палитру, а runtime theme change пересылает light/dark colors. Fresh gate: Ruff, 389 service-free backend, frontend lint/typecheck/53 unit/build, 110/110 mobile Playwright и docs; focused editor/keyboard and light/dark visual evidence прошли на 430x932, 320x568, iOS WebKit и desktop. Standard Telegram-enabled dev пересобран и перезапущен с сохранением volumes; local/public frontend и ready `200`, public debug `404`, startup error markers отсутствуют. |
 ## Следующее действие
 
 Следующие live evidence зависят от внешнего события Tribute: фактический period-end

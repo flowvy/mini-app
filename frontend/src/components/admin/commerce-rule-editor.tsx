@@ -302,21 +302,20 @@ export function CommerceRuleEditor({
 				returnFocusTo={returnFocusTo}
 				onClose={onClose}
 				onSubmit={submit}
+				telegramFooter={{
+					primaryText: rule ? t("common.save") : t("settings.tribute.rules.createAction"),
+					primaryDisabled: !input,
+				}}
 				footer={
-					<>
-						<ActionBtn variant="ghost" size="md" onClick={onClose} disabled={busy}>
-							{t("access.cancel")}
-						</ActionBtn>
-						<ActionBtn
-							type="submit"
-							variant="confirm"
-							size="md"
-							disabled={!input}
-							loading={save.isPending}
-						>
-							{rule ? t("common.save") : t("settings.tribute.rules.createAction")}
-						</ActionBtn>
-					</>
+					<ActionBtn
+						type="submit"
+						variant="confirm"
+						size="md"
+						disabled={!input}
+						loading={save.isPending}
+					>
+						{rule ? t("common.save") : t("settings.tribute.rules.createAction")}
+					</ActionBtn>
 				}
 			>
 				<section className={styles.card} aria-labelledby="commerce-match-title">

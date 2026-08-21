@@ -65,7 +65,7 @@ test("form controls avoid the iOS focus-zoom threshold without disabling user zo
 	expect(viewport).not.toContain("maximum-scale=1");
 });
 
-test("access controls keep Flowvy typography with compact placeholders", async ({
+test("access controls keep Flowvy typography with native input values", async ({
 	page,
 	mockApi: _mock,
 }) => {
@@ -108,19 +108,13 @@ test("access controls keep Flowvy typography with compact placeholders", async (
 	expect(typography.placeholderFamily).toContain("Geist");
 
 	const days = page.getByLabel("Number of days");
-	const daysRestingValue = days.locator("..").getByText("30", { exact: true });
 	if (touchInput) {
-		await expect(daysRestingValue).toBeVisible();
-		await expect(daysRestingValue).toHaveCSS("font-family", /Geist/);
-		await expect(daysRestingValue).toHaveCSS("font-size", "13px");
-		await days.focus();
-		await expect(daysRestingValue).not.toBeVisible();
-		await days.blur();
-		await expect(daysRestingValue).toBeVisible();
+		await expect(days).toHaveCSS("font-size", "16px");
 	} else {
-		await expect(daysRestingValue).not.toBeVisible();
 		await expect(days).toHaveCSS("font-size", "13px");
 	}
+	await expect(days).toHaveCSS("font-family", /Geist/);
+	await expect(days).toHaveValue("30");
 
 	await page.getByRole("radio", { name: "Date" }).click();
 	await expect(page.getByText("Every new user receives access until this date.")).toHaveCount(0);

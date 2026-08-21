@@ -7,8 +7,6 @@ import { type FC, type ReactNode, type RefObject, useId, useLayoutEffect, useRef
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { hapticImpact, hapticNotification } from "../../lib/haptics.ts";
-import { hideVirtualKeyboard } from "../../lib/telegram.ts";
-import { isEditableControl } from "../../lib/visual-viewport.ts";
 import { ActionBtn } from "./action-btn.tsx";
 import styles from "./confirm-dialog.module.css";
 
@@ -85,13 +83,6 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 		onConfirm();
 	};
 
-	const dismissFocusedEditor = () => {
-		const focused = document.activeElement;
-		if (isEditableControl(focused) && modalRef.current?.contains(focused)) {
-			hideVirtualKeyboard(focused);
-		}
-	};
-
 	if (!open) return null;
 
 	return createPortal(
@@ -163,7 +154,6 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 					variant="ghost"
 					size="md"
 					disabled={confirmLoading}
-					onPointerDown={dismissFocusedEditor}
 					onClick={() => {
 						hapticImpact("light");
 						cancel();
@@ -176,7 +166,6 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 					size="md"
 					loading={confirmLoading}
 					disabled={confirmDisabled}
-					onPointerDown={dismissFocusedEditor}
 					onClick={() => {
 						hapticNotification("warning");
 						confirm();

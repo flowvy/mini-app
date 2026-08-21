@@ -559,23 +559,24 @@ function SponsorOfferEditor({
 				returnFocusTo={returnFocusTo}
 				onClose={onClose}
 				onSubmit={submit}
+				telegramFooter={{
+					primaryText: offer
+						? t("settings.tribute.offers.saveAction")
+						: t("settings.tribute.offers.createAction"),
+					primaryDisabled: !valid,
+				}}
 				footer={
-					<>
-						<ActionBtn variant="ghost" size="md" onClick={onClose} disabled={busy}>
-							{t("access.cancel")}
-						</ActionBtn>
-						<ActionBtn
-							type="submit"
-							variant="confirm"
-							size="md"
-							loading={save.isPending}
-							disabled={!valid}
-						>
-							{offer
-								? t("settings.tribute.offers.saveAction")
-								: t("settings.tribute.offers.createAction")}
-						</ActionBtn>
-					</>
+					<ActionBtn
+						type="submit"
+						variant="confirm"
+						size="md"
+						loading={save.isPending}
+						disabled={!valid}
+					>
+						{offer
+							? t("settings.tribute.offers.saveAction")
+							: t("settings.tribute.offers.createAction")}
+					</ActionBtn>
 				}
 			>
 				<section className={editorStyles.card} aria-labelledby="sponsor-offer-copy-title">

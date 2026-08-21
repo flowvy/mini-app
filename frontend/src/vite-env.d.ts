@@ -7,16 +7,3 @@ interface ImportMetaEnv {
 interface ImportMeta {
 	readonly env: ImportMetaEnv;
 }
-
-interface TelegramWebApp {
-	ready(): void;
-	expand(): void;
-	hideKeyboard?(): void;
-	colorScheme: "light" | "dark";
-}
-
-interface Window {
-	Telegram?: {
-		WebApp: TelegramWebApp;
-	};
-}

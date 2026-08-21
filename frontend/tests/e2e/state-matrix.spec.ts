@@ -131,6 +131,16 @@ test("device confirmations support cancel, failure, and successful remove-all", 
 		page.getByText("Updated", { exact: true }).first().boundingBox(),
 	]);
 	expect((addedDateBox?.x ?? 0) + (addedDateBox?.width ?? 0)).toBeLessThan(updatedLabelBox?.x ?? 0);
+	await expect
+		.poll(() =>
+			deviceDialog.evaluate(
+				(element) =>
+					element
+						.getAnimations({ subtree: true })
+						.filter((animation) => animation.playState !== "finished").length,
+			),
+		)
+		.toBe(0);
 	const accessibility = await new AxeBuilder({ page }).analyze();
 	expect(accessibility.violations).toEqual([]);
 	await page.keyboard.press("Escape");

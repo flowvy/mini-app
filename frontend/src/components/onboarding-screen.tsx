@@ -1,8 +1,7 @@
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOnboarding } from "../hooks/use-onboarding.ts";
 import { getLocalizedError } from "../lib/error-copy.ts";
-import { dismissKeyboardOnEnter } from "../lib/keyboard.ts";
 import styles from "./onboarding-screen.module.css";
 import { AppLogo } from "./ui/app-logo.tsx";
 import { ErrorState } from "./ui/error-state.tsx";
@@ -54,12 +53,6 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 		}
 		registerMutation.mutate();
 	};
-	const submitCodeOnEnter = (event: KeyboardEvent<HTMLInputElement>) => {
-		if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
-		dismissKeyboardOnEnter(event);
-		submit();
-	};
-
 	if (statusQuery.isPending) {
 		return (
 			<div className="fv-auth-screen">
@@ -102,7 +95,6 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 							<input
 								value={code}
 								onChange={(event) => setCode(event.target.value)}
-								onKeyDown={submitCodeOnEnter}
 								placeholder={t("onboarding.codePlaceholder")}
 								autoCapitalize="characters"
 								autoCorrect="off"

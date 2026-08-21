@@ -38,10 +38,9 @@ const ADMIN_TABS: TabDefinition[] = [
 
 interface TabBarProps {
 	compact?: boolean;
-	hidden?: boolean;
 }
 
-export function TabBar({ compact, hidden = false }: TabBarProps) {
+export function TabBar({ compact }: TabBarProps) {
 	const { t } = useTranslation();
 	const { mode } = useMode();
 	const user = useCurrentUser();
@@ -54,11 +53,7 @@ export function TabBar({ compact, hidden = false }: TabBarProps) {
 		tabTo === "/" ? location.pathname === "/" : location.pathname.startsWith(tabTo);
 
 	return (
-		<nav
-			className={`${styles.tabBar} ${compact ? styles.compact : ""} ${hidden ? styles.keyboardHidden : ""}`}
-			aria-hidden={hidden || undefined}
-			inert={hidden || undefined}
-		>
+		<nav className={`${styles.tabBar} ${compact ? styles.compact : ""}`}>
 			{tabs.map((tab) => {
 				const Icon = tab.icon;
 				const isActive = isActiveTab(tab.to);

@@ -16,7 +16,7 @@
 	color: var(--v2-text-tertiary);
 }
 
-.focused {
+.input:focus {
 	border-color: var(--v2-bg-positive-secondary);
 }
 

@@ -2,14 +2,12 @@ import { CalendarDays, ChevronDown } from "lucide-react";
 import {
 	type FC,
 	type InputHTMLAttributes,
-	type KeyboardEvent,
 	type ReactNode,
 	type SelectHTMLAttributes,
 	type TextareaHTMLAttributes,
 	forwardRef,
 	useId,
 } from "react";
-import { dismissKeyboardOnEnter } from "../../lib/keyboard.ts";
 import styles from "./form-section.module.css";
 
 interface FormSectionProps {
@@ -91,40 +89,15 @@ export const FormField: FC<FormFieldProps> = ({ label, htmlFor, hint, notice, ch
 	</div>
 );
 
-function dismissAfterConsumer(
-	event: KeyboardEvent<HTMLInputElement>,
-	consumer?: (event: KeyboardEvent<HTMLInputElement>) => void,
-) {
-	consumer?.(event);
-	if (!event.defaultPrevented) dismissKeyboardOnEnter(event);
-}
-
 export const FormFieldInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
-	({ className, onKeyDown, enterKeyHint = "done", value, ...props }, ref) => {
-		const restingValue =
-			value === undefined || value === null || Array.isArray(value) || String(value) === ""
-				? null
-				: String(value);
-
-		return (
-			<span className={styles.inputShell}>
-				<input
-					ref={ref}
-					className={`${styles.fieldControl} ${className ?? ""}`}
-					onKeyDown={(event) => dismissAfterConsumer(event, onKeyDown)}
-					enterKeyHint={enterKeyHint}
-					value={value}
-					data-compact-resting-value={restingValue === null ? undefined : ""}
-					{...props}
-				/>
-				{restingValue !== null && (
-					<span className={styles.inputRestingValue} aria-hidden="true">
-						{restingValue}
-					</span>
-				)}
-			</span>
-		);
-	},
+	({ className, enterKeyHint = "done", ...props }, ref) => (
+		<input
+			ref={ref}
+			className={`${styles.fieldControl} ${className ?? ""}`}
+			enterKeyHint={enterKeyHint}
+			{...props}
+		/>
+	),
 );
 FormFieldInput.displayName = "FormFieldInput";
 
@@ -311,7 +284,6 @@ export const FormInlineInput: FC<FormInlineInputProps> = ({
 		type={type}
 		value={value}
 		onChange={(e) => onChange(e.target.value)}
-		onKeyDown={dismissKeyboardOnEnter}
 		placeholder={placeholder}
 		disabled={disabled}
 		enterKeyHint="done"

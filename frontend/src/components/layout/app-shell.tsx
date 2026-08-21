@@ -4,7 +4,6 @@
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useBackButton } from "../../hooks/use-back-button.ts";
 import { useScrollCompact } from "../../hooks/use-scroll-compact.ts";
-import { useTouchEditing } from "../../hooks/use-touch-editing.ts";
 import { useCurrentUser } from "../auth-guard.tsx";
 import { ErrorState } from "../ui/error-state.tsx";
 import styles from "./app-shell.module.css";
@@ -18,10 +17,9 @@ export function AppShell() {
 	const navigate = useNavigate();
 	const location = useLocation();
 	const { compact, scrollRef } = useScrollCompact();
-	const touchEditing = useTouchEditing();
 	const adminDenied = location.pathname.startsWith("/admin/") && user.role !== "admin";
 	return (
-		<div className={styles.shell} data-touch-editing={touchEditing ? "true" : undefined}>
+		<div className={styles.shell}>
 			<EdgeBlur side="top" />
 			<Header />
 			<main ref={scrollRef} className={styles.content} data-scroll-restoration-id="main-content">
@@ -33,8 +31,8 @@ export function AppShell() {
 					</div>
 				)}
 			</main>
-			<TabBar compact={compact} hidden={touchEditing} />
-			<EdgeBlur side="bottom" hidden={touchEditing} />
+			<TabBar compact={compact} />
+			<EdgeBlur side="bottom" />
 		</div>
 	);
 }

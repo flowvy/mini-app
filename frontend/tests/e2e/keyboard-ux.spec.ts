@@ -1,6 +1,7 @@
 import { expect, test } from "./fixtures/mock-api.ts";
+import { installVisualViewportMock, setTestVisualViewport } from "./fixtures/visual-viewport.ts";
 
-test("Enter dismisses every single-line editor and preserves multiline input", async ({
+test("single-line and multiline inputs keep native keyboard semantics", async ({
 	page,
 	mockApi: _mock,
 }) => {
@@ -19,63 +20,26 @@ test("Enter dismisses every single-line editor and preserves multiline input", a
 		});
 	});
 
-	for (const path of [
-		"/admin/users",
-		"/admin/settings/kuma",
-		"/admin/settings/beszel",
-		"/admin/settings/branding",
-		"/admin/settings/welcome",
-	] as const) {
-		await page.goto(path);
-		const inputs = page.locator('input:not([type="file"])');
-		await expect(inputs.first()).toBeVisible();
-		const count = await inputs.count();
-		await page.evaluate(() => {
-			(window as typeof window & { __hideKeyboardCalls?: number }).__hideKeyboardCalls = 0;
-		});
-		for (let index = 0; index < count; index++) {
-			const input = inputs.nth(index);
-			await input.focus();
-			await expect(input).toBeFocused();
-			await input.press("Enter");
-			await expect(input).not.toBeFocused();
-		}
-		await expect
-			.poll(() =>
-				page.evaluate(
-					() => (window as typeof window & { __hideKeyboardCalls?: number }).__hideKeyboardCalls,
-				),
-			)
-			.toBe(count);
-	}
+	await page.goto("/admin/users");
+	const search = page.getByRole("textbox", { name: "Search users" });
+	await search.fill("alice");
+	await search.press("Enter");
+	await expect(search).toBeFocused();
 
 	await page.goto("/admin/settings/access");
 	await page.getByRole("button", { name: "Create profile" }).click();
-	const accessInputs = page.locator('input:not([type="file"]):not([type="checkbox"])');
-	const accessInputCount = await accessInputs.count();
-	for (const input of await accessInputs.all()) {
-		await input.focus();
-		await expect(input).toBeFocused();
-		await input.press("Enter");
-		await expect(input).not.toBeFocused();
-	}
-	await expect
-		.poll(() =>
-			page.evaluate(
-				() => (window as typeof window & { __hideKeyboardCalls?: number }).__hideKeyboardCalls,
-			),
-		)
-		.toBe(accessInputCount);
+	const name = page.getByLabel("Name");
+	await name.focus();
+	await name.press("Enter");
+	await expect(name).toBeFocused();
+	await expect(page.getByRole("dialog", { name: "Create access profile" })).toBeVisible();
 
-	await page.goto("/admin/settings/welcome");
-	await page.evaluate(() => {
-		(window as typeof window & { __hideKeyboardCalls?: number }).__hideKeyboardCalls = 0;
-	});
-	const textarea = page.locator("textarea");
-	await textarea.fill("First line");
-	await textarea.press("Enter");
-	await expect(textarea).toBeFocused();
-	await expect(textarea).toHaveValue("First line\n");
+	await page.getByText("Advanced Remnawave fields").click();
+	const description = page.getByLabel("Description");
+	await description.fill("First line");
+	await description.press("Enter");
+	await expect(description).toBeFocused();
+	await expect(description).toHaveValue("First line\n");
 	await expect
 		.poll(() =>
 			page.evaluate(
@@ -85,52 +49,193 @@ test("Enter dismisses every single-line editor and preserves multiline input", a
 		.toBe(0);
 });
 
-test("mobile form focus hides bottom chrome until editing finishes", async ({
+test("visual viewport changes do not rewrite app geometry or hide controls", async ({
 	page,
 	mockApi: _mock,
 }) => {
+	await page.emulateMedia({ reducedMotion: "reduce" });
+	await installVisualViewportMock(page);
 	await page.goto("/admin/settings/access");
 	await page.getByRole("button", { name: "Create profile" }).click();
-	const navigation = page.getByRole("navigation", { includeHidden: true });
-	const touchInput = await page.evaluate(
-		() => window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
+
+	const shell = page.locator('main[data-scroll-restoration-id="main-content"]').locator("..");
+	const dialog = page.getByRole("dialog", { name: "Create access profile" });
+	const navigation = page.getByRole("navigation");
+	const footer = dialog.locator("footer");
+	const name = page.getByLabel("Name");
+	const restoredViewportHeight = await page.evaluate(() => window.innerHeight);
+
+	await name.focus();
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			),
+	);
+	const initialGeometry = await Promise.all([shell.boundingBox(), dialog.boundingBox()]);
+	await setTestVisualViewport(page, Math.max(240, restoredViewportHeight - 300), 24);
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			),
 	);
 
-	const name = page.getByLabel("Name");
-	await name.focus();
-	if (touchInput) {
-		await expect(navigation).toHaveAttribute("aria-hidden", "true");
-		await expect(navigation).toHaveCSS("pointer-events", "none");
-	} else {
-		await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
-	}
+	const shrunkGeometry = await Promise.all([shell.boundingBox(), dialog.boundingBox()]);
+	expect(shrunkGeometry).toEqual(initialGeometry);
+	await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
+	await expect(footer).not.toHaveAttribute("aria-hidden", "true");
+	await expect(footer).toBeVisible();
+	await expect(name).toBeFocused();
+	expect(
+		await page.evaluate(() => ({
+			height: document.documentElement.style.getPropertyValue("--fv-visual-viewport-height"),
+			offset: document.documentElement.style.getPropertyValue("--fv-visual-viewport-offset-top"),
+		})),
+	).toEqual({ height: "", offset: "" });
 
-	await name.press("Enter");
-	await expect(name).not.toBeFocused();
-	await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
+	await name.blur();
+	await setTestVisualViewport(page, restoredViewportHeight);
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			),
+	);
+	expect(await Promise.all([shell.boundingBox(), dialog.boundingBox()])).toEqual(initialGeometry);
+});
 
-	await page.getByText("Advanced Remnawave fields").focus();
-	await page.keyboard.press("Enter");
-	const description = page.getByLabel("Description");
-	await description.focus();
-	await description.press("Enter");
-	await expect(description).toBeFocused();
-	if (touchInput) await expect(navigation).toHaveAttribute("aria-hidden", "true");
-	await description.blur();
-	await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
+test("supported Telegram clients receive native editor bottom buttons", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.addInitScript(() => {
+		const telegramWindow = window as typeof window & {
+			__telegramEvents?: Array<{ eventType: string; eventData?: string }>;
+		};
+		telegramWindow.__telegramEvents = [];
+		Object.defineProperty(window, "TelegramWebviewProxy", {
+			configurable: true,
+			value: {
+				postEvent: (eventType: string, eventData?: string) => {
+					telegramWindow.__telegramEvents?.push({ eventType, eventData });
+				},
+			},
+		});
+	});
+	const launchParams = new URLSearchParams({
+		tgWebAppPlatform: "ios",
+		tgWebAppVersion: "9.6",
+		tgWebAppThemeParams: JSON.stringify({
+			bg_color: "#171717",
+			button_color: "#31d58b",
+			button_text_color: "#111111",
+			bottom_bar_bg_color: "#171717",
+		}),
+	});
 
-	const status = page.getByLabel("Initial status");
-	await status.focus();
-	await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
-	await status.selectOption("DISABLED");
-	await status.blur();
-	await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
+	await page.goto(`/admin/settings/access?${launchParams.toString()}`);
+	await page.getByRole("button", { name: "Create profile" }).click();
+	const dialog = page.getByRole("dialog", { name: "Create access profile" });
+	await expect(dialog).toBeVisible();
 
-	await page.getByRole("radio", { name: "Date" }).click();
-	const date = page.getByRole("textbox", { name: "Expires at" });
-	await date.focus();
-	await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
-	await date.fill("2026-09-01");
-	await date.blur();
-	await expect(navigation).not.toHaveAttribute("aria-hidden", "true");
+	await expect
+		.poll(() =>
+			page.evaluate(() => {
+				const telegramWindow = window as typeof window & {
+					__telegramEvents?: Array<{ eventType: string; eventData?: string }>;
+				};
+				return telegramWindow.__telegramEvents
+					?.filter(
+						(event) =>
+							event.eventType === "web_app_setup_main_button" ||
+							event.eventType === "web_app_setup_secondary_button",
+					)
+					.map((event) => ({
+						eventType: event.eventType,
+						data: event.eventData ? JSON.parse(event.eventData) : null,
+					}));
+			}),
+		)
+		.toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					eventType: "web_app_setup_main_button",
+					data: expect.objectContaining({
+						text: "Create profile",
+						is_active: false,
+						is_visible: true,
+						color: "#747474",
+						text_color: "#171717",
+					}),
+				}),
+			]),
+		);
+	expect(
+		await page.evaluate(() => {
+			const telegramWindow = window as typeof window & {
+				__telegramEvents?: Array<{ eventType: string }>;
+			};
+			return telegramWindow.__telegramEvents?.some(
+				(event) => event.eventType === "web_app_setup_secondary_button",
+			);
+		}),
+	).toBe(false);
+	await expect(dialog.locator("footer")).toHaveCount(0);
+	await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
+	await expect
+		.poll(() =>
+			page.evaluate(() => {
+				const telegramWindow = window as typeof window & {
+					__telegramEvents?: Array<{ eventType: string; eventData?: string }>;
+				};
+				const mainEvents = telegramWindow.__telegramEvents?.filter(
+					(event) => event.eventType === "web_app_setup_main_button",
+				);
+				const eventData = mainEvents?.at(-1)?.eventData;
+				return eventData ? JSON.parse(eventData) : null;
+			}),
+		)
+		.toEqual(expect.objectContaining({ color: "#9a9a9a", text_color: "#f7f7f7" }));
+	await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
+
+	await page.getByLabel("Name").fill("Native buttons profile");
+	await expect
+		.poll(() =>
+			page.evaluate(() => {
+				const telegramWindow = window as typeof window & {
+					__telegramEvents?: Array<{ eventType: string; eventData?: string }>;
+				};
+				const mainEvents = telegramWindow.__telegramEvents?.filter(
+					(event) => event.eventType === "web_app_setup_main_button",
+				);
+				const eventData = mainEvents?.at(-1)?.eventData;
+				return eventData ? JSON.parse(eventData) : null;
+			}),
+		)
+		.toEqual(
+			expect.objectContaining({
+				is_active: true,
+				is_visible: true,
+				color: "#ffffff",
+				text_color: "#171717",
+			}),
+		);
+
+	await page.getByRole("button", { name: "Close editor" }).click();
+	await expect(dialog).toHaveCount(0);
+	await expect
+		.poll(() =>
+			page.evaluate(() => {
+				const telegramWindow = window as typeof window & {
+					__telegramEvents?: Array<{ eventType: string; eventData?: string }>;
+				};
+				const mainEvents = telegramWindow.__telegramEvents?.filter(
+					(event) => event.eventType === "web_app_setup_main_button",
+				);
+				const eventData = mainEvents?.at(-1)?.eventData;
+				return eventData ? JSON.parse(eventData) : null;
+			}),
+		)
+		.toEqual(expect.objectContaining({ is_visible: false }));
 });

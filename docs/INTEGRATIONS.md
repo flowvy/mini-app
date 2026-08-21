@@ -47,9 +47,11 @@ Flowvy задать другой стартовый desktop-размер.
 Mini App URL в официальный `t.me/share/url`; форматированный code остаётся в тексте для ручного
 ввода. Bot `?start=` не используется как referral transport и обычный `/start` не разбирает
 реферальный payload.
-Однострочные поля используют standard `enterkeyhint` и при Enter вызывают
-`Telegram.WebApp.hideKeyboard()` с DOM `blur()` fallback. IME composition не прерывается,
-а `textarea` сохраняет обычный перенос строки.
+Поля используют нативные HTML focus, form submit, `enterkeyhint` и IME semantics. Frontend не
+вызывает `blur()`/`Telegram.WebApp.hideKeyboard()`, не вычисляет состояние клавиатуры из
+`VisualViewport` и не переписывает геометрию shell/dialog при её открытии или закрытии. Telegram SDK
+остаётся источником Telegram safe-area variables; браузер и WebView сами управляют перекрытием
+layout viewport экранной клавиатурой.
 
 Backend отказывает при пустом token, проверяет signature, TTL, слишком будущий `auth_date`, user и
 active-state. Admin дополнительно требует текущий allow-list и сохранённую роль. Сбой Redis activity
@@ -76,7 +78,7 @@ Telegram хранит ещё не полученные updates до 24 часо�
 Redis бот fail closed возвращает временную ошибку. Это дополняет уникальный Telegram `update_id`:
 два сообщения пользователя являются двумя корректными updates, а не повторной доставкой одного.
 
-Primary evidence, проверено 2026-08-04 и 2026-08-08:
+Primary evidence, проверено 2026-08-04, 2026-08-08 и 2026-08-21:
 
 - [Telegram Main Mini App](https://core.telegram.org/bots/webapps#launching-the-main-mini-app): её
   настраивают через `@BotFather` (`/mybots` → bot → Bot Settings → Configure Mini App → Enable Mini
@@ -97,8 +99,28 @@ Primary evidence, проверено 2026-08-04 и 2026-08-08:
   one-tap Main Mini App flow Flowvy.
 - [Telegram share links](https://core.telegram.org/api/links#share-links): `t.me/share/url` открывает
   выбор чата и принимает URL плюс редактируемый текст.
-- [Telegram Mini Apps API](https://core.telegram.org/bots/webapps): `hideKeyboard()` доступен
-  с Bot API 9.1 и скрывает активную экранную клавиатуру.
+- [Telegram Mini Apps API](https://core.telegram.org/bots/webapps): `viewportHeight` обновляется
+  недостаточно часто для плавной привязки нижнего UI, а `viewportStableHeight` меняется только после
+  завершения жеста или анимации. Flowvy не привязывает shell или dialog к этим значениям.
+- [Telegram Mini Apps BottomButton](https://core.telegram.org/bots/webapps#bottombutton), проверено
+  2026-08-21: `MainButton` и Bot API 7.10+ `SecondaryButton` рисуются в нижнем интерфейсе самого
+  Telegram. Flowvy fullscreen editors используют только `MainButton` для primary create/save action;
+  `SecondaryButton` не создаётся, потому что закрытие уже доступно через header close и `Escape`.
+  Locked Telegram Apps SDK 3.11.8 проверяет capability `MainButton`; обычный DOM footer с одной
+  primary-кнопкой остаётся UI fallback для browser и старых клиентов. `color`, `text_color` и
+  `is_active` передаются явно:
+  native footer повторяет adaptive Flowvy tokens, а недоступный primary action визуально сохраняет
+  прежнюю 40% disabled-палитру вместо активной Telegram-blue заливки.
+- [MDN VisualViewport](https://developer.mozilla.org/en-US/docs/Web/API/VisualViewport): экранная
+  клавиатура может уменьшать visual viewport без изменения layout viewport; эмуляция
+  `device-fixed` через `resize`/`scroll` требует осторожности и может мерцать.
+- [WebKit bug 265578](https://bugs.webkit.org/show_bug.cgi?id=265578), проверено 2026-08-21:
+  `visualViewport.height` и `resize` на iOS могут обновляться только в конце анимации открытия или
+  закрытия клавиатуры. Поэтому Flowvy не использует это событие для покадровой геометрии страницы.
+- [WebKit bug 259770](https://bugs.webkit.org/show_bug.cgi?id=259770) и
+  [WebKit bug 230225](https://bugs.webkit.org/show_bug.cgi?id=230225), проверено 2026-08-21:
+  `interactive-widget=resizes-content` и VirtualKeyboard API остаются нереализованными. Поэтому
+  web-owned fixed footer нельзя поддерживаемым CSS/JS contract синхронно вести за iOS keyboard.
 - [Telegram Mini Apps API](https://core.telegram.org/bots/webapps): `expand()` изменяет доступную
   высоту, а `requestFullscreen()` и `exitFullscreen()` являются отдельными Bot API 8.0+ командами;
   API не определяет управление координатами или drag-area нативного desktop-окна.
@@ -114,7 +136,8 @@ Primary evidence, проверено 2026-08-04 и 2026-08-08:
   проверено 2026-08-08: начальный inner size равен `384x694`, а оконный режим создаёт resize-зоны
   на четырёх границах и четырёх углах.
 - [HTML `enterkeyhint`](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/enterkeyhint):
-  `done` обозначает завершение ввода/закрытие IME, `search` — поиск.
+  `done` обозначает завершение ввода, `search` — поиск; атрибут задаёт подпись action key, но не
+  является командой приложению вручную снимать focus.
 - [Telegram Bot API — setWebhook](https://core.telegram.org/bots/api#setwebhook): `secret_token`
   имеет длину 1–256 и алфавит `A-Z a-z 0-9 _ -`; Telegram присылает его в одноимённом secret header.
 - [aiogram 3.26 — setWebhook](https://docs.aiogram.dev/en/v3.26.0/api/methods/set_webhook.html):

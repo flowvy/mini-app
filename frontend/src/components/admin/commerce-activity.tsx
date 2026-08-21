@@ -1,11 +1,10 @@
 import { RefreshCw } from "lucide-react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	useActOnEntitlementOperation,
 	useEntitlementOperations,
 } from "../../hooks/use-commerce-rules.ts";
-import { useTouchEditing } from "../../hooks/use-touch-editing.ts";
 import { formatDateISO, formatExpiryDate } from "../../lib/format.ts";
 import { formatMinorMoney } from "../../lib/money.ts";
 import type {
@@ -153,21 +152,10 @@ export function CommerceActivity() {
 	const { t } = useTranslation();
 	const activity = useEntitlementOperations();
 	const actionMutation = useActOnEntitlementOperation();
-	const touchEditing = useTouchEditing();
-	const touchEditingRef = useRef(touchEditing);
-	touchEditingRef.current = touchEditing;
 	const returnFocusRef = useRef<HTMLElement>(null);
 	const operationFocusRef = useRef<HTMLElement>(null);
 	const [decision, setDecision] = useState<PendingDecision | null>(null);
 	const [note, setNote] = useState("");
-	const [closingAfterSuccess, setClosingAfterSuccess] = useState(false);
-
-	useLayoutEffect(() => {
-		if (!closingAfterSuccess || touchEditing) return;
-		setClosingAfterSuccess(false);
-		setDecision(null);
-		setNote("");
-	}, [closingAfterSuccess, touchEditing]);
 
 	const openDecision = (
 		operation: EntitlementOperation,
@@ -176,16 +164,14 @@ export function CommerceActivity() {
 	) => {
 		actionMutation.reset();
 		setNote("");
-		setClosingAfterSuccess(false);
 		returnFocusRef.current = trigger;
 		operationFocusRef.current = trigger.closest<HTMLElement>("[data-entitlement-operation]");
 		setDecision({ operation, action, requestId: crypto.randomUUID() });
 	};
 
 	const closeDecision = () => {
-		if (actionMutation.isPending || closingAfterSuccess) return;
+		if (actionMutation.isPending) return;
 		actionMutation.reset();
-		setClosingAfterSuccess(false);
 		setDecision(null);
 		setNote("");
 	};
@@ -204,12 +190,8 @@ export function CommerceActivity() {
 			{
 				onSuccess: () => {
 					returnFocusRef.current = operationFocusRef.current;
-					if (touchEditingRef.current) {
-						setClosingAfterSuccess(true);
-					} else {
-						setDecision(null);
-						setNote("");
-					}
+					setDecision(null);
+					setNote("");
 				},
 			},
 		);
@@ -311,7 +293,7 @@ export function CommerceActivity() {
 						: "settings.tribute.activity.action.retryConfirm",
 				)}
 				cancelLabel={t("common.cancel")}
-				confirmLoading={actionMutation.isPending || closingAfterSuccess}
+				confirmLoading={actionMutation.isPending}
 				confirmDisabled={confirmDisabled}
 				returnFocusRef={returnFocusRef}
 				onCancel={closeDecision}
@@ -337,7 +319,7 @@ export function CommerceActivity() {
 								onChange={(event) => setNote(event.target.value)}
 								maxLength={500}
 								rows={4}
-								disabled={actionMutation.isPending || closingAfterSuccess}
+								disabled={actionMutation.isPending}
 								readOnly={actionMutation.isError}
 							/>
 						</FormField>

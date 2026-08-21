@@ -313,11 +313,16 @@ test("access profile editor traps focus, passes Axe, and returns focus to its tr
 		expect(dialogBox?.width ?? viewport.width).toBeLessThan(viewport.width);
 		expect(dialogBox?.height ?? viewport.height).toBeLessThan(viewport.height);
 	}
-	await expect(page.getByRole("heading", { name: "Create access profile" })).toBeFocused();
-	await page.keyboard.press("Tab");
-	await expect(page.getByRole("button", { name: "Close editor" })).toBeFocused();
+	const dialogHeading = page.getByRole("heading", { name: "Create access profile" });
+	await expect(dialogHeading).toBeFocused();
+	const closeEditor = page.getByRole("button", { name: "Close editor" });
+	await closeEditor.focus();
 	await page.keyboard.press("Shift+Tab");
-	await expect(dialog.getByRole("button", { name: "Cancel" })).toBeFocused();
+	await expect(dialog.locator("summary")).toBeFocused();
+	await page.keyboard.press("Tab");
+	await expect(closeEditor).toBeFocused();
+	await expect(dialog.getByRole("button", { name: "Create profile" })).toBeDisabled();
+	await expect(dialog.getByRole("button", { name: "Cancel" })).toHaveCount(0);
 
 	const result = await new AxeBuilder({ page }).include("dialog").analyze();
 	const serious = result.violations.filter((violation) =>
@@ -366,7 +371,6 @@ test("access editor fails safely when Remnawave options are unavailable", async 
 	await page.keyboard.press("Enter");
 	await expect(page.getByLabel("Remnawave tag")).toBeDisabled();
 	await page.getByPlaceholder("Free 30 days").fill("Local trial");
-	await page.getByPlaceholder("Free 30 days").press("Enter");
 	const submit = page
 		.getByRole("dialog", { name: "Create access profile" })
 		.getByRole("button", { name: "Create profile", exact: true });
