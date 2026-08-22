@@ -1,10 +1,24 @@
 import AxeBuilder from "@axe-core/playwright";
+import type { Page } from "@playwright/test";
 import { assertNoHorizontalOverflow, expect, mockData, test } from "./fixtures/mock-api.ts";
 import {
 	installTelegramMainButton,
 	pressTelegramMainButton,
 	withTelegramMainButton,
 } from "./fixtures/telegram-main-button.ts";
+
+async function assertOnlyExpectedViewportZoomRestriction(page: Page): Promise<void> {
+	const { violations } = await new AxeBuilder({ page }).analyze();
+	const viewportViolations = violations.filter((violation) => violation.id === "meta-viewport");
+	expect(viewportViolations).toHaveLength(1);
+	expect(viewportViolations[0]?.nodes).toHaveLength(1);
+	expect(
+		viewportViolations[0]?.nodes[0]?.any.some(
+			(check) => check.id === "meta-viewport" && check.data === "maximum-scale",
+		),
+	).toBe(true);
+	expect(violations.filter((violation) => violation.id !== "meta-viewport")).toEqual([]);
+}
 
 test("authentication retry and direct admin denial are explicit", async ({
 	page,
@@ -203,8 +217,7 @@ test("device confirmations support cancel, failure, and successful remove-all", 
 			),
 		)
 		.toBe(0);
-	const accessibility = await new AxeBuilder({ page }).analyze();
-	expect(accessibility.violations).toEqual([]);
+	await assertOnlyExpectedViewportZoomRestriction(page);
 	await page.keyboard.press("Escape");
 	await expect(deviceDialog).toHaveCount(0);
 	await expect(firstDeleteButton).toBeFocused();
@@ -263,8 +276,7 @@ test("device details use OS logos and compact provider metadata", async ({ page,
 	await expect(page.getByText("2001:db8::42", { exact: true })).toBeVisible();
 	await expect(page.getByText("Not reported", { exact: true })).toHaveCount(4);
 	await assertNoHorizontalOverflow(page);
-	const result = await new AxeBuilder({ page }).analyze();
-	expect(result.violations).toEqual([]);
+	await assertOnlyExpectedViewportZoomRestriction(page);
 });
 
 test("remove-all gives every device its own staggered dust layer", async ({ page, mockApi }) => {

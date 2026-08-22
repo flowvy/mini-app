@@ -45,7 +45,7 @@ test("selection motion follows the system Reduce Motion preference", async ({
 	expect(await selectedLayerDurationMs(dashboardView)).toBeLessThan(1);
 });
 
-test("form controls use the global type scale without disabling user zoom", async ({
+test("form controls use the global type scale with focus zoom constrained", async ({
 	page,
 	mockApi: _mock,
 }) => {
@@ -57,7 +57,7 @@ test("form controls use the global type scale without disabling user zoom", asyn
 	).toBe("13px");
 	const viewport = await page.locator('meta[name="viewport"]').getAttribute("content");
 	expect(viewport).not.toContain("user-scalable=no");
-	expect(viewport).not.toContain("maximum-scale=1");
+	expect(viewport).toContain("maximum-scale=1");
 });
 
 test("access controls keep Flowvy typography with native input values", async ({
