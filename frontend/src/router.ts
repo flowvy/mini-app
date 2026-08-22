@@ -1,24 +1,14 @@
 /**
  * TanStack Router — code-based route definitions.
  */
-import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import {
+	createRootRoute,
+	createRoute,
+	createRouter,
+	lazyRouteComponent,
+} from "@tanstack/react-router";
 import { AppShell } from "./components/layout/app-shell.tsx";
-import { AdminBroadcast } from "./pages/admin/broadcast.tsx";
-import { AdminDashboard } from "./pages/admin/dashboard.tsx";
-import { AdminAccessSettings } from "./pages/admin/settings-access.tsx";
-import { AdminBeszelConfig } from "./pages/admin/settings-beszel.tsx";
-import { AdminBrandingConfig } from "./pages/admin/settings-branding.tsx";
-import { AdminContentConfig } from "./pages/admin/settings-content.tsx";
-import { AdminKumaConfig } from "./pages/admin/settings-kuma.tsx";
-import { AdminTributeConfig } from "./pages/admin/settings-tribute.tsx";
-import { AdminWelcomeConfig } from "./pages/admin/settings-welcome.tsx";
-import { AdminSettings } from "./pages/admin/settings.tsx";
-import { AdminUserDetailPage } from "./pages/admin/user-detail-page.tsx";
-import { AdminUsers, AdminUsersSearch } from "./pages/admin/users.tsx";
-import { Devices } from "./pages/devices.tsx";
-import { Home } from "./pages/home.tsx";
-import { Pulse } from "./pages/pulse.tsx";
-import { Support } from "./pages/support.tsx";
+import { PageLoading } from "./components/ui/page-loading.tsx";
 
 const rootRoute = createRootRoute({
 	component: AppShell,
@@ -27,103 +17,124 @@ const rootRoute = createRootRoute({
 const homeRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/",
-	component: Home,
+	component: lazyRouteComponent(() => import("./pages/home.tsx"), "Home"),
 });
 
 const pulseRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/pulse",
-	component: Pulse,
+	component: lazyRouteComponent(() => import("./pages/pulse.tsx"), "Pulse"),
 });
 
 const devicesRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/devices",
-	component: Devices,
+	component: lazyRouteComponent(() => import("./pages/devices.tsx"), "Devices"),
 });
 
 const supportRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/support",
-	component: Support,
+	component: lazyRouteComponent(() => import("./pages/support.tsx"), "Support"),
 });
 
 const adminDashboardRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/dashboard",
-	component: AdminDashboard,
+	component: lazyRouteComponent(() => import("./pages/admin/dashboard.tsx"), "AdminDashboard"),
 });
 
 const adminUsersRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/users",
-	component: AdminUsers,
+	component: lazyRouteComponent(() => import("./pages/admin/users.tsx"), "AdminUsers"),
 });
 
 const adminUsersSearchRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/users/search",
-	component: AdminUsersSearch,
+	component: lazyRouteComponent(() => import("./pages/admin/users.tsx"), "AdminUsersSearch"),
 });
 
 const adminUserDetailRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/users/$userId",
-	component: AdminUserDetailPage,
+	component: lazyRouteComponent(
+		() => import("./pages/admin/user-detail-page.tsx"),
+		"AdminUserDetailPage",
+	),
 });
 
 const adminBroadcastRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/broadcast",
-	component: AdminBroadcast,
+	component: lazyRouteComponent(() => import("./pages/admin/broadcast.tsx"), "AdminBroadcast"),
 });
 
 const adminSettingsRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/settings",
-	component: AdminSettings,
+	component: lazyRouteComponent(() => import("./pages/admin/settings.tsx"), "AdminSettings"),
 });
 
 const adminSettingsKumaRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/settings/kuma",
-	component: AdminKumaConfig,
+	component: lazyRouteComponent(() => import("./pages/admin/settings-kuma.tsx"), "AdminKumaConfig"),
 });
 
 const adminSettingsBeszelRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/settings/beszel",
-	component: AdminBeszelConfig,
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-beszel.tsx"),
+		"AdminBeszelConfig",
+	),
 });
 
 const adminSettingsTributeRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/settings/tribute",
-	component: AdminTributeConfig,
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-tribute.tsx"),
+		"AdminTributeConfig",
+	),
 });
 
 const adminSettingsBrandingRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/settings/branding",
-	component: AdminBrandingConfig,
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-branding.tsx"),
+		"AdminBrandingConfig",
+	),
 });
 
 const adminSettingsWelcomeRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/settings/welcome",
-	component: AdminWelcomeConfig,
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-welcome.tsx"),
+		"AdminWelcomeConfig",
+	),
 });
 
 const adminSettingsContentRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/settings/content",
-	component: AdminContentConfig,
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-content.tsx"),
+		"AdminContentConfig",
+	),
 });
 
 const adminSettingsAccessRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/settings/access",
-	component: AdminAccessSettings,
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-access.tsx"),
+		"AdminAccessSettings",
+	),
 });
 
 const routeTree = rootRoute.addChildren([
@@ -149,6 +160,7 @@ const routeTree = rootRoute.addChildren([
 export const router = createRouter({
 	routeTree,
 	defaultPreload: "intent",
+	defaultPendingComponent: PageLoading,
 	scrollRestoration: true,
 	scrollToTopSelectors: ['[data-scroll-restoration-id="main-content"]'],
 });

@@ -841,6 +841,7 @@ test("key interactive screens have no serious accessibility violations in light 
 	] as const) {
 		await page.goto(path);
 		await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
+		await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
 		const result = await new AxeBuilder({ page }).analyze();
 		const serious = result.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),

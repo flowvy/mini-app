@@ -159,3 +159,28 @@ test("browser history keeps the visible tab mode aligned with the route", async 
 	await expect(page).toHaveURL(/\/admin\/dashboard$/);
 	await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
 });
+
+test("lazy routes survive direct loading, refresh, and browser history", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.goto("/");
+	await expect(page.getByRole("heading", { name: "Account Info" })).toBeVisible();
+
+	await page.getByRole("link", { name: "Devices" }).click();
+	await expect(page).toHaveURL(/\/devices$/);
+	await expect(page.getByRole("heading", { name: "Connected devices" })).toBeVisible();
+
+	await page.goBack();
+	await expect(page).toHaveURL(/\/$/);
+	await expect(page.getByRole("heading", { name: "Account Info" })).toBeVisible();
+
+	await page.goForward();
+	await expect(page).toHaveURL(/\/devices$/);
+	await expect(page.getByRole("heading", { name: "Connected devices" })).toBeVisible();
+
+	await page.goto("/admin/settings/tribute");
+	await expect(page.getByRole("heading", { name: "Connection" })).toBeVisible();
+	await page.reload();
+	await expect(page.getByRole("heading", { name: "Connection" })).toBeVisible();
+});
