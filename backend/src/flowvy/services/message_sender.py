@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import logging
 from dataclasses import dataclass, replace
 from pathlib import Path
 
 from aiogram import Bot
+from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
 from aiogram.types import (
     FSInputFile,
@@ -18,9 +20,11 @@ from aiogram.types import (
 )
 from redis.asyncio import Redis
 
-from flowvy.bot.templates import DEFAULTS, MessageTemplate, render
+from flowvy.bot.templates import MessageTemplate, default_template, render
 from flowvy.config import Settings
+from flowvy.localization import product_text
 from flowvy.models.provider_settings import ProviderSettings
+from flowvy.services.operator_content import resolve_operator_content
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +73,7 @@ class MessageSender:
                     chat_id=chat_id,
                     animation=media,
                     caption=text,
+                    parse_mode=ParseMode.HTML,
                     reply_markup=reply_markup,
                 )
                 if media_path and isinstance(media, FSInputFile) and result.animation:
@@ -79,6 +84,7 @@ class MessageSender:
                     chat_id=chat_id,
                     photo=media,
                     caption=text,
+                    parse_mode=ParseMode.HTML,
                     reply_markup=reply_markup,
                 )
                 if media_path and isinstance(media, FSInputFile) and result.photo:
@@ -87,6 +93,7 @@ class MessageSender:
             return await self._bot.send_message(
                 chat_id=chat_id,
                 text=text,
+                parse_mode=ParseMode.HTML,
                 reply_markup=reply_markup,
             )
         except TelegramBadRequest as exc:
@@ -100,6 +107,7 @@ class MessageSender:
                     return await self._bot.send_message(
                         chat_id=chat_id,
                         text=text,
+                        parse_mode=ParseMode.HTML,
                         reply_markup=reply_markup,
                     )
                 except TelegramAPIError:
@@ -116,20 +124,24 @@ class MessageSender:
         chat_id: int,
         settings: Settings,
         provider_settings: ProviderSettings | None = None,
+        locale: str | None = None,
     ) -> Message | None:
         """Send welcome message resolved from template + provider overrides."""
-        tmpl = self.resolve_template("welcome", provider_settings)
-        app_name = "Flowvy"
+        tmpl = self.resolve_template("welcome", provider_settings, locale)
+        app_name = product_text(locale, "common.appName")
         if provider_settings and provider_settings.app_name:
             app_name = provider_settings.app_name
-        context = {"app_name": app_name}
-
-        text = render(tmpl.text, context)
+        html_app_name = html.escape(app_name)
+        text = render(tmpl.text, {"appName": html_app_name, "app_name": html_app_name})
 
         if not settings.webapp_url:
             return await self.send(chat_id=chat_id, text=text)
 
-        button_text = render(tmpl.button_text, context) if tmpl.button_text else None
+        button_text = (
+            render(tmpl.button_text, {"appName": app_name, "app_name": app_name})
+            if tmpl.button_text
+            else None
+        )
         buttons = (
             [InlineButton(text=button_text, web_app_url=settings.webapp_url)]
             if button_text
@@ -145,19 +157,52 @@ class MessageSender:
             buttons=buttons,
         )
 
+    async def send_invite_required(
+        self,
+        chat_id: int,
+        provider_settings: ProviderSettings | None = None,
+        locale: str | None = None,
+    ) -> Message | None:
+        """Send the locale-resolved invite prompt with optional provider media."""
+
+        app_name = product_text(locale, "common.appName")
+        template = html.escape(product_text(locale, "registration.inviteRequired"))
+        media_type = None
+        media_file_id = None
+        if provider_settings is not None:
+            if provider_settings.app_name:
+                app_name = provider_settings.app_name
+            content = resolve_operator_content(provider_settings, locale)
+            if content.bot_invite_required:
+                template = content.bot_invite_required
+            media_type = getattr(provider_settings, "bot_invite_media_type", None)
+            media_file_id = getattr(provider_settings, "bot_invite_media_file_id", None)
+        escaped_name = html.escape(app_name)
+        text = render(template, {"appName": escaped_name, "app_name": escaped_name})
+        return await self.send(
+            chat_id=chat_id,
+            text=text,
+            media_type=media_type,
+            media_file_id=media_file_id,
+        )
+
     @staticmethod
     def resolve_template(
         name: str,
         provider_settings: ProviderSettings | None,
+        locale: str | None = None,
     ) -> MessageTemplate:
         """Resolve template: DEFAULTS base + provider_settings overrides."""
-        base = DEFAULTS[name]
+        base = default_template(name, locale)
         if provider_settings is None:
             return base
 
         overrides: dict[str, object] = {}
-        if provider_settings.welcome_text is not None:
-            overrides["text"] = provider_settings.welcome_text
+        content = resolve_operator_content(provider_settings, locale)
+        welcome_text = content.welcome_text or provider_settings.welcome_text
+        welcome_button_text = content.welcome_button_text or provider_settings.welcome_button_text
+        if welcome_text is not None:
+            overrides["text"] = welcome_text
         if provider_settings.welcome_media_file_id is not None:
             overrides["media_file_id"] = provider_settings.welcome_media_file_id
             overrides["media_url"] = None
@@ -167,8 +212,8 @@ class MessageSender:
             overrides["media_path"] = None
         if provider_settings.welcome_media_type is not None:
             overrides["media_type"] = provider_settings.welcome_media_type
-        if provider_settings.welcome_button_text is not None:
-            overrides["button_text"] = provider_settings.welcome_button_text
+        if welcome_button_text is not None:
+            overrides["button_text"] = welcome_button_text
 
         if not overrides:
             return base

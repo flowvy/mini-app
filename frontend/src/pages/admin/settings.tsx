@@ -1,6 +1,6 @@
 /** Admin Settings page — main list, sub-screens are separate routes. */
 import { useNavigate } from "@tanstack/react-router";
-import { Activity, MessageSquareText, Palette, ShieldCheck } from "lucide-react";
+import { Activity, Languages, MessageSquareText, Palette, ShieldCheck } from "lucide-react";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -171,6 +171,13 @@ export const AdminSettings: FC = () => {
 					label={t("settings.miniApp.welcomeRow")}
 					description={t("settings.miniApp.welcomeRowDesc")}
 					onClick={() => navigate({ to: "/admin/settings/welcome" })}
+				/>
+				<SettingsDivider />
+				<SettingsNavRow
+					icon={<Languages size={17} strokeWidth={1.8} aria-hidden="true" />}
+					label={t("settings.contentRow")}
+					description={t("settings.contentRowDesc")}
+					onClick={() => navigate({ to: "/admin/settings/content" })}
 				/>
 			</SettingsSection>
 

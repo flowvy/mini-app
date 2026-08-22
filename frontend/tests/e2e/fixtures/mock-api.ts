@@ -78,6 +78,31 @@ export const mockData = {
 		welcomeMediaFileId: null,
 		welcomeMediaFileName: null,
 		welcomeButtonText: "Open Flowvy",
+		botInviteMediaType: null,
+		botInviteMediaFileId: null,
+		botInviteMediaFileName: null,
+		contentDefaultLocale: "en",
+		contentLocales: {},
+		contentTemplateVariables: {
+			welcomeText: ["appName"],
+			welcomeButtonText: ["appName"],
+			botInviteRequired: ["appName"],
+			onboardingInviteTitle: ["appName"],
+			onboardingInviteDescription: ["appName"],
+			onboardingOpenTitle: ["appName"],
+			onboardingOpenDescription: ["appName"],
+			onboardingRedeemAction: ["appName"],
+			onboardingRegisterAction: ["appName"],
+			inviteTitle: ["appName"],
+			inviteDescription: ["appName"],
+			inviteShareText: ["appName", "code"],
+			sponsorNoAccessTitle: ["appName"],
+			sponsorNoAccessDescription: ["appName"],
+			sponsorBaseAccessTitle: ["appName"],
+			sponsorBaseAccessDescription: ["appName"],
+			sponsorChooseAction: ["appName"],
+		},
+		sponsorOfferTemplateVariables: ["appName"],
 		remnawaveVersion: "2.7.4",
 		flowvyVersion: "0.1.0",
 		updatedAt: 1_785_542_400,
@@ -350,6 +375,12 @@ async function handleApi(
 	if (method === "POST" && path === "/api/debug/admin/settings/welcome-media") {
 		await reply(route, {
 			body: { fileId: "telegram-file-1", fileName: "welcome.mp4", mediaType: "animation" },
+		});
+		return;
+	}
+	if (method === "POST" && path === "/api/debug/admin/settings/bot-invite-media") {
+		await reply(route, {
+			body: { fileId: "telegram-file-2", fileName: "invite.png", mediaType: "photo" },
 		});
 		return;
 	}

@@ -8,6 +8,7 @@ import {
 	useSaveSponsorOffer,
 	useSponsorOffers,
 } from "../../hooks/use-commerce-rules.ts";
+import { SUPPORTED_LOCALES, localeLabel } from "../../i18n";
 import { TRIBUTE_PERIOD_KEYS } from "../../lib/commerce-labels.ts";
 import { getLocalizedError } from "../../lib/error-copy.ts";
 import { formatPlanMoney, majorToMinor, minorToMajorInput } from "../../lib/money.ts";
@@ -21,11 +22,13 @@ import type {
 	SponsorOffer,
 	SponsorOfferAvailability,
 	SponsorOfferInput,
+	SponsorOfferLocale,
 	SponsorOfferPriceOption,
 	TributeDonationPeriod,
 } from "../../types/commerce.ts";
 import { SubscriptionBillingList } from "../commerce/subscription-billing-list.tsx";
 import { FormattedText } from "../content/formatted-text.tsx";
+import { TemplateVariables } from "../content/template-variables.tsx";
 import { ActionBtn } from "../ui/action-btn.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { EditorDialog } from "../ui/editor-dialog.tsx";
@@ -49,8 +52,7 @@ interface EditorState {
 }
 
 interface OfferDraft {
-	title: string;
-	description: string;
+	contentLocales: Record<string, SponsorOfferLocale>;
 	commerceRuleId: string;
 	checkoutUrl: string;
 	amountMajor: string;
@@ -80,11 +82,22 @@ const AVAILABILITY_KEYS: Record<SponsorOfferAvailability, string> = {
 	configuration_changed: "settings.tribute.offers.availability.configurationChanged",
 };
 
-function initialDraft(offer: SponsorOffer | null, rules: CommerceRule[]): OfferDraft {
+function initialDraft(
+	offer: SponsorOffer | null,
+	rules: CommerceRule[],
+	defaultLocale: string,
+): OfferDraft {
+	const contentLocales = offer
+		? structuredClone(offer.contentLocales ?? {})
+		: Object.fromEntries(
+				SUPPORTED_LOCALES.map((locale) => [locale, { title: "", description: "" }]),
+			);
+	if (offer && !contentLocales[defaultLocale]) {
+		contentLocales[defaultLocale] = { title: offer.title, description: offer.description };
+	}
 	return offer
 		? {
-				title: offer.title,
-				description: offer.description,
+				contentLocales,
 				commerceRuleId: offer.commerceRuleId,
 				checkoutUrl: offer.commerceType === "donation" ? (offer.checkoutUrl ?? "") : "",
 				amountMajor:
@@ -100,8 +113,7 @@ function initialDraft(offer: SponsorOffer | null, rules: CommerceRule[]): OfferD
 				isPublished: offer.isPublished,
 			}
 		: {
-				title: "",
-				description: "",
+				contentLocales,
 				commerceRuleId: rules[0]?.id ?? "",
 				checkoutUrl: "",
 				amountMajor: "",
@@ -116,6 +128,7 @@ function offerInput(offer: SponsorOffer): SponsorOfferInput {
 	return {
 		title: offer.title,
 		description: offer.description,
+		contentLocales: offer.contentLocales ?? {},
 		commerceRuleId: offer.commerceRuleId,
 		checkoutUrl: offer.commerceType === "donation" ? offer.checkoutUrl : null,
 		expectedAmountMinor: offer.commerceType === "donation" ? offer.expectedAmountMinor : null,
@@ -166,9 +179,15 @@ function donationOfferConfigured(offer: SponsorOffer): boolean {
 
 interface SponsorOffersConfigProps {
 	subscriptionUrls: Record<string, string>;
+	contentDefaultLocale: string;
+	templateVariables: string[];
 }
 
-export function SponsorOffersConfig({ subscriptionUrls }: SponsorOffersConfigProps) {
+export function SponsorOffersConfig({
+	subscriptionUrls,
+	contentDefaultLocale,
+	templateVariables,
+}: SponsorOffersConfigProps) {
 	const { t, i18n } = useTranslation();
 	const offers = useSponsorOffers();
 	const rules = useCommerceRules();
@@ -464,6 +483,8 @@ export function SponsorOffersConfig({ subscriptionUrls }: SponsorOffersConfigPro
 					rules={rules.data}
 					offers={offers.data ?? []}
 					subscriptionUrls={subscriptionUrls}
+					contentDefaultLocale={contentDefaultLocale}
+					templateVariables={templateVariables}
 					returnFocusTo={editor.returnFocusTo}
 					onClose={() => setEditor(null)}
 				/>
@@ -477,6 +498,8 @@ interface SponsorOfferEditorProps {
 	rules: CommerceRule[];
 	offers: SponsorOffer[];
 	subscriptionUrls: Record<string, string>;
+	contentDefaultLocale: string;
+	templateVariables: string[];
 	returnFocusTo: HTMLElement | null;
 	onClose: () => void;
 }
@@ -486,11 +509,18 @@ function SponsorOfferEditor({
 	rules,
 	offers,
 	subscriptionUrls,
+	contentDefaultLocale,
+	templateVariables,
 	returnFocusTo,
 	onClose,
 }: SponsorOfferEditorProps) {
-	const { t } = useTranslation();
-	const [draft, setDraft] = useState(() => initialDraft(offer, rules));
+	const { t, i18n } = useTranslation();
+	const [draft, setDraft] = useState(() => initialDraft(offer, rules, contentDefaultLocale));
+	const [locale, setLocale] = useState(
+		SUPPORTED_LOCALES.includes(contentDefaultLocale)
+			? contentDefaultLocale
+			: (SUPPORTED_LOCALES[0] ?? "en"),
+	);
 	const [confirmDelete, setConfirmDelete] = useState(false);
 	const deleteTriggerRef = useRef<HTMLButtonElement>(null);
 	const save = useSaveSponsorOffer();
@@ -545,10 +575,17 @@ function SponsorOfferEditor({
 	const publishReady =
 		!duplicateSubscription &&
 		canPublish(selectedRule, donationDestinationComplete, subscriptionDestinationConfigured);
+	const localizedDraftValid = SUPPORTED_LOCALES.every((key) => {
+		const localized = draft.contentLocales[key];
+		return (
+			localized &&
+			localized.title.trim().length >= 1 &&
+			localized.title.trim().length <= 100 &&
+			localized.description.trim().length <= 300
+		);
+	});
 	const valid =
-		draft.title.trim().length >= 1 &&
-		draft.title.trim().length <= 100 &&
-		draft.description.trim().length <= 2_000 &&
+		localizedDraftValid &&
 		Boolean(selectedRule) &&
 		Number.isSafeInteger(sortOrder) &&
 		sortOrder >= 1 &&
@@ -560,9 +597,19 @@ function SponsorOfferEditor({
 	const submit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		if (!valid) return;
+		const localized = structuredClone(draft.contentLocales);
+		for (const key of SUPPORTED_LOCALES) {
+			localized[key] = {
+				title: draft.contentLocales[key]?.title.trim() ?? "",
+				description: draft.contentLocales[key]?.description.trim() ?? "",
+			};
+		}
+		const defaultContent = localized[contentDefaultLocale] ?? localized[SUPPORTED_LOCALES[0]];
+		if (!defaultContent) return;
 		const input: SponsorOfferInput = {
-			title: draft.title.trim(),
-			description: draft.description.trim(),
+			title: defaultContent.title,
+			description: defaultContent.description,
+			contentLocales: localized,
 			commerceRuleId: draft.commerceRuleId,
 			checkoutUrl: isDonation ? draft.checkoutUrl.trim() || null : null,
 			expectedAmountMinor: isDonation ? amountMinor : null,
@@ -609,17 +656,39 @@ function SponsorOfferEditor({
 						{t("settings.tribute.offers.presentationSection")}
 					</h3>
 					<div className={editorStyles.fields}>
+						<FormField label={t("settings.content.languageLabel")}>
+							<SegmentedControl
+								options={SUPPORTED_LOCALES.map((key) => ({
+									key,
+									label: localeLabel(key, i18n.language),
+								}))}
+								value={locale}
+								onChange={setLocale}
+								ariaLabel={t("settings.content.languageLabel")}
+							/>
+						</FormField>
 						<FormField
 							label={t("settings.tribute.offers.titleLabel")}
 							htmlFor="sponsor-offer-title"
 						>
 							<FormFieldInput
 								id="sponsor-offer-title"
-								value={draft.title}
+								value={draft.contentLocales[locale]?.title ?? ""}
 								enterKeyHint="next"
 								maxLength={100}
 								placeholder={t("settings.tribute.offers.titlePlaceholder")}
-								onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+								onChange={(event) =>
+									setDraft({
+										...draft,
+										contentLocales: {
+											...draft.contentLocales,
+											[locale]: {
+												title: event.target.value,
+												description: draft.contentLocales[locale]?.description ?? "",
+											},
+										},
+									})
+								}
 							/>
 						</FormField>
 						<FormField
@@ -637,12 +706,32 @@ function SponsorOfferEditor({
 								<FormattedTextEditor
 									id="sponsor-offer-description"
 									ariaLabel={t("settings.tribute.offers.descriptionLabel")}
-									value={draft.description}
+									value={draft.contentLocales[locale]?.description ?? ""}
 									maxLength={300}
 									placeholder={t("settings.tribute.offers.descriptionPlaceholder")}
-									onChange={(description) => setDraft({ ...draft, description })}
+									onChange={(description) =>
+										setDraft({
+											...draft,
+											contentLocales: {
+												...draft.contentLocales,
+												[locale]: {
+													title: draft.contentLocales[locale]?.title ?? "",
+													description,
+												},
+											},
+										})
+									}
 								/>
 							</Suspense>
+							<TemplateVariables
+								variables={templateVariables}
+								scopes={{
+									appName: [
+										t("settings.tribute.offers.titleLabel"),
+										t("settings.tribute.offers.descriptionLabel"),
+									],
+								}}
+							/>
 						</FormField>
 					</div>
 				</section>

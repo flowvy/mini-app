@@ -3,9 +3,12 @@
  * Set VITE_MOCK_AUTH=true to use a mock admin user for local UI testing.
  */
 import { useQuery } from "@tanstack/react-query";
+import i18n from "../i18n";
 import { apiGet } from "../lib/api.ts";
+import { resolveOperatorContent } from "../lib/operator-content.ts";
 import { queryKeys } from "../lib/query.ts";
 import { isMockAuth } from "../lib/runtime.ts";
+import type { OperatorContent } from "../types/operator-content.ts";
 
 export interface FeaturesData {
 	pulse: boolean;
@@ -14,6 +17,7 @@ export interface FeaturesData {
 export interface BrandingData {
 	appName: string | null;
 	logoUrl: string | null;
+	content: OperatorContent;
 }
 
 export interface UserResponse {
@@ -43,6 +47,7 @@ const MOCK_USER: UserResponse = {
 	branding: {
 		appName: null,
 		logoUrl: null,
+		content: {},
 	},
 };
 
@@ -65,6 +70,8 @@ const fetchUser = async (): Promise<UserResponse> => {
 				pulseProvider: "disabled" | "kuma" | "beszel";
 				appName: string | null;
 				logoUrl: string | null;
+				contentLocales: Record<string, OperatorContent>;
+				contentDefaultLocale: string;
 			}>("/debug/admin/settings");
 			return {
 				...mockUser,
@@ -72,6 +79,11 @@ const fetchUser = async (): Promise<UserResponse> => {
 				branding: {
 					appName: settings.appName ?? null,
 					logoUrl: settings.logoUrl ?? null,
+					content: resolveOperatorContent(
+						settings.contentLocales,
+						i18n.resolvedLanguage || i18n.language,
+						settings.contentDefaultLocale,
+					),
 				},
 			};
 		} catch {

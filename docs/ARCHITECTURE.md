@@ -81,7 +81,7 @@ REQUEST scope; provider commits или rollbacks транзакцию после
 
 Admin routes под `/api/admin` повторно получают текущего локального пользователя и проверяют его
 роль. Они отдают dashboard, полный/постраничный список пользователей, detail/actions и provider,
-branding/welcome settings. `POST /api/admin/settings/tribute/test` выполняет только фиксированный
+branding/welcome/localized Content settings. `POST /api/admin/settings/tribute/test` выполняет только фиксированный
 read-only запрос subscriptions с server-side key; ключ в response не входит.
 `/api/admin/registration` управляет режимом, access profiles и live squad options. Admin Broadcast
 API в текущем коде отсутствует.
@@ -393,11 +393,14 @@ PostgreSQL и инвалидирует dashboard/Pulse cache по scope/event. T
 contracts signature, freshness, replay, idempotency, payload size и retention проверяются до/после
 сохранения в соответствующей границе.
 
-Aiogram dispatcher содержит обычный `/start` flow, ручной ввод invite code и отправку welcome
-template/media. `/start` не является referral transport и не разбирает `ref_` payload: приглашение
-в Main Mini App приходит по HTTPS вместе с подписанным initData. В production Telegram webhook
-живёт в том же FastAPI process; при пустом `WEBHOOK_URL` dev-процесс использует polling. Отдельного
-worker сейчас нет.
+Aiogram dispatcher содержит обычный `/start` flow, ручной ввод invite code и отправку localized
+welcome/invite-only template с optional global photo/animation. Оба сообщения используют явный
+`ParseMode.HTML`, server allow-list Telegram markup/attributes и caption-safe лимит 1 024 видимых
+символа; при ошибке сохранённого media sender повторяет безопасный text-only вариант. Custom emoji
+хранит обязательный fallback emoji и numeric `emoji-id`. `/start` не является referral transport и
+не разбирает `ref_` payload: приглашение в Main Mini App приходит по HTTPS вместе с подписанным
+initData. В production Telegram webhook живёт в том же FastAPI process; при пустом `WEBHOOK_URL`
+dev-процесс использует polling. Отдельного worker сейчас нет.
 
 ## Frontend
 
@@ -406,8 +409,9 @@ worker сейчас нет.
 
 - `lib/api.ts` добавляет Telegram init data и является общим fetch wrapper.
 - `hooks/` описывают query/mutation lifecycles и переключаются на debug endpoints в mock mode.
-- `components/content/` содержит provider-neutral formatted-text editor/renderer для offer copy и
-  будущего Broadcast; persisted content не зависит от React editor implementation.
+- `components/content/` содержит provider-neutral CommonMark editor/renderer для offer и Mini App
+  descriptions, Telegram HTML source editor с contextual toolbar и reusable collapsed template
+  disclosure/copy control. Persisted content не зависит от React editor implementation.
 - `/me`, admin settings и Pulse живут в едином TanStack Query cache. Успешная settings mutation
   сразу обновляет settings/user cache, заново проверяет `/me` и сбрасывает
   старый Pulse response при смене provider-конфигурации.
@@ -426,8 +430,15 @@ worker сейчас нет.
   открыт, detail route заменяется явным semantic parent route (`settings/*` → `settings`,
   `users/*` → `users`), поэтому dirty confirmation открывается до изменения browser history.
 - `i18n/locales/en.json` — единственный текущий locale resource и источник product-owned UI-copy.
-  Operator-owned identity и bot welcome приходят через branding/settings contract;
-  provider facts остаются typed runtime data. Полная граница описана в
+  Frontend статически обнаруживает все `locales/*.json`, выбирает поддерживаемую locale из browser
+  languages и отправляет её как `Accept-Language`; добавление `ru.json` автоматически добавит Russian
+  в language selectors. Operator-owned identity, welcome и semantic service voice приходят через
+  typed branding/settings locale-map contract; public API разрешает только одну locale с
+  exact/base/default/English fallback. Bot использует отдельный packaged product catalog и Telegram
+  `language_code`. Admin settings получают backend-computed variable capabilities по semantic field,
+  поэтому `{{appName}}` и field-specific `{{code}}` не дублируются hardcode в UI; legacy
+  `{{app_name}}` продолжает приниматься, но не рекламируется. Provider facts остаются typed runtime
+  data. Полная граница описана в
   [`decisions/0002-ui-copy-and-provider-owned-content.md`](decisions/0002-ui-copy-and-provider-owned-content.md).
 - Page-level load/auth/forbidden/not-found состояния используют единый `ErrorState`; inline mutation
   errors берут безопасный текст из locale, а raw provider/backend `message` не отображается.
@@ -437,10 +448,10 @@ mutation сразу кладёт полученного user в общий TanSt
 Для launch invite frontend получает от backend только boolean о наличии корректного signed
 `start_param` и вызывает no-body mutation; сам код из URL/SDK frontend не читает и не пересылает.
 
-Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Support остаётся локализованной
-заглушкой будущего встроенного support flow и не перенаправляет во внешний канал. Admin URL:
+Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Support остаётся product-owned
+заглушкой `Coming Soon` и не читает provider settings или operator content. Admin URL:
 `/admin/dashboard`, `/admin/users`, `/admin/users/search`, `/admin/users/$userId`, `/admin/broadcast`, `/admin/settings` и
-отдельные Kuma, Beszel, Tribute, branding, welcome и registration/access subroutes. Broadcast пока остаётся
+отдельные Kuma, Beszel, Tribute, branding, welcome, localized Content и registration/access subroutes. Broadcast пока остаётся
 заглушкой.
 
 ## Автоматизация разработки

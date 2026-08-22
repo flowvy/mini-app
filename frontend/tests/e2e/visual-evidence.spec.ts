@@ -23,6 +23,11 @@ const screens = [
 	{ name: "admin-settings-tribute", path: "/admin/settings/tribute", marker: "API key" },
 	{ name: "admin-settings-branding", path: "/admin/settings/branding", marker: "App name" },
 	{ name: "admin-settings-welcome", path: "/admin/settings/welcome", marker: "Content" },
+	{
+		name: "admin-settings-content",
+		path: "/admin/settings/content",
+		marker: "Invite-only prompt",
+	},
 ] as const;
 
 test("capture invite-only onboarding", async ({ page, mockApi }, testInfo) => {

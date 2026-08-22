@@ -9,11 +9,13 @@ from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from flowvy.api.deps import get_current_init_data
+from flowvy.api.locale import request_locale
 from flowvy.models.provider_settings import ProviderSettings
 from flowvy.models.user import User
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.schemas.registration import UserInviteResponse
 from flowvy.schemas.user import BrandingResponse, FeaturesResponse, UserResponse
+from flowvy.services.operator_content import resolve_operator_content
 from flowvy.services.registration import (
     RegistrationIdentity,
     RegistrationRequiredError,
@@ -41,13 +43,18 @@ def identity_from_init_data(init_data: WebAppInitData) -> RegistrationIdentity:
     )
 
 
-def build_user_response(user: User, settings: ProviderSettings) -> UserResponse:
+def build_user_response(
+    user: User,
+    settings: ProviderSettings,
+    locale: str | None = None,
+) -> UserResponse:
     """Present one local user with provider-neutral feature and branding flags."""
     response = UserResponse.model_validate(user)
     response.features = FeaturesResponse(pulse=settings.pulse_provider != "disabled")
     response.branding = BrandingResponse(
         app_name=settings.app_name,
         logo_url=settings.logo_url,
+        content=resolve_operator_content(settings, locale),
     )
     return response
 
@@ -68,6 +75,7 @@ def build_user_invite_response(
 @router.get("/me", response_model=UserResponse)
 async def get_me(
     init_data: CurrentInitData,
+    request: Request,
     registration: FromDishka[RegistrationService] = None,  # type: ignore[assignment]
     ps_repo: FromDishka[ProviderSettingsRepository] = None,  # type: ignore[assignment]
 ) -> UserResponse:
@@ -96,7 +104,7 @@ async def get_me(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={"code": exc.code, "message": exc.message},
         ) from exc
-    return build_user_response(user, ps)
+    return build_user_response(user, ps, request_locale(request))
 
 
 @router.get("/me/invite", response_model=UserInviteResponse)

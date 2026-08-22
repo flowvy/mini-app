@@ -37,6 +37,7 @@ from flowvy.services.access_profile_snapshot import (
     access_profile_input,
     access_profile_snapshot,
 )
+from flowvy.services.operator_content import resolve_operator_content
 from flowvy.services.remnawave import RemnawaveClient, RemnawaveError
 from flowvy.services.user import UserService
 
@@ -390,7 +391,11 @@ class RegistrationService:
 
         return await self._import_provider_user(identity, provider_user)
 
-    async def get_status(self, identity: RegistrationIdentity) -> OnboardingStatusResponse:
+    async def get_status(
+        self,
+        identity: RegistrationIdentity,
+        locale: str | None = None,
+    ) -> OnboardingStatusResponse:
         existing = await self.resolve_existing(identity)
         settings = await self._settings.get()
         state = (
@@ -403,6 +408,7 @@ class RegistrationService:
             registration_mode=settings.registration_mode,  # type: ignore[arg-type]
             app_name=settings.app_name,
             logo_url=settings.logo_url,
+            content=resolve_operator_content(settings, locale),
         )
 
     async def register_open(self, identity: RegistrationIdentity) -> User:

@@ -24,7 +24,9 @@
   `deviceModel`, `userAgent`, nullable `requestIp`, `createdAt` и `updatedAt`; provider metadata не
   сохраняется в Flowvy и не логируется.
 - Admin API для dashboard, пользователей, действий над пользователем, выбора Kuma/Beszel для Pulse,
-  branding, welcome template/media, server-side Tribute API access check, persisted checkout
+  branding, typed localized service content, welcome/invite-only Telegram template/media и
+  backend-computed template-variable capabilities,
+  server-side Tribute API access check, persisted checkout
   destinations и commerce rules.
 - Tribute credential остаётся только в server environment. BFF сообщает Mini App лишь факт его
   наличия, а admin check выполняет fixed-origin read-only `GET /subscriptions` с bounded
@@ -184,9 +186,11 @@
   проверены в Chromium/WebKit.
 - Uptime Kuma, Beszel, Remnawave, Tribute и Flowvy в Settings используют локальные монохромные brand marks в
   одинаковых нейтральных icon tiles; Pulse source тоже нейтрален и не маскируется под positive status.
-  Welcome собран в одну content surface: premium constraint показан компактным inline warning у
-  Greeting text, HTML/app-name подсказка перенесена в placeholder самого textarea, а формат
-  MP4/GIF/photo описывает строку `Default media`. Создание access profile
+  Welcome собран в одну content surface: Greeting использует компактный Telegram HTML toolbar,
+  custom emoji insertion остаётся за Premium notice, media описана одной строкой, а template
+  variables скрыты в одном disclosure на секцию. Localized Content применяет тот же Telegram editor
+  к invite-only prompt, CommonMark editor только к Mini App descriptions и отдельное global
+  photo/animation для prompt. Title/action/share controls остаются plain. Создание access profile
   запускается из profiles surface: contextual action row для списка и один `Create profile` CTA в
   empty state; create/edit dialog различает title и submit action, provider fields остаются под
   `Advanced` disclosure.
@@ -219,10 +223,11 @@
   принимает Unix и ISO contracts и распознаёт только
   документированный lifetime sentinel конца 2099 года; Home, sponsor state и admin user surfaces
   показывают его как `No expiry`, не как календарную дату 2100 года.
-- Identity, Registration & Access и Welcome Message собраны в секции Flowvy Mini-App. Branding
-  contract позволяет оператору задать app name/logo; пользовательские sponsor-сообщения используют
-  этот app name, а не жёстко заданный Flowvy. Support остаётся отдельной локализованной
-  заглушкой будущей встроенной поддержки без внешнего action. Access editor не
+- Identity, Content, Registration & Access и Welcome Message собраны в секции Flowvy Mini-App.
+  Branding contract позволяет оператору задать app name/logo. Typed locale maps покрывают bot
+  invite prompt, onboarding, referral и sponsor storefront framing; public API отдаёт
+  только resolved locale, а незаполненные поля используют product fallback. Support остаётся
+  product-owned заглушкой `Coming Soon` без provider content или destination. Access editor не
   дублирует список во время редактирования, явно объясняет бессрочный/безлимитный grant и использует
   общие FormField/Input/Select/Textarea. Input использует один нативный control; select/date
   разделяют app-owned видимый слой Geist 13px и нативный semantic/picker layer. Защита от iOS focus
@@ -261,9 +266,10 @@
   спокойный form-вариант. Dashboard реализует `tablist`/`tab`/`tabpanel`, form choices —
   `radiogroup`/`radio`; стрелки перемещают selection/focus, реальная смена даёт Telegram selection
   haptic, а `prefers-reduced-motion` отключает движение.
-- Query hooks, typed view models, i18next English locale, CSS Modules и светлая/тёмная тема на
+- Query hooks, typed view models, i18next locale catalogs, CSS Modules и светлая/тёмная тема на
   дизайн-токенах. Product-owned copy, форматирование и accessible names находятся в locale;
-  operator-owned identity/welcome и provider facts приходят как typed runtime data. Compact UI
+  operator-owned identity/service voice и provider facts приходят как typed runtime data. Locale
+  catalogs обнаруживаются статически, browser locale передаётся через `Accept-Language`. Compact UI
   copy не заканчивается точкой; internal punctuation, URL, версии, числа и provider-owned текст не
   переписываются. Locale catalog test применяет это правило ко всем JSON-локалям.
 - Внешний вертикальный ритм пользовательских и admin-страниц использует единый design token 8px:
@@ -310,7 +316,7 @@
   `80` в Windows и использует непривилегированный `4173` на macOS/Linux.
 - GitHub Actions CI с PostgreSQL/Redis, Ruff, Alembic, pytest, Biome/TypeScript/Vitest/build и
   Playwright Chromium smoke.
-- Двенадцать Vitest unit файлов (49 тестов), включая автоматический запрет неиспользуемых locale leaves,
+- Пятнадцать Vitest unit файлов (72 теста), включая автоматический запрет неиспользуемых locale leaves,
   прямого видимого JSX-copy, raw error message и неверной терминологии Xray-доступа;
   детерминированная Playwright state matrix на четырёх
   browser/viewport проектах и отдельный read-only live-smoke.
@@ -407,8 +413,9 @@ Kuma и полный Telegram test-bot flow.
 
 - Не настроен статический Python type checker.
 - В `queryKeys` остаётся неиспользуемый ключ `nodes`, хотя отдельного nodes flow в текущем коде нет.
-- Единственная locale — English; locale parity и plural/fallback tests для нескольких языков
-  отсутствуют.
+- Единственная product locale — English; Russian catalog, перевод product copy и двухъязычная
+  visual/long-copy parity ещё не реализованы. Persisted operator content, resolver и editors уже
+  поддерживают несколько locale без новой schema migration.
 
 ## Последняя свежая проверка
 
@@ -556,6 +563,9 @@ Tribute показал success, endpoint вернул `200`, inbox осталс�
 | Atomic commerce-rule deletion | PostgreSQL service + authenticated HTTP regressions; full backend; frontend lint/type/unit/build; focused and full four-project Tribute Playwright; light/dark visual review; `scripts\verify.ps1 -Scope Changed -SkipE2E`; standard dev restart | Delete rule теперь в одной DB-транзакции удаляет все связанные draft/published offers и сам rule, не обращаясь к Tribute/Remnawave и не меняя историю либо уже выданный доступ. Confirmation честно предупреждает про payment choices и pending matching; failure остаётся в модалке для retry, success обновляет rules/offers/Home cache. Найденный Axe contrast defect общего danger CTA исправлен существующими adaptive design tokens. Ruff, 489 backend, 44 frontend unit, production build и 171 Tribute Playwright passed + 1 ожидаемый desktop keyboard skip; changed gate с 386 service-free tests зелёный. 320/430, iOS WebKit и desktop light/dark screenshots просмотрены, Axe/overflow/console/network guards прошли. Standard Telegram-enabled dev перезапущен с сохранением данных; local/public frontend, health и ready вернули `200`, public debug — `404`, startup error markers отсутствуют. |
 | Automation-managed access-profile validity | Alembic runtime INSERT/constraint gate; 68 focused и 493 full backend tests; 56 pinned Remnawave contracts; frontend lint/typecheck/44 unit/build; 107 mobile + 12 focused all-project Playwright; light/dark visual review; docs gate; standard dev restart | Access profile получил явный режим `automation`: дни и дата не хранятся, benefits переиспользуются, а exact expiry обязан предоставить payment rule или другая автоматизация. Режим исключён из registration default; backend отклоняет прямой выбор, перевод текущего default и повреждённую policy fail-closed. Admin editor показывает понятный hint/summary без фиктивного срока. Миграция `z5a6b7c8d9e0` прошла zero/previous-head, downgrade/re-upgrade, runtime insert и drift. 320/430 px, iOS WebKit и desktop light/dark screenshots просмотрены без overflow; smoke Axe/console/network guards зелёные. Standard Telegram-enabled dev применил новый head с сохранением данных; local/public frontend, health и ready вернули `200`, public debug — `404`, startup error markers отсутствуют. |
 | Tribute provider-authored offer presentation | official Creator API/OpenAPI `1.0.0`; Apple HIG Lists/Layout; GOV.UK Summary list; shared frontend presenter; focused admin/Home four-project Playwright; frontend full gate | Flowvy больше не превращает provider period enum в названия услуг и не предлагает маркетинговое название периода. Название и описание одной offer-card задаёт оператор; общий `SubscriptionBillingList` на Home, в admin list и editor показывает только подтверждённые Tribute цену и нейтральное условие списания. CTA открывает Tribute, где пользователь делает реальный выбор. Focused admin/Home matrix прошла 8/8 на 430x932, 320x568, iOS WebKit и desktop; light/dark evidence просмотрены без overflow/Axe/console/network ошибок. Frontend lint/typecheck, 44 unit и production build прошли. |
+| Typed localized operator content | typed locale-map/backend public projection; migration backfill/runtime/drift; packaged wheel resource; Content/Welcome/offer editors; targeted light/dark evidence; `scripts/verify.ps1 -Scope Changed`; `scripts/verify.ps1 -Scope Full` | Operator tone of voice для Telegram invite/welcome, Mini App onboarding/referral/sponsor framing и offer title/description хранится по locale без generic CMS; public API отдаёт только resolved locale по `Accept-Language`, bot использует Telegram `language_code`, missing slots получают product fallback. Добавление `ru.json` автоматически добавит Russian в editors без schema migration; сам Russian product catalog ещё не создан. Existing English welcome/offers сохраняются backfill. Support-поля, ошибочно попавшие в первоначальную реализацию, удалены отдельным follow-up: `/support` снова является product-owned `Coming Soon`. Full gate прошёл one-head/zero/predecessor/backfill/downgrade/re-upgrade/drift migrations, Ruff, 506 backend, 56 pinned Remnawave contracts, frontend lint/typecheck/72 unit/build, 128/128 mobile Chromium и docs; Changed отдельно прошёл 400 service-free backend. Content light/dark screenshots просмотрены без overflow/Axe ошибок. Fresh Axe также выявил и исправил старый Pulse timeline contrast и transient `ActionBtn` opacity contrast. Затем standard Telegram-enabled dev пересобран, migration `a6b7c8d9e0f1` применена с сохранением данных; local `5173`/`8001`/`4173` и public root/health/ready вернули `200`, public debug — `404`, local/public asset `index-D6k5Ox0P.js` совпадает, `telegram_main_app_ready` подтверждён. Payment/provider mutations не выполнялись; commit/push не выполнялись. |
+| Contextual provider content composer | official Telegram Bot API 10.2 formatting/custom emoji/send limits; locked aiogram 3.26.0; WAI-ARIA Disclosure Pattern; migration/settings/message-sender tests; Content/Welcome/Offer light/dark evidence; Changed/Full gates; standard dev restart | Welcome и invite-only prompt получили compact Telegram HTML toolbar, numeric custom-emoji ID с fallback, explicit parse mode и optional global media с text fallback. Mini App descriptions используют safe CommonMark; titles/actions/share text остаются plain. Backend отдаёт field-scoped canonical templates (`appName`, где применимо `code`), UI показывает один collapsed copyable disclosure на секцию; legacy `app_name` принимается без рекламы. Migration `b7c8d9e0f1a2` добавила invite media и 2 000 source headroom для 300-visible-character offer description. Changed прошёл 415 service-free backend, 73 unit, build, 132/132 mobile Chromium; Full — migration upgrade/downgrade/re-upgrade/drift, 521 backend, 56 pinned contracts, 73 unit, build и 132/132 browser. Focused all-width matrix 159/159 и Welcome 6/6 прошли; 320/430/desktop light/dark evidence просмотрены без overflow/serious Axe findings. Standard dev применил head с сохранением данных; local/public root/health/ready — `200`, public debug — `404`, asset `index-Ba0U6KR-.js` совпадает, `telegram_main_app_ready` подтверждён. Реальные Telegram/provider/payment mutations, commit и push не выполнялись. |
+| Product-owned Support stub | compatibility migration; stale-payload regression; seven focused dark screenshots; `scripts/verify.ps1 -Scope Full`; standard dev restart | Ошибочно добавленные Support semantic fields, destination, capabilities и frontend Content controls удалены end-to-end. `/support` сохраняет route/tab, но всегда показывает локализованный `Coming Soon` и игнорирует stale provider payloads. Migration `c8d9e0f1a2b3` удаляет случайно добавленный `support_url` из уже обновлённой dev DB, а fresh chain его больше не создаёт. Full gate прошёл migration zero/previous-head/downgrade/re-upgrade/drift, Ruff, 520 backend, 56 pinned contracts, 73 frontend unit, production build, 140/140 mobile Chromium и docs. Content settings, invite/open onboarding, Home invite, sponsor no/base и Support dark evidence просмотрены на 430x932 без overflow/serious Axe findings. Standard dev пересобран с сохранением volumes; local/public runtime и asset identity подтверждены. Provider/payment mutations, commit и push не выполнялись. |
 | Sponsor-offer automation-rule relink | статический аудит admin edit locks; focused four-project Playwright; eight light/dark screenshots; `scripts\verify.ps1 -Scope Changed -SkipE2E` | Искусственная create-only блокировка rule select удалена. Существующий draft или published offer можно связать с другим rule; UI отправляет новый `commerceRuleId`, backend повторно валидирует и пересобирает published snapshot, начатые checkouts сохраняют прежние immutable facts. Focused matrix прошла 4/4 на 430x932, 320x568, iOS WebKit и desktop; light/dark screenshots просмотрены, Axe/overflow/console/network guards зелёные. В admin source больше нет `disabled`, зависящих только от существования entity. Changed gate прошёл Ruff, 387 service-free backend tests, frontend lint/typecheck/44 unit/build и docs. |
 | Inline WYSIWYG formatted offer content | official Tiptap React fixed-menu/StarterKit/CharacterCount/Markdown contracts and WAI-ARIA toolbar pattern; 23 focused sponsor backend tests; 5 focused frontend unit tests; focused four-project Playwright; 109 mobile Playwright; `scripts\verify.ps1 -Scope Changed -SkipE2E` | Описания offer хранят ограниченный CommonMark в прежнем строковом поле, но автор работает с provider-neutral inline WYSIWYG. Один постоянный toolbar с bold/italic/strike/link/quote/lists расположен над editor surface для touch, keyboard и fine pointer; pointer heuristics, conditional trigger и selection-bound app popup отсутствуют. Native Cut/Copy/Paste/Format menu остаётся системным. Home/admin используют один безопасный renderer без raw HTML; 300-character limit считается по видимому тексту, source contract допускает до 2 000 символов для formatting syntax. Редактор загружается lazy только в admin form. Light/dark mobile/small-mobile/desktop evidence просмотрены; Axe/overflow/console/network guards зелёные. Fresh gates: 389 service-free backend, Ruff, frontend lint/typecheck/49 unit/build, 109/109 mobile и 4/4 focused all-project browser scenarios. Компоненты готовы к будущему Broadcast composer; его transport serializer пока не реализован. |
 | macOS developer migration preparation | official PowerShell 7.6 platform variables; official Docker Desktop, uv and Cloudflare macOS/routing docs; `scripts\verify-tooling.ps1`; safe localhost lifecycle smoke; `scripts\verify.ps1 -Scope Changed`; `scripts\verify.ps1 -Scope Full` | Общий helper убирает Windows-only TCP/process/executable assumptions, сохраняет PID ownership checks и Docker volumes, а runbook задаёт Apple Silicon bootstrap и controlled named-Tunnel cutover с Windows `:80` на Mac `:4173`. Full Windows gate: migrations/drift, Ruff, 495 backend, 56 pinned Remnawave contracts, frontend lint/typecheck/49 unit/build, 109 mobile Playwright и docs passed. Реальные Telegram/Cloudflare/provider calls и внешние mutations не выполнялись; runtime acceptance на новом Mac остаётся обязательным. |

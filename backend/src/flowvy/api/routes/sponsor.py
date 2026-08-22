@@ -7,9 +7,10 @@ from typing import Annotated
 
 from aiogram.utils.web_app import WebAppInitData
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from flowvy.api.deps import get_current_active_init_data
+from flowvy.api.locale import request_locale
 from flowvy.schemas.commerce import (
     SponsorCheckoutRequest,
     SponsorCheckoutResponse,
@@ -27,11 +28,12 @@ CurrentInitData = Annotated[WebAppInitData, Depends(get_current_active_init_data
 
 @router.get("", response_model=SponsorStateResponse)
 async def get_sponsor_state(
+    request: Request,
     init_data: CurrentInitData,
     service: FromDishka[SponsorStateService],
 ) -> SponsorStateResponse:
     """Return local server-computed billing state without calling a payment provider."""
-    return await service.get_state(init_data.user.id)
+    return await service.get_state(init_data.user.id, request_locale(request))
 
 
 @router.post(

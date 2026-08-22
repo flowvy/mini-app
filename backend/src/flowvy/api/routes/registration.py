@@ -6,9 +6,10 @@ from typing import Annotated
 
 from aiogram.utils.web_app import WebAppInitData
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from flowvy.api.deps import get_current_init_data
+from flowvy.api.locale import request_locale
 from flowvy.api.routes.users import build_user_response, identity_from_init_data
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.schemas.registration import (
@@ -64,11 +65,15 @@ def _inactive_user_http_error() -> HTTPException:
 @router.get("", response_model=OnboardingStatusResponse)
 async def get_onboarding_status(
     init_data: CurrentInitData,
+    request: Request,
     registration: FromDishka[RegistrationService],
 ) -> OnboardingStatusResponse:
     """Describe registration state, importing an exact provider-only identity if found."""
     try:
-        onboarding = await registration.get_status(identity_from_init_data(init_data))
+        onboarding = await registration.get_status(
+            identity_from_init_data(init_data),
+            request_locale(request),
+        )
     except InactiveUserError as exc:
         raise _inactive_user_http_error() from exc
     except RegistrationError as exc:
@@ -84,6 +89,7 @@ async def get_onboarding_status(
 @router.post("/register", response_model=UserResponse)
 async def register_open_user(
     init_data: CurrentInitData,
+    request: Request,
     registration: FromDishka[RegistrationService],
     ps_repo: FromDishka[ProviderSettingsRepository],
 ) -> UserResponse:
@@ -94,13 +100,14 @@ async def register_open_user(
         raise _inactive_user_http_error() from exc
     except RegistrationError as exc:
         raise _registration_http_error(exc) from exc
-    return build_user_response(user, await ps_repo.get())
+    return build_user_response(user, await ps_repo.get(), request_locale(request))
 
 
 @router.post("/redeem", response_model=UserResponse)
 async def redeem_invite(
     payload: InviteRedeemRequest,
     init_data: CurrentInitData,
+    request: Request,
     registration: FromDishka[RegistrationService],
     ps_repo: FromDishka[ProviderSettingsRepository],
 ) -> UserResponse:
@@ -111,12 +118,13 @@ async def redeem_invite(
         raise _inactive_user_http_error() from exc
     except RegistrationError as exc:
         raise _registration_http_error(exc) from exc
-    return build_user_response(user, await ps_repo.get())
+    return build_user_response(user, await ps_repo.get(), request_locale(request))
 
 
 @router.post("/redeem-launch", response_model=UserResponse)
 async def redeem_launch_invite(
     init_data: CurrentInitData,
+    request: Request,
     registration: FromDishka[RegistrationService],
     ps_repo: FromDishka[ProviderSettingsRepository],
 ) -> UserResponse:
@@ -130,4 +138,4 @@ async def redeem_launch_invite(
         raise _inactive_user_http_error() from exc
     except RegistrationError as exc:
         raise _registration_http_error(exc) from exc
-    return build_user_response(user, await ps_repo.get())
+    return build_user_response(user, await ps_repo.get(), request_locale(request))

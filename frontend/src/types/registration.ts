@@ -1,4 +1,5 @@
 import type { UserResponse } from "../hooks/use-auth.ts";
+import type { OperatorContent } from "./operator-content.ts";
 import type { ProviderUserStatus } from "./user-status.ts";
 
 export type { ProviderUserStatus } from "./user-status.ts";
@@ -12,6 +13,7 @@ export interface OnboardingStatus {
 	appName: string | null;
 	logoUrl: string | null;
 	launchInviteAvailable: boolean;
+	content: OperatorContent;
 }
 
 export interface AccessProfileInput {

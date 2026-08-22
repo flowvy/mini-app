@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
 	Activity,
 	HelpCircle,
+	Languages,
 	Megaphone,
 	MessageSquareText,
 	Palette,
@@ -59,6 +60,10 @@ const PAGE_META: Record<string, PageMeta> = {
 	"/admin/settings/welcome": {
 		title: "common.header.settingsWelcome",
 		icon: <MessageSquareText size={16} />,
+	},
+	"/admin/settings/content": {
+		title: "common.header.settingsContent",
+		icon: <Languages size={16} />,
 	},
 };
 

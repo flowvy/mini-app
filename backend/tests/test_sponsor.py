@@ -58,6 +58,24 @@ def test_sponsor_offer_copy_allows_formatting_source_overhead() -> None:
     assert payload.description == f"**{visible_copy}**"
 
 
+def test_sponsor_offer_copy_supports_only_app_name_template() -> None:
+    payload = SponsorOfferInput(
+        title="Support {{appName}}",
+        description="**Keep {{appName}} online**",
+        commerce_rule_id=uuid.uuid4(),
+    )
+
+    assert payload.title == "Support {{appName}}"
+    assert payload.description == "**Keep {{appName}} online**"
+
+    with pytest.raises(ValueError, match="Unsupported offer description placeholders"):
+        SponsorOfferInput(
+            title="Support",
+            description="Hello {{secret}}",
+            commerce_rule_id=uuid.uuid4(),
+        )
+
+
 def _settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.setenv("REMNAWAVE_URL", "https://panel.example.test")
     monkeypatch.setenv("REMNAWAVE_API_TOKEN", "placeholder")
@@ -91,6 +109,7 @@ def _offer(snapshot: dict[str, object]) -> SponsorOffer:
         commerce_rule_id=RULE_ID,
         title="30 days",
         description="Extended sponsor access",
+        content_locales={},
         checkout_snapshot=snapshot,
         is_published=True,
         sort_order=10,
@@ -475,6 +494,49 @@ async def test_published_offer_fails_closed_after_its_rule_no_longer_matches() -
 
     assert result[0].availability == "configuration_changed"
     assert await service.list_published() == []
+
+
+@pytest.mark.asyncio
+async def test_public_offer_resolves_requested_locale_without_exposing_locale_map() -> None:
+    rule = _rule("donation")
+    offer = _offer(
+        {
+            "provider": "tribute",
+            "commerce_type": "donation",
+            "payment_mode": "one_time",
+            "external_item_id": None,
+            "checkout_url": "https://t.me/tribute/app?startapp=month",
+            "expected_amount_minor": 50_000,
+            "expected_payment_mode": "one_time",
+            "price_options": [{"price_major": "500", "currency": "RUB", "period": None}],
+            "requires_non_anonymous": True,
+        }
+    )
+    offer.content_locales = {
+        "en": {"title": "One month", "description": "Support the service"},
+        "ru": {"title": "Один месяц", "description": "Поддержать сервис"},
+    }
+    offers = AsyncMock()
+    offers.list_all.return_value = [offer]
+    rules = AsyncMock()
+    rules.get_by_id.return_value = rule
+    profiles = AsyncMock()
+    profiles.get_active.return_value = SimpleNamespace(id=PROFILE_ID)
+    provider_settings = AsyncMock()
+    provider_settings.get.return_value = SimpleNamespace(content_default_locale="en")
+    service = SponsorOfferService(
+        offers,
+        rules,
+        profiles,
+        provider_settings,
+        AsyncMock(),
+    )
+
+    [response] = await service.list_published("ru-RU")
+
+    assert response.title == "Один месяц"
+    assert response.description == "Поддержать сервис"
+    assert response.content_locales == {}
 
 
 def _public_offer() -> SponsorOfferResponse:

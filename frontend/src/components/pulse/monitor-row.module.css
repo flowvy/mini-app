@@ -59,7 +59,7 @@
 	display: flex;
 	justify-content: space-between;
 	font-size: 9px;
-	color: var(--v2-text-tertiary);
+	color: var(--v2-text-secondary);
 	margin-top: 4px;
 	padding: 0 1px;
 }

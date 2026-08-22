@@ -1381,6 +1381,10 @@ test("formatted offer copy keeps one fixed toolbar and renders safely on Home", 
 		.click();
 	const editor = page.getByRole("dialog", { name: "Edit sponsor offer" });
 	const description = editor.getByLabel("Description");
+	const templates = editor.locator("details").filter({ hasText: "Templates" });
+	await expect(templates).not.toHaveAttribute("open", "");
+	await templates.getByText("Templates", { exact: true }).click();
+	await expect(templates.getByRole("button", { name: "Copy {{appName}}" })).toBeVisible();
 	if (testInfo.project.use.hasTouch) {
 		await expect(description).toHaveCSS("font-size", "16px");
 	} else {

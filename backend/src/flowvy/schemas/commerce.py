@@ -9,8 +9,9 @@ from typing import Literal, Self
 
 from pydantic import Field, field_validator, model_validator
 
+from flowvy.localization import normalize_locale_map, placeholders
 from flowvy.schemas.base import CamelModel
-from flowvy.schemas.content import normalize_formatted_text
+from flowvy.schemas.content import formatted_text_visible_length, normalize_formatted_text
 from flowvy.schemas.provider_settings import PaymentDestinationUrl
 
 CommerceProvider = Literal["tribute"]
@@ -228,11 +229,43 @@ class SponsorOfferCheckoutSnapshot(CamelModel):
     requires_non_anonymous: bool = False
 
 
+class SponsorOfferLocale(CamelModel):
+    """Localized operator presentation for one sponsor offer."""
+
+    title: str = Field(min_length=1, max_length=100)
+    description: str = Field(default="", max_length=2_000)
+
+    @field_validator("title")
+    @classmethod
+    def normalize_title(cls, value: str) -> str:
+        normalized = " ".join(value.strip().split())
+        if not normalized:
+            raise ValueError("Offer title is required")
+        unknown = placeholders(normalized) - {"appName", "app_name"}
+        if unknown:
+            raise ValueError(f"Unsupported offer title placeholders: {', '.join(sorted(unknown))}")
+        return normalized
+
+    @field_validator("description")
+    @classmethod
+    def normalize_description(cls, value: str) -> str:
+        normalized = normalize_formatted_text(value)
+        unknown = placeholders(normalized) - {"appName", "app_name"}
+        if unknown:
+            raise ValueError(
+                f"Unsupported offer description placeholders: {', '.join(sorted(unknown))}"
+            )
+        if formatted_text_visible_length(normalized) > 300:
+            raise ValueError("Offer description exceeds 300 visible characters")
+        return normalized
+
+
 class SponsorOfferInput(CamelModel):
     """Administrator-editable public presentation linked to one commerce rule."""
 
     title: str = Field(min_length=1, max_length=100)
     description: str = Field(default="", max_length=2_000)
+    content_locales: dict[str, SponsorOfferLocale] | None = Field(default=None, max_length=20)
     commerce_rule_id: uuid.UUID
     checkout_url: PaymentDestinationUrl | None = None
     expected_amount_minor: int | None = Field(default=None, ge=1, le=MAX_MONEY_MINOR)
@@ -244,12 +277,34 @@ class SponsorOfferInput(CamelModel):
     @field_validator("title")
     @classmethod
     def normalize_title(cls, value: str) -> str:
-        return " ".join(value.strip().split())
+        normalized = " ".join(value.strip().split())
+        unknown = placeholders(normalized) - {"appName", "app_name"}
+        if unknown:
+            raise ValueError(f"Unsupported offer title placeholders: {', '.join(sorted(unknown))}")
+        return normalized
 
     @field_validator("description")
     @classmethod
     def normalize_description(cls, value: str) -> str:
-        return normalize_formatted_text(value)
+        normalized = normalize_formatted_text(value)
+        unknown = placeholders(normalized) - {"appName", "app_name"}
+        if unknown:
+            raise ValueError(
+                f"Unsupported offer description placeholders: {', '.join(sorted(unknown))}"
+            )
+        if formatted_text_visible_length(normalized) > 300:
+            raise ValueError("Offer description exceeds 300 visible characters")
+        return normalized
+
+    @field_validator("content_locales", mode="before")
+    @classmethod
+    def validate_content_locales(
+        cls,
+        value: object,
+    ) -> dict[str, SponsorOfferLocale] | None:
+        if value is None:
+            return None
+        return normalize_locale_map(value, SponsorOfferLocale)
 
     @model_validator(mode="after")
     def validate_expected_donation_schedule(self) -> Self:
@@ -273,6 +328,7 @@ class SponsorOfferResponse(SponsorOfferInput):
     price_options: list[SponsorOfferPriceOption]
     requires_non_anonymous: bool
     availability: SponsorOfferAvailability
+    content_locales: dict[str, SponsorOfferLocale] = Field(default_factory=dict, max_length=20)
 
 
 class SponsorCheckoutRequest(CamelModel):
@@ -319,6 +375,7 @@ __all__ = [
     "SponsorCheckoutResponse",
     "SponsorOfferCheckoutSnapshot",
     "SponsorOfferInput",
+    "SponsorOfferLocale",
     "SponsorOfferPriceOption",
     "SponsorOfferResponse",
     "SponsorStateResponse",

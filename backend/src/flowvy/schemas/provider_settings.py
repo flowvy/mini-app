@@ -17,8 +17,14 @@ from pydantic.alias_generators import to_camel
 
 from flowvy.beszel_target import normalize_beszel_base_url
 from flowvy.kuma_target import normalize_kuma_base_url, normalize_kuma_slug
+from flowvy.localization import DEFAULT_LOCALE, normalize_locale, normalize_locale_map
+from flowvy.schemas.operator_content import (
+    OperatorContentLocale,
+    operator_content_template_variables,
+)
 
 PulseProvider = Literal["disabled", "kuma", "beszel"]
+MessageMediaType = Literal["photo", "animation"]
 _PAYMENT_URL_ADAPTER = TypeAdapter(HttpUrl)
 
 
@@ -68,6 +74,17 @@ class ProviderSettingsResponse(BaseModel):
     welcome_media_file_id: str | None = None
     welcome_media_file_name: str | None = None
     welcome_button_text: str | None = None
+    bot_invite_media_type: MessageMediaType | None = None
+    bot_invite_media_file_id: str | None = None
+    bot_invite_media_file_name: str | None = None
+    content_default_locale: str = DEFAULT_LOCALE
+    content_locales: dict[str, OperatorContentLocale] = Field(default_factory=dict, max_length=20)
+    content_template_variables: dict[str, list[str]] = Field(
+        default_factory=operator_content_template_variables,
+    )
+    sponsor_offer_template_variables: list[str] = Field(
+        default_factory=lambda: ["appName"],
+    )
     tribute_donation_url: PaymentDestinationUrl | None = None
     tribute_subscription_urls: dict[TributeSubscriptionId, PaymentDestinationUrl] = Field(
         default_factory=dict,
@@ -76,6 +93,21 @@ class ProviderSettingsResponse(BaseModel):
     remnawave_version: str | None = None
     flowvy_version: str = "0.1.0"
     updated_at: int
+
+    @field_validator("content_default_locale", mode="before")
+    @classmethod
+    def validate_content_default_locale(cls, value: object) -> str:
+        if not isinstance(value, str):
+            raise ValueError("Default content locale must be a string")
+        locale = normalize_locale(value, fallback="")
+        if not locale:
+            raise ValueError("Default content locale is invalid")
+        return locale
+
+    @field_validator("content_locales", mode="before")
+    @classmethod
+    def validate_content_locales(cls, value: object) -> dict[str, OperatorContentLocale]:
+        return normalize_locale_map(value, OperatorContentLocale)
 
 
 class ProviderSettingsPatch(BaseModel):
@@ -98,6 +130,14 @@ class ProviderSettingsPatch(BaseModel):
     welcome_media_file_id: str | None = None
     welcome_media_file_name: str | None = None
     welcome_button_text: str | None = Field(default=None, max_length=100)
+    bot_invite_media_type: MessageMediaType | None = None
+    bot_invite_media_file_id: str | None = None
+    bot_invite_media_file_name: str | None = None
+    content_default_locale: str | None = None
+    content_locales: dict[str, OperatorContentLocale] | None = Field(
+        default=None,
+        max_length=20,
+    )
     tribute_donation_url: PaymentDestinationUrl | None = None
     tribute_subscription_urls: dict[TributeSubscriptionId, PaymentDestinationUrl] = Field(
         default_factory=dict,
@@ -127,6 +167,26 @@ class ProviderSettingsPatch(BaseModel):
         if value is None or not value.strip():
             return None
         return normalize_beszel_base_url(value)
+
+    @field_validator("content_default_locale")
+    @classmethod
+    def validate_content_default_locale(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        locale = normalize_locale(value, fallback="")
+        if not locale:
+            raise ValueError("Default content locale is invalid")
+        return locale
+
+    @field_validator("content_locales", mode="before")
+    @classmethod
+    def validate_content_locales(
+        cls,
+        value: object,
+    ) -> dict[str, OperatorContentLocale] | None:
+        if value is None:
+            return None
+        return normalize_locale_map(value, OperatorContentLocale)
 
 
 class WelcomeMediaUploadResponse(BaseModel):

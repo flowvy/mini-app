@@ -3,7 +3,9 @@
  * Debug mode: VITE_MOCK_AUTH=true → uses /api/debug/admin/settings.
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import i18n from "../i18n";
 import { apiGet, apiPatch, apiPost } from "../lib/api.ts";
+import { resolveOperatorContent } from "../lib/operator-content.ts";
 import { queryKeys } from "../lib/query.ts";
 import { isMockAuth } from "../lib/runtime.ts";
 import type {
@@ -46,6 +48,11 @@ export function useUpdateSettings() {
 							branding: {
 								appName: data.appName,
 								logoUrl: data.logoUrl,
+								content: resolveOperatorContent(
+									data.contentLocales,
+									i18n.resolvedLanguage || i18n.language,
+									data.contentDefaultLocale,
+								),
 							},
 						}
 					: currentUser,

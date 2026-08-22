@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOnboarding } from "../hooks/use-onboarding.ts";
 import { getLocalizedError } from "../lib/error-copy.ts";
+import { operatorFormattedText, operatorText } from "../lib/operator-content.ts";
+import { FormattedText } from "./content/formatted-text.tsx";
 import styles from "./onboarding-screen.module.css";
 import { AppLogo } from "./ui/app-logo.tsx";
 import { ErrorState } from "./ui/error-state.tsx";
@@ -20,6 +22,8 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 	const state = statusQuery.data?.state === "registered" ? initialState : statusQuery.data?.state;
 	const effectiveState = state ?? initialState;
 	const appName = statusQuery.data?.appName || t("common.appName");
+	const content = statusQuery.data?.content;
+	const context = { appName, app_name: appName };
 	const isPending =
 		registerMutation.isPending || redeemMutation.isPending || redeemLaunchMutation.isPending;
 	const error = registerMutation.error ?? redeemMutation.error ?? redeemLaunchMutation.error;
@@ -72,14 +76,24 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 					<p className={styles.eyebrow}>{appName}</p>
 					<h1 id="onboarding-title" className={styles.title}>
 						{effectiveState === "invite_required"
-							? t("onboarding.inviteTitle")
-							: t("onboarding.openTitle")}
+							? operatorText(content, "onboardingInviteTitle", t("onboarding.inviteTitle"), context)
+							: operatorText(content, "onboardingOpenTitle", t("onboarding.openTitle"), context)}
 					</h1>
-					<p className={styles.description}>
+					<FormattedText className={styles.description}>
 						{effectiveState === "invite_required"
-							? t("onboarding.inviteDescription")
-							: t("onboarding.openDescription")}
-					</p>
+							? operatorFormattedText(
+									content,
+									"onboardingInviteDescription",
+									t("onboarding.inviteDescription"),
+									context,
+								)
+							: operatorFormattedText(
+									content,
+									"onboardingOpenDescription",
+									t("onboarding.openDescription"),
+									context,
+								)}
+					</FormattedText>
 				</div>
 
 				<form
@@ -90,19 +104,17 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 					}}
 				>
 					{effectiveState === "invite_required" && (
-						<label className={styles.field}>
-							<span>{t("onboarding.codeLabel")}</span>
-							<input
-								value={code}
-								onChange={(event) => setCode(event.target.value)}
-								placeholder={t("onboarding.codePlaceholder")}
-								autoCapitalize="characters"
-								autoCorrect="off"
-								spellCheck={false}
-								enterKeyHint="done"
-								className={styles.input}
-							/>
-						</label>
+						<input
+							value={code}
+							onChange={(event) => setCode(event.target.value)}
+							aria-label={t("onboarding.codeLabel")}
+							placeholder={t("onboarding.codePlaceholder")}
+							autoCapitalize="characters"
+							autoCorrect="off"
+							spellCheck={false}
+							enterKeyHint="done"
+							className={styles.input}
+						/>
 					)}
 					{error && (
 						<InlineFeedback attention="action">
@@ -117,9 +129,9 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 						{isPending ? (
 							<SpinnerIcon size={16} />
 						) : effectiveState === "invite_required" ? (
-							t("onboarding.redeem")
+							operatorText(content, "onboardingRedeemAction", t("onboarding.redeem"), context)
 						) : (
-							t("onboarding.register")
+							operatorText(content, "onboardingRegisterAction", t("onboarding.register"), context)
 						)}
 					</button>
 				</form>

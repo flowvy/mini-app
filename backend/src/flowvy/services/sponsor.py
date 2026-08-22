@@ -8,6 +8,13 @@ from collections.abc import Callable
 from decimal import Decimal
 
 from flowvy.config import Settings
+from flowvy.localization import (
+    DEFAULT_LOCALE,
+    dump_locale_map,
+    normalize_locale,
+    normalize_locale_map,
+    resolve_locale_map,
+)
 from flowvy.models.commerce_rule import CommerceRule
 from flowvy.models.entitlement_operation import EntitlementOperation
 from flowvy.models.sponsor_checkout import SponsorCheckout
@@ -26,6 +33,7 @@ from flowvy.schemas.commerce import (
     SponsorCheckoutResponse,
     SponsorOfferCheckoutSnapshot,
     SponsorOfferInput,
+    SponsorOfferLocale,
     SponsorOfferPriceOption,
     SponsorOfferResponse,
     SponsorStateResponse,
@@ -93,10 +101,23 @@ class SponsorOfferService:
         self._catalog = catalog
 
     async def list_admin(self) -> list[SponsorOfferResponse]:
-        return [await self._response(offer) for offer in await self._offers.list_all()]
+        default_locale = await self._default_locale()
+        return [
+            await self._response(offer, default_locale=default_locale)
+            for offer in await self._offers.list_all()
+        ]
 
-    async def list_published(self) -> list[SponsorOfferResponse]:
-        responses = [await self._response(offer) for offer in await self._offers.list_all()]
+    async def list_published(self, locale: str | None = None) -> list[SponsorOfferResponse]:
+        default_locale = await self._default_locale()
+        responses = [
+            await self._response(
+                offer,
+                default_locale=default_locale,
+                locale=locale,
+                include_locales=False,
+            )
+            for offer in await self._offers.list_all()
+        ]
         return [
             response
             for response in responses
@@ -110,6 +131,8 @@ class SponsorOfferService:
     ) -> SponsorOfferResponse:
         rule = await self._require_rule(payload.commerce_rule_id)
         self._validate_destination_shape(rule, payload)
+        default_locale = await self._default_locale()
+        content_locales = self._content_locales(payload, default_locale)
         snapshot = (
             await self._resolve_snapshot(rule, payload, current_offer_id=None)
             if payload.is_published
@@ -120,6 +143,7 @@ class SponsorOfferService:
             commerce_rule_id=rule.id,
             title=payload.title,
             description=payload.description,
+            content_locales=dump_locale_map(content_locales),
             checkout_url=payload.checkout_url,
             expected_amount_minor=payload.expected_amount_minor,
             expected_payment_mode=payload.expected_payment_mode,
@@ -129,7 +153,7 @@ class SponsorOfferService:
             sort_order=payload.sort_order,
             created_by_id=admin_id,
         )
-        return await self._response(offer)
+        return await self._response(offer, default_locale=default_locale)
 
     async def update(
         self,
@@ -141,6 +165,12 @@ class SponsorOfferService:
             raise SponsorOfferNotFoundError("Sponsor offer was not found")
         rule = await self._require_rule(payload.commerce_rule_id)
         self._validate_destination_shape(rule, payload)
+        default_locale = await self._default_locale()
+        content_locales = self._content_locales(
+            payload,
+            default_locale,
+            existing=getattr(offer, "content_locales", None),
+        )
         snapshot = (
             await self._resolve_snapshot(rule, payload, current_offer_id=offer.id)
             if payload.is_published
@@ -152,6 +182,7 @@ class SponsorOfferService:
             commerce_rule_id=rule.id,
             title=payload.title,
             description=payload.description,
+            content_locales=dump_locale_map(content_locales),
             checkout_url=payload.checkout_url,
             expected_amount_minor=payload.expected_amount_minor,
             expected_payment_mode=payload.expected_payment_mode,
@@ -160,7 +191,7 @@ class SponsorOfferService:
             is_published=payload.is_published,
             sort_order=payload.sort_order,
         )
-        return await self._response(updated)
+        return await self._response(updated, default_locale=default_locale)
 
     async def delete(self, offer_id: uuid.UUID) -> None:
         offer = await self._offers.get_by_id(offer_id)
@@ -172,7 +203,7 @@ class SponsorOfferService:
         offer = await self._offers.get_by_id(offer_id)
         if offer is None:
             raise SponsorOfferNotFoundError("Sponsor offer was not found")
-        response = await self._response(offer)
+        response = await self._response(offer, default_locale=await self._default_locale())
         if not response.is_published or response.availability != "ready":
             raise SponsorOfferError("Sponsor offer is unavailable")
         return response
@@ -311,7 +342,36 @@ class SponsorOfferService:
                     "one offer includes all periods",
                 )
 
-    async def _response(self, offer: SponsorOffer) -> SponsorOfferResponse:
+    async def _default_locale(self) -> str:
+        settings = await self._provider_settings.get()
+        value = getattr(settings, "content_default_locale", DEFAULT_LOCALE)
+        return normalize_locale(value if isinstance(value, str) else None)
+
+    @staticmethod
+    def _content_locales(
+        payload: SponsorOfferInput,
+        default_locale: str,
+        *,
+        existing: object = None,
+    ) -> dict[str, SponsorOfferLocale]:
+        source = payload.content_locales
+        if source is None:
+            source = existing
+        localized = normalize_locale_map(source or {}, SponsorOfferLocale)
+        localized[default_locale] = SponsorOfferLocale(
+            title=payload.title,
+            description=payload.description,
+        )
+        return localized
+
+    async def _response(
+        self,
+        offer: SponsorOffer,
+        *,
+        default_locale: str,
+        locale: str | None = None,
+        include_locales: bool = True,
+    ) -> SponsorOfferResponse:
         rule = await self._rules.get_by_id(offer.commerce_rule_id)
         if rule is None:
             raise SponsorOfferError("Sponsor offer has no commerce rule")
@@ -343,11 +403,22 @@ class SponsorOfferService:
             availability = "configuration_changed"
         else:
             availability = "ready"
+        content_locales = normalize_locale_map(
+            getattr(offer, "content_locales", None) or {},
+            SponsorOfferLocale,
+        )
+        localized = resolve_locale_map(
+            content_locales,
+            SponsorOfferLocale,
+            locale,
+            default_locale,
+        )
         return SponsorOfferResponse(
             id=offer.id,
             provider="tribute",
-            title=offer.title,
-            description=offer.description,
+            title=localized.title if localized is not None else offer.title,
+            description=(localized.description if localized is not None else offer.description),
+            content_locales=content_locales if include_locales else {},
             commerce_rule_id=offer.commerce_rule_id,
             checkout_url=(snapshot.checkout_url if snapshot else offer.checkout_url),
             expected_amount_minor=(
@@ -440,10 +511,10 @@ class SponsorStateService:
         self._config = config
         self._clock = clock or (lambda: datetime.datetime.now(datetime.UTC))
 
-    async def get_state(self, user_id: int) -> SponsorStateResponse:
+    async def get_state(self, user_id: int, locale: str | None = None) -> SponsorStateResponse:
         now = self._clock()
         pending_checkout = await self._checkouts.expire_pending(user_id, now)
-        published = await self._offers.list_published()
+        published = await self._offers.list_published(locale)
         operations = await self._operations.list_for_user(user_id)
         active_grants = [
             operation

@@ -301,7 +301,7 @@ test("admin routes render deterministic success and placeholder states", async (
 	await expect(page.getByText("Default media", { exact: true })).toBeVisible();
 	await expect(page.getByLabel("Greeting text")).toHaveAttribute(
 		"placeholder",
-		"HTML is supported. Use {{ app_name }} for the app name",
+		"Write the greeting shown in Telegram",
 	);
 	await expect(
 		page.getByText("Animation (MP4/GIF) or photo sent with /start command", { exact: true }),

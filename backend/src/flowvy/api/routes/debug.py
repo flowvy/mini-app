@@ -7,6 +7,7 @@ import uuid
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, HTTPException, Request, status
 
+from flowvy.api.locale import request_locale
 from flowvy.api.routes.users import build_user_invite_response
 from flowvy.repositories.user import UserRepository
 from flowvy.schemas.commerce import (
@@ -49,7 +50,7 @@ async def debug_sponsor_state(
     service: FromDishka[SponsorStateService],
 ) -> SponsorStateResponse:
     check_debug(request)
-    return await service.get_state(telegram_id)
+    return await service.get_state(telegram_id, request_locale(request))
 
 
 @router.post(

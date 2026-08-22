@@ -120,9 +120,15 @@ export interface SponsorOfferPriceOption {
 	period: TributeSubscriptionPeriod | null;
 }
 
+export interface SponsorOfferLocale {
+	title: string;
+	description: string;
+}
+
 export interface SponsorOfferInput {
 	title: string;
 	description: string;
+	contentLocales: Record<string, SponsorOfferLocale>;
 	commerceRuleId: string;
 	checkoutUrl: string | null;
 	expectedAmountMinor: number | null;

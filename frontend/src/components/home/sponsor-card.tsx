@@ -11,6 +11,12 @@ import { TRIBUTE_PERIOD_KEYS } from "../../lib/commerce-labels.ts";
 import { formatExpiryDate, isUnlimitedExpiry } from "../../lib/format.ts";
 import { hapticImpact } from "../../lib/haptics.ts";
 import { formatMajorMoney, formatPlanMoney } from "../../lib/money.ts";
+import {
+	operatorFormattedText,
+	operatorText,
+	renderFormattedTemplate,
+	renderTemplate,
+} from "../../lib/operator-content.ts";
 import { queryKeys } from "../../lib/query.ts";
 import { openExternalDestination } from "../../lib/telegram-link.ts";
 import type {
@@ -113,6 +119,7 @@ export function SponsorCard() {
 	const { t, i18n } = useTranslation();
 	const { branding } = useCurrentUser();
 	const appName = branding.appName || t("common.appName");
+	const operatorContext = { appName, app_name: appName };
 	const sponsor = useSponsorState();
 	const checkout = useStartSponsorCheckout();
 	const abandonCheckout = useAbandonSponsorCheckout();
@@ -184,6 +191,33 @@ export function SponsorCard() {
 	const date = state.paidExpiresAt ?? state.baseExpiresAt;
 	const noExpiry = date ? isUnlimitedExpiry(date) : false;
 	const actionLabel = ACTION_KEYS[state.primaryAction];
+	const stateTitle =
+		state.status === "no_access"
+			? operatorText(branding.content, "sponsorNoAccessTitle", t(stateCopy.title), operatorContext)
+			: state.status === "base_access"
+				? operatorText(
+						branding.content,
+						"sponsorBaseAccessTitle",
+						t(stateCopy.title),
+						operatorContext,
+					)
+				: t(stateCopy.title);
+	const stateDescription =
+		state.status === "no_access"
+			? operatorFormattedText(
+					branding.content,
+					"sponsorNoAccessDescription",
+					t(stateCopy.description, { appName }),
+					operatorContext,
+				)
+			: state.status === "base_access"
+				? operatorFormattedText(
+						branding.content,
+						"sponsorBaseAccessDescription",
+						t(stateCopy.description, { appName }),
+						operatorContext,
+					)
+				: t(stateCopy.description, { appName });
 	const refreshOnly = state.primaryAction === "refresh";
 	const refreshAccess = async () => {
 		setPaymentFeedback(null);
@@ -275,20 +309,22 @@ export function SponsorCard() {
 		const instruction = donationInstruction(offer);
 		const isSubscription = offer.commerceType === "subscription";
 		const donationPrice = !isSubscription ? offer.priceOptions[0] : null;
+		const offerTitle = renderTemplate(offer.title, operatorContext);
+		const offerDescription = renderFormattedTemplate(offer.description, operatorContext);
 		return (
 			<article
 				className={styles.offerCard}
 				key={offer.id}
 				data-blocked={blocked ? "true" : undefined}
-				aria-label={offer.title}
+				aria-label={offerTitle}
 			>
 				<div className={styles.offerHeader}>
 					<div className={styles.offerTitleLine}>
-						<strong>{offer.title}</strong>
+						<strong>{offerTitle}</strong>
 						<small>{t(TYPE_KEYS[offer.commerceType])}</small>
 					</div>
-					{offer.description && (
-						<FormattedText className={styles.offerDescription}>{offer.description}</FormattedText>
+					{offerDescription && (
+						<FormattedText className={styles.offerDescription}>{offerDescription}</FormattedText>
 					)}
 				</div>
 
@@ -348,9 +384,9 @@ export function SponsorCard() {
 			<div className={styles.heading}>
 				<div>
 					<h2 id="sponsor-card-title" className={styles.title}>
-						{t(stateCopy.title)}
+						{stateTitle}
 					</h2>
-					<p className={styles.description}>{t(stateCopy.description, { appName })}</p>
+					<FormattedText className={styles.description}>{stateDescription}</FormattedText>
 				</div>
 				<span
 					className={styles.icon}
@@ -392,7 +428,9 @@ export function SponsorCard() {
 					) : (
 						<ExternalLink size={14} aria-hidden="true" />
 					)}
-					{t(actionLabel)}
+					{state.primaryAction === "choose_offer"
+						? operatorText(branding.content, "sponsorChooseAction", t(actionLabel), operatorContext)
+						: t(actionLabel)}
 				</ActionBtn>
 			)}
 

@@ -10,17 +10,19 @@ import pytest
 
 from flowvy.bot.handlers.start import cmd_start, redeem_invite_message
 from flowvy.config import Settings
+from flowvy.schemas.operator_content import OperatorContentLocale
 from flowvy.schemas.registration import OnboardingStatusResponse
 from flowvy.services.registration import InvalidInviteError, RegistrationUnavailableError
 
 
-def _message(text: str = "/start") -> SimpleNamespace:
+def _message(text: str = "/start", language_code: str = "en") -> SimpleNamespace:
     return SimpleNamespace(
         from_user=SimpleNamespace(
             id=123456,
             username="alice",
             first_name="Alice",
             last_name=None,
+            language_code=language_code,
         ),
         chat=SimpleNamespace(id=123456),
         text=text,
@@ -40,20 +42,52 @@ async def test_start_prompts_unknown_user_when_registration_is_invite_only() -> 
             registration_mode="invite_only",
         ),
     )
+    provider_settings = AsyncMock()
+    configured = SimpleNamespace()
+    provider_settings.get.return_value = configured
 
     await cmd_start.__dishka_orig_func__(  # type: ignore[attr-defined]
         message,
         Settings(),
         sender,
-        AsyncMock(),
+        provider_settings,
         registration,
     )
 
-    sender.send.assert_awaited_once_with(
-        123456,
-        "Access is invite-only. Send your invite code in this chat.",
-    )
+    sender.send_invite_required.assert_awaited_once_with(123456, configured, "en")
     registration.register_open.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_start_delegates_locale_resolved_operator_invite_prompt() -> None:
+    message = _message(language_code="ru")
+    sender = AsyncMock()
+    registration = AsyncMock()
+    registration.resolve_existing = AsyncMock(return_value=None)
+    registration.get_status = AsyncMock(
+        return_value=OnboardingStatusResponse(
+            state="invite_required",
+            registration_mode="invite_only",
+            app_name="Shop & Co",
+            content=OperatorContentLocale(
+                bot_invite_required="<b>Join {{appName}}</b> with your code",
+            ),
+        ),
+    )
+    provider_settings = AsyncMock()
+    configured = SimpleNamespace()
+    provider_settings.get.return_value = configured
+
+    await cmd_start.__dishka_orig_func__(  # type: ignore[attr-defined]
+        message,
+        Settings(),
+        sender,
+        provider_settings,
+        registration,
+    )
+
+    assert registration.get_status.await_args.args[1] == "ru"
+    sender.send_invite_required.assert_awaited_once_with(123456, configured, "ru")
 
 
 @pytest.mark.asyncio
@@ -179,20 +213,20 @@ async def test_bot_start_parameter_does_not_bypass_main_mini_app_invite_flow() -
             registration_mode="invite_only",
         ),
     )
+    provider_settings = AsyncMock()
+    configured = SimpleNamespace()
+    provider_settings.get.return_value = configured
 
     await cmd_start.__dishka_orig_func__(  # type: ignore[attr-defined]
         message,
         Settings(),
         sender,
-        AsyncMock(),
+        provider_settings,
         registration,
     )
 
     registration.redeem.assert_not_awaited()
-    sender.send.assert_awaited_once_with(
-        123456,
-        "Access is invite-only. Send your invite code in this chat.",
-    )
+    sender.send_invite_required.assert_awaited_once_with(123456, configured, "en")
     sender.send_welcome.assert_not_awaited()
 
 

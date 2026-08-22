@@ -121,12 +121,16 @@ async def test_tribute(
     "/settings/welcome-media",
     response_model=WelcomeMediaUploadResponse,
 )
+@router.post(
+    "/settings/bot-invite-media",
+    response_model=WelcomeMediaUploadResponse,
+)
 async def upload_welcome_media(
     file: UploadFile,
     admin: CurrentAdminForm,
     bot: FromDishka[Bot] = None,  # type: ignore[assignment]
 ) -> WelcomeMediaUploadResponse:
-    """Upload file via Bot to get file_id. Does NOT write to DB."""
+    """Upload one configured bot-message attachment. Does NOT write to DB."""
     media_type = ALLOWED_MIME.get(file.content_type or "")
     if not media_type:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unsupported file type")
@@ -153,7 +157,7 @@ async def upload_welcome_media(
             msg = await bot.send_photo(chat_id=admin.user.id, photo=upload)
             file_id = msg.photo[-1].file_id
     except TelegramAPIError as exc:
-        logger.exception("Failed to upload welcome media via bot")
+        logger.exception("Failed to upload configured bot-message media")
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
             "Bot could not upload this media",
@@ -165,7 +169,7 @@ async def upload_welcome_media(
             message_id=msg.message_id,
         )
     except TelegramAPIError:
-        logger.warning("Failed to delete temporary welcome media message", exc_info=True)
+        logger.warning("Failed to delete temporary bot-message media", exc_info=True)
 
     return WelcomeMediaUploadResponse(
         file_id=file_id,

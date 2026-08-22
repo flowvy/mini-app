@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.types import FSInputFile
 
@@ -156,6 +158,94 @@ async def test_send_welcome_custom_app_name(sender: MessageSender, bot: AsyncMoc
     bot.send_animation.assert_called_once()
     markup = bot.send_animation.call_args.kwargs["reply_markup"]
     assert "MyVPN" in markup.inline_keyboard[0][0].text
+
+
+async def test_send_welcome_escapes_template_values_but_preserves_html(
+    sender: MessageSender,
+    bot: AsyncMock,
+) -> None:
+    settings = Settings(webapp_url="https://app.example.com")
+    ps = SimpleNamespace(
+        app_name="Shop & <Co>",
+        content_default_locale="en",
+        content_locales={
+            "en": {
+                "welcome_text": "<b>Hello {{appName}}</b>",
+                "welcome_button_text": "Open {{appName}}",
+            }
+        },
+        welcome_text=None,
+        welcome_media_url=None,
+        welcome_media_type=None,
+        welcome_media_file_id=None,
+        welcome_button_text=None,
+    )
+
+    await sender.send_welcome(123, settings, ps)
+
+    sent = bot.send_animation.call_args.kwargs
+    assert sent["caption"] == "<b>Hello Shop &amp; &lt;Co&gt;</b>"
+    assert sent["parse_mode"] == ParseMode.HTML
+    assert sent["reply_markup"].inline_keyboard[0][0].text == "Open Shop & <Co>"
+
+
+async def test_send_invite_required_supports_html_custom_emoji_and_media(
+    sender: MessageSender,
+    bot: AsyncMock,
+) -> None:
+    ps = SimpleNamespace(
+        app_name="Shop & Co",
+        content_default_locale="en",
+        content_locales={
+            "en": {
+                "bot_invite_required": (
+                    "<b>Join {{appName}}</b> "
+                    '<tg-emoji emoji-id="5368324170671202286">👍</tg-emoji>'
+                )
+            }
+        },
+        bot_invite_media_type="photo",
+        bot_invite_media_file_id="invite-photo-id",
+    )
+
+    await sender.send_invite_required(123, ps, "en-US")
+
+    sent = bot.send_photo.call_args.kwargs
+    assert sent["photo"] == "invite-photo-id"
+    assert sent["caption"] == (
+        '<b>Join Shop &amp; Co</b> <tg-emoji emoji-id="5368324170671202286">👍</tg-emoji>'
+    )
+    assert sent["parse_mode"] == ParseMode.HTML
+
+
+async def test_send_welcome_uses_operator_content_for_requested_locale(
+    sender: MessageSender,
+    bot: AsyncMock,
+) -> None:
+    settings = Settings(webapp_url="https://app.example.com")
+    ps = MagicMock()
+    ps.app_name = "MyVPN"
+    ps.content_default_locale = "en"
+    ps.content_locales = {
+        "en": {"welcome_text": "Hello {{appName}}", "welcome_button_text": "Open"},
+        "ru": {"welcome_text": "Привет, {{appName}}", "welcome_button_text": "Открыть"},
+    }
+    ps.welcome_text = None
+    ps.welcome_media_url = None
+    ps.welcome_media_type = None
+    ps.welcome_media_file_id = None
+    ps.welcome_button_text = None
+
+    await sender.send_welcome(
+        chat_id=123,
+        settings=settings,
+        provider_settings=ps,
+        locale="ru-RU",
+    )
+
+    sent = bot.send_animation.call_args.kwargs
+    assert sent["caption"] == "Привет, MyVPN"
+    assert sent["reply_markup"].inline_keyboard[0][0].text == "Открыть"
 
 
 async def test_send_welcome_no_webapp_url(sender: MessageSender, bot: AsyncMock) -> None:

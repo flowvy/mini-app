@@ -37,6 +37,11 @@ def _row(**overrides: object) -> SimpleNamespace:
         "welcome_media_file_id": None,
         "welcome_media_file_name": None,
         "welcome_button_text": None,
+        "bot_invite_media_type": None,
+        "bot_invite_media_file_id": None,
+        "bot_invite_media_file_name": None,
+        "content_default_locale": "en",
+        "content_locales": {},
         "tribute_donation_url": None,
         "tribute_subscription_urls": {},
         "updated_at": datetime(2026, 8, 2, tzinfo=UTC),
@@ -209,29 +214,69 @@ async def test_unrelated_change_does_not_invalidate_pulse_cache() -> None:
     redis.delete.assert_not_awaited()
 
 
-def test_settings_patch_has_no_external_support_fields() -> None:
-    forbidden = {
-        "support_title",
-        "support_description",
-        "support_url",
-        "support_button_text",
-    }
-
-    assert forbidden.isdisjoint(ProviderSettingsPatch.model_fields)
-
-
 @pytest.mark.asyncio
-async def test_settings_response_has_no_external_support_fields() -> None:
-    service, _kuma, _beszel, _redis = _service(_row())
+async def test_settings_response_exposes_typed_localized_content() -> None:
+    service, _kuma, _beszel, _redis = _service(
+        _row(
+            content_locales={
+                "en": {"invite_title": "Invite friends"},
+                "ru": {"invite_title": "Позвать друзей"},
+            },
+        )
+    )
 
     payload = (await service.get()).model_dump(by_alias=True)
 
-    assert {"supportTitle", "supportDescription", "supportUrl", "supportButtonText"}.isdisjoint(
-        payload
+    assert payload["contentLocales"]["en"]["inviteTitle"] == "Invite friends"
+    assert payload["contentLocales"]["ru"]["inviteTitle"] == "Позвать друзей"
+    assert "supportUrl" not in payload
+    assert payload["contentTemplateVariables"]["inviteShareText"] == ["appName", "code"]
+    assert payload["sponsorOfferTemplateVariables"] == ["appName"]
+
+
+@pytest.mark.asyncio
+async def test_bot_invite_media_is_persisted_and_reset_as_one_consistent_slot() -> None:
+    row = _row()
+    service, _kuma, _beszel, _redis = _service(row)
+
+    await service.update(
+        ProviderSettingsPatch(
+            bot_invite_media_type="photo",
+            bot_invite_media_file_id="telegram-file-id",
+            bot_invite_media_file_name="invite.png",
+        )
+    )
+
+    service._repo.update_partial.assert_awaited_once_with(
+        {
+            "bot_invite_media_type": "photo",
+            "bot_invite_media_file_id": "telegram-file-id",
+            "bot_invite_media_file_name": "invite.png",
+        }
+    )
+
+    service._repo.update_partial.reset_mock()
+    row.bot_invite_media_type = "photo"
+    row.bot_invite_media_file_id = "telegram-file-id"
+    row.bot_invite_media_file_name = "invite.png"
+
+    await service.update(ProviderSettingsPatch(bot_invite_media_file_id=None))
+
+    service._repo.update_partial.assert_awaited_once_with(
+        {
+            "bot_invite_media_file_id": None,
+            "bot_invite_media_type": None,
+            "bot_invite_media_file_name": None,
+        }
     )
 
 
-def test_public_branding_contains_identity_only() -> None:
+def test_bot_invite_media_rejects_unknown_type() -> None:
+    with pytest.raises(ValidationError):
+        ProviderSettingsPatch(bot_invite_media_type="video")  # type: ignore[arg-type]
+
+
+def test_public_branding_contains_only_resolved_operator_locale() -> None:
     user = SimpleNamespace(
         id=123,
         username="alice",
@@ -240,9 +285,56 @@ def test_public_branding_contains_identity_only() -> None:
         is_active=True,
     )
 
-    payload = build_user_response(user, _row()).model_dump(by_alias=True)
+    payload = build_user_response(
+        user,
+        _row(
+            content_locales={
+                "en": {"invite_title": "Invite friends"},
+                "ru": {"invite_title": "Позвать друзей"},
+            },
+        ),
+        "ru-RU",
+    ).model_dump(by_alias=True)
 
-    assert payload["branding"] == {"appName": None, "logoUrl": None}
+    assert payload["branding"]["content"]["inviteTitle"] == "Позвать друзей"
+    assert "supportUrl" not in payload["branding"]
+    assert "contentLocales" not in payload["branding"]
+
+
+@pytest.mark.asyncio
+async def test_localized_settings_persist_as_one_typed_map_and_bridge_welcome() -> None:
+    service, _kuma, _beszel, _redis = _service(_row())
+
+    await service.update(
+        ProviderSettingsPatch(
+            content_locales={
+                "en": {
+                    "welcomeText": "Hello, {{appName}}",
+                    "welcomeButtonText": "Open {{appName}}",
+                    "inviteShareText": "Join {{appName}} with {{code}}",
+                }
+            }
+        )
+    )
+
+    service._repo.update_partial.assert_awaited_once_with(
+        {
+            "content_locales": {
+                "en": {
+                    "welcome_text": "Hello, {{appName}}",
+                    "welcome_button_text": "Open {{appName}}",
+                    "invite_share_text": "Join {{appName}} with {{code}}",
+                }
+            },
+            "welcome_text": "Hello, {{appName}}",
+            "welcome_button_text": "Open {{appName}}",
+        }
+    )
+
+
+def test_localized_content_rejects_unknown_template_placeholders() -> None:
+    with pytest.raises(ValidationError, match="Unsupported placeholders"):
+        ProviderSettingsPatch(content_locales={"en": {"inviteShareText": "Hello {{secret}}"}})
 
 
 @pytest.mark.asyncio

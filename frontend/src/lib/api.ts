@@ -1,3 +1,4 @@
+import i18n from "../i18n";
 /**
  * HTTP client for Flowvy backend API.
  * Automatically attaches Telegram initData in Authorization header.
@@ -50,6 +51,7 @@ async function getErrorPayload(response: Response): Promise<ErrorPayload> {
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
+		"Accept-Language": i18n.resolvedLanguage || i18n.language || "en",
 	};
 
 	const initData = getRawInitData();
@@ -108,6 +110,7 @@ export async function apiUploadFile<T>(path: string, file: File): Promise<T> {
 
 	const response = await fetch(`${BASE_URL}${path}`, {
 		method: "POST",
+		headers: { "Accept-Language": i18n.resolvedLanguage || i18n.language || "en" },
 		body: formData,
 	});
 

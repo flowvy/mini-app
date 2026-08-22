@@ -6,6 +6,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from flowvy.localization import product_text
+
 ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
 
 _PLACEHOLDER_RE = re.compile(r"\{\{\s*(\w+)\s*\}\}")
@@ -23,17 +25,21 @@ class MessageTemplate:
     button_text: str | None = None
 
 
-DEFAULTS: dict[str, MessageTemplate] = {
-    "welcome": MessageTemplate(
-        text=(
-            "Welcome! "
-            '<tg-emoji emoji-id="5262526163959453517">☺</tg-emoji>\n'
-            "Manage your service directly in Telegram."
-        ),
+def default_template(name: str, locale: str | None = None) -> MessageTemplate:
+    """Build a product template from the packaged locale catalog."""
+
+    if name != "welcome":
+        raise KeyError(name)
+    return MessageTemplate(
+        text=product_text(locale, "welcome.text"),
         media_path=ASSETS_DIR / "main_card.mp4",
         media_type="animation",
-        button_text="Open {{ app_name }}",
-    ),
+        button_text=product_text(locale, "welcome.button"),
+    )
+
+
+DEFAULTS: dict[str, MessageTemplate] = {
+    "welcome": default_template("welcome"),
 }
 
 

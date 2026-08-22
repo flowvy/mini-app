@@ -8,6 +8,9 @@ $composeFile = Join-Path $repoRoot "docker-compose.dev.yml"
 $databaseName = "flowvy_migration_verify_$(([guid]::NewGuid().ToString('N')).Substring(0, 12))"
 $databaseUrlWasSet = Test-Path Env:DATABASE_URL
 $previousDatabaseUrl = $env:DATABASE_URL
+$pythonPathWasSet = Test-Path Env:PYTHONPATH
+$previousPythonPath = $env:PYTHONPATH
+$env:PYTHONPATH = Join-Path $backendDir "src"
 $containerId = $null
 $databaseCreated = $false
 
@@ -128,6 +131,132 @@ ROLLBACK;
         if ($LASTEXITCODE -ne 0) {
             throw "Migrated sponsor tables or automation-managed access profiles rejected valid runtime data."
         }
+
+        uv run --frozen alembic downgrade z5a6b7c8d9e0
+        if ($LASTEXITCODE -ne 0) { throw "Could not return to the localized-content predecessor." }
+
+        $localizedContentSeedSql = @'
+INSERT INTO provider_settings (
+    id,
+    pulse_provider,
+    registration_mode,
+    tribute_subscription_urls,
+    welcome_text,
+    welcome_button_text
+)
+VALUES (1, 'disabled', 'open', '{}'::jsonb, 'Legacy welcome', 'Open legacy app')
+ON CONFLICT (id) DO UPDATE SET
+    welcome_text = EXCLUDED.welcome_text,
+    welcome_button_text = EXCLUDED.welcome_button_text;
+
+INSERT INTO access_profiles (
+    id,
+    name,
+    validity_mode,
+    validity_days,
+    fixed_expire_at
+)
+VALUES (
+    '30000000-0000-4000-8000-000000000090',
+    'Localized content profile',
+    'automation',
+    NULL,
+    NULL
+);
+
+INSERT INTO commerce_rules (
+    id,
+    provider,
+    name,
+    commerce_type,
+    payment_mode,
+    external_item_id,
+    currency,
+    calculation_type,
+    calculator,
+    access_profile_id,
+    grant_mode
+)
+VALUES (
+    '30000000-0000-4000-8000-000000000091',
+    'tribute',
+    'Localized content rule',
+    'donation',
+    'one_time',
+    NULL,
+    'RUB',
+    'fixed',
+    '{"duration_days": 30}'::jsonb,
+    '30000000-0000-4000-8000-000000000090',
+    'extend'
+);
+
+INSERT INTO sponsor_offers (
+    id,
+    provider,
+    commerce_rule_id,
+    title,
+    description,
+    is_published,
+    sort_order
+)
+VALUES (
+    '30000000-0000-4000-8000-000000000092',
+    'tribute',
+    '30000000-0000-4000-8000-000000000091',
+    'Legacy sponsor title',
+    'Legacy sponsor description',
+    false,
+    100
+);
+'@
+        docker exec $containerId psql -U flowvy -d $databaseName -v ON_ERROR_STOP=1 `
+            -c $localizedContentSeedSql
+        if ($LASTEXITCODE -ne 0) { throw "Could not seed localized-content predecessor data." }
+
+        uv run --frozen alembic upgrade head
+        if ($LASTEXITCODE -ne 0) { throw "Localized-content previous-head upgrade failed." }
+
+        $localizedContentProofSql = @'
+SELECT
+    (
+        SELECT content_default_locale = 'en'
+            AND content_locales #>> '{en,welcome_text}' = 'Legacy welcome'
+            AND content_locales #>> '{en,welcome_button_text}' = 'Open legacy app'
+            AND NOT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                    AND table_name = 'provider_settings'
+                    AND column_name = 'support_url'
+            )
+        FROM provider_settings
+        WHERE id = 1
+    ),
+    (
+        SELECT content_locales #>> '{en,title}' = 'Legacy sponsor title'
+            AND content_locales #>> '{en,description}' = 'Legacy sponsor description'
+        FROM sponsor_offers
+        WHERE id = '30000000-0000-4000-8000-000000000092'
+    );
+'@
+        $localizedContentProof = docker exec $containerId psql -U flowvy -d $databaseName -tA -v ON_ERROR_STOP=1 `
+            -c $localizedContentProofSql
+        if ($LASTEXITCODE -ne 0 -or $localizedContentProof.Trim() -ne "t|t") {
+            throw "Localized-content migration did not preserve English welcome and sponsor copy: $localizedContentProof"
+        }
+
+        $localizedContentCleanupSql = @'
+DELETE FROM sponsor_offers
+WHERE id = '30000000-0000-4000-8000-000000000092';
+DELETE FROM commerce_rules
+WHERE id = '30000000-0000-4000-8000-000000000091';
+DELETE FROM access_profiles
+WHERE id = '30000000-0000-4000-8000-000000000090';
+'@
+        docker exec $containerId psql -U flowvy -d $databaseName -v ON_ERROR_STOP=1 `
+            -c $localizedContentCleanupSql
+        if ($LASTEXITCODE -ne 0) { throw "Could not clean localized-content migration fixtures." }
 
         uv run --frozen alembic downgrade base
         if ($LASTEXITCODE -ne 0) { throw "Alembic downgrade-to-base failed on the disposable database." }
@@ -280,6 +409,13 @@ finally {
         Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
     }
 
+    if ($pythonPathWasSet) {
+        $env:PYTHONPATH = $previousPythonPath
+    }
+    else {
+        Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+    }
+
     if ($databaseCreated -and $containerId) {
         docker exec $containerId psql -U flowvy -d postgres -v ON_ERROR_STOP=1 `
             -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$databaseName';" | Out-Null
@@ -288,4 +424,4 @@ finally {
     }
 }
 
-Write-Host "Alembic passed one-head, previous-head data upgrades, sponsor UUID inserts, Kuma/Beszel setting preservation, webhook hardening, Remnawave identity preservation, downgrade/re-upgrade, and drift checks."
+Write-Host "Alembic passed one-head, localized-content backfill, previous-head data upgrades, sponsor UUID inserts, Kuma/Beszel setting preservation, webhook hardening, Remnawave identity preservation, downgrade/re-upgrade, and drift checks."

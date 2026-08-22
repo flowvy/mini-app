@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import html
 import logging
 
 from aiogram import F, Router
@@ -13,6 +14,7 @@ from dishka import FromDishka
 from dishka.integrations.aiogram import inject
 
 from flowvy.config import Settings
+from flowvy.localization import product_text
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.services.message_sender import MessageSender
 from flowvy.services.registration import (
@@ -27,6 +29,14 @@ from flowvy.services.user import InactiveUserError
 
 router = Router(name="start")
 _logger = logging.getLogger(__name__)
+
+
+def _locale(message: Message) -> str | None:
+    return getattr(message.from_user, "language_code", None)
+
+
+async def _send_product(sender: MessageSender, message: Message, key: str) -> None:
+    await sender.send(message.chat.id, html.escape(product_text(_locale(message), key)))
 
 
 def _identity(message: Message) -> RegistrationIdentity | None:
@@ -58,10 +68,7 @@ async def cmd_start(
     try:
         lease_token = await registration.begin_bot_start(identity.telegram_id)
     except RegistrationUnavailableError:
-        await sender.send(
-            message.chat.id,
-            "Registration is temporarily unavailable. Please try again later.",
-        )
+        await _send_product(sender, message, "registration.unavailable")
         return
     if lease_token is None:
         return
@@ -71,39 +78,31 @@ async def cmd_start(
         try:
             user = await registration.resolve_existing(identity)
             if user is None:
-                onboarding = await registration.get_status(identity)
+                onboarding = await registration.get_status(identity, _locale(message))
                 if onboarding.state == "invite_required":
-                    await sender.send(
-                        message.chat.id,
-                        "Access is invite-only. Send your invite code in this chat.",
-                    )
+                    ps = await ps_repo.get()
+                    await sender.send_invite_required(message.chat.id, ps, _locale(message))
                     stable_response = True
                     return
                 await registration.register_open(identity)
         except InvalidInviteError:
-            await sender.send(
-                message.chat.id,
-                "This invite code is invalid or no longer available.",
-            )
+            await _send_product(sender, message, "registration.invalidInvite")
             stable_response = True
             return
         except InviteRateLimitError:
-            await sender.send(message.chat.id, "Too many attempts. Try again later.")
+            await _send_product(sender, message, "registration.rateLimited")
             stable_response = True
             return
         except InactiveUserError:
-            await sender.send(message.chat.id, "Your account is disabled.")
+            await _send_product(sender, message, "registration.accountDisabled")
             stable_response = True
             return
         except RegistrationError as exc:
             _logger.warning("Bot registration failed with code %s", exc.code)
-            await sender.send(
-                message.chat.id,
-                "Registration is temporarily unavailable. Please try again later.",
-            )
+            await _send_product(sender, message, "registration.unavailable")
             return
         ps = await ps_repo.get()
-        await sender.send_welcome(message.chat.id, settings, ps)
+        await sender.send_welcome(message.chat.id, settings, ps, _locale(message))
         stable_response = True
     finally:
         await registration.finish_bot_start(
@@ -129,28 +128,28 @@ async def redeem_invite_message(
     try:
         if await registration.resolve_existing(identity) is not None:
             return
-        onboarding = await registration.get_status(identity)
+        onboarding = await registration.get_status(identity, _locale(message))
         if onboarding.state == "open":
             await registration.register_open(identity)
             ps = await ps_repo.get()
-            await sender.send_welcome(message.chat.id, settings, ps)
+            await sender.send_welcome(message.chat.id, settings, ps, _locale(message))
             return
         # Remove code attempts from chat history to keep the onboarding chat tidy.
         with contextlib.suppress(TelegramAPIError):
             await message.delete()
         await registration.redeem(identity, message.text)
     except InvalidInviteError:
-        await sender.send(message.chat.id, "This invite code is invalid or no longer available.")
+        await _send_product(sender, message, "registration.invalidInvite")
         return
     except InviteRateLimitError:
-        await sender.send(message.chat.id, "Too many attempts. Try again later.")
+        await _send_product(sender, message, "registration.rateLimited")
         return
-    except (RegistrationUnavailableError, RegistrationError, InactiveUserError):
-        await sender.send(
-            message.chat.id,
-            "Registration is temporarily unavailable. Please try again later.",
-        )
+    except InactiveUserError:
+        await _send_product(sender, message, "registration.accountDisabled")
+        return
+    except (RegistrationUnavailableError, RegistrationError):
+        await _send_product(sender, message, "registration.unavailable")
         return
 
     ps = await ps_repo.get()
-    await sender.send_welcome(message.chat.id, settings, ps)
+    await sender.send_welcome(message.chat.id, settings, ps, _locale(message))

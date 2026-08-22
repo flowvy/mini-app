@@ -10,10 +10,8 @@
 	white-space: nowrap;
 	line-height: 1;
 	cursor: pointer;
-	transition:
-		color var(--duration-base) ease, background-color var(--duration-base) ease,
-		border-color var(--duration-base) ease, opacity var(--duration-base) ease,
-		transform var(--duration-fast) ease;
+	transition: color var(--duration-base) ease, background-color var(--duration-base) ease,
+		border-color var(--duration-base) ease, transform var(--duration-fast) ease;
 	border: 1px solid transparent;
 	background: transparent;
 	font-family: inherit;

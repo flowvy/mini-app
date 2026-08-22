@@ -1,3 +1,5 @@
+import type { OperatorContentLocales } from "./operator-content.ts";
+
 export type PulseProvider = "disabled" | "kuma" | "beszel";
 
 export interface AdminSettings {
@@ -17,6 +19,13 @@ export interface AdminSettings {
 	welcomeMediaFileId: string | null;
 	welcomeMediaFileName: string | null;
 	welcomeButtonText: string | null;
+	botInviteMediaType: string | null;
+	botInviteMediaFileId: string | null;
+	botInviteMediaFileName: string | null;
+	contentDefaultLocale: string;
+	contentLocales: OperatorContentLocales;
+	contentTemplateVariables: Record<string, string[]>;
+	sponsorOfferTemplateVariables: string[];
 	remnawaveVersion: string | null;
 	flowvyVersion: string;
 	updatedAt: number;
@@ -37,6 +46,11 @@ export interface AdminSettingsPatch {
 	welcomeMediaFileId?: string | null;
 	welcomeMediaFileName?: string | null;
 	welcomeButtonText?: string | null;
+	botInviteMediaType?: string | null;
+	botInviteMediaFileId?: string | null;
+	botInviteMediaFileName?: string | null;
+	contentDefaultLocale?: string;
+	contentLocales?: OperatorContentLocales;
 }
 
 export interface WelcomeMediaUpload {

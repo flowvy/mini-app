@@ -12,6 +12,7 @@ interface WelcomeMediaRowProps {
 	mediaType: string;
 	description: string;
 	isDefault: boolean;
+	empty?: boolean;
 	uploading: boolean;
 	onPickFile: (file: File) => void;
 	onReset: () => void;
@@ -22,6 +23,7 @@ export const WelcomeMediaRow: FC<WelcomeMediaRowProps> = ({
 	mediaType,
 	description,
 	isDefault,
+	empty = false,
 	uploading,
 	onPickFile,
 	onReset,
@@ -52,7 +54,7 @@ export const WelcomeMediaRow: FC<WelcomeMediaRowProps> = ({
 						loading={uploading}
 						onClick={() => fileRef.current?.click()}
 					>
-						{t("settings.welcome.mediaChange")}
+						{t(empty ? "settings.welcome.mediaAdd" : "settings.welcome.mediaChange")}
 					</ActionBtn>
 					{!isDefault && (
 						<ActionBtn variant="dangerOutline" size="sm" disabled={uploading} onClick={onReset}>

@@ -4,14 +4,18 @@ import { BadgeInfo } from "lucide-react";
 import { type FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
+import { SUPPORTED_LOCALES, localeLabel } from "../../i18n";
 import { apiUploadFile } from "../../lib/api.ts";
 import { isMockAuth } from "../../lib/runtime.ts";
 import ss from "../../pages/admin/settings.module.css";
 import type { AdminSettings, WelcomeMediaUpload } from "../../types/admin-settings.ts";
+import { TelegramHtmlEditor } from "../content/telegram-html-editor.tsx";
+import { TemplateVariables } from "../content/template-variables.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { FormSaveButton } from "../ui/form-save-button.tsx";
-import { FormField, FormFieldInput, FormFieldTextarea } from "../ui/form-section.tsx";
+import { FormField, FormFieldInput } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
+import { SegmentedControl } from "../ui/segmented-control.tsx";
 import { SettingsFields, SettingsInlineNotice, SettingsPanel } from "./settings-surface.tsx";
 import { WelcomeMediaRow } from "./welcome-media-row.tsx";
 
@@ -22,9 +26,25 @@ interface WelcomeConfigProps {
 }
 
 export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
-	const { t } = useTranslation();
-	const [text, setText] = useState(settings.welcomeText ?? "");
-	const [buttonText, setButtonText] = useState(settings.welcomeButtonText ?? "");
+	const { t, i18n } = useTranslation();
+	const [initialContentLocales] = useState(() => {
+		const locales = structuredClone(settings.contentLocales);
+		const defaultContent = locales[settings.contentDefaultLocale] ?? {};
+		locales[settings.contentDefaultLocale] = {
+			...defaultContent,
+			welcomeText: defaultContent.welcomeText ?? settings.welcomeText,
+			welcomeButtonText: defaultContent.welcomeButtonText ?? settings.welcomeButtonText,
+		};
+		return locales;
+	});
+	const [contentLocales, setContentLocales] = useState(() =>
+		structuredClone(initialContentLocales),
+	);
+	const [locale, setLocale] = useState(
+		SUPPORTED_LOCALES.includes(settings.contentDefaultLocale)
+			? settings.contentDefaultLocale
+			: (SUPPORTED_LOCALES[0] ?? "en"),
+	);
 	const [mediaFileId, setMediaFileId] = useState(settings.welcomeMediaFileId);
 	const [mediaFileName, setMediaFileName] = useState(settings.welcomeMediaFileName);
 	const [mediaType, setMediaType] = useState(settings.welcomeMediaType);
@@ -33,14 +53,22 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 	const [feedbackError, setFeedbackError] = useState<string | null>(null);
 	const updateMutation = useUpdateSettings();
 
-	const initText = settings.welcomeText ?? "";
-	const initButtonText = settings.welcomeButtonText ?? "";
-	const textDirty = text !== initText || buttonText !== initButtonText;
+	const content = contentLocales[locale] ?? {};
+	const text = content.welcomeText ?? "";
+	const buttonText = content.welcomeButtonText ?? "";
+	const textDirty = JSON.stringify(contentLocales) !== JSON.stringify(initialContentLocales);
 	const mediaDirty =
 		mediaFileId !== settings.welcomeMediaFileId ||
 		mediaFileName !== settings.welcomeMediaFileName ||
 		mediaType !== settings.welcomeMediaType;
 	const dirty = textDirty || mediaDirty;
+	const updateContent = (field: "welcomeText" | "welcomeButtonText", value: string) => {
+		setContentLocales((current) => ({
+			...current,
+			[locale]: { ...current[locale], [field]: value || null },
+		}));
+		setSaved(false);
+	};
 
 	const blocker = useBlocker({
 		shouldBlockFn: () => dirty && !saved,
@@ -71,8 +99,7 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 		setFeedbackError(null);
 		try {
 			await updateMutation.mutateAsync({
-				welcomeText: text || null,
-				welcomeButtonText: buttonText || null,
+				contentLocales,
 				welcomeMediaFileId: mediaFileId,
 				welcomeMediaFileName: mediaFileName,
 				welcomeMediaType: mediaType,
@@ -113,6 +140,17 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 			{feedbackError && <InlineFeedback attention="action">{feedbackError}</InlineFeedback>}
 			<SettingsPanel title={t("settings.welcome.contentSection")}>
 				<SettingsFields>
+					<FormField label={t("settings.content.languageLabel")}>
+						<SegmentedControl
+							options={SUPPORTED_LOCALES.map((key) => ({
+								key,
+								label: localeLabel(key, i18n.language),
+							}))}
+							value={locale}
+							onChange={setLocale}
+							ariaLabel={t("settings.content.languageLabel")}
+						/>
+					</FormField>
 					<FormField
 						label={t("settings.welcome.messageLabel")}
 						htmlFor="welcome-message"
@@ -122,15 +160,13 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 							</SettingsInlineNotice>
 						}
 					>
-						<FormFieldTextarea
+						<TelegramHtmlEditor
 							id="welcome-message"
+							ariaLabel={t("settings.welcome.messageLabel")}
 							value={text}
-							onChange={(event) => {
-								setText(event.target.value);
-								setSaved(false);
-							}}
+							onChange={(value) => updateContent("welcomeText", value)}
 							placeholder={t("settings.welcome.messagePlaceholder")}
-							rows={4}
+							maxLength={4_000}
 						/>
 					</FormField>
 					<FormField label={t("settings.welcome.mediaSection")}>
@@ -153,13 +189,21 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 							id="welcome-button-text"
 							value={buttonText}
 							enterKeyHint="done"
-							onChange={(event) => {
-								setButtonText(event.target.value);
-								setSaved(false);
-							}}
+							onChange={(event) => updateContent("welcomeButtonText", event.target.value)}
 							placeholder={t("settings.welcome.buttonTextPlaceholder")}
 						/>
 					</FormField>
+					<TemplateVariables
+						variables={[
+							...new Set([
+								...(settings.contentTemplateVariables.welcomeText ?? []),
+								...(settings.contentTemplateVariables.welcomeButtonText ?? []),
+							]),
+						]}
+						scopes={{
+							appName: [t("settings.welcome.messageLabel"), t("settings.welcome.buttonTextLabel")],
+						}}
+					/>
 				</SettingsFields>
 			</SettingsPanel>
 

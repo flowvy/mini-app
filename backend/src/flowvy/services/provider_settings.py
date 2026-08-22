@@ -5,7 +5,9 @@ from __future__ import annotations
 from redis.asyncio import Redis
 
 from flowvy.config import Settings
+from flowvy.localization import DEFAULT_LOCALE, dump_locale_map, normalize_locale_map
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
+from flowvy.schemas.operator_content import OperatorContentLocale
 from flowvy.schemas.provider_settings import (
     BeszelTestResponse,
     KumaTestResponse,
@@ -20,6 +22,9 @@ from flowvy.services.remnawave import RemnawaveClient, RemnawaveError
 from flowvy.services.tribute import TributeClient, TributeError
 
 PULSE_FIELDS = frozenset({"pulse_provider", "kuma_url", "kuma_slug", "beszel_url"})
+BOT_INVITE_MEDIA_FIELDS = frozenset(
+    {"bot_invite_media_type", "bot_invite_media_file_id", "bot_invite_media_file_name"}
+)
 
 
 class ProviderSettingsError(ValueError):
@@ -51,6 +56,10 @@ class ProviderSettingsService:
         """Return current settings with system info."""
         row = await self._repo.get()
         version = await self._get_remnawave_version()
+        content_locales = normalize_locale_map(
+            getattr(row, "content_locales", {}),
+            OperatorContentLocale,
+        )
         return ProviderSettingsResponse(
             pulse_provider=row.pulse_provider,
             kuma_url=row.kuma_url,
@@ -66,6 +75,11 @@ class ProviderSettingsService:
             welcome_media_file_id=row.welcome_media_file_id,
             welcome_media_file_name=row.welcome_media_file_name,
             welcome_button_text=row.welcome_button_text,
+            bot_invite_media_type=getattr(row, "bot_invite_media_type", None),
+            bot_invite_media_file_id=getattr(row, "bot_invite_media_file_id", None),
+            bot_invite_media_file_name=getattr(row, "bot_invite_media_file_name", None),
+            content_default_locale=getattr(row, "content_default_locale", DEFAULT_LOCALE),
+            content_locales=content_locales,
             tribute_donation_url=row.tribute_donation_url,
             tribute_subscription_urls=row.tribute_subscription_urls,
             remnawave_version=version,
@@ -78,6 +92,49 @@ class ProviderSettingsService:
     ) -> ProviderSettingsResponse:
         """Apply partial update and return refreshed settings."""
         data = patch.model_dump(exclude_unset=True)
+        if "content_locales" in data:
+            content_locales = normalize_locale_map(
+                data["content_locales"] or {},
+                OperatorContentLocale,
+            )
+            data["content_locales"] = dump_locale_map(content_locales)
+            current = await self._repo.get()
+            default_locale = data.get(
+                "content_default_locale",
+                getattr(current, "content_default_locale", DEFAULT_LOCALE),
+            )
+            default_content = content_locales.get(default_locale)
+            if default_content is not None:
+                data["welcome_text"] = default_content.welcome_text
+                data["welcome_button_text"] = default_content.welcome_button_text
+        elif {"welcome_text", "welcome_button_text"}.intersection(data):
+            current = await self._repo.get()
+            default_locale = getattr(current, "content_default_locale", DEFAULT_LOCALE)
+            content_locales = normalize_locale_map(
+                getattr(current, "content_locales", {}),
+                OperatorContentLocale,
+            )
+            default_content = content_locales.get(default_locale, OperatorContentLocale())
+            updates = {
+                key: data[key] for key in ("welcome_text", "welcome_button_text") if key in data
+            }
+            content_locales[default_locale] = default_content.model_copy(update=updates)
+            data["content_locales"] = dump_locale_map(content_locales)
+        if BOT_INVITE_MEDIA_FIELDS.intersection(data):
+            current = await self._repo.get()
+            media_file_id = data.get(
+                "bot_invite_media_file_id",
+                getattr(current, "bot_invite_media_file_id", None),
+            )
+            media_type = data.get(
+                "bot_invite_media_type",
+                getattr(current, "bot_invite_media_type", None),
+            )
+            if media_file_id is None:
+                data["bot_invite_media_type"] = None
+                data["bot_invite_media_file_name"] = None
+            elif media_type not in {"photo", "animation"}:
+                raise ProviderSettingsError("Bot invite media type is required")
         if PULSE_FIELDS.intersection(data):
             current = await self._repo.get()
             provider = data.get("pulse_provider", current.pulse_provider)

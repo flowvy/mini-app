@@ -13,6 +13,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -27,7 +28,7 @@ class SponsorOffer(Base):
     __table_args__ = (
         CheckConstraint("provider IN ('tribute')", name="ck_sponsor_offers_provider"),
         CheckConstraint("char_length(title) BETWEEN 1 AND 100", name="ck_sponsor_offers_title"),
-        CheckConstraint("char_length(description) <= 300", name="ck_sponsor_offers_description"),
+        CheckConstraint("char_length(description) <= 2000", name="ck_sponsor_offers_description"),
         CheckConstraint("sort_order BETWEEN 1 AND 10000", name="ck_sponsor_offers_sort_order"),
         CheckConstraint(
             "expected_amount_minor IS NULL OR expected_amount_minor > 0",
@@ -53,6 +54,10 @@ class SponsorOffer(Base):
             name="ck_sponsor_offers_checkout_snapshot",
         ),
         CheckConstraint(
+            "jsonb_typeof(content_locales) = 'object'",
+            name="ck_sponsor_offers_content_locales_object",
+        ),
+        CheckConstraint(
             "is_published = false OR checkout_snapshot IS NOT NULL",
             name="ck_sponsor_offers_published_snapshot",
         ),
@@ -67,6 +72,11 @@ class SponsorOffer(Base):
     )
     title: Mapped[str] = mapped_column(String(100))
     description: Mapped[str] = mapped_column(Text, default="")
+    content_locales: Mapped[dict[str, dict[str, str]]] = mapped_column(
+        JSONB,
+        default=dict,
+        server_default=text("'{}'::jsonb"),
+    )
     checkout_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     expected_amount_minor: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     expected_payment_mode: Mapped[str | None] = mapped_column(String(16), nullable=True)

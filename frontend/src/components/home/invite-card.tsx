@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useInvite } from "../../hooks/use-invite.ts";
 import { hapticImpact, hapticNotification } from "../../lib/haptics.ts";
+import { operatorFormattedText, operatorText } from "../../lib/operator-content.ts";
 import { openTelegramDestination } from "../../lib/telegram-link.ts";
 import { useCurrentUser } from "../auth-guard.tsx";
+import { FormattedText } from "../content/formatted-text.tsx";
 import { Skeleton } from "../ui/skeleton.tsx";
 import styles from "./invite-card.module.css";
 
@@ -25,6 +27,9 @@ export function InviteCard() {
 	const invite = useInvite();
 	const { branding } = useCurrentUser();
 	const appName = branding.appName || t("common.appName");
+	const content = branding.content;
+	const context = { appName, app_name: appName, code: invite.data?.code ?? "" };
+	const title = operatorText(content, "inviteTitle", t("home.invite.title"), context);
 	const [copied, setCopied] = useState(false);
 	const [copyFailed, setCopyFailed] = useState(false);
 
@@ -34,8 +39,8 @@ export function InviteCard() {
 
 	if (invite.isError || !invite.data) {
 		return (
-			<section className={styles.card} aria-label={t("home.invite.title")}>
-				<strong className={styles.title}>{t("home.invite.title")}</strong>
+			<section className={styles.card} aria-label={title}>
+				<strong className={styles.title}>{title}</strong>
 				<p className={styles.description}>{t("home.invite.loadError")}</p>
 				<button type="button" className={styles.retry} onClick={() => void invite.refetch()}>
 					{t("common.retry")}
@@ -46,7 +51,12 @@ export function InviteCard() {
 
 	const shareUrl = invite.data.referralUrl
 		? `https://t.me/share/url?url=${encodeURIComponent(invite.data.referralUrl)}&text=${encodeURIComponent(
-				t("home.invite.shareText", { appName, code: invite.data.code }),
+				operatorText(
+					content,
+					"inviteShareText",
+					t("home.invite.shareText", { appName, code: invite.data.code }),
+					{ ...context, code: invite.data.code },
+				),
 			)}`
 		: "";
 
@@ -69,9 +79,16 @@ export function InviteCard() {
 			<div className={styles.heading}>
 				<div>
 					<strong id="invite-card-title" className={styles.title}>
-						{t("home.invite.title")}
+						{title}
 					</strong>
-					<p className={styles.description}>{t("home.invite.description")}</p>
+					<FormattedText className={styles.description}>
+						{operatorFormattedText(
+							content,
+							"inviteDescription",
+							t("home.invite.description"),
+							context,
+						)}
+					</FormattedText>
 				</div>
 				<div className={styles.count} aria-label={t("home.invite.invitedLabel")}>
 					<Users size={14} />

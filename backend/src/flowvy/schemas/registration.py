@@ -10,6 +10,7 @@ from typing import Literal, Self
 from pydantic import Field, field_validator, model_validator
 
 from flowvy.schemas.base import CamelModel
+from flowvy.schemas.operator_content import OperatorContentLocale
 from flowvy.schemas.user_status import ProviderUserStatus
 
 RegistrationMode = Literal["open", "invite_only"]
@@ -153,6 +154,7 @@ class OnboardingStatusResponse(CamelModel):
     registration_mode: RegistrationMode
     app_name: str | None = None
     logo_url: str | None = None
+    content: OperatorContentLocale = Field(default_factory=OperatorContentLocale)
     launch_invite_available: bool = False
 
 
