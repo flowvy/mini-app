@@ -1,7 +1,7 @@
 # Текущее состояние Flowvy
 
 Последняя полная проверка: **2026-08-22**; последний change-aware gate: **2026-08-22**
-Проверенное текущее состояние: **`dev` с universal Telegram entry, layered Back navigation, always-on Tribute delivery, multi-period sponsor offers, paid/base reconciliation и кроссплатформенным dev-tooling**
+Проверенное текущее состояние: **`dev` с universal Telegram entry, prepared invite sharing, layered Back navigation, always-on Tribute delivery, multi-period sponsor offers, paid/base reconciliation и кроссплатформенным dev-tooling**
 Последний полный baseline: **`dd3b5c8`** (`dev`, 2026-08-04)
 Стадия: **незавершённый MVP; production readiness не подтверждена**
 
@@ -22,6 +22,11 @@
 - Проверка Telegram Mini App `initData`, синхронизация локального пользователя и admin-роли из
   `ADMIN_TELEGRAM_IDS`.
 - Пользовательские API для профиля, подписки, HWID-устройств и provider-neutral Pulse.
+- Authenticated invite share endpoint повторно разрешает active current user и его reusable code,
+  строит referral destination только backend'ом и выдаёт short-lived Telegram prepared message ID.
+  Typed configuration поддерживает allow-listed HTML, одну server-generated CTA, cached Telegram
+  photo/GIF/video, text-only link preview mode и явные user/bot/group/channel audience flags;
+  Bot API failure возвращается без upstream diagnostics.
 - Device response после fresh Remnawave ownership check allow-list'ит `platform`, `osVersion`,
   `deviceModel`, `userAgent`, nullable `requestIp`, `createdAt` и `updatedAt`; provider metadata не
   сохраняется в Flowvy и не логируется.
@@ -119,6 +124,10 @@
   контролем Telegram. Владелец подтвердил возврат в управляемую оконную панель; её компактный
   стартовый размер `384x694` задаёт сам Telegram Desktop, а все границы поддерживают resize.
 - Пользовательские маршруты Home, Devices, Pulse и Support.
+- Invite card использует Mini App `shareMessage()` на Telegram 8.0+ и предварительно получает
+  prepared ID от BFF; browser/старый client сохраняет `t.me/share/url` fallback. HTML source в
+  fallback превращается в visible text, user decline не считается ошибкой, а provider/send failure
+  получает persistent action feedback.
 - Devices показывает monochrome logo glyph и название ОС из provider `platform`, а не `osVersion`;
   под моделью двумя компактными строками доступны Added, Updated, ОС и IP. UA остаётся в
   allow-listed BFF response, но не выводится в UI. Nullable metadata имеет явный `Not reported`,
@@ -192,9 +201,11 @@
   одинаковых нейтральных icon tiles; Pulse source тоже нейтрален и не маскируется под positive status.
   Welcome собран в одну content surface: Greeting использует компактный Telegram HTML toolbar,
   custom emoji insertion остаётся за Premium notice, media описана одной строкой, а template
-  variables скрыты в одном disclosure на секцию. Localized Content хранит только Mini App
-  onboarding/referral/sponsor copy: CommonMark editor используется для descriptions, а
-  title/action/share controls остаются plain. Отдельные bot invite prompt и media удалены. Создание access profile
+  variables скрыты в одном disclosure на секцию. Tone of Voice хранит только Mini App
+  onboarding/referral/sponsor copy и показывает один из семи user-facing message contexts за раз:
+  собственные поля сообщения отделены от соседних, destination явно подписан, а доступные для
+  выбранного сообщения variables всегда видимы без disclosure. CommonMark editor используется для
+  descriptions, а title/action/share controls остаются plain. Отдельные bot invite prompt и media удалены. Создание access profile
   запускается из profiles surface: contextual action row для списка и один `Create profile` CTA в
   empty state; create/edit dialog различает title и submit action, provider fields остаются под
   `Advanced` disclosure.
@@ -231,7 +242,7 @@
   принимает Unix и ISO contracts и распознаёт только
   документированный lifetime sentinel конца 2099 года; Home, sponsor state и admin user surfaces
   показывают его как `No expiry`, не как календарную дату 2100 года.
-- Identity, Content, Registration & Access и Welcome Message собраны в секции Flowvy Mini-App.
+- Identity, Tone of Voice, Registration & Access и Welcome Message собраны в секции Flowvy Mini-App.
   Branding contract позволяет оператору задать app name/logo. Typed locale maps покрывают
   onboarding, referral и sponsor storefront framing; public API отдаёт
   только resolved locale, а незаполненные поля используют product fallback. Support остаётся
@@ -598,6 +609,8 @@ Tribute показал success, endpoint вернул `200`, inbox осталс�
 | Mini App input focus zoom restriction | current WebKit focus-zoom implementation; standard viewport scale contract; focused four-project Playwright; `scripts/verify.ps1 -Scope Changed`; `scripts/verify.ps1 -Scope Full`; standard dev restart; live Telegram iOS | Mini App viewport ограничивает maximum scale единицей, чтобы WebKit не увеличивал 13px text controls при focus. Отдельный `user-scalable=no`, JavaScript focus/blur handlers, viewport geometry rewrites и font-size overrides не добавлены. Ограничение применяется ко всей странице и может отключить pinch zoom в Telegram `WKWebView`; это принятый product tradeoff. Axe ожидаемо классифицирует только `meta-viewport` как moderate WCAG 1.4.4 violation; regression строго допускает это одно finding и сохраняет падение на любых остальных findings. Focused viewport contract прошёл 4/4 на 430x932, 320x568, iOS WebKit и desktop. Fresh Changed и Full gates прошли migrations/drift, Ruff, 518 backend, 56 Remnawave contracts, frontend lint/typecheck/77 unit/build, 144/144 mobile Playwright и docs. Standard Telegram dev пересобран и перезапущен с сохранением volumes; local `5173`/`8001`/`4173` и public root/health/ready вернули `200`, public debug — `404`, `telegram_main_app_ready` подтверждён, все три frontend origins отдают новый viewport. Live Telegram iOS подтвердил отсутствие focus zoom. |
 | Route-level code splitting | official TanStack Router `lazyRouteComponent` and code-splitting contracts; installed `@tanstack/react-router` 1.168.10; Vite production build; accessed 2026-08-22; static router regression; focused four-project navigation matrix; `scripts/verify.ps1 -Scope Full` | Все 17 code-based routes используют preload-aware dynamic imports и общий route-level pending spinner. Main minified/gzip chunk уменьшен с 670.56/198.56 kB до 453.06/142.26 kB; Vite 500 kB warning исчез без поднятия лимита. Direct load, nested refresh, mode switch и Back/Forward прошли 20/20 на 430x932, 320x568, iOS WebKit и desktop. Light/dark Home и admin route evidence просмотрены на mobile/desktop без blank state, overflow или visual regression. Axe regression теперь дожидается финального кадра route reveal вместо анализа промежуточной opacity; повторный focused run прошёл 3/3. Fresh Full gate прошёл migrations/drift, Ruff, 520 backend, 56 pinned contracts, frontend lint/typecheck/77 unit/build, 142/142 mobile Playwright и docs. |
 | Universal Telegram entry | official bot `start` and Main Mini App `startapp` contracts checked 2026-08-22; locked aiogram 3.26.0; bot/link/auth/settings/migration regressions; Content/onboarding visual evidence; Changed/Full gates; standard dev restart | Публичный referral теперь открывает bot chat через строгий `?start=ref_…`; одинаковый для обычного и referral `/start` neutral Welcome открывает Mini App обычной `web_app` кнопкой либо referral-aware `?startapp=ref_…`. Бот больше не регистрирует пользователя и не принимает invite code в chat; open/invite-only state остаётся в Mini App. Повторный referral launch существующего user не меняет `invited_by_id`. Устаревшие invite-prompt copy/media удалены из `Settings > Content`, API и БД migration `d9e0f1a2b3c4`; Welcome остаётся единственным bot content. Focused прошёл 76 backend и 30 browser; Changed — 410 backend, 77 unit, build и 144/144 browser; Full — migration one-head/zero/predecessor/downgrade/re-upgrade/drift, Ruff, 518 backend, 56 pinned contracts, 77 unit, build, 144/144 browser и docs. Content/open/invite light/dark evidence просмотрены без overflow/serious Axe findings. Standard Telegram-enabled dev пересобран и применил head с сохранением volumes; local `5173`/`8001`/`4173` и public root/health/ready вернули `200`, public debug — `404`, production asset `index-DhYPq-8q.js` совпадает, `telegram_main_app_ready` подтверждён. Commit/push и provider/payment mutations не выполнялись. |
+| Focused Tone of Voice editor | traced frontend consumers and backend variable allow-list; focused message-switch/PATCH regressions; deterministic light/dark evidence at 320x568, 430x932, and 1280x900; `scripts/verify.ps1 -Scope Changed`; `scripts/verify.ps1 -Scope Full` | Settings row и route header переименованы в `Tone of Voice`; URL и API contract не изменились. Семь user-facing message contexts выбираются одним native select, редактор показывает только поля выбранного сообщения и его явный destination, а contextual variables всегда открыты. Welcome и sponsor-offer template disclosures не изменились. Visual evidence просмотрен без overflow или serious Axe findings. Fresh Full gate прошёл tooling, migration lifecycle/drift, Ruff, 518 backend, 56 pinned Remnawave contracts, frontend lint/typecheck/77 unit/build, 144/144 mobile Chromium и docs. Commit/push и реальные provider/payment операции не выполнялись. |
+| Telegram prepared invite sharing | official Telegram share widget, Mini App `shareMessage` and Bot API prepared-inline contracts checked 2026-08-22; locked SDK 3.11.8 and aiogram 3.26.0; focused backend/browser/UI evidence; migration verifier; Changed/Full gates; standard dev restart | Capable Telegram clients получают short-lived prepared message с allow-listed HTML, server-generated referral CTA, optional cached photo/GIF/video, text-only preview mode и user/bot/group/channel flags; browser/old client сохраняет `t.me/share/url` fallback. Backend повторно проверяет current active user/invite перед bounded Bot API call и не отдаёт upstream diagnostics. Migration `e0f1a2b3c4d5` прошла zero/predecessor/downgrade/re-upgrade/drift. Fresh Full gate: Ruff, 523 backend, 56 pinned contracts, 77 unit, production build, 146/146 Playwright и docs. Mobile/desktop light/dark evidence просмотрены без overflow/serious Axe findings. Standard dev применил head с сохранением volumes; local `5173`/`8001`/`4173`, backend health/ready и public root/health/ready — `200`, public debug — `404`, asset `index-DBKIP-P-.js` совпадает, `telegram_main_app_ready` подтверждён. Реальные Telegram share/upload, provider/payment mutations, commit и push не выполнялись. |
 ## Следующее действие
 
 Следующие live evidence зависят от внешнего события Tribute: фактический period-end

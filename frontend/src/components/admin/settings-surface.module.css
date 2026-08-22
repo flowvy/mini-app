@@ -304,6 +304,10 @@
 	min-height: 36px;
 }
 
+.statusAction > button[role="switch"] {
+	min-height: 20px;
+}
+
 .factRow {
 	display: grid;
 	grid-template-columns: 30px minmax(0, 1fr) auto;

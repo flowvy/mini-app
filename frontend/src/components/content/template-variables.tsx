@@ -7,6 +7,7 @@ import styles from "./template-variables.module.css";
 interface TemplateVariablesProps {
 	variables: readonly string[];
 	scopes?: Readonly<Record<string, readonly string[]>>;
+	disclosure?: boolean;
 }
 
 const VARIABLE_DESCRIPTION_KEYS: Record<string, string> = {
@@ -14,7 +15,11 @@ const VARIABLE_DESCRIPTION_KEYS: Record<string, string> = {
 	code: "common.templates.variables.code",
 };
 
-export function TemplateVariables({ variables, scopes = {} }: TemplateVariablesProps) {
+export function TemplateVariables({
+	variables,
+	scopes = {},
+	disclosure = true,
+}: TemplateVariablesProps) {
 	const { t } = useTranslation();
 	const [copied, setCopied] = useState<string | null>(null);
 	const [copyFailed, setCopyFailed] = useState(false);
@@ -37,6 +42,53 @@ export function TemplateVariables({ variables, scopes = {} }: TemplateVariablesP
 		}
 	};
 
+	const variableList = (
+		<>
+			<div className={styles.variables}>
+				{variables.map((variable) => {
+					const isCopied = copied === variable;
+					return (
+						<button
+							key={variable}
+							type="button"
+							className={styles.variable}
+							onClick={() => void copy(variable)}
+							aria-label={t("common.templates.copyLabel", {
+								token: `{{${variable}}}`,
+							})}
+						>
+							<code>{`{{${variable}}}`}</code>
+							<span className={styles.variableDescription}>
+								<span>{t(VARIABLE_DESCRIPTION_KEYS[variable] ?? "common.templates.variable")}</span>
+								{scopes[variable]?.length ? (
+									<small>
+										{t("common.templates.availableIn", {
+											fields: scopes[variable].join(", "),
+										})}
+									</small>
+								) : null}
+							</span>
+							{isCopied ? (
+								<Check size={13} aria-hidden="true" />
+							) : (
+								<Copy size={13} aria-hidden="true" />
+							)}
+						</button>
+					);
+				})}
+			</div>
+			<span className={styles.feedback} aria-live="polite">
+				{copied
+					? t("common.templates.copied", { token: `{{${copied}}}` })
+					: copyFailed
+						? t("common.templates.copyFailed")
+						: ""}
+			</span>
+		</>
+	);
+
+	if (!disclosure) return <div className={styles.static}>{variableList}</div>;
+
 	return (
 		<details className={styles.disclosure}>
 			<summary>
@@ -45,48 +97,7 @@ export function TemplateVariables({ variables, scopes = {} }: TemplateVariablesP
 			</summary>
 			<div className={styles.body}>
 				<p>{t("common.templates.hint")}</p>
-				<div className={styles.variables}>
-					{variables.map((variable) => {
-						const isCopied = copied === variable;
-						return (
-							<button
-								key={variable}
-								type="button"
-								className={styles.variable}
-								onClick={() => void copy(variable)}
-								aria-label={t("common.templates.copyLabel", {
-									token: `{{${variable}}}`,
-								})}
-							>
-								<code>{`{{${variable}}}`}</code>
-								<span className={styles.variableDescription}>
-									<span>
-										{t(VARIABLE_DESCRIPTION_KEYS[variable] ?? "common.templates.variable")}
-									</span>
-									{scopes[variable]?.length ? (
-										<small>
-											{t("common.templates.availableIn", {
-												fields: scopes[variable].join(", "),
-											})}
-										</small>
-									) : null}
-								</span>
-								{isCopied ? (
-									<Check size={13} aria-hidden="true" />
-								) : (
-									<Copy size={13} aria-hidden="true" />
-								)}
-							</button>
-						);
-					})}
-				</div>
-				<span className={styles.feedback} aria-live="polite">
-					{copied
-						? t("common.templates.copied", { token: `{{${copied}}}` })
-						: copyFailed
-							? t("common.templates.copyFailed")
-							: ""}
-				</span>
+				{variableList}
 			</div>
 		</details>
 	);

@@ -61,6 +61,11 @@ export interface UserInvite {
 	referralStatus: "ready" | "main_app_not_configured" | "telegram_unavailable";
 }
 
+export interface PreparedInviteShare {
+	id: string;
+	expirationDate: string;
+}
+
 export interface OnboardingApi {
 	status: OnboardingStatus;
 	register: () => Promise<UserResponse>;

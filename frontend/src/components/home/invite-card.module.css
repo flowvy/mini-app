@@ -97,6 +97,12 @@
 	font: 600 var(--font-size-label) / 1 var(--font-sans);
 	text-decoration: none;
 	cursor: pointer;
+	padding: 0 14px;
+}
+
+.share:disabled {
+	opacity: 0.65;
+	cursor: wait;
 }
 
 .retry {

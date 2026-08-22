@@ -70,11 +70,12 @@ test("admin saves allow-listed provider content as a locale map", async ({
 }) => {
 	await installTelegramMainButton(page);
 	await page.goto(withTelegramMainButton("/admin/settings/content"));
-	await expect(page.locator("header").getByText("Content", { exact: true })).toBeVisible();
+	await expect(page.locator("header").getByText("Tone of Voice", { exact: true })).toBeVisible();
 	await expect(page.getByText("English", { exact: true })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Support" })).toHaveCount(0);
 
 	await page.getByLabel("Invite registration title").fill("Private {{appName}} access");
+	await page.getByLabel("User-facing message").selectOption("inviteCard");
 	await page.getByLabel("Invite card title").fill("Bring your crew");
 	const patchRequest = page.waitForRequest(
 		(request) =>
@@ -90,7 +91,69 @@ test("admin saves allow-listed provider content as a locale map", async ({
 	expect(payload).not.toHaveProperty("supportUrl");
 });
 
-test("plain and CommonMark Content fields share one global text scale", async ({
+test("Telegram invite share exposes formatting, media, preview and audience settings", async ({
+	page,
+	mockApi: _mock,
+}, testInfo) => {
+	await installTelegramMainButton(page);
+	await page.goto(withTelegramMainButton("/admin/settings/content"));
+	await page.getByLabel("User-facing message").selectOption("inviteShare");
+
+	const message = page.getByRole("textbox", { name: "Telegram share message" });
+	await message.fill("Join <b>{{appName}}</b> with <code>{{code}}</code>");
+	await expect(page.getByRole("button", { name: "Link" })).toBeVisible();
+	await page.getByLabel("Referral button label").fill("Open {{appName}}");
+	await page.locator('input[type="file"][accept*=".mp4"]').setInputFiles({
+		name: "invite.mp4",
+		mimeType: "video/mp4",
+		buffer: Buffer.from("video"),
+	});
+	await expect(page.getByText("invite.mp4", { exact: true })).toBeVisible();
+	await expect(page.getByLabel("Referral link preview")).toBeDisabled();
+	await expect(
+		page.getByText("Choose which chat types appear when a user shares this invite", {
+			exact: true,
+		}),
+	).toBeVisible();
+	await expect(page.getByText("Private chats with Telegram users", { exact: true })).toBeVisible();
+	await expect(page.getByText("Telegram group chats", { exact: true })).toBeVisible();
+	await expect(page.getByText("Telegram channels", { exact: true })).toBeVisible();
+	await expect(page.getByText("Private chats with Telegram bots", { exact: true })).toBeVisible();
+	const privateChatToggle = page.getByRole("switch", { name: "Show people" });
+	await expect(privateChatToggle).toHaveCSS("width", "36px");
+	await expect(privateChatToggle).toHaveCSS("height", "20px");
+	const audiencePanel = page.locator("section").filter({
+		has: page.getByRole("heading", { name: "Share recipient types" }),
+	});
+	await audiencePanel.scrollIntoViewIfNeeded();
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await audiencePanel.screenshot({
+			path: testInfo.outputPath(`invite-share-audience-${colorScheme}.png`),
+			animations: "disabled",
+		});
+	}
+	await page.getByRole("switch", { name: "Show channels" }).click();
+
+	const patchRequest = page.waitForRequest(
+		(request) =>
+			request.method() === "PATCH" &&
+			new URL(request.url()).pathname === "/api/debug/admin/settings",
+	);
+	await pressTelegramMainButton(page);
+	const payload = (await patchRequest).postDataJSON();
+	expect(payload.contentLocales.en.inviteShareText).toContain("<b>{{appName}}</b>");
+	expect(payload.contentLocales.en.inviteShareButtonText).toBe("Open {{appName}}");
+	expect(payload.inviteShareMediaType).toBe("video");
+	expect(payload.inviteShareMediaFileId).toBe("telegram-invite-file-1");
+	expect(payload.inviteShareAllowChannelChats).toBe(true);
+	await assertNoHorizontalOverflow(page);
+});
+
+test("plain and CommonMark Tone of Voice fields share one global text scale", async ({
 	page,
 	mockApi: _mock,
 }) => {
@@ -193,6 +256,7 @@ test("Mini App invite description authors and renders safe CommonMark", async ({
 }) => {
 	await installTelegramMainButton(page);
 	await page.goto(withTelegramMainButton("/admin/settings/content"));
+	await page.getByLabel("User-facing message").selectOption("inviteCard");
 
 	const inviteEditor = page.getByRole("textbox", { name: "Invite card description" });
 	await inviteEditor.fill("Bring your crew");
@@ -318,12 +382,12 @@ test("Support ignores stale provider data and stays a Coming Soon stub", async (
 	await expect(page.getByRole("button", { name: "Stale action" })).toHaveCount(0);
 });
 
-test("capture dark Content settings", async ({ page, mockApi }, testInfo) => {
+test("capture dark Tone of Voice settings", async ({ page, mockApi }, testInfo) => {
 	mockApi.seedSettings({ appName: "Northstar", contentLocales: { en: previewContent } });
 	await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
 	await page.goto("/admin/settings/content");
 	await setDarkTheme(page);
-	await expect(page.getByRole("heading", { name: "Registration" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Invite-only registration" })).toBeVisible();
 	await expect(page.getByText("Invite-only prompt", { exact: true })).toHaveCount(0);
 	await expect(page.getByRole("heading", { name: "Support" })).toHaveCount(0);
 	await assertStableDarkPage(page);
@@ -458,28 +522,55 @@ test("capture dark Support Coming Soon stub", async ({ page, mockApi: _mock }, t
 	});
 });
 
-test("content editor remains usable in light and dark themes", async ({
+test("focused Tone of Voice editor remains usable in every required viewport and theme", async ({
 	page,
 	mockApi: _mock,
 }, testInfo) => {
-	for (const colorScheme of ["light", "dark"] as const) {
-		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/admin/settings/content");
-		await page.evaluate((theme) => {
-			document.documentElement.setAttribute("data-theme", theme);
-		}, colorScheme);
-		await expect(page.getByRole("heading", { name: "Registration" })).toBeVisible();
-		await expect(page.getByText("Loading editor…", { exact: true })).toHaveCount(0);
-		await assertNoHorizontalOverflow(page);
-		const accessibility = await new AxeBuilder({ page }).analyze();
-		const serious = accessibility.violations.filter((violation) =>
-			["serious", "critical"].includes(violation.impact ?? ""),
-		);
-		expect(serious).toEqual([]);
-		await page.screenshot({
-			path: testInfo.outputPath(`operator-content-${colorScheme}.png`),
-			fullPage: true,
-			animations: "disabled",
-		});
+	for (const viewport of [
+		{ name: "narrow", width: 320, height: 568 },
+		{ name: "mobile", width: 430, height: 932 },
+		{ name: "desktop", width: 1280, height: 900 },
+	] as const) {
+		for (const colorScheme of ["light", "dark"] as const) {
+			await page.setViewportSize(viewport);
+			await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+			await page.goto("/admin/settings/content");
+			await page.evaluate((theme) => {
+				document.documentElement.setAttribute("data-theme", theme);
+			}, colorScheme);
+			await expect(
+				page.locator("header").getByText("Tone of Voice", { exact: true }),
+			).toBeVisible();
+			await expect(page.getByRole("heading", { name: "Invite-only registration" })).toBeVisible();
+			await expect(page.getByRole("heading", { name: "Open registration" })).toHaveCount(0);
+			const variables = page
+				.getByRole("heading", { name: "Variables for this message" })
+				.locator("xpath=ancestor::section[1]");
+			await expect(variables.locator("details")).toHaveCount(0);
+			await expect(variables.getByRole("button", { name: "Copy {{appName}}" })).toBeVisible();
+
+			await page.getByLabel("User-facing message").selectOption("inviteShare");
+			await expect(page.getByRole("textbox", { name: "Telegram share message" })).toBeVisible();
+			await expect(variables.getByRole("button", { name: "Copy {{code}}" })).toBeVisible();
+			await page.screenshot({
+				path: testInfo.outputPath(`tone-of-voice-share-${viewport.name}-${colorScheme}.png`),
+				fullPage: true,
+				animations: "disabled",
+			});
+			await page.getByLabel("User-facing message").selectOption("inviteRegistration");
+
+			await expect(page.getByText("Loading editor…", { exact: true })).toHaveCount(0);
+			await assertNoHorizontalOverflow(page);
+			const accessibility = await new AxeBuilder({ page }).analyze();
+			const serious = accessibility.violations.filter((violation) =>
+				["serious", "critical"].includes(violation.impact ?? ""),
+			);
+			expect(serious).toEqual([]);
+			await page.screenshot({
+				path: testInfo.outputPath(`tone-of-voice-${viewport.name}-${colorScheme}.png`),
+				fullPage: true,
+				animations: "disabled",
+			});
+		}
 	}
 });

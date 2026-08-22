@@ -5,7 +5,7 @@ from __future__ import annotations
 from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, HTTPException, Query, Request, UploadFile, status
 
-from flowvy.api.routes.admin.settings import ALLOWED_MIME, MAX_FILE_SIZE
+from flowvy.api.routes.admin.settings import ALLOWED_MIME, INVITE_SHARE_ALLOWED_MIME, MAX_FILE_SIZE
 from flowvy.api.routes.debug import check_debug
 from flowvy.schemas.admin_users import AdminUserResponse, AdminUsersResponse
 from flowvy.schemas.provider_settings import (
@@ -238,6 +238,31 @@ async def debug_upload_welcome_media(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "File too large")
     return WelcomeMediaUploadResponse(
         file_id=f"debug_file_id_{len(data)}",
+        file_name=file.filename or "media",
+        media_type=media_type,
+    )
+
+
+@router.post(
+    "/settings/invite-share-media",
+    response_model=WelcomeMediaUploadResponse,
+)
+async def debug_upload_invite_share_media(
+    file: UploadFile,
+    request: Request,
+) -> WelcomeMediaUploadResponse:
+    """Return a fake prepared-share file_id without Telegram or persistence."""
+    check_debug(request)
+    media_type = INVITE_SHARE_ALLOWED_MIME.get(file.content_type or "")
+    if not media_type:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unsupported file type")
+    data = await file.read()
+    if not data:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "File is empty")
+    if len(data) > MAX_FILE_SIZE:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "File too large")
+    return WelcomeMediaUploadResponse(
+        file_id=f"debug_invite_share_file_id_{len(data)}",
         file_name=file.filename or "media",
         media_type=media_type,
     )

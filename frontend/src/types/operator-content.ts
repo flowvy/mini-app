@@ -10,6 +10,7 @@ export interface OperatorContent {
 	inviteTitle?: string | null;
 	inviteDescription?: string | null;
 	inviteShareText?: string | null;
+	inviteShareButtonText?: string | null;
 	sponsorNoAccessTitle?: string | null;
 	sponsorNoAccessDescription?: string | null;
 	sponsorBaseAccessTitle?: string | null;

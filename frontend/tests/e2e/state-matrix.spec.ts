@@ -691,7 +691,7 @@ test("settings overview exposes and retries a partial registration-settings load
 
 test("provider identity updates the user experience without a reload", async ({
 	page,
-	mockApi: _mock,
+	mockApi,
 }) => {
 	await installTelegramMainButton(page);
 	await page.goto(withTelegramMainButton("/admin/settings/branding"));
@@ -701,9 +701,10 @@ test("provider identity updates the user experience without a reload", async ({
 	await expect(page).toHaveTitle("Northstar Proxy");
 	await page.getByRole("button", { name: "User mode" }).click();
 	await page.getByRole("link", { name: "Home" }).click();
-	const share = page.getByRole("link", { name: "Share in Telegram" });
-	const shareUrl = new URL((await share.getAttribute("href")) ?? "");
-	expect(shareUrl.searchParams.get("text")).toContain("Join me on Northstar Proxy");
+	const share = page.getByRole("button", { name: "Share in Telegram" });
+	await expect(share).toBeVisible();
+	await share.click();
+	await expect.poll(() => mockApi.calls).toContain("POST /api/me/invite/prepared-share");
 	await assertNoHorizontalOverflow(page);
 });
 

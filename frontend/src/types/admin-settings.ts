@@ -1,6 +1,8 @@
 import type { OperatorContentLocales } from "./operator-content.ts";
 
 export type PulseProvider = "disabled" | "kuma" | "beszel";
+export type InviteShareMediaType = "photo" | "animation" | "video";
+export type InviteSharePreviewMode = "auto" | "hidden" | "small" | "large";
 
 export interface AdminSettings {
 	pulseProvider: PulseProvider;
@@ -19,6 +21,14 @@ export interface AdminSettings {
 	welcomeMediaFileId: string | null;
 	welcomeMediaFileName: string | null;
 	welcomeButtonText: string | null;
+	inviteShareMediaType: InviteShareMediaType | null;
+	inviteShareMediaFileId: string | null;
+	inviteShareMediaFileName: string | null;
+	inviteSharePreviewMode: InviteSharePreviewMode;
+	inviteShareAllowUserChats: boolean;
+	inviteShareAllowBotChats: boolean;
+	inviteShareAllowGroupChats: boolean;
+	inviteShareAllowChannelChats: boolean;
 	contentDefaultLocale: string;
 	contentLocales: OperatorContentLocales;
 	contentTemplateVariables: Record<string, string[]>;
@@ -43,6 +53,14 @@ export interface AdminSettingsPatch {
 	welcomeMediaFileId?: string | null;
 	welcomeMediaFileName?: string | null;
 	welcomeButtonText?: string | null;
+	inviteShareMediaType?: InviteShareMediaType | null;
+	inviteShareMediaFileId?: string | null;
+	inviteShareMediaFileName?: string | null;
+	inviteSharePreviewMode?: InviteSharePreviewMode;
+	inviteShareAllowUserChats?: boolean;
+	inviteShareAllowBotChats?: boolean;
+	inviteShareAllowGroupChats?: boolean;
+	inviteShareAllowChannelChats?: boolean;
 	contentDefaultLocale?: string;
 	contentLocales?: OperatorContentLocales;
 }

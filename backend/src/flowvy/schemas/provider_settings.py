@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
 from pydantic import (
     AfterValidator,
@@ -12,6 +12,7 @@ from pydantic import (
     HttpUrl,
     TypeAdapter,
     field_validator,
+    model_validator,
 )
 from pydantic.alias_generators import to_camel
 
@@ -24,6 +25,8 @@ from flowvy.schemas.operator_content import (
 )
 
 PulseProvider = Literal["disabled", "kuma", "beszel"]
+InviteShareMediaType = Literal["photo", "animation", "video"]
+InviteSharePreviewMode = Literal["auto", "hidden", "small", "large"]
 _PAYMENT_URL_ADAPTER = TypeAdapter(HttpUrl)
 
 
@@ -73,6 +76,14 @@ class ProviderSettingsResponse(BaseModel):
     welcome_media_file_id: str | None = None
     welcome_media_file_name: str | None = None
     welcome_button_text: str | None = None
+    invite_share_media_type: InviteShareMediaType | None = None
+    invite_share_media_file_id: str | None = None
+    invite_share_media_file_name: str | None = None
+    invite_share_preview_mode: InviteSharePreviewMode = "auto"
+    invite_share_allow_user_chats: bool = True
+    invite_share_allow_bot_chats: bool = False
+    invite_share_allow_group_chats: bool = True
+    invite_share_allow_channel_chats: bool = False
     content_default_locale: str = DEFAULT_LOCALE
     content_locales: dict[str, OperatorContentLocale] = Field(default_factory=dict, max_length=20)
     content_template_variables: dict[str, list[str]] = Field(
@@ -126,6 +137,14 @@ class ProviderSettingsPatch(BaseModel):
     welcome_media_file_id: str | None = None
     welcome_media_file_name: str | None = None
     welcome_button_text: str | None = Field(default=None, max_length=100)
+    invite_share_media_type: InviteShareMediaType | None = None
+    invite_share_media_file_id: str | None = None
+    invite_share_media_file_name: str | None = None
+    invite_share_preview_mode: InviteSharePreviewMode | None = None
+    invite_share_allow_user_chats: bool | None = None
+    invite_share_allow_bot_chats: bool | None = None
+    invite_share_allow_group_chats: bool | None = None
+    invite_share_allow_channel_chats: bool | None = None
     content_default_locale: str | None = None
     content_locales: dict[str, OperatorContentLocale] | None = Field(
         default=None,
@@ -181,6 +200,24 @@ class ProviderSettingsPatch(BaseModel):
             return None
         return normalize_locale_map(value, OperatorContentLocale)
 
+    @model_validator(mode="after")
+    def validate_invite_share_settings(self) -> Self:
+        data = self.model_dump(exclude_unset=True)
+        media_type = data.get("invite_share_media_type")
+        media_file_id = data.get("invite_share_media_file_id")
+        if (media_type is None) != (media_file_id is None):
+            raise ValueError("Invite share media type and file ID must be set together")
+        audience_fields = (
+            "invite_share_allow_user_chats",
+            "invite_share_allow_bot_chats",
+            "invite_share_allow_group_chats",
+            "invite_share_allow_channel_chats",
+        )
+        supplied = [data[field] for field in audience_fields if field in data]
+        if len(supplied) == len(audience_fields) and not any(supplied):
+            raise ValueError("At least one invite share audience is required")
+        return self
+
 
 class WelcomeMediaUploadResponse(BaseModel):
     """POST /api/admin/settings/welcome-media response."""
@@ -190,6 +227,9 @@ class WelcomeMediaUploadResponse(BaseModel):
     file_id: str
     file_name: str
     media_type: str
+
+
+InviteShareMediaUploadResponse = WelcomeMediaUploadResponse
 
 
 class KumaTestRequest(BaseModel):

@@ -172,7 +172,7 @@ test("user and admin pages share one external vertical rhythm", async ({
 	for (const title of ["Integrations", "Flowvy Mini-App", "System"]) {
 		await expect
 			.poll(() =>
-				page.getByRole("heading", { name: title }).evaluate((element) => {
+				page.getByRole("heading", { name: title, exact: true }).evaluate((element) => {
 					const groupHeader = element.parentElement;
 					const surface = groupHeader?.parentElement;
 					return {
@@ -254,6 +254,7 @@ test("admin routes render deterministic success and placeholder states", async (
 		.getByRole("heading", { name: "Flowvy Mini-App" })
 		.locator("xpath=ancestor::section[1]");
 	await expect(miniAppCard.getByText("Identity", { exact: true })).toBeVisible();
+	await expect(miniAppCard.getByText("Tone of Voice", { exact: true })).toBeVisible();
 	await expect(miniAppCard.getByText("Registration & Access", { exact: true })).toBeVisible();
 	await expect(page.getByText("Branding", { exact: true })).not.toBeVisible();
 	for (const [path, title] of [
@@ -262,12 +263,13 @@ test("admin routes render deterministic success and placeholder states", async (
 		["/admin/settings/tribute", "Connection"],
 		["/admin/settings/branding", "Identity"],
 		["/admin/settings/welcome", "Content"],
+		["/admin/settings/content", "Message"],
 		["/admin/settings/access", "Registration"],
 	] as const) {
 		await page.goto(path);
 		await expect
 			.poll(() =>
-				page.getByRole("heading", { name: title }).evaluate((element) => {
+				page.getByRole("heading", { name: title, exact: true }).evaluate((element) => {
 					const groupHeader = element.parentElement;
 					const surface = groupHeader?.parentElement;
 					return {

@@ -1,13 +1,16 @@
-import { copyTextToClipboard } from "@telegram-apps/sdk-react";
+import { copyTextToClipboard, isShareMessageError, shareMessage } from "@telegram-apps/sdk-react";
 import { Check, Copy, Send, Users } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useInvite } from "../../hooks/use-invite.ts";
+import { apiPost } from "../../lib/api.ts";
 import { hapticImpact, hapticNotification } from "../../lib/haptics.ts";
 import { operatorFormattedText, operatorText } from "../../lib/operator-content.ts";
 import { openTelegramDestination } from "../../lib/telegram-link.ts";
+import type { PreparedInviteShare } from "../../types/registration.ts";
 import { useCurrentUser } from "../auth-guard.tsx";
 import { FormattedText } from "../content/formatted-text.tsx";
+import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { Skeleton } from "../ui/skeleton.tsx";
 import styles from "./invite-card.module.css";
 
@@ -32,6 +35,8 @@ export function InviteCard() {
 	const title = operatorText(content, "inviteTitle", t("home.invite.title"), context);
 	const [copied, setCopied] = useState(false);
 	const [copyFailed, setCopyFailed] = useState(false);
+	const [sharing, setSharing] = useState(false);
+	const [shareFailed, setShareFailed] = useState(false);
 
 	if (invite.isPending) {
 		return <InviteCardSkeleton />;
@@ -49,16 +54,39 @@ export function InviteCard() {
 		);
 	}
 
+	const telegramHtmlToText = (value: string) => {
+		const parsed = new DOMParser().parseFromString(value, "text/html");
+		return parsed.body.textContent ?? "";
+	};
+	const shareText = operatorText(
+		content,
+		"inviteShareText",
+		t("home.invite.shareText", { appName, code: invite.data.code }),
+		{ ...context, code: invite.data.code },
+	);
 	const shareUrl = invite.data.referralUrl
 		? `https://t.me/share/url?url=${encodeURIComponent(invite.data.referralUrl)}&text=${encodeURIComponent(
-				operatorText(
-					content,
-					"inviteShareText",
-					t("home.invite.shareText", { appName, code: invite.data.code }),
-					{ ...context, code: invite.data.code },
-				),
+				telegramHtmlToText(shareText),
 			)}`
 		: "";
+	const nativeShareAvailable = shareMessage.isAvailable();
+
+	const sharePreparedInvite = async () => {
+		setShareFailed(false);
+		setSharing(true);
+		hapticImpact("light");
+		try {
+			const prepared = await apiPost<PreparedInviteShare>("/me/invite/prepared-share");
+			await shareMessage(prepared.id);
+		} catch (error) {
+			if (!(isShareMessageError(error) && String(error).includes("USER_DECLINED"))) {
+				setShareFailed(true);
+				hapticNotification("error");
+			}
+		} finally {
+			setSharing(false);
+		}
+	};
 
 	const copyCode = async () => {
 		try {
@@ -112,24 +140,36 @@ export function InviteCard() {
 			{invite.data.referralStatus !== "ready" && (
 				<p className={styles.notice}>{t("home.invite.shareUnavailable")}</p>
 			)}
-
-			{shareUrl && (
-				<a
-					className={styles.share}
-					href={shareUrl}
-					target="_blank"
-					rel="noreferrer"
-					onClick={(event) => {
-						hapticImpact("light");
-						if (openTelegramDestination(shareUrl)) {
-							event.preventDefault();
-						}
-					}}
-				>
-					<Send size={15} />
-					{t("home.invite.share")}
-				</a>
+			{shareFailed && (
+				<InlineFeedback attention="action">{t("home.invite.shareFailed")}</InlineFeedback>
 			)}
+
+			{shareUrl &&
+				(nativeShareAvailable ? (
+					<button
+						type="button"
+						className={styles.share}
+						disabled={sharing}
+						onClick={() => void sharePreparedInvite()}
+					>
+						<Send size={15} />
+						{t(sharing ? "home.invite.sharing" : "home.invite.share")}
+					</button>
+				) : (
+					<a
+						className={styles.share}
+						href={shareUrl}
+						target="_blank"
+						rel="noreferrer"
+						onClick={(event) => {
+							hapticImpact("light");
+							if (openTelegramDestination(shareUrl)) event.preventDefault();
+						}}
+					>
+						<Send size={15} />
+						{t("home.invite.share")}
+					</a>
+				))}
 		</section>
 	);
 }

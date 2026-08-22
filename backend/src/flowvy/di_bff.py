@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterable
 
 import httpx
+from aiogram import Bot
 from dishka import Provider, Scope, provide
 from redis.asyncio import Redis
 
@@ -17,6 +18,7 @@ from flowvy.repositories.user import UserRepository
 from flowvy.services.admin_users import AdminUsersService
 from flowvy.services.beszel import BeszelClient
 from flowvy.services.devices import DevicesService
+from flowvy.services.invite_share import InviteShareService
 from flowvy.services.kuma import UptimeKumaClient
 from flowvy.services.provider_settings import ProviderSettingsService
 from flowvy.services.pulse import PulseService
@@ -129,6 +131,15 @@ class BffServiceProvider(Provider):
             redis,
             settings,
         )
+
+    @provide(scope=Scope.REQUEST)
+    def get_invite_share_service(
+        self,
+        bot: Bot,
+        settings: ProviderSettingsRepository,
+    ) -> InviteShareService:
+        """Create native Telegram invite-share service."""
+        return InviteShareService(bot, settings)
 
     @provide(scope=Scope.REQUEST)
     def get_admin_users_service(

@@ -5,6 +5,10 @@
 	background: color-mix(in srgb, var(--v2-bg-secondary) 72%, transparent);
 }
 
+.static {
+	min-width: 0;
+}
+
 .disclosure summary {
 	display: flex;
 	align-items: center;

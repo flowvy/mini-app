@@ -78,6 +78,14 @@ export const mockData = {
 		welcomeMediaFileId: null,
 		welcomeMediaFileName: null,
 		welcomeButtonText: "Open Flowvy",
+		inviteShareMediaType: null,
+		inviteShareMediaFileId: null,
+		inviteShareMediaFileName: null,
+		inviteSharePreviewMode: "auto",
+		inviteShareAllowUserChats: true,
+		inviteShareAllowBotChats: false,
+		inviteShareAllowGroupChats: true,
+		inviteShareAllowChannelChats: false,
 		contentDefaultLocale: "en",
 		contentLocales: {},
 		contentTemplateVariables: {
@@ -92,6 +100,7 @@ export const mockData = {
 			inviteTitle: ["appName"],
 			inviteDescription: ["appName"],
 			inviteShareText: ["appName", "code"],
+			inviteShareButtonText: ["appName"],
 			sponsorNoAccessTitle: ["appName"],
 			sponsorNoAccessDescription: ["appName"],
 			sponsorBaseAccessTitle: ["appName"],
@@ -371,6 +380,18 @@ async function handleApi(
 	if (method === "POST" && path === "/api/debug/admin/settings/welcome-media") {
 		await reply(route, {
 			body: { fileId: "telegram-file-1", fileName: "welcome.mp4", mediaType: "animation" },
+		});
+		return;
+	}
+	if (method === "POST" && path === "/api/debug/admin/settings/invite-share-media") {
+		await reply(route, {
+			body: { fileId: "telegram-invite-file-1", fileName: "invite.mp4", mediaType: "video" },
+		});
+		return;
+	}
+	if (method === "POST" && path === "/api/me/invite/prepared-share") {
+		await reply(route, {
+			body: { id: "prepared-invite-1", expirationDate: "2026-08-22T12:00:00Z" },
 		});
 		return;
 	}

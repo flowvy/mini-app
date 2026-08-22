@@ -15,6 +15,7 @@ from flowvy.telegram_text import normalize_telegram_html, telegram_html_visible_
 _APP_PLACEHOLDERS = frozenset({"appName", "app_name"})
 _CANONICAL_PLACEHOLDERS: dict[str, tuple[str, ...]] = {
     "invite_share_text": ("appName", "code"),
+    "invite_share_button_text": ("appName",),
 }
 _ALLOWED_PLACEHOLDERS: dict[str, frozenset[str]] = {
     "welcome_text": _APP_PLACEHOLDERS,
@@ -28,6 +29,7 @@ _ALLOWED_PLACEHOLDERS: dict[str, frozenset[str]] = {
     "invite_title": _APP_PLACEHOLDERS,
     "invite_description": _APP_PLACEHOLDERS,
     "invite_share_text": frozenset({"appName", "app_name", "code"}),
+    "invite_share_button_text": _APP_PLACEHOLDERS,
     "sponsor_no_access_title": _APP_PLACEHOLDERS,
     "sponsor_no_access_description": _APP_PLACEHOLDERS,
     "sponsor_base_access_title": _APP_PLACEHOLDERS,
@@ -35,7 +37,7 @@ _ALLOWED_PLACEHOLDERS: dict[str, frozenset[str]] = {
     "sponsor_choose_action": _APP_PLACEHOLDERS,
 }
 
-_TELEGRAM_HTML_FIELDS = frozenset({"welcome_text"})
+_TELEGRAM_HTML_FIELDS = frozenset({"welcome_text", "invite_share_text"})
 _FORMATTED_FIELDS: dict[str, int] = {
     "onboarding_invite_description": 500,
     "onboarding_open_description": 500,
@@ -74,6 +76,7 @@ class OperatorContentLocale(CamelModel):
     invite_title: str | None = Field(default=None, max_length=120)
     invite_description: str | None = Field(default=None, max_length=4_000)
     invite_share_text: str | None = Field(default=None, max_length=500)
+    invite_share_button_text: str | None = Field(default=None, max_length=100)
     sponsor_no_access_title: str | None = Field(default=None, max_length=120)
     sponsor_no_access_description: str | None = Field(default=None, max_length=4_000)
     sponsor_base_access_title: str | None = Field(default=None, max_length=120)
@@ -105,7 +108,7 @@ class OperatorContentLocale(CamelModel):
             normalized = normalize_telegram_html(value)
             expanded = render_placeholders(
                 normalized,
-                {"appName": "X" * 100, "app_name": "X" * 100},
+                {"appName": "X" * 100, "app_name": "X" * 100, "code": "X" * 28},
             )
             if len(telegram_html_visible_text(expanded)) > 1_024:
                 raise ValueError(f"{field_name} exceeds Telegram's media caption limit")

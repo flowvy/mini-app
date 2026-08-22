@@ -502,6 +502,45 @@ test("registered user can copy and share a reusable personal invite", async ({
 	await assertNoHorizontalOverflow(page);
 });
 
+test("capable Telegram client sends the server-prepared invite", async ({ page, mockApi }) => {
+	await page.addInitScript(() => {
+		const telegramWindow = window as typeof window & {
+			__preparedSharePayload?: Record<string, unknown>;
+			Telegram?: { WebView?: { receiveEvent?: (event: string, payload?: unknown) => void } };
+		};
+		Object.defineProperty(window, "TelegramWebviewProxy", {
+			configurable: true,
+			value: {
+				postEvent: (eventType: string, eventData?: string) => {
+					if (eventType !== "web_app_send_prepared_message") return;
+					telegramWindow.__preparedSharePayload = eventData ? JSON.parse(eventData) : {};
+					window.setTimeout(() => {
+						telegramWindow.Telegram?.WebView?.receiveEvent?.("prepared_message_sent", {});
+					}, 0);
+				},
+			},
+		});
+	});
+	await page.goto(withTelegramMainButton("/"));
+
+	const share = page.getByRole("button", { name: "Share in Telegram" });
+	await expect(share).toBeVisible();
+	await share.click();
+
+	await expect.poll(() => mockApi.calls).toContain("POST /api/me/invite/prepared-share");
+	await expect
+		.poll(() =>
+			page.evaluate(() => {
+				const telegramWindow = window as typeof window & {
+					__preparedSharePayload?: Record<string, unknown>;
+				};
+				return telegramWindow.__preparedSharePayload;
+			}),
+		)
+		.toEqual({ id: "prepared-invite-1" });
+	await expect(page.getByText(/couldn't prepare this invite/)).toHaveCount(0);
+});
+
 test("home does not publish an unverified Telegram referral link", async ({ page, mockApi }) => {
 	mockApi.mock("GET", "/api/me/invite", {
 		body: {

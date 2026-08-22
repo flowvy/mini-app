@@ -45,6 +45,13 @@ ALLOWED_MIME = {
     "image/gif": "animation",
     "video/mp4": "animation",
 }
+INVITE_SHARE_ALLOWED_MIME = {
+    "image/jpeg": "photo",
+    "image/png": "photo",
+    "image/webp": "photo",
+    "image/gif": "animation",
+    "video/mp4": "video",
+}
 MAX_FILE_SIZE = 10 * 1024 * 1024
 
 
@@ -127,7 +134,29 @@ async def upload_welcome_media(
     bot: FromDishka[Bot] = None,  # type: ignore[assignment]
 ) -> WelcomeMediaUploadResponse:
     """Upload the configured Welcome attachment. Does NOT write to DB."""
-    media_type = ALLOWED_MIME.get(file.content_type or "")
+    return await _upload_telegram_media(file, admin.user.id, bot, ALLOWED_MIME)
+
+
+@router.post(
+    "/settings/invite-share-media",
+    response_model=WelcomeMediaUploadResponse,
+)
+async def upload_invite_share_media(
+    file: UploadFile,
+    admin: CurrentAdminForm,
+    bot: FromDishka[Bot] = None,  # type: ignore[assignment]
+) -> WelcomeMediaUploadResponse:
+    """Upload a prepared invite attachment. Does NOT write to DB."""
+    return await _upload_telegram_media(file, admin.user.id, bot, INVITE_SHARE_ALLOWED_MIME)
+
+
+async def _upload_telegram_media(
+    file: UploadFile,
+    chat_id: int,
+    bot: Bot,
+    allowed_mime: dict[str, str],
+) -> WelcomeMediaUploadResponse:
+    media_type = allowed_mime.get(file.content_type or "")
     if not media_type:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unsupported file type")
 
@@ -145,12 +174,15 @@ async def upload_welcome_media(
     try:
         if media_type == "animation":
             msg = await bot.send_animation(
-                chat_id=admin.user.id,
+                chat_id=chat_id,
                 animation=upload,
             )
             file_id = msg.animation.file_id
+        elif media_type == "video":
+            msg = await bot.send_video(chat_id=chat_id, video=upload)
+            file_id = msg.video.file_id
         else:
-            msg = await bot.send_photo(chat_id=admin.user.id, photo=upload)
+            msg = await bot.send_photo(chat_id=chat_id, photo=upload)
             file_id = msg.photo[-1].file_id
     except TelegramAPIError as exc:
         logger.exception("Failed to upload configured bot-message media")
@@ -161,7 +193,7 @@ async def upload_welcome_media(
 
     try:
         await bot.delete_message(
-            chat_id=admin.user.id,
+            chat_id=chat_id,
             message_id=msg.message_id,
         )
     except TelegramAPIError:

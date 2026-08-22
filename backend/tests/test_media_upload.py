@@ -10,7 +10,11 @@ import pytest
 from aiogram.exceptions import TelegramAPIError
 from fastapi import HTTPException, UploadFile
 
-from flowvy.api.routes.admin.settings import MAX_FILE_SIZE, upload_welcome_media
+from flowvy.api.routes.admin.settings import (
+    MAX_FILE_SIZE,
+    upload_invite_share_media,
+    upload_welcome_media,
+)
 from flowvy.media_upload import (
     EmptyMediaError,
     MediaTooLargeError,
@@ -143,3 +147,24 @@ async def test_delete_failure_keeps_successful_file_id() -> None:
     result = await upload_welcome_media(_upload(b"image"), admin, bot)
 
     assert result.file_id == "telegram-file-id"
+
+
+@pytest.mark.asyncio
+async def test_invite_share_mp4_is_uploaded_as_video() -> None:
+    bot = AsyncMock()
+    admin = SimpleNamespace(user=SimpleNamespace(id=123))
+    bot.send_video.return_value = SimpleNamespace(
+        message_id=78,
+        video=SimpleNamespace(file_id="telegram-video-id"),
+    )
+
+    result = await upload_invite_share_media(
+        _upload(b"video", filename="invite.mp4", content_type="video/mp4"),
+        admin,
+        bot,
+    )
+
+    assert result.media_type == "video"
+    assert result.file_id == "telegram-video-id"
+    bot.send_video.assert_awaited_once()
+    bot.delete_message.assert_awaited_once_with(chat_id=123, message_id=78)

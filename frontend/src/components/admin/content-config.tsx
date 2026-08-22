@@ -3,16 +3,43 @@ import { type ChangeEvent, type FC, Suspense, lazy, useEffect, useState } from "
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import { SUPPORTED_LOCALES, localeLabel } from "../../i18n";
+import { apiUploadFile } from "../../lib/api.ts";
+import { isMockAuth } from "../../lib/runtime.ts";
 import ss from "../../pages/admin/settings.module.css";
-import type { AdminSettings } from "../../types/admin-settings.ts";
+import type {
+	AdminSettings,
+	InviteSharePreviewMode,
+	WelcomeMediaUpload,
+} from "../../types/admin-settings.ts";
 import type { OperatorContent } from "../../types/operator-content.ts";
+import { TelegramHtmlEditor } from "../content/telegram-html-editor.tsx";
 import { TemplateVariables } from "../content/template-variables.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { FormSaveButton } from "../ui/form-save-button.tsx";
-import { FormField, FormFieldInput, FormFieldTextarea } from "../ui/form-section.tsx";
+import {
+	FormField,
+	FormFieldInput,
+	FormFieldSelect,
+	FormFieldTextarea,
+} from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { SegmentedControl } from "../ui/segmented-control.tsx";
-import { SettingsFields, SettingsPanel } from "./settings-surface.tsx";
+import { Toggle } from "../ui/toggle.tsx";
+import { SettingsFields, SettingsPanel, SettingsStatusRow } from "./settings-surface.tsx";
+import { WelcomeMediaRow } from "./welcome-media-row.tsx";
+
+const settingsPrefix = isMockAuth ? "/debug/admin/settings" : "/admin/settings";
+const INVITE_SHARE_PREVIEW_OPTIONS = [
+	{ value: "auto", labelKey: "settings.content.inviteShare.preview.auto" },
+	{ value: "hidden", labelKey: "settings.content.inviteShare.preview.hidden" },
+	{ value: "small", labelKey: "settings.content.inviteShare.preview.small" },
+	{ value: "large", labelKey: "settings.content.inviteShare.preview.large" },
+] as const;
+const INVITE_SHARE_MEDIA_LABEL_KEYS = {
+	photo: "settings.content.inviteShare.mediaType.photo",
+	animation: "settings.content.inviteShare.mediaType.animation",
+	video: "settings.content.inviteShare.mediaType.video",
+} as const;
 
 const FormattedTextEditor = lazy(async () => {
 	const module = await import("../content/formatted-text-editor.tsx");
@@ -26,17 +53,21 @@ interface FieldDefinition {
 	labelKey: string;
 	fallbackKey: string;
 	maxLength: number;
-	format?: "plain-multiline" | "commonmark";
+	format?: "plain-multiline" | "commonmark" | "telegram-html";
 }
 
-interface GroupDefinition {
+interface MessageDefinition {
+	key: string;
 	titleKey: string;
-	fields: FieldDefinition[];
+	destinationKey: string;
+	fields: readonly FieldDefinition[];
 }
 
-const GROUPS: GroupDefinition[] = [
+const MESSAGES = [
 	{
-		titleKey: "settings.content.onboardingSection",
+		key: "inviteRegistration",
+		titleKey: "settings.content.messages.inviteRegistration",
+		destinationKey: "settings.content.destinations.inviteRegistration",
 		fields: [
 			{
 				field: "onboardingInviteTitle",
@@ -57,6 +88,13 @@ const GROUPS: GroupDefinition[] = [
 				fallbackKey: "onboarding.redeem",
 				maxLength: 80,
 			},
+		],
+	},
+	{
+		key: "openRegistration",
+		titleKey: "settings.content.messages.openRegistration",
+		destinationKey: "settings.content.destinations.openRegistration",
+		fields: [
 			{
 				field: "onboardingOpenTitle",
 				labelKey: "settings.content.fields.openTitle",
@@ -79,7 +117,9 @@ const GROUPS: GroupDefinition[] = [
 		],
 	},
 	{
-		titleKey: "settings.content.inviteSection",
+		key: "inviteCard",
+		titleKey: "settings.content.messages.inviteCard",
+		destinationKey: "settings.content.destinations.inviteCard",
 		fields: [
 			{
 				field: "inviteTitle",
@@ -94,17 +134,32 @@ const GROUPS: GroupDefinition[] = [
 				maxLength: 500,
 				format: "commonmark",
 			},
+		],
+	},
+	{
+		key: "inviteShare",
+		titleKey: "settings.content.messages.inviteShare",
+		destinationKey: "settings.content.destinations.inviteShare",
+		fields: [
 			{
 				field: "inviteShareText",
 				labelKey: "settings.content.fields.shareText",
 				fallbackKey: "home.invite.shareText",
 				maxLength: 500,
-				format: "plain-multiline",
+				format: "telegram-html",
+			},
+			{
+				field: "inviteShareButtonText",
+				labelKey: "settings.content.fields.shareButtonText",
+				fallbackKey: "settings.content.inviteShare.buttonPlaceholder",
+				maxLength: 100,
 			},
 		],
 	},
 	{
-		titleKey: "settings.content.sponsorSection",
+		key: "sponsorNoAccess",
+		titleKey: "settings.content.messages.sponsorNoAccess",
+		destinationKey: "settings.content.destinations.sponsorNoAccess",
 		fields: [
 			{
 				field: "sponsorNoAccessTitle",
@@ -119,6 +174,13 @@ const GROUPS: GroupDefinition[] = [
 				maxLength: 500,
 				format: "commonmark",
 			},
+		],
+	},
+	{
+		key: "sponsorBaseAccess",
+		titleKey: "settings.content.messages.sponsorBaseAccess",
+		destinationKey: "settings.content.destinations.sponsorBaseAccess",
+		fields: [
 			{
 				field: "sponsorBaseAccessTitle",
 				labelKey: "settings.content.fields.baseAccessTitle",
@@ -132,6 +194,13 @@ const GROUPS: GroupDefinition[] = [
 				maxLength: 500,
 				format: "commonmark",
 			},
+		],
+	},
+	{
+		key: "sponsorAction",
+		titleKey: "settings.content.messages.sponsorAction",
+		destinationKey: "settings.content.destinations.sponsorAction",
+		fields: [
 			{
 				field: "sponsorChooseAction",
 				labelKey: "settings.content.fields.chooseAction",
@@ -140,7 +209,13 @@ const GROUPS: GroupDefinition[] = [
 			},
 		],
 	},
-];
+] as const satisfies readonly MessageDefinition[];
+
+type MessageKey = (typeof MESSAGES)[number]["key"];
+
+function isMessageKey(value: string): value is MessageKey {
+	return MESSAGES.some((message) => message.key === value);
+}
 
 interface ContentConfigProps {
 	settings: AdminSettings;
@@ -157,11 +232,34 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings }) => {
 			? settings.contentDefaultLocale
 			: (SUPPORTED_LOCALES[0] ?? "en"),
 	);
+	const [messageKey, setMessageKey] = useState<MessageKey>("inviteRegistration");
+	const [initialShareSettings] = useState(() => ({
+		mediaFileId: settings.inviteShareMediaFileId,
+		mediaFileName: settings.inviteShareMediaFileName,
+		mediaType: settings.inviteShareMediaType,
+		previewMode: settings.inviteSharePreviewMode,
+		allowUserChats: settings.inviteShareAllowUserChats,
+		allowBotChats: settings.inviteShareAllowBotChats,
+		allowGroupChats: settings.inviteShareAllowGroupChats,
+		allowChannelChats: settings.inviteShareAllowChannelChats,
+	}));
+	const [shareSettings, setShareSettings] = useState(() => ({ ...initialShareSettings }));
 	const [saved, setSaved] = useState(false);
 	const [saveFailed, setSaveFailed] = useState(false);
+	const [uploading, setUploading] = useState(false);
 	const updateMutation = useUpdateSettings();
 	const content = contentLocales[locale] ?? {};
-	const dirty = JSON.stringify(contentLocales) !== JSON.stringify(initialLocales);
+	const message = MESSAGES.find((candidate) => candidate.key === messageKey) ?? MESSAGES[0];
+	const variables = [
+		...new Set(
+			message.fields.flatMap(
+				(definition) => settings.contentTemplateVariables[definition.field] ?? [],
+			),
+		),
+	];
+	const dirty =
+		JSON.stringify(contentLocales) !== JSON.stringify(initialLocales) ||
+		JSON.stringify(shareSettings) !== JSON.stringify(initialShareSettings);
 	const blocker = useBlocker({
 		shouldBlockFn: () => dirty && !saved,
 		enableBeforeUnload: dirty && !saved,
@@ -185,12 +283,75 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings }) => {
 	const handleSave = async () => {
 		setSaveFailed(false);
 		try {
-			await updateMutation.mutateAsync({ contentLocales });
+			await updateMutation.mutateAsync({
+				contentLocales,
+				inviteShareMediaFileId: shareSettings.mediaFileId,
+				inviteShareMediaFileName: shareSettings.mediaFileName,
+				inviteShareMediaType: shareSettings.mediaType,
+				inviteSharePreviewMode: shareSettings.previewMode,
+				inviteShareAllowUserChats: shareSettings.allowUserChats,
+				inviteShareAllowBotChats: shareSettings.allowBotChats,
+				inviteShareAllowGroupChats: shareSettings.allowGroupChats,
+				inviteShareAllowChannelChats: shareSettings.allowChannelChats,
+			});
 			setSaved(true);
 		} catch {
 			setSaveFailed(true);
 		}
 	};
+
+	const handlePickShareMedia = async (file: File) => {
+		setSaveFailed(false);
+		setUploading(true);
+		try {
+			const result = await apiUploadFile<WelcomeMediaUpload>(
+				`${settingsPrefix}/invite-share-media`,
+				file,
+			);
+			setShareSettings((current) => ({
+				...current,
+				mediaFileId: result.fileId,
+				mediaFileName: result.fileName,
+				mediaType: result.mediaType as AdminSettings["inviteShareMediaType"],
+			}));
+			setSaved(false);
+		} catch {
+			setSaveFailed(true);
+		} finally {
+			setUploading(false);
+		}
+	};
+
+	const updateAudience = (
+		field: "allowUserChats" | "allowBotChats" | "allowGroupChats" | "allowChannelChats",
+		value: boolean,
+	) => {
+		setShareSettings((current) => ({ ...current, [field]: value }));
+		setSaved(false);
+	};
+	const audience = [
+		[
+			"allowUserChats",
+			"settings.content.inviteShare.audienceUsers",
+			"settings.content.inviteShare.audienceUsersDescription",
+		],
+		[
+			"allowGroupChats",
+			"settings.content.inviteShare.audienceGroups",
+			"settings.content.inviteShare.audienceGroupsDescription",
+		],
+		[
+			"allowChannelChats",
+			"settings.content.inviteShare.audienceChannels",
+			"settings.content.inviteShare.audienceChannelsDescription",
+		],
+		[
+			"allowBotChats",
+			"settings.content.inviteShare.audienceBots",
+			"settings.content.inviteShare.audienceBotsDescription",
+		],
+	] as const;
+	const enabledAudienceCount = audience.filter(([field]) => shareSettings[field]).length;
 
 	return (
 		<div className={ss.formPage}>
@@ -214,74 +375,172 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings }) => {
 				</SettingsFields>
 			</SettingsPanel>
 
-			{GROUPS.map((group) => (
-				<SettingsPanel key={group.titleKey} title={t(group.titleKey)}>
-					<SettingsFields>
-						{group.fields.map((definition) => {
-							const id = `content-${locale}-${definition.field}`;
-							const commonProps = {
-								id,
-								value: content[definition.field] ?? "",
-								placeholder: t(definition.fallbackKey),
-							};
-							return (
-								<FormField key={definition.field} label={t(definition.labelKey)} htmlFor={id}>
-									{definition.format === "commonmark" ? (
-										<Suspense fallback={<output>{t("common.formattedText.loading")}</output>}>
-											<FormattedTextEditor
-												{...commonProps}
-												ariaLabel={t(definition.labelKey)}
-												maxLength={definition.maxLength}
-												onChange={(value) => updateField(definition.field, value)}
-											/>
-										</Suspense>
-									) : definition.format === "plain-multiline" ? (
-										<FormFieldTextarea
+			<SettingsPanel title={t("settings.content.messageSection")}>
+				<SettingsFields>
+					<FormField
+						label={t("settings.content.messageLabel")}
+						htmlFor="tone-of-voice-message"
+						hint={t(message.destinationKey)}
+					>
+						<FormFieldSelect
+							id="tone-of-voice-message"
+							value={messageKey}
+							options={MESSAGES.map((candidate) => ({
+								value: candidate.key,
+								label: t(candidate.titleKey),
+							}))}
+							onChange={(event) => {
+								if (isMessageKey(event.target.value)) setMessageKey(event.target.value);
+							}}
+						/>
+					</FormField>
+				</SettingsFields>
+			</SettingsPanel>
+
+			<SettingsPanel title={t(message.titleKey)}>
+				<SettingsFields>
+					{message.fields.map((definition) => {
+						const id = `content-${locale}-${definition.field}`;
+						const commonProps = {
+							id,
+							value: content[definition.field] ?? "",
+							placeholder: t(definition.fallbackKey),
+						};
+						return (
+							<FormField key={definition.field} label={t(definition.labelKey)} htmlFor={id}>
+								{"format" in definition && definition.format === "telegram-html" ? (
+									<TelegramHtmlEditor
+										{...commonProps}
+										ariaLabel={t(definition.labelKey)}
+										maxLength={definition.maxLength}
+										onChange={(value) => updateField(definition.field, value)}
+									/>
+								) : "format" in definition && definition.format === "commonmark" ? (
+									<Suspense fallback={<output>{t("common.formattedText.loading")}</output>}>
+										<FormattedTextEditor
 											{...commonProps}
+											ariaLabel={t(definition.labelKey)}
 											maxLength={definition.maxLength}
-											rows={3}
-											onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-												updateField(definition.field, event.target.value)
-											}
+											onChange={(value) => updateField(definition.field, value)}
 										/>
-									) : (
-										<FormFieldInput
-											{...commonProps}
-											maxLength={definition.maxLength}
-											enterKeyHint="next"
-											onChange={(event: ChangeEvent<HTMLInputElement>) =>
-												updateField(definition.field, event.target.value)
-											}
-										/>
-									)}
-								</FormField>
-							);
-						})}
-						{(() => {
-							const variables = [
-								...new Set(
-									group.fields.flatMap(
-										(definition) => settings.contentTemplateVariables[definition.field] ?? [],
-									),
-								),
-							];
-							const scopes = Object.fromEntries(
-								variables.map((variable) => [
-									variable,
-									group.fields
-										.filter((definition) =>
-											(settings.contentTemplateVariables[definition.field] ?? []).includes(
-												variable,
-											),
-										)
-										.map((definition) => t(definition.labelKey)),
-								]),
-							);
-							return <TemplateVariables variables={variables} scopes={scopes} />;
-						})()}
-					</SettingsFields>
-				</SettingsPanel>
-			))}
+									</Suspense>
+								) : "format" in definition && definition.format === "plain-multiline" ? (
+									<FormFieldTextarea
+										{...commonProps}
+										maxLength={definition.maxLength}
+										rows={3}
+										onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+											updateField(definition.field, event.target.value)
+										}
+									/>
+								) : (
+									<FormFieldInput
+										{...commonProps}
+										maxLength={definition.maxLength}
+										enterKeyHint="next"
+										onChange={(event: ChangeEvent<HTMLInputElement>) =>
+											updateField(definition.field, event.target.value)
+										}
+									/>
+								)}
+							</FormField>
+						);
+					})}
+				</SettingsFields>
+			</SettingsPanel>
+
+			{messageKey === "inviteShare" && (
+				<>
+					<SettingsPanel title={t("settings.content.inviteShare.deliverySection")}>
+						<SettingsFields>
+							<FormField
+								label={t("settings.content.inviteShare.mediaLabel")}
+								hint={t("settings.content.inviteShare.mediaHint")}
+							>
+								<WelcomeMediaRow
+									fileName={
+										shareSettings.mediaFileName ?? t("settings.content.inviteShare.noMedia")
+									}
+									mediaType={shareSettings.mediaType ?? "animation"}
+									description={
+										shareSettings.mediaType
+											? t(INVITE_SHARE_MEDIA_LABEL_KEYS[shareSettings.mediaType])
+											: t("settings.content.inviteShare.mediaNone")
+									}
+									isDefault={shareSettings.mediaFileId === null}
+									empty={shareSettings.mediaFileId === null}
+									uploading={uploading}
+									onPickFile={handlePickShareMedia}
+									onReset={() => {
+										setShareSettings((current) => ({
+											...current,
+											mediaFileId: null,
+											mediaFileName: null,
+											mediaType: null,
+										}));
+										setSaved(false);
+									}}
+								/>
+							</FormField>
+							<FormField
+								label={t("settings.content.inviteShare.previewLabel")}
+								htmlFor="invite-share-preview"
+								hint={
+									shareSettings.mediaFileId
+										? t("settings.content.inviteShare.previewMediaHint")
+										: t("settings.content.inviteShare.previewHint")
+								}
+							>
+								<FormFieldSelect
+									id="invite-share-preview"
+									value={shareSettings.previewMode}
+									disabled={shareSettings.mediaFileId !== null}
+									options={INVITE_SHARE_PREVIEW_OPTIONS.map(({ value, labelKey }) => ({
+										value,
+										label: t(labelKey),
+									}))}
+									onChange={(event) => {
+										setShareSettings((current) => ({
+											...current,
+											previewMode: event.target.value as InviteSharePreviewMode,
+										}));
+										setSaved(false);
+									}}
+								/>
+							</FormField>
+						</SettingsFields>
+					</SettingsPanel>
+
+					<SettingsPanel title={t("settings.content.inviteShare.audienceSection")}>
+						<div className={ss.panelInset}>
+							<p className={ss.providerDescription}>
+								{t("settings.content.inviteShare.audienceHint")}
+							</p>
+						</div>
+						{audience.map(([field, labelKey, descriptionKey]) => (
+							<SettingsStatusRow
+								key={field}
+								label={t(labelKey)}
+								description={t(descriptionKey)}
+								action={
+									<Toggle
+										checked={shareSettings[field]}
+										ariaLabel={t(labelKey)}
+										ariaDisabled={shareSettings[field] && enabledAudienceCount === 1}
+										onChange={(value) => updateAudience(field, value)}
+									/>
+								}
+							/>
+						))}
+					</SettingsPanel>
+				</>
+			)}
+
+			<SettingsPanel title={t("settings.content.variablesSection")}>
+				<SettingsFields>
+					<TemplateVariables variables={variables} disclosure={false} />
+				</SettingsFields>
+			</SettingsPanel>
 
 			<FormSaveButton
 				dirty={dirty && !saved}

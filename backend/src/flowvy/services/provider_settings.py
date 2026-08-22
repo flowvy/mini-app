@@ -72,6 +72,14 @@ class ProviderSettingsService:
             welcome_media_file_id=row.welcome_media_file_id,
             welcome_media_file_name=row.welcome_media_file_name,
             welcome_button_text=row.welcome_button_text,
+            invite_share_media_type=row.invite_share_media_type,
+            invite_share_media_file_id=row.invite_share_media_file_id,
+            invite_share_media_file_name=row.invite_share_media_file_name,
+            invite_share_preview_mode=row.invite_share_preview_mode,
+            invite_share_allow_user_chats=row.invite_share_allow_user_chats,
+            invite_share_allow_bot_chats=row.invite_share_allow_bot_chats,
+            invite_share_allow_group_chats=row.invite_share_allow_group_chats,
+            invite_share_allow_channel_chats=row.invite_share_allow_channel_chats,
             content_default_locale=getattr(row, "content_default_locale", DEFAULT_LOCALE),
             content_locales=content_locales,
             tribute_donation_url=row.tribute_donation_url,
@@ -86,6 +94,16 @@ class ProviderSettingsService:
     ) -> ProviderSettingsResponse:
         """Apply partial update and return refreshed settings."""
         data = patch.model_dump(exclude_unset=True)
+        audience_fields = (
+            "invite_share_allow_user_chats",
+            "invite_share_allow_bot_chats",
+            "invite_share_allow_group_chats",
+            "invite_share_allow_channel_chats",
+        )
+        if any(field in data for field in audience_fields):
+            current = await self._repo.get()
+            if not any(data.get(field, getattr(current, field)) for field in audience_fields):
+                raise ProviderSettingsError("At least one invite share audience is required")
         if "content_locales" in data:
             content_locales = normalize_locale_map(
                 data["content_locales"] or {},

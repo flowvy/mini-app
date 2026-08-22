@@ -37,6 +37,14 @@ def _row(**overrides: object) -> SimpleNamespace:
         "welcome_media_file_id": None,
         "welcome_media_file_name": None,
         "welcome_button_text": None,
+        "invite_share_media_type": None,
+        "invite_share_media_file_id": None,
+        "invite_share_media_file_name": None,
+        "invite_share_preview_mode": "auto",
+        "invite_share_allow_user_chats": True,
+        "invite_share_allow_bot_chats": False,
+        "invite_share_allow_group_chats": True,
+        "invite_share_allow_channel_chats": False,
         "content_default_locale": "en",
         "content_locales": {},
         "tribute_donation_url": None,
@@ -230,6 +238,10 @@ async def test_settings_response_exposes_typed_localized_content() -> None:
     assert "botInviteMediaType" not in payload
     assert "supportUrl" not in payload
     assert payload["contentTemplateVariables"]["inviteShareText"] == ["appName", "code"]
+    assert payload["contentTemplateVariables"]["inviteShareButtonText"] == ["appName"]
+    assert payload["inviteSharePreviewMode"] == "auto"
+    assert payload["inviteShareAllowUserChats"] is True
+    assert payload["inviteShareAllowGroupChats"] is True
     assert payload["sponsorOfferTemplateVariables"] == ["appName"]
 
 
@@ -256,6 +268,21 @@ def test_public_branding_contains_only_resolved_operator_locale() -> None:
     assert payload["branding"]["content"]["inviteTitle"] == "Позвать друзей"
     assert "supportUrl" not in payload["branding"]
     assert "contentLocales" not in payload["branding"]
+
+
+@pytest.mark.asyncio
+async def test_invite_share_audience_cannot_be_emptied_by_partial_patch() -> None:
+    service, _kuma, _beszel, _redis = _service(
+        _row(
+            invite_share_allow_user_chats=True,
+            invite_share_allow_group_chats=False,
+        )
+    )
+
+    with pytest.raises(ProviderSettingsError, match="At least one"):
+        await service.update(ProviderSettingsPatch(invite_share_allow_user_chats=False))
+
+    service._repo.update_partial.assert_not_awaited()
 
 
 @pytest.mark.asyncio

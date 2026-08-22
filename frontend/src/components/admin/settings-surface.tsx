@@ -126,7 +126,7 @@ export const SettingsNavRow: FC<SettingsNavRowProps> = ({
 
 interface SettingsStatusRowProps {
 	label: string;
-	status: string;
+	status?: string;
 	tone?: SettingsTone;
 	description?: string;
 	action?: ReactNode;
@@ -144,10 +144,12 @@ export const SettingsStatusRow: FC<SettingsStatusRowProps> = ({
 	<div className={`${styles.statusRow} ${className ?? ""}`}>
 		<div className={styles.statusCopy}>
 			<span className={styles.statusLabel}>{label}</span>
-			<span className={styles.statusValue} data-tone={tone}>
-				<span className={styles.statusDot} aria-hidden="true" />
-				{status}
-			</span>
+			{status && (
+				<span className={styles.statusValue} data-tone={tone}>
+					<span className={styles.statusDot} aria-hidden="true" />
+					{status}
+				</span>
+			)}
 			{description && <small>{description}</small>}
 		</div>
 		{action && <div className={styles.statusAction}>{action}</div>}

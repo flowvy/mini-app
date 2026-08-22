@@ -147,6 +147,13 @@ class UserInviteResponse(CamelModel):
     referral_status: ReferralStatus = "telegram_unavailable"
 
 
+class PreparedInviteShareResponse(CamelModel):
+    """Prepared Telegram message identifier consumed by Mini App shareMessage()."""
+
+    id: str
+    expiration_date: datetime.datetime
+
+
 class OnboardingStatusResponse(CamelModel):
     """Read-only state used before a local user exists."""
 

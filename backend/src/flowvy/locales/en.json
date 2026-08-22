@@ -5,5 +5,9 @@
   "welcome": {
     "text": "Welcome! <tg-emoji emoji-id=\"5262526163959453517\">☺</tg-emoji>\nManage your service directly in Telegram.",
     "button": "Open {{ app_name }}"
+  },
+  "inviteShare": {
+    "text": "Join me on {{appName}}. If Telegram asks, use invite code <code>{{code}}</code>.",
+    "button": "Open {{appName}}"
   }
 }
