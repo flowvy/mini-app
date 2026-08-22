@@ -55,6 +55,7 @@ test("native Back keeps Beszel discard navigation scoped to Settings", async ({
 }) => {
 	await page.goto(`/admin/dashboard?${launchParams.toString()}`);
 	await page.getByRole("link", { name: "Settings" }).click();
+	await page.getByRole("button", { name: /^Pulse monitoring/ }).click();
 	await page.getByRole("button", { name: /^Beszel Hub and read-only access/ }).click();
 	await expect(page).toHaveURL(/\/admin\/settings\/beszel$/);
 
@@ -71,7 +72,7 @@ test("native Back keeps Beszel discard navigation scoped to Settings", async ({
 	await expect(discardDialog).toBeVisible();
 	await discardDialog.getByRole("button", { name: "Discard", exact: true }).click();
 
-	await expect(page).toHaveURL(/\/admin\/settings$/);
+	await expect(page).toHaveURL(/\/admin\/settings\/pulse$/);
 	await expect(page).not.toHaveURL(/\/admin\/dashboard$/);
 });
 
@@ -131,7 +132,7 @@ test("native Back closes an editor before leaving its settings route", async ({
 			isEnabled: true,
 		},
 	]);
-	await page.goto(`/admin/settings/tribute?${launchParams.toString()}`);
+	await page.goto(`/admin/settings/tribute/automation-rules?${launchParams.toString()}`);
 	await page.getByRole("button", { name: /Monthly donation access/ }).click();
 
 	const editor = page.getByRole("dialog", { name: "Edit automation rule" });
@@ -139,7 +140,7 @@ test("native Back closes an editor before leaving its settings route", async ({
 	await emitTelegramBack(page);
 
 	await expect(editor).toHaveCount(0);
-	await expect(page).toHaveURL(/\/admin\/settings\/tribute(?:\?.*)?$/);
+	await expect(page).toHaveURL(/\/admin\/settings\/tribute\/automation-rules(?:\?.*)?$/);
 });
 
 test("browser history keeps the visible tab mode aligned with the route", async ({
@@ -180,7 +181,7 @@ test("lazy routes survive direct loading, refresh, and browser history", async (
 	await expect(page.getByRole("heading", { name: "Connected devices" })).toBeVisible();
 
 	await page.goto("/admin/settings/tribute");
-	await expect(page.getByRole("heading", { name: "Connection" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Setup" })).toBeVisible();
 	await page.reload();
-	await expect(page.getByRole("heading", { name: "Connection" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Setup" })).toBeVisible();
 });

@@ -7,7 +7,7 @@ Use this inventory to select cases; not every change requires every cell, but ev
 | Area | Routes |
 | --- | --- |
 | User | `/`, `/devices`, `/pulse`, `/support` |
-| Admin | `/admin/dashboard`, `/admin/users`, `/admin/users/search`, `/admin/users/:id`, `/admin/broadcast`, `/admin/settings`, `/admin/settings/kuma`, `/admin/settings/beszel`, `/admin/settings/tribute`, `/admin/settings/branding`, `/admin/settings/access`, `/admin/settings/welcome` |
+| Admin | `/admin/dashboard`, `/admin/users`, `/admin/users/search`, `/admin/users/:id`, `/admin/broadcast`, `/admin/settings`, `/admin/settings/pulse`, `/admin/settings/kuma`, `/admin/settings/beszel`, `/admin/settings/tribute`, `/admin/settings/tribute/{connection,payment-links,referral-benefits,automation-rules,sponsor-offers,activity}`, `/admin/settings/communication`, `/admin/settings/content`, `/admin/settings/branding`, `/admin/settings/access`, `/admin/settings/welcome` |
 
 ## Identities and navigation
 

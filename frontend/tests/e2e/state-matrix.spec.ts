@@ -580,6 +580,7 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 	});
 
 	await page.goto(withTelegramMainButton("/admin/settings"));
+	await page.getByRole("button", { name: /^Pulse monitoring/ }).click();
 	await page.getByRole("button", { name: /^Uptime Kuma Public status page/ }).click();
 	const urlInput = page.getByPlaceholder("https://status.example.com");
 	await urlInput.fill("https://new-status.example.test");
@@ -724,7 +725,8 @@ test("settings select Beszel and verify its server-side read-only connection", a
 	mockApi: _mock,
 }) => {
 	await page.goto("/admin/settings");
-	await expect(page.getByText("Pulse source")).toBeVisible();
+	await page.getByRole("button", { name: /^Pulse monitoring/ }).click();
+	await expect(page.getByRole("radiogroup", { name: "Pulse source" })).toBeVisible();
 	await page.getByRole("radio", { name: "Beszel", exact: true }).click();
 	await expect(page.getByText("Active", { exact: true })).toBeVisible();
 
@@ -761,13 +763,14 @@ test("enabling a configured Beszel source exposes Pulse without reloading", asyn
 	await installTelegramMainButton(page);
 	mockApi.seedSettings({ pulseProvider: "disabled", beszelUrl: null });
 	await page.goto(withTelegramMainButton("/admin/settings"));
+	await page.getByRole("button", { name: /^Pulse monitoring/ }).click();
 	await page.evaluate(() => {
 		(window as typeof window & { __flowvyDocumentMarker?: string }).__flowvyDocumentMarker =
 			"same-document";
 	});
 
-	const provider = page.getByRole("radiogroup", { name: "Pulse source" });
-	await provider.getByRole("radio", { name: "Beszel", exact: true }).click();
+	await expect(page.getByRole("radio", { name: "Beszel", exact: true })).toHaveCount(0);
+	await page.getByRole("button", { name: /^Beszel Hub and read-only access/ }).click();
 	await page.getByPlaceholder("https://monitor.example.com").fill("https://beszel.example.test");
 	const settingsReadsBeforeSave = mockApi.calls.filter(
 		(call) => call === "GET /api/debug/admin/settings",
@@ -777,7 +780,7 @@ test("enabling a configured Beszel source exposes Pulse without reloading", asyn
 		.poll(() => mockApi.calls.filter((call) => call === "GET /api/debug/admin/settings").length)
 		.toBeGreaterThan(settingsReadsBeforeSave);
 	await page.goBack();
-	await expect(page).toHaveURL(/\/admin\/settings(?:\?|$)/);
+	await expect(page).toHaveURL(/\/admin\/settings\/pulse(?:\?|$)/);
 	await expect(page.getByRole("dialog", { name: "Discard changes?" })).toHaveCount(0);
 	const currentProvider = page.getByRole("radiogroup", { name: "Pulse source" });
 	await expect(currentProvider).toBeVisible();
@@ -813,18 +816,14 @@ test("unconfigured Pulse source opens setup without an invalid save", async ({ p
 		body: { detail: "Beszel URL is required when Pulse uses Beszel" },
 	});
 
-	await page.goto("/admin/settings");
+	await page.goto("/admin/settings/pulse");
 	const provider = page.getByRole("radiogroup", { name: "Pulse source" });
-	await expect(provider.getByRole("radio", { name: "Off" })).toHaveAttribute(
-		"aria-checked",
-		"true",
-	);
-	for (const label of ["Off", "Kuma", "Beszel"]) {
-		const bounds = await provider.getByRole("radio", { name: label, exact: true }).boundingBox();
-		expect(bounds?.width ?? 0).toBeGreaterThan(60);
-	}
+	await expect(provider.getByRole("radio", { name: "Off" })).toBeChecked();
+	await expect(provider.getByRole("radio")).toHaveCount(1);
+	await expect(provider.getByRole("radio", { name: "Kuma", exact: true })).toHaveCount(0);
+	await expect(provider.getByRole("radio", { name: "Beszel", exact: true })).toHaveCount(0);
 
-	await provider.getByRole("radio", { name: "Beszel", exact: true }).click();
+	await page.getByRole("button", { name: /^Beszel Hub and read-only access/ }).click();
 	await expect(page).toHaveURL(/\/admin\/settings\/beszel$/);
 	await expect(page.getByRole("heading", { name: "Connection" })).toBeVisible();
 	await expect(page.getByText("Could not save changes. Try again")).toHaveCount(0);

@@ -7,23 +7,18 @@ import ss from "../../pages/admin/settings.module.css";
 import type { AdminSettings } from "../../types/admin-settings.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
-import { CommerceActivity } from "./commerce-activity.tsx";
-import { CommerceRulesConfig } from "./commerce-rules-config.tsx";
-import { ReferralBenefitsConfig } from "./referral-benefits-config.tsx";
 import {
 	SettingsDivider,
 	SettingsInlineNotice,
 	SettingsPanel,
 	SettingsStatusRow,
 } from "./settings-surface.tsx";
-import { SponsorOffersConfig } from "./sponsor-offers-config.tsx";
-import { TributePaymentDestinations } from "./tribute-payment-destinations.tsx";
 
-interface TributeConfigProps {
+interface TributeConnectionConfigProps {
 	settings: AdminSettings;
 }
 
-export const TributeConfig: FC<TributeConfigProps> = ({ settings }) => {
+export const TributeConnectionConfig: FC<TributeConnectionConfigProps> = ({ settings }) => {
 	const { t } = useTranslation();
 	const testMutation = useTestTribute();
 	const configured = settings.tributeCredentialsConfigured;
@@ -88,16 +83,6 @@ export const TributeConfig: FC<TributeConfigProps> = ({ settings }) => {
 			{checkFailed && (
 				<InlineFeedback attention="action">{t("settings.tribute.testError")}</InlineFeedback>
 			)}
-
-			<TributePaymentDestinations settings={settings} />
-			<ReferralBenefitsConfig settings={settings} />
-			<CommerceRulesConfig />
-			<SponsorOffersConfig
-				subscriptionUrls={settings.tributeSubscriptionUrls}
-				contentDefaultLocale={settings.contentDefaultLocale}
-				templateVariables={settings.sponsorOfferTemplateVariables}
-			/>
-			<CommerceActivity />
 		</div>
 	);
 };

@@ -17,10 +17,16 @@ const screens = [
 	{ name: "admin-user-detail", path: "/admin/users/1", marker: "alice" },
 	{ name: "admin-broadcast", path: "/admin/broadcast", marker: "Coming soon" },
 	{ name: "admin-settings", path: "/admin/settings", marker: "Integrations" },
+	{ name: "admin-settings-pulse", path: "/admin/settings/pulse", marker: "Active source" },
 	{ name: "admin-access", path: "/admin/settings/access", marker: "Service mode" },
 	{ name: "admin-settings-kuma", path: "/admin/settings/kuma", marker: "URL" },
 	{ name: "admin-settings-beszel", path: "/admin/settings/beszel", marker: "Hub URL" },
-	{ name: "admin-settings-tribute", path: "/admin/settings/tribute", marker: "API key" },
+	{ name: "admin-settings-tribute", path: "/admin/settings/tribute", marker: "Management" },
+	{
+		name: "admin-settings-communication",
+		path: "/admin/settings/communication",
+		marker: "Registration",
+	},
 	{ name: "admin-settings-branding", path: "/admin/settings/branding", marker: "App name" },
 	{ name: "admin-settings-welcome", path: "/admin/settings/welcome", marker: "Content" },
 	{
@@ -289,9 +295,17 @@ test("capture Tribute settings in configured and setup states", async ({
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
+		await expect(page.getByRole("heading", { name: "Setup" })).toBeVisible();
+		await expect(page.getByRole("heading", { name: "Management" })).toBeVisible();
+		await expect(page.getByRole("heading", { name: "Operations" })).toBeVisible();
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`admin-settings-tribute-hub-${colorScheme}.png`),
+			animations: "disabled",
+		});
+		await page.goto("/admin/settings/tribute/connection");
 		await expect(page.getByText("Configured on server", { exact: true })).toBeVisible();
 		await expect(page.getByRole("heading", { name: "Webhook delivery" })).toHaveCount(0);
-		await expect(page.getByRole("heading", { name: "Payment activity" })).toBeVisible();
 		await assertNoHorizontalOverflow(page);
 		await page.screenshot({
 			path: testInfo.outputPath(`admin-settings-tribute-${colorScheme}.png`),
@@ -300,7 +314,7 @@ test("capture Tribute settings in configured and setup states", async ({
 	}
 
 	mockApi.seedSettings({ tributeCredentialsConfigured: false });
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/connection");
 	await expect(page.getByText("Missing on server", { exact: true })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 	await page.screenshot({
@@ -346,7 +360,7 @@ test("capture Tribute operator review actions and safe resolution dialog", async
 		for (const colorScheme of ["light", "dark"] as const) {
 			await page.setViewportSize(viewport);
 			await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-			await page.goto("/admin/settings/tribute");
+			await page.goto("/admin/settings/tribute/activity");
 			await page.evaluate((theme) => {
 				document.documentElement.setAttribute("data-theme", theme);
 			}, colorScheme);
@@ -396,7 +410,7 @@ test("capture the flexible Tribute donation rule editor", async ({ page, mockApi
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/admin/settings/tribute");
+		await page.goto("/admin/settings/tribute/automation-rules");
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
@@ -471,7 +485,7 @@ test("capture the flexible Tribute donation rule editor", async ({ page, mockApi
 		body: { detail: "private authentication diagnostic" },
 	});
 	await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/automation-rules");
 	await page.evaluate(() => document.documentElement.setAttribute("data-theme", "dark"));
 	await page.getByRole("button", { name: "Create first rule" }).click();
 	await page.getByLabel("Rule name").fill("Donation access");
@@ -620,7 +634,7 @@ test("capture the unconfigured Pulse source selector", async ({ page, mockApi },
 		},
 	});
 
-	await page.goto("/admin/settings");
+	await page.goto("/admin/settings/pulse");
 	await expect(page.getByRole("radiogroup", { name: "Pulse source" })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 	await page.screenshot({

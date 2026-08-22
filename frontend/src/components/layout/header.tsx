@@ -37,6 +37,10 @@ const PAGE_META: Record<string, PageMeta> = {
 	"/admin/users": { title: "common.header.users", icon: <Users size={16} /> },
 	"/admin/broadcast": { title: "common.header.broadcast", icon: <Megaphone size={16} /> },
 	"/admin/settings": { title: "common.header.settings", icon: <Settings size={16} /> },
+	"/admin/settings/pulse": {
+		title: "common.header.settingsPulse",
+		icon: <Activity size={16} />,
+	},
 	"/admin/settings/kuma": {
 		title: "common.header.settingsKuma",
 		icon: <UptimeKumaIcon size={16} />,
@@ -65,6 +69,10 @@ const PAGE_META: Record<string, PageMeta> = {
 		title: "common.header.settingsContent",
 		icon: <Languages size={16} />,
 	},
+	"/admin/settings/communication": {
+		title: "common.header.settingsCommunication",
+		icon: <MessageSquareText size={16} />,
+	},
 };
 
 export function Header() {
@@ -77,7 +85,9 @@ export function Header() {
 
 	const meta =
 		PAGE_META[location.pathname] ??
-		Object.entries(PAGE_META).find(([path]) => location.pathname.startsWith(`${path}/`))?.[1];
+		Object.entries(PAGE_META)
+			.sort(([left], [right]) => right.length - left.length)
+			.find(([path]) => location.pathname.startsWith(`${path}/`))?.[1];
 
 	const handleToggle = (next: AppMode) => {
 		if (next === mode) return;

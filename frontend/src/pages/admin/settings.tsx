@@ -1,6 +1,6 @@
 /** Admin Settings page — main list, sub-screens are separate routes. */
 import { useNavigate } from "@tanstack/react-router";
-import { Activity, Languages, MessageSquareText, Palette, ShieldCheck } from "lucide-react";
+import { Activity, MessageSquareText, Palette, ShieldCheck } from "lucide-react";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -13,25 +13,16 @@ import { ActionBtn } from "../../components/ui/action-btn.tsx";
 import { ErrorState } from "../../components/ui/error-state.tsx";
 import { InlineFeedback } from "../../components/ui/inline-feedback.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
-import { SegmentedControl } from "../../components/ui/segmented-control.tsx";
-import {
-	BeszelIcon,
-	FlowvyIcon,
-	RemnawaveIcon,
-	TributeIcon,
-	UptimeKumaIcon,
-} from "../../components/ui/service-brand-icon.tsx";
-import { useAdminSettings, useUpdateSettings } from "../../hooks/use-admin-settings.ts";
+import { FlowvyIcon, RemnawaveIcon, TributeIcon } from "../../components/ui/service-brand-icon.tsx";
+import { useAdminSettings } from "../../hooks/use-admin-settings.ts";
 import { useRegistrationSettings } from "../../hooks/use-registration-admin.ts";
 import { formatMissing, formatVersion } from "../../lib/format.ts";
-import type { PulseProvider } from "../../types/admin-settings.ts";
 import styles from "./settings.module.css";
 
 export const AdminSettings: FC = () => {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const { settings, isPending, error, refetch } = useAdminSettings();
-	const updateMutation = useUpdateSettings();
 	const registration = useRegistrationSettings();
 
 	if (isPending || (!settings && !error)) {
@@ -42,81 +33,23 @@ export const AdminSettings: FC = () => {
 		return <ErrorState onAction={refetch} />;
 	}
 
-	const kumaConfigured = Boolean(settings.kumaUrl && settings.kumaSlug);
-	const beszelConfigured = Boolean(settings.beszelUrl && settings.beszelCredentialsConfigured);
-	const handleProviderChange = (provider: string) => {
-		const nextProvider = provider as PulseProvider;
-		if (nextProvider === settings.pulseProvider) return;
-		updateMutation.reset();
-		if (nextProvider === "kuma" && !kumaConfigured) {
-			void navigate({ to: "/admin/settings/kuma" });
-			return;
-		}
-		if (nextProvider === "beszel" && !beszelConfigured) {
-			void navigate({ to: "/admin/settings/beszel" });
-			return;
-		}
-		updateMutation.mutate({ pulseProvider: nextProvider });
-	};
-	const providerOptions = [
-		{ key: "disabled", label: t("settings.providerDisabled") },
-		{ key: "kuma", label: t("settings.providerKuma") },
-		{ key: "beszel", label: t("settings.providerBeszel") },
-	];
+	const pulseValue =
+		settings.pulseProvider === "disabled"
+			? t("settings.providerDisabled")
+			: settings.pulseProvider === "kuma"
+				? t("settings.providerKuma")
+				: t("settings.providerBeszel");
 
 	return (
 		<div className={styles.page}>
-			{updateMutation.isError && (
-				<InlineFeedback attention="action">{t("settings.saveError")}</InlineFeedback>
-			)}
 			<SettingsSection title={t("settings.integrations")}>
-				<div className={styles.providerRow}>
-					<div className={styles.providerTitleRow}>
-						<span className={styles.providerIcon} data-settings-icon="pulse" aria-hidden="true">
-							<Activity size={16} strokeWidth={1.8} />
-						</span>
-						<div className={styles.providerHeading}>
-							<span className={styles.providerLabel}>{t("settings.pulseProvider")}</span>
-							<span className={styles.providerDescription}>{t("settings.integrationsHint")}</span>
-						</div>
-					</div>
-					<SegmentedControl
-						options={providerOptions}
-						value={settings.pulseProvider}
-						onChange={handleProviderChange}
-						ariaLabel={t("settings.pulseProvider")}
-						disabled={updateMutation.isPending}
-					/>
-				</div>
-				<SettingsDivider />
 				<SettingsNavRow
-					icon={<UptimeKumaIcon size={17} />}
-					label={t("settings.uptimeKuma")}
-					description={t("settings.kuma.configureDesc")}
-					value={
-						settings.pulseProvider === "kuma"
-							? t("settings.active")
-							: kumaConfigured
-								? t("settings.configured")
-								: undefined
-					}
-					tone={kumaConfigured ? "positive" : "default"}
-					onClick={() => navigate({ to: "/admin/settings/kuma" })}
-				/>
-				<SettingsDivider />
-				<SettingsNavRow
-					icon={<BeszelIcon size={17} />}
-					label={t("settings.beszel.title")}
-					description={t("settings.beszel.configureDesc")}
-					value={
-						settings.pulseProvider === "beszel"
-							? t("settings.active")
-							: beszelConfigured
-								? t("settings.configured")
-								: undefined
-					}
-					tone={beszelConfigured ? "positive" : "default"}
-					onClick={() => navigate({ to: "/admin/settings/beszel" })}
+					icon={<Activity size={17} strokeWidth={1.8} aria-hidden="true" />}
+					label={t("settings.pulse.title")}
+					description={t("settings.pulse.description")}
+					value={pulseValue}
+					tone={settings.pulseProvider === "disabled" ? "default" : "positive"}
+					onClick={() => navigate({ to: "/admin/settings/pulse" })}
 				/>
 			</SettingsSection>
 
@@ -168,16 +101,10 @@ export const AdminSettings: FC = () => {
 				<SettingsDivider />
 				<SettingsNavRow
 					icon={<MessageSquareText size={17} strokeWidth={1.8} aria-hidden="true" />}
-					label={t("settings.miniApp.welcomeRow")}
-					description={t("settings.miniApp.welcomeRowDesc")}
-					onClick={() => navigate({ to: "/admin/settings/welcome" })}
-				/>
-				<SettingsDivider />
-				<SettingsNavRow
-					icon={<Languages size={17} strokeWidth={1.8} aria-hidden="true" />}
-					label={t("settings.contentRow")}
-					description={t("settings.contentRowDesc")}
-					onClick={() => navigate({ to: "/admin/settings/content" })}
+					label={t("settings.communication.title")}
+					description={t("settings.communication.description")}
+					value={t("settings.communication.messageCount", { count: 8 })}
+					onClick={() => navigate({ to: "/admin/settings/communication" })}
 				/>
 			</SettingsSection>
 

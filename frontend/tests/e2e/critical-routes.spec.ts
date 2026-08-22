@@ -235,33 +235,25 @@ test("admin routes render deterministic success and placeholder states", async (
 		.locator("xpath=ancestor::section[1]");
 	await expect(paymentsCard.getByText("Tribute", { exact: true })).toBeVisible();
 	await expect(paymentsCard.getByText("Key added", { exact: true })).toBeVisible();
-	for (const brand of ["uptime-kuma", "beszel", "tribute", "remnawave", "flowvy"]) {
+	for (const brand of ["tribute", "remnawave", "flowvy"]) {
 		await expect(page.locator(`svg[data-service-brand="${brand}"]`)).toHaveCount(1);
 	}
-	const iconTreatments = await Promise.all(
-		[
-			page.locator('[data-settings-icon="pulse"]'),
-			page.locator('svg[data-service-brand="uptime-kuma"]').locator(".."),
-		].map((icon) =>
-			icon.evaluate((element) => {
-				const style = getComputedStyle(element);
-				return [style.backgroundColor, style.borderColor, style.color];
-			}),
-		),
-	);
-	expect(iconTreatments[0]).toEqual(iconTreatments[1]);
+	await expect(page.getByRole("button", { name: /^Pulse monitoring/ })).toBeVisible();
 	const miniAppCard = page
 		.getByRole("heading", { name: "Flowvy Mini-App" })
 		.locator("xpath=ancestor::section[1]");
 	await expect(miniAppCard.getByText("Identity", { exact: true })).toBeVisible();
-	await expect(miniAppCard.getByText("Tone of Voice", { exact: true })).toBeVisible();
+	await expect(miniAppCard.getByText("Communication", { exact: true })).toBeVisible();
 	await expect(miniAppCard.getByText("Registration & Access", { exact: true })).toBeVisible();
 	await expect(page.getByText("Branding", { exact: true })).not.toBeVisible();
 	for (const [path, title] of [
+		["/admin/settings/pulse", "Active source"],
 		["/admin/settings/kuma", "Connection"],
 		["/admin/settings/beszel", "Connection"],
-		["/admin/settings/tribute", "Connection"],
+		["/admin/settings/tribute", "Setup"],
+		["/admin/settings/tribute/connection", "Connection"],
 		["/admin/settings/branding", "Identity"],
+		["/admin/settings/communication", "Registration"],
 		["/admin/settings/welcome", "Content"],
 		["/admin/settings/content", "Message"],
 		["/admin/settings/access", "Registration"],
@@ -323,10 +315,13 @@ test("detail screens rely on Telegram Back instead of duplicate in-content heade
 	mockApi: _mock,
 }) => {
 	const detailScreens = [
+		{ path: "/admin/settings/pulse", marker: "Active source", title: "Pulse monitoring" },
 		{ path: "/admin/settings/kuma", marker: "URL", title: "Uptime Kuma" },
 		{ path: "/admin/settings/beszel", marker: "Hub URL", title: "Beszel" },
-		{ path: "/admin/settings/tribute", marker: "API key", title: "Tribute" },
+		{ path: "/admin/settings/tribute", marker: "Setup", title: "Tribute" },
+		{ path: "/admin/settings/tribute/connection", marker: "API key", title: "Tribute" },
 		{ path: "/admin/settings/branding", marker: "App name", title: "Identity" },
+		{ path: "/admin/settings/communication", marker: "Registration", title: "Communication" },
 		{ path: "/admin/settings/welcome", marker: "Content", title: "Welcome" },
 		{ path: "/admin/settings/access", marker: "Service mode", title: "Access" },
 		{ path: "/admin/users/1", marker: "alice", title: null },
@@ -339,6 +334,35 @@ test("detail screens rely on Telegram Back instead of duplicate in-content heade
 			await expect(page.getByRole("banner").getByText(screen.title, { exact: true })).toBeVisible();
 		}
 		await expect(page.getByRole("button", { name: "Back" })).toHaveCount(0);
+	}
+});
+
+test("settings hubs stay accessible without mobile overflow", async ({ page, mockApi: _mock }) => {
+	for (const viewport of [
+		{ width: 320, height: 568 },
+		{ width: 430, height: 932 },
+	]) {
+		for (const colorScheme of ["light", "dark"] as const) {
+			await page.setViewportSize(viewport);
+			await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+			for (const path of [
+				"/admin/settings/pulse",
+				"/admin/settings/tribute",
+				"/admin/settings/communication",
+			]) {
+				await page.goto(path);
+				await page.evaluate((theme) => {
+					document.documentElement.setAttribute("data-theme", theme);
+				}, colorScheme);
+				await assertNoHorizontalOverflow(page);
+				const result = await new AxeBuilder({ page }).analyze();
+				expect(
+					result.violations.filter((violation) =>
+						["serious", "critical"].includes(violation.impact ?? ""),
+					),
+				).toEqual([]);
+			}
+		}
 	}
 });
 

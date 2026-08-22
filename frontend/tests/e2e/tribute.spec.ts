@@ -187,9 +187,9 @@ test("Tribute onboarding is a separate payment-provider route with stable naviga
 	await payments.getByRole("button", { name: /^Tribute Subscriptions/ }).click();
 	await expect(page).toHaveURL(/\/admin\/settings\/tribute$/);
 	await expect(page.getByRole("banner").getByText("Tribute", { exact: true })).toBeVisible();
-	await expect(page.getByRole("heading", { name: "Access automation" })).toBeVisible();
-	await expect(page.getByText("No automation rules", { exact: true })).toBeVisible();
-	await expect(page.getByText("No events yet", { exact: true })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Setup" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Management" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Operations" })).toBeVisible();
 
 	await page.goBack();
 	await expect(page).toHaveURL(/\/admin\/settings$/);
@@ -202,7 +202,7 @@ test("Tribute API check is read-only and never exposes the server credential", a
 	page,
 	mockApi,
 }) => {
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/connection");
 	await expect(page.getByText("Configured on server", { exact: true })).toBeVisible();
 	await expect(page.locator('input[type="password"]')).toHaveCount(0);
 	await expect(page.getByText(/test_tribute_key/i)).toHaveCount(0);
@@ -225,7 +225,7 @@ test("Tribute setup and provider failures remain explicit without fake payment r
 	mockApi,
 }) => {
 	mockApi.seedSettings({ tributeCredentialsConfigured: false });
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/connection");
 	await expect(page.getByText("Missing on server", { exact: true })).toBeVisible();
 	await expect(page.getByText(/Set TRIBUTE_API_KEY/)).toBeVisible();
 	await expect(page.getByRole("button", { name: "Check API" })).toBeDisabled();
@@ -258,7 +258,7 @@ test("admin saves per-subscription payment links without creating a payment", as
 	});
 
 	await page.emulateMedia({ reducedMotion: "reduce" });
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/payment-links");
 	await expect(page.getByRole("heading", { name: "Payment links" })).toBeVisible();
 	await page.getByLabel("Supporter").fill(" https://t.me/tribute/app?startapp=subscription_12 ");
 	await page.getByRole("button", { name: "Save payment links", exact: true }).click();
@@ -289,6 +289,7 @@ test("payment links validate locally and protect unsaved changes", async ({
 		.getByRole("heading", { name: "Payments" })
 		.locator("xpath=ancestor::section[1]");
 	await payments.getByRole("button", { name: /^Tribute Subscriptions/ }).click();
+	await page.getByRole("button", { name: /^Payment links/ }).click();
 
 	const subscription = page.getByLabel("Supporter");
 	await subscription.fill("http://pay.example.test/subscription");
@@ -303,12 +304,12 @@ test("payment links validate locally and protect unsaved changes", async ({
 	const dialog = page.getByRole("dialog", { name: "Discard payment link changes?" });
 	await expect(dialog).toBeVisible();
 	await dialog.getByRole("button", { name: "Keep editing", exact: true }).click();
-	await expect(page).toHaveURL(/\/admin\/settings\/tribute$/);
+	await expect(page).toHaveURL(/\/admin\/settings\/tribute\/payment-links$/);
 	await expect(subscription).toHaveValue("https://pay.example.test/subscription");
 
 	await page.goBack();
 	await dialog.getByRole("button", { name: "Discard", exact: true }).click();
-	await expect(page).toHaveURL(/\/admin\/settings$/);
+	await expect(page).toHaveURL(/\/admin\/settings\/tribute$/);
 });
 
 test("payment link catalog failure retries safely and preserves unavailable mappings", async ({
@@ -326,7 +327,7 @@ test("payment link catalog failure retries safely and preserves unavailable mapp
 		{ body: mockData.commerceCatalog },
 	]);
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/payment-links");
 	await expect(page.getByRole("alert")).toContainText("Could not load subscriptions");
 	await expect(page.getByText("private catalog diagnostic")).toHaveCount(0);
 	await page.getByRole("button", { name: "Retry", exact: true }).click();
@@ -345,7 +346,7 @@ test("payment links expose catalog loading and empty states", async ({ page, moc
 		delayMs: 600,
 		body: { subscriptions: [] },
 	});
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/payment-links");
 
 	await expect(page.getByText("Loading Tribute subscriptions…", { exact: true })).toBeVisible();
 	await expect(page.getByText(/Tribute returned no subscriptions/)).toBeVisible();
@@ -376,7 +377,7 @@ test("admin independently configures inviter days and a shared welcome discount"
 		}
 	});
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/referral-benefits");
 	const section = page
 		.getByRole("heading", { name: "Referral benefits" })
 		.locator("xpath=ancestor::section[1]");
@@ -434,6 +435,7 @@ test("referral benefits protect unsaved changes with localized copy", async ({
 		.getByRole("heading", { name: "Payments" })
 		.locator("xpath=ancestor::section[1]");
 	await payments.getByRole("button", { name: /^Tribute Subscriptions/ }).click();
+	await page.getByRole("button", { name: /^Referral benefits/ }).click();
 	const section = page
 		.getByRole("heading", { name: "Referral benefits" })
 		.locator("xpath=ancestor::section[1]");
@@ -456,12 +458,12 @@ test("referral benefits protect unsaved changes with localized copy", async ({
 		});
 	}
 	await dialog.getByRole("button", { name: "Keep editing", exact: true }).click();
-	await expect(page).toHaveURL(/\/admin\/settings\/tribute$/);
+	await expect(page).toHaveURL(/\/admin\/settings\/tribute\/referral-benefits$/);
 	await expect(section.getByLabel("Reward days", { exact: true })).toHaveValue("7");
 
 	await page.goBack();
 	await dialog.getByRole("button", { name: "Discard", exact: true }).click();
-	await expect(page).toHaveURL(/\/admin\/settings$/);
+	await expect(page).toHaveURL(/\/admin\/settings\/tribute$/);
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -480,7 +482,7 @@ test("referral configuration recovers when its profile and offer data fail to lo
 		{ body: [] },
 	]);
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/referral-benefits");
 	const section = page
 		.getByRole("heading", { name: "Referral benefits" })
 		.locator("xpath=ancestor::section[1]");
@@ -499,7 +501,7 @@ test("payment link save failure stays generic and keeps the draft", async ({ pag
 		status: 422,
 		body: { detail: "private persistence diagnostic" },
 	});
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/payment-links");
 	const subscription = page.getByLabel("Supporter");
 	await subscription.fill("https://pay.example.test/subscription");
 	await page.getByRole("button", { name: "Save payment links", exact: true }).click();
@@ -514,7 +516,7 @@ test("admin creates and previews flexible donation amount bands without executin
 	page,
 	mockApi,
 }) => {
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/automation-rules");
 	await page.getByRole("button", { name: "Create first rule" }).click();
 	await expect(page.getByRole("heading", { name: "Create automation rule" })).toBeVisible();
 
@@ -553,7 +555,7 @@ test("rule editor selects Tribute subscriptions by catalog name and price", asyn
 	page,
 	mockApi: _mock,
 }) => {
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/automation-rules");
 	await page.getByRole("button", { name: "Create first rule" }).click();
 	await page.getByRole("radio", { name: "Subscription", exact: true }).click();
 
@@ -583,7 +585,7 @@ test("subscription rule uses Tribute expiry without local day calculation", asyn
 }, testInfo) => {
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/admin/settings/tribute");
+		await page.goto("/admin/settings/tribute/automation-rules");
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
@@ -632,7 +634,7 @@ test("catalog failure is safe and retry restores the offer picker", async ({ pag
 		{ body: mockData.commerceCatalog },
 	]);
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/automation-rules");
 	await page.getByRole("button", { name: "Create first rule" }).click();
 	await page.getByRole("radio", { name: "Subscription", exact: true }).click();
 	const editor = page.getByLabel("Create automation rule");
@@ -670,7 +672,7 @@ test("an existing rule keeps a Tribute item missing from the current catalog", a
 		},
 	]);
 
-	await page.goto(withTelegramMainButton("/admin/settings/tribute"));
+	await page.goto(withTelegramMainButton("/admin/settings/tribute/automation-rules"));
 	await page.getByRole("button", { name: /Legacy subscription/ }).click();
 	const offer = page.getByLabel("Tribute offer");
 	await expect(offer).toHaveValue("999");
@@ -690,7 +692,7 @@ test("payment activity exposes loading, failure recovery, and a safe empty state
 		{ status: 503, body: { detail: "private activity diagnostic" } },
 		{ delayMs: 600, body: { operations: [], hasMore: false } },
 	]);
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/activity");
 
 	await expect(page.getByRole("alert")).toContainText("Could not load payment activity");
 	await expect(page.getByText("private activity diagnostic")).toHaveCount(0);
@@ -737,7 +739,7 @@ test("payment activity renders allow-listed applied and review outcomes", async 
 			hasMore: true,
 		},
 	});
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/activity");
 
 	await expect(page.getByText("Subscription started", { exact: true })).toBeVisible();
 	await expect(page.getByText("Applied", { exact: true })).toBeVisible();
@@ -799,7 +801,7 @@ test("admin resolution is explicit, audited, idempotent across retry, and return
 		}
 	});
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/activity");
 	const resolveButton = page.getByRole("button", { name: "Resolve", exact: true });
 	await resolveButton.click();
 	const dialog = page.getByRole("dialog", { name: "Resolve without changing access?" });
@@ -885,7 +887,7 @@ test("provider failures expose only the server-approved retry and resolve decisi
 		body: retried,
 	});
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/activity");
 	await expect(page.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
 	await expect(page.getByRole("button", { name: "Resolve", exact: true })).toBeVisible();
 	await page.getByRole("button", { name: "Retry", exact: true }).click();
@@ -931,7 +933,7 @@ test("resolution closes the native dialog immediately after success", async ({ p
 		delayMs: 120,
 	});
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/activity");
 	await page.getByRole("button", { name: "Resolve", exact: true }).click();
 	const dialog = page.getByRole("dialog", { name: "Resolve without changing access?" });
 	const note = page.getByLabel("Resolution note");
@@ -991,7 +993,7 @@ test("reported donation draft keeps auth, clears stale errors, and previews afte
 			},
 		},
 	]);
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/automation-rules");
 	await page.getByRole("button", { name: "Create first rule" }).click();
 	await page.getByLabel("Rule name").fill("1");
 	await page.getByLabel("Starts at").fill("500");
@@ -1029,7 +1031,7 @@ test("rule editor keeps native controls and actions stable while inputs are focu
 	page,
 	mockApi: _mock,
 }) => {
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/automation-rules");
 	await page.getByRole("button", { name: "Create first rule" }).click();
 	const dialog = page.getByRole("dialog", { name: "Create automation rule" });
 	const currency = page.getByLabel("Currency");
@@ -1098,8 +1100,7 @@ test("saved rule can be disabled, edited, and deleted with explicit confirmation
 			title: "Linked support choice",
 		},
 	]);
-	await page.goto("/admin/settings/tribute");
-	await expect(page.getByRole("article", { name: "Linked support choice" })).toBeVisible();
+	await page.goto("/admin/settings/tribute/automation-rules");
 
 	const toggle = page.getByRole("switch", { name: "Enable or disable Monthly donation access" });
 	await toggle.click();
@@ -1143,6 +1144,7 @@ test("saved rule can be disabled, edited, and deleted with explicit confirmation
 		.locator("xpath=ancestor::dialog[1]");
 	await reopenedConfirmation.getByRole("button", { name: "Delete", exact: true }).click();
 	await expect(page.getByText("No automation rules", { exact: true })).toBeVisible();
+	await page.goto("/admin/settings/tribute/sponsor-offers");
 	await expect(page.getByRole("article", { name: "Linked support choice" })).toHaveCount(0);
 	expect(mockApi.calls).toContain(`DELETE /api/debug/admin/commerce/rules/${ruleId}`);
 });
@@ -1160,7 +1162,7 @@ test("rule delete failure stays retryable and hides backend diagnostics", async 
 		body: { detail: "private database diagnostic" },
 		delayMs: 400,
 	});
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/automation-rules");
 	await page.getByRole("button", { name: /Flexible sponsor donations/ }).click();
 	await page
 		.getByRole("dialog", { name: "Edit automation rule" })
@@ -1178,7 +1180,6 @@ test("rule delete failure stays retryable and hides backend diagnostics", async 
 	);
 	await expect(confirmation.getByText("private database diagnostic")).toHaveCount(0);
 	await expect(page.getByRole("button", { name: /Flexible sponsor donations/ })).toBeVisible();
-	await expect(page.getByRole("article", { name: offer.title })).toBeVisible();
 });
 
 test("rule editor exposes safe no-match and save-failure states", async ({ page, mockApi }) => {
@@ -1188,7 +1189,7 @@ test("rule editor exposes safe no-match and save-failure states", async ({ page,
 		body: { detail: "private persistence diagnostic" },
 		delayMs: 600,
 	});
-	await page.goto(withTelegramMainButton("/admin/settings/tribute"));
+	await page.goto(withTelegramMainButton("/admin/settings/tribute/automation-rules"));
 	await page.getByRole("button", { name: "Create first rule" }).click();
 	await page.getByLabel("Rule name").fill("Donation access");
 	await page.getByLabel("Starts at").fill("500");
@@ -1219,7 +1220,7 @@ test("commerce rules expose loading, load-error, and unavailable-profile states"
 		delayMs: 600,
 		body: [],
 	});
-	await page.goto(withTelegramMainButton("/admin/settings/tribute"));
+	await page.goto(withTelegramMainButton("/admin/settings/tribute/automation-rules"));
 	await expect(page.getByText("Loading automation rules…", { exact: true })).toBeVisible();
 	await expect(page.getByText("No automation rules", { exact: true })).toBeVisible();
 
@@ -1317,7 +1318,7 @@ test("payment links produce reviewable light and dark browser evidence", async (
 
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/admin/settings/tribute");
+		await page.goto("/admin/settings/tribute/payment-links");
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
@@ -1342,7 +1343,7 @@ test("commerce rule editor is accessible and responsive in both themes", async (
 		for (const colorScheme of ["light", "dark"] as const) {
 			await page.setViewportSize(viewport);
 			await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-			await page.goto("/admin/settings/tribute");
+			await page.goto("/admin/settings/tribute/automation-rules");
 			await page.evaluate((theme) => {
 				document.documentElement.setAttribute("data-theme", theme);
 			}, colorScheme);
@@ -1370,7 +1371,7 @@ test("rule deletion consequence is accessible in light and dark themes", async (
 
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/admin/settings/tribute");
+		await page.goto("/admin/settings/tribute/automation-rules");
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
@@ -1405,7 +1406,7 @@ test("admin creates a user-facing sponsor offer from an automation rule", async 
 }, testInfo) => {
 	mockApi.seedCommerceRules([sponsorSubscriptionRule()]);
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/sponsor-offers");
 	await expect(page.getByRole("heading", { name: "Sponsor offers" })).toBeVisible();
 	await page.getByRole("button", { name: "Create first offer" }).click();
 	await expect(page.getByRole("heading", { name: "Create sponsor offer" })).toBeVisible();
@@ -1474,12 +1475,13 @@ test("sponsor offer maps a stale missing-destination response to actionable copy
 		},
 	});
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/payment-links");
 	await page
 		.getByLabel("Supporter", { exact: true })
 		.fill("https://t.me/tribute/app?startapp=subscription_12");
 	await page.getByRole("button", { name: "Save payment links", exact: true }).click();
 	await expect(page.getByText("Payment links saved", { exact: true })).toBeVisible();
+	await page.goto("/admin/settings/tribute/sponsor-offers");
 	await page.getByRole("button", { name: "Create first offer" }).click();
 	await page.getByLabel("Offer title").fill("Monthly sponsor access");
 	const publish = page.getByRole("switch", { name: "Publish this sponsor offer" });
@@ -1523,7 +1525,7 @@ test("formatted offer copy keeps one fixed toolbar and renders safely on Home", 
 	mockApi.seedCommerceRules([sponsorSubscriptionRule()]);
 	mockApi.seedSponsorOffers([offer]);
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/sponsor-offers");
 	await page
 		.getByRole("article", { name: offer.title })
 		.getByRole("button", { name: "Edit" })
@@ -1663,7 +1665,7 @@ test("admin can relink an existing sponsor offer to another automation rule", as
 
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/admin/settings/tribute");
+		await page.goto("/admin/settings/tribute/sponsor-offers");
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
@@ -1713,7 +1715,7 @@ test("admin hides a published sponsor offer from its list toggle", async ({ page
 	mockApi.seedCommerceRules([sponsorSubscriptionRule()]);
 	mockApi.seedSponsorOffers([sponsorSubscriptionOffer()]);
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/sponsor-offers");
 	const visibility = page.getByRole("switch", {
 		name: "Publish or hide Monthly sponsor access",
 	});
@@ -1754,7 +1756,7 @@ test("admin groups legacy subscription cards around one readable plan preview", 
 		{ ...sharedOffer, title: "One year", id: "30000000-0000-4000-8000-000000000003" },
 	]);
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/sponsor-offers");
 	const offersSection = page
 		.getByRole("heading", { name: "Sponsor offers" })
 		.locator("xpath=ancestor::section[1]");
@@ -1819,7 +1821,7 @@ test("admin publishes exact one-time and recurring donation choices from one rul
 }) => {
 	mockApi.seedCommerceRules([sponsorDonationRule()]);
 
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/sponsor-offers");
 	for (const [title, link, amount, mode, period] of [
 		["One month sponsor", "https://t.me/tribute/app?startapp=month", "500", "one_time", null],
 		["One year sponsor", "https://t.me/tribute/app?startapp=year", "3500", "recurring", "yearly"],
@@ -2632,7 +2634,7 @@ test("sponsor offer editor stays native to the design system in both themes", as
 
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/admin/settings/tribute");
+		await page.goto("/admin/settings/tribute/sponsor-offers");
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);

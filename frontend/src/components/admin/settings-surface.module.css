@@ -24,7 +24,7 @@
 	line-height: 1.2;
 	letter-spacing: 0.05em;
 	text-transform: uppercase;
-	color: var(--v2-text-secondary);
+	color: var(--v2-text-primary);
 }
 
 .sectionAction {
@@ -78,6 +78,40 @@
 	height: 1px;
 	margin-left: 14px;
 	background: var(--v2-border-tertiary);
+}
+
+.choiceRow {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	align-items: center;
+	box-sizing: border-box;
+	min-height: 60px;
+	padding: 9px 12px;
+	gap: 11px;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.choiceRow > input {
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	accent-color: var(--v2-bg-positive-primary);
+}
+
+.choiceRow:has(input:disabled) {
+	opacity: 0.55;
+	cursor: default;
+}
+
+.activeChoice {
+	padding: 4px 7px;
+	border-radius: 999px;
+	background: var(--v2-bg-positive-quaternary);
+	font-size: var(--font-size-caption);
+	font-weight: 600;
+	line-height: 1;
+	color: var(--v2-text-positive);
 }
 
 .actionRow {
@@ -197,7 +231,7 @@
 	font-size: var(--font-size-caption);
 	font-weight: 400;
 	line-height: 1.4;
-	color: var(--v2-text-secondary);
+	color: var(--v2-text-primary);
 }
 
 .navTrailing {
@@ -218,14 +252,14 @@
 	font-size: var(--font-size-caption);
 	font-weight: 600;
 	line-height: 1;
-	color: var(--v2-text-secondary);
+	color: var(--v2-text-primary);
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
 .statusPill[data-tone="positive"] {
 	background: var(--v2-bg-positive-quaternary);
-	color: var(--v2-text-positive);
+	color: var(--v2-text-primary);
 }
 
 .statusPill[data-tone="warning"] {

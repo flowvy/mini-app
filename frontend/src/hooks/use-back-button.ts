@@ -11,6 +11,13 @@ import { useBackNavigationController } from "../contexts/back-navigation-context
 import { isPrimaryTabRoute } from "../lib/navigation-routes.ts";
 
 export function getBackFallback(pathname: string): string {
+	if (pathname.startsWith("/admin/settings/tribute/")) return "/admin/settings/tribute";
+	if (pathname === "/admin/settings/kuma" || pathname === "/admin/settings/beszel") {
+		return "/admin/settings/pulse";
+	}
+	if (pathname === "/admin/settings/welcome" || pathname === "/admin/settings/content") {
+		return "/admin/settings/communication";
+	}
 	if (pathname.startsWith("/admin/settings/")) return "/admin/settings";
 	if (pathname.startsWith("/admin/users/")) return "/admin/users";
 	if (pathname.startsWith("/admin")) return "/admin/dashboard";

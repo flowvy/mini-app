@@ -77,6 +77,15 @@ const adminSettingsRoute = createRoute({
 	component: lazyRouteComponent(() => import("./pages/admin/settings.tsx"), "AdminSettings"),
 });
 
+const adminSettingsPulseRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/pulse",
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-pulse.tsx"),
+		"AdminPulseSettings",
+	),
+});
+
 const adminSettingsKumaRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/settings/kuma",
@@ -101,6 +110,60 @@ const adminSettingsTributeRoute = createRoute({
 	),
 });
 
+const adminSettingsTributeConnectionRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/tribute/connection",
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-tribute.tsx"),
+		"AdminTributeConnection",
+	),
+});
+
+const adminSettingsTributePaymentLinksRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/tribute/payment-links",
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-tribute.tsx"),
+		"AdminTributePaymentLinks",
+	),
+});
+
+const adminSettingsTributeReferralBenefitsRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/tribute/referral-benefits",
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-tribute.tsx"),
+		"AdminTributeReferralBenefits",
+	),
+});
+
+const adminSettingsTributeAutomationRulesRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/tribute/automation-rules",
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-tribute.tsx"),
+		"AdminTributeAutomationRules",
+	),
+});
+
+const adminSettingsTributeSponsorOffersRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/tribute/sponsor-offers",
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-tribute.tsx"),
+		"AdminTributeSponsorOffers",
+	),
+});
+
+const adminSettingsTributeActivityRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/tribute/activity",
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-tribute.tsx"),
+		"AdminTributeActivity",
+	),
+});
+
 const adminSettingsBrandingRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/settings/branding",
@@ -122,9 +185,21 @@ const adminSettingsWelcomeRoute = createRoute({
 const adminSettingsContentRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/settings/content",
+	validateSearch: (search: Record<string, unknown>) => ({
+		message: typeof search.message === "string" ? search.message : undefined,
+	}),
 	component: lazyRouteComponent(
 		() => import("./pages/admin/settings-content.tsx"),
 		"AdminContentConfig",
+	),
+});
+
+const adminSettingsCommunicationRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/communication",
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-communication.tsx"),
+		"AdminCommunicationSettings",
 	),
 });
 
@@ -148,12 +223,20 @@ const routeTree = rootRoute.addChildren([
 	adminUserDetailRoute,
 	adminBroadcastRoute,
 	adminSettingsRoute,
+	adminSettingsPulseRoute,
 	adminSettingsKumaRoute,
 	adminSettingsBeszelRoute,
 	adminSettingsTributeRoute,
+	adminSettingsTributeConnectionRoute,
+	adminSettingsTributePaymentLinksRoute,
+	adminSettingsTributeReferralBenefitsRoute,
+	adminSettingsTributeAutomationRulesRoute,
+	adminSettingsTributeSponsorOffersRoute,
+	adminSettingsTributeActivityRoute,
 	adminSettingsBrandingRoute,
 	adminSettingsWelcomeRoute,
 	adminSettingsContentRoute,
+	adminSettingsCommunicationRoute,
 	adminSettingsAccessRoute,
 ]);
 

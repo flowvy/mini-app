@@ -95,13 +95,15 @@
 			"users": "Users",
 			"broadcast": "Broadcast",
 			"settings": "Settings",
+			"settingsPulse": "Pulse monitoring",
 			"settingsKuma": "Uptime Kuma",
 			"settingsBeszel": "Beszel",
 			"settingsTribute": "Tribute",
 			"settingsAccess": "Access",
 			"settingsIdentity": "Identity",
 			"settingsWelcome": "Welcome",
-			"settingsContent": "Tone of Voice",
+			"settingsContent": "Message",
+			"settingsCommunication": "Communication",
 			"userModeLabel": "User mode",
 			"adminModeLabel": "Admin mode"
 		},
@@ -460,9 +462,17 @@
 		"providerKuma": "Kuma",
 		"providerBeszel": "Beszel",
 		"uptimeKuma": "Uptime Kuma",
-		"integrationsHint": "Status page monitoring for your services",
 		"configured": "Configured",
 		"active": "Active",
+		"pulse": {
+			"title": "Pulse monitoring",
+			"description": "Source and provider connections",
+			"intro": "Choose from configured sources. Connections stay saved when inactive",
+			"activeSource": "Active source",
+			"offDescription": "Hide Pulse monitoring",
+			"connections": "Provider connections",
+			"setUp": "Set up"
+		},
 		"system": "System",
 		"remnawave": "Remnawave",
 		"flowvyVersion": "Flowvy Mini-App",
@@ -509,6 +519,20 @@
 			"configureDesc": "Subscriptions and donations",
 			"keyAdded": "Key added",
 			"setupRequired": "Setup",
+			"hub": {
+				"intro": "Provider setup is separate from offers and payment operations",
+				"setup": "Setup",
+				"management": "Management",
+				"operations": "Operations",
+				"connectionDescription": "API access and authenticated webhooks",
+				"paymentLinksDescription": "One destination for each Tribute subscription",
+				"referralsDescription": "Inviter reward and welcome discount",
+				"rulesDescription": "Map confirmed payments to access",
+				"offersDescription": "Cards shown to users on Home",
+				"activityDescription": "Events, reviews and retries",
+				"on": "On",
+				"off": "Off"
+			},
 			"connectionSection": "Connection",
 			"apiKeyLabel": "API key",
 			"credentialsConfigured": "Configured on server",
@@ -851,8 +875,6 @@
 		},
 		"brandingRow": "Identity",
 		"brandingRowDesc": "Customize app name and logo",
-		"contentRow": "Tone of Voice",
-		"contentRowDesc": "Onboarding, invite, and sponsor messaging",
 		"branding": {
 			"identitySection": "Identity",
 			"identityHint": "Name displayed in the header. Logo supports SVG for both themes",
@@ -867,8 +889,17 @@
 		},
 		"miniApp": {
 			"section": "Flowvy Mini-App",
-			"welcomeRow": "Welcome Message",
-			"welcomeRowDesc": "Greeting sent on /start"
+			"welcomeRow": "Welcome Message"
+		},
+		"communication": {
+			"title": "Communication",
+			"description": "Telegram and Mini App messages",
+			"messageCount": "{{count}} messages",
+			"intro": "Each message opens the fields used by its actual destination",
+			"telegram": "Telegram",
+			"registration": "Registration",
+			"home": "Home",
+			"welcomeDestination": "Bot · sent after /start"
 		},
 		"welcome": {
 			"contentSection": "Content",

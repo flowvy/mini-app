@@ -219,9 +219,10 @@ function isMessageKey(value: string): value is MessageKey {
 
 interface ContentConfigProps {
 	settings: AdminSettings;
+	initialMessageKey?: string;
 }
 
-export const ContentConfig: FC<ContentConfigProps> = ({ settings }) => {
+export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessageKey }) => {
 	const { t, i18n } = useTranslation();
 	const [initialLocales] = useState(() => structuredClone(settings.contentLocales));
 	const [contentLocales, setContentLocales] = useState(() =>
@@ -232,7 +233,9 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings }) => {
 			? settings.contentDefaultLocale
 			: (SUPPORTED_LOCALES[0] ?? "en"),
 	);
-	const [messageKey, setMessageKey] = useState<MessageKey>("inviteRegistration");
+	const [messageKey, setMessageKey] = useState<MessageKey>(() =>
+		initialMessageKey && isMessageKey(initialMessageKey) ? initialMessageKey : "inviteRegistration",
+	);
 	const [initialShareSettings] = useState(() => ({
 		mediaFileId: settings.inviteShareMediaFileId,
 		mediaFileName: settings.inviteShareMediaFileName,
@@ -248,6 +251,9 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings }) => {
 	const [saveFailed, setSaveFailed] = useState(false);
 	const [uploading, setUploading] = useState(false);
 	const updateMutation = useUpdateSettings();
+	useEffect(() => {
+		if (initialMessageKey && isMessageKey(initialMessageKey)) setMessageKey(initialMessageKey);
+	}, [initialMessageKey]);
 	const content = contentLocales[locale] ?? {};
 	const message = MESSAGES.find((candidate) => candidate.key === messageKey) ?? MESSAGES[0];
 	const variables = [
@@ -356,24 +362,26 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings }) => {
 	return (
 		<div className={ss.formPage}>
 			{saveFailed && <InlineFeedback attention="action">{t("settings.saveError")}</InlineFeedback>}
-			<SettingsPanel title={t("settings.content.languageSection")}>
-				<SettingsFields>
-					<FormField
-						label={t("settings.content.languageLabel")}
-						hint={t("settings.content.languageHint")}
-					>
-						<SegmentedControl
-							options={SUPPORTED_LOCALES.map((key) => ({
-								key,
-								label: localeLabel(key, i18n.language),
-							}))}
-							value={locale}
-							onChange={setLocale}
-							ariaLabel={t("settings.content.languageLabel")}
-						/>
-					</FormField>
-				</SettingsFields>
-			</SettingsPanel>
+			{SUPPORTED_LOCALES.length > 1 && (
+				<SettingsPanel title={t("settings.content.languageSection")}>
+					<SettingsFields>
+						<FormField
+							label={t("settings.content.languageLabel")}
+							hint={t("settings.content.languageHint")}
+						>
+							<SegmentedControl
+								options={SUPPORTED_LOCALES.map((key) => ({
+									key,
+									label: localeLabel(key, i18n.language),
+								}))}
+								value={locale}
+								onChange={setLocale}
+								ariaLabel={t("settings.content.languageLabel")}
+							/>
+						</FormField>
+					</SettingsFields>
+				</SettingsPanel>
+			)}
 
 			<SettingsPanel title={t("settings.content.messageSection")}>
 				<SettingsFields>

@@ -55,6 +55,45 @@ export const SettingsFields: FC<{ children: ReactNode }> = ({ children }) => (
 
 export const SettingsDivider: FC = () => <div className={styles.divider} />;
 
+interface SettingsChoiceRowProps {
+	name: string;
+	value: string;
+	checked: boolean;
+	label: string;
+	description: string;
+	selectedLabel: string;
+	disabled?: boolean;
+	onChange: () => void;
+}
+
+export const SettingsChoiceRow: FC<SettingsChoiceRowProps> = ({
+	name,
+	value,
+	checked,
+	label,
+	description,
+	selectedLabel,
+	disabled,
+	onChange,
+}) => (
+	<label className={styles.choiceRow}>
+		<input
+			type="radio"
+			name={name}
+			value={value}
+			checked={checked}
+			disabled={disabled}
+			aria-label={label}
+			onChange={onChange}
+		/>
+		<span className={styles.navCopy}>
+			<strong>{label}</strong>
+			<small>{description}</small>
+		</span>
+		{checked && <span className={styles.activeChoice}>{selectedLabel}</span>}
+	</label>
+);
+
 interface SettingsActionRowProps {
 	icon: ReactNode;
 	label: string;

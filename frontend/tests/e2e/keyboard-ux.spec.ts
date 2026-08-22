@@ -221,12 +221,13 @@ test("native-only save actions never render DOM fallback buttons", async ({ page
 			isEnabled: true,
 		},
 	]);
-	await page.goto("/admin/settings/tribute");
+	await page.goto("/admin/settings/tribute/automation-rules");
 	await page.getByRole("button", { name: /Native-only automation rule/ }).click();
 	const ruleEditor = page.getByRole("dialog", { name: "Edit automation rule" });
 	await expect(ruleEditor.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
 	await ruleEditor.getByRole("button", { name: "Close rule editor" }).click();
 
+	await page.goto("/admin/settings/tribute/sponsor-offers");
 	await page.getByRole("button", { name: "Create first offer" }).click();
 	const offerEditor = page.getByRole("dialog", { name: "Create sponsor offer" });
 	await expect(offerEditor.getByRole("button", { name: "Create offer", exact: true })).toHaveCount(
@@ -429,6 +430,7 @@ test("dedicated settings routes use one native save action with modal-safe clean
 		});
 
 	await page.goto(`/admin/settings?${launchParams.toString()}`);
+	await page.getByRole("button", { name: /^Pulse monitoring/ }).click();
 	await page.getByRole("button", { name: /^Beszel Hub and read-only access/ }).click();
 	await expect(page).toHaveURL(/\/admin\/settings\/beszel$/);
 	await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
@@ -468,10 +470,11 @@ test("dedicated settings routes use one native save action with modal-safe clean
 	await expect(page).toHaveURL(/\/$/);
 	await expect.poll(latestMainButton).toEqual(expect.objectContaining({ is_visible: false }));
 
-	await page.goto(`/admin/settings/tribute?${launchParams.toString()}`);
+	await page.goto(`/admin/settings/tribute/payment-links?${launchParams.toString()}`);
 	await expect(page.getByRole("button", { name: "Save payment links", exact: true })).toBeVisible();
 	await expect.poll(latestMainButton).toBeNull();
 
+	await page.goto(`/admin/settings/tribute/automation-rules?${launchParams.toString()}`);
 	await page.getByRole("button", { name: /Monthly donation access/ }).click();
 	const ruleEditor = page.getByRole("dialog", { name: "Edit automation rule" });
 	await expect(ruleEditor).toBeVisible();

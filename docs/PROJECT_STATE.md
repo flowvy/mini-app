@@ -1,6 +1,6 @@
 # Текущее состояние Flowvy
 
-Последняя полная проверка: **2026-08-22**; последний change-aware gate: **2026-08-22**
+Последняя полная проверка: **2026-08-22**; последний change-aware gate: **2026-08-23**
 Проверенное текущее состояние: **`dev` с universal Telegram entry, referral benefits, prepared invite sharing, layered Back navigation, always-on Tribute delivery, multi-period sponsor offers, paid/base reconciliation и кроссплатформенным dev-tooling**
 Последний полный baseline: **`dd3b5c8`** (`dev`, 2026-08-04)
 Стадия: **незавершённый MVP; production readiness не подтверждена**
@@ -154,9 +154,12 @@
   движение. Подтверждённое исчезновение использует один Telegram medium impact, ошибка — error
   notification; лишнего warning при открытии confirmation нет. Контракт SnapDOM сверялся с
   [official repository](https://github.com/zumerlab/snapdom) 2026-08-13.
-- Admin dashboard, список/карточка пользователя, действия, выбор Pulse source, отдельные
-  Kuma/Beszel/branding/welcome/access/Tribute settings и Broadcast route.
-- Settings выделяет Payments отдельно от Pulse source. Tribute route показывает server-only
+- Admin dashboard, список/карточка пользователя, действия, отдельный Pulse settings hub,
+  Kuma/Beszel/branding/welcome/access/Communication/Tribute settings и Broadcast route.
+- Settings overview ведёт в отдельный Pulse hub: native radio group выбирает только выключение и
+  уже настроенные sources, а Kuma/Beszel connections живут отдельно и сохраняются при смене source.
+  Tribute hub делит Setup, Management и Operations на самостоятельные nested routes. Эти routes
+  показывают server-only
   credential state, read-only subscription API check, payment destinations, donation/subscription
   rule builder, sponsor offers и allow-listed activity journal. Subscription выбирается по имени,
   цене и периоду из каталога; сохранённый временно отсутствующий ID не теряется. Donation
@@ -197,8 +200,9 @@
   черновика скрывает устаревший результат. Amount-band поля теперь явно различают порог, payment
   unit и access per unit; формула показана над полосами.
 - Admin settings используют один settings-specific composition layer для section headers,
-  navigation/status/fact rows, notices и field groups. Overview группирует integrations,
-  Flowvy Mini-App и system facts; вложенные Kuma/Beszel/Identity/Welcome/Access маршруты используют
+  navigation/status/fact/choice rows, notices и field groups. Overview группирует integrations,
+  payments, Flowvy Mini-App и system facts; вложенные Pulse, Tribute, Communication,
+  Kuma/Beszel/Identity/Welcome/Access маршруты используют
   contained panels с внутренними group headers, одинаковым field/status/save rhythm и читаемой
   максимальной шириной на desktop. Общий semantic `FormSection` распространяет attached-header
   композицию на именованные секции Home details, Devices, Pulse groups/incidents, Admin dashboard и
@@ -209,7 +213,9 @@
   проверены в Chromium/WebKit.
 - Uptime Kuma, Beszel, Remnawave, Tribute и Flowvy в Settings используют локальные монохромные brand marks в
   одинаковых нейтральных icon tiles; Pulse source тоже нейтрален и не маскируется под positive status.
-  Welcome собран в одну content surface: Greeting использует компактный Telegram HTML toolbar,
+  Communication hub группирует Welcome и семь Mini App message contexts по реальному destination;
+  выбор строки сразу открывает соответствующий специализированный editor, а single installed locale
+  не создаёт бессмысленный language picker. Welcome собран в одну content surface: Greeting использует компактный Telegram HTML toolbar,
   custom emoji insertion остаётся за Premium notice, media описана одной строкой, а template
   variables скрыты в одном disclosure на секцию. Tone of Voice хранит только Mini App
   onboarding/referral/sponsor copy и показывает один из семи user-facing message contexts за раз:
@@ -252,7 +258,7 @@
   принимает Unix и ISO contracts и распознаёт только
   документированный lifetime sentinel конца 2099 года; Home, sponsor state и admin user surfaces
   показывают его как `No expiry`, не как календарную дату 2100 года.
-- Identity, Tone of Voice, Registration & Access и Welcome Message собраны в секции Flowvy Mini-App.
+- Identity, Registration & Access и Communication собраны в секции Flowvy Mini-App.
   Branding contract позволяет оператору задать app name/logo. Typed locale maps покрывают
   onboarding, referral и sponsor storefront framing; public API отдаёт
   только resolved locale, а незаполненные поля используют product fallback. Support остаётся

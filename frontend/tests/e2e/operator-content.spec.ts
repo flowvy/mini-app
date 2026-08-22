@@ -70,8 +70,8 @@ test("admin saves allow-listed provider content as a locale map", async ({
 }) => {
 	await installTelegramMainButton(page);
 	await page.goto(withTelegramMainButton("/admin/settings/content"));
-	await expect(page.locator("header").getByText("Tone of Voice", { exact: true })).toBeVisible();
-	await expect(page.getByText("English", { exact: true })).toBeVisible();
+	await expect(page.locator("header").getByText("Message", { exact: true })).toBeVisible();
+	await expect(page.getByLabel("Content language")).toHaveCount(0);
 	await expect(page.getByRole("heading", { name: "Support" })).toHaveCount(0);
 
 	await page.getByLabel("Invite registration title").fill("Private {{appName}} access");
@@ -89,6 +89,33 @@ test("admin saves allow-listed provider content as a locale map", async ({
 	expect(payload.contentLocales.en.inviteTitle).toBe("Bring your crew");
 	expect(payload.contentLocales.en).not.toHaveProperty("botInviteRequired");
 	expect(payload).not.toHaveProperty("supportUrl");
+});
+
+test("Communication groups all message contexts and opens the selected editor", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.goto("/admin/settings");
+	await page.getByRole("button", { name: /^Communication/ }).click();
+	await expect(page).toHaveURL(/\/admin\/settings\/communication$/);
+	for (const name of [
+		"Welcome Message",
+		"Telegram share message",
+		"Invite-only registration",
+		"Open registration",
+		"Invite card",
+		"Sponsor · no access",
+		"Sponsor · basic access",
+		"Sponsor · shared action",
+	]) {
+		await expect(page.getByRole("button", { name: new RegExp(`^${name}`) })).toBeVisible();
+	}
+
+	await page.getByRole("button", { name: /^Sponsor · shared action/ }).click();
+	await expect(page).toHaveURL(/\/admin\/settings\/content\?message=sponsorAction$/);
+	await expect(page.getByLabel("Choose-offer button")).toBeVisible();
+	await expect(page.getByLabel("Content language")).toHaveCount(0);
+	await assertNoHorizontalOverflow(page);
 });
 
 test("Telegram invite share exposes formatting, media, preview and audience settings", async ({
@@ -538,9 +565,7 @@ test("focused Tone of Voice editor remains usable in every required viewport and
 			await page.evaluate((theme) => {
 				document.documentElement.setAttribute("data-theme", theme);
 			}, colorScheme);
-			await expect(
-				page.locator("header").getByText("Tone of Voice", { exact: true }),
-			).toBeVisible();
+			await expect(page.locator("header").getByText("Message", { exact: true })).toBeVisible();
 			await expect(page.getByRole("heading", { name: "Invite-only registration" })).toBeVisible();
 			await expect(page.getByRole("heading", { name: "Open registration" })).toHaveCount(0);
 			const variables = page

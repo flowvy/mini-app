@@ -10,7 +10,7 @@ describe("router code splitting", () => {
 			(match) => match[1],
 		);
 
-		expect(pageImports).toHaveLength(17);
+		expect(pageImports).toHaveLength(25);
 		expect(new Set(pageImports)).toEqual(
 			new Set([
 				"./pages/home.tsx",
@@ -22,12 +22,14 @@ describe("router code splitting", () => {
 				"./pages/admin/user-detail-page.tsx",
 				"./pages/admin/broadcast.tsx",
 				"./pages/admin/settings.tsx",
+				"./pages/admin/settings-pulse.tsx",
 				"./pages/admin/settings-kuma.tsx",
 				"./pages/admin/settings-beszel.tsx",
 				"./pages/admin/settings-tribute.tsx",
 				"./pages/admin/settings-branding.tsx",
 				"./pages/admin/settings-welcome.tsx",
 				"./pages/admin/settings-content.tsx",
+				"./pages/admin/settings-communication.tsx",
 				"./pages/admin/settings-access.tsx",
 			]),
 		);

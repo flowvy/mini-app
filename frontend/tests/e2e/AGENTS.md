@@ -17,7 +17,8 @@ Maintain a small smoke path for every user-visible route and focused cases for c
 
 - User: `/`, `/devices`, `/pulse`, `/support`.
 - Admin: `/admin/dashboard`, `/admin/users`, `/admin/users/search`, `/admin/users/:id`, `/admin/broadcast`, and settings
-  routes for Kuma, Beszel, Tribute, branding, registration/access, and welcome content.
+  routes for Pulse, Kuma, Beszel, the Tribute hub and its section routes, Communication/message
+  editors, branding, registration/access, and Welcome content.
 - Roles/states: normal user, admin, denied; loading, populated, empty, `401`, `403`, `404`, provider
   failure, timeout, and retry where the screen supports them.
 - Subscription/device/Pulse cases: absent/active/expired, zero/many devices, deletion success/failure,
