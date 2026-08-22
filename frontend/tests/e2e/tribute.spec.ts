@@ -18,6 +18,19 @@ async function submitEditor(dialog: Locator): Promise<void> {
 	await dialog.locator("form").evaluate((form) => (form as HTMLFormElement).requestSubmit());
 }
 
+async function expectActionErrorRevealed(error: Locator): Promise<void> {
+	await expect(error).toBeVisible();
+	await expect(error).toBeFocused();
+	await expect
+		.poll(() =>
+			error.evaluate((element) => {
+				const rect = element.getBoundingClientRect();
+				return rect.top >= 0 && rect.bottom <= window.innerHeight;
+			}),
+		)
+		.toBe(true);
+}
+
 async function selectElementContents(locator: Locator) {
 	await locator.evaluate((element) => {
 		const selection = window.getSelection();
@@ -1046,7 +1059,10 @@ test("rule editor exposes safe no-match and save-failure states", async ({ page,
 	await expect
 		.poll(() => latestTelegramMainButton(page))
 		.toEqual(expect.objectContaining({ is_active: false, is_progress_visible: true }));
-	await expect(page.getByRole("alert")).toContainText("Could not save the automation rule");
+	const saveError = page
+		.getByRole("alert")
+		.filter({ hasText: "Could not save the automation rule" });
+	await expectActionErrorRevealed(saveError);
 	await expect(page.getByText("private persistence diagnostic")).toHaveCount(0);
 });
 
@@ -1297,7 +1313,7 @@ test("admin creates a user-facing sponsor offer from an automation rule", async 
 test("sponsor offer maps a stale missing-destination response to actionable copy", async ({
 	page,
 	mockApi,
-}) => {
+}, testInfo) => {
 	mockApi.seedCommerceRules([sponsorSubscriptionRule()]);
 	mockApi.mock("POST", "/api/debug/admin/commerce/offers", {
 		status: 422,
@@ -1322,12 +1338,21 @@ test("sponsor offer maps a stale missing-destination response to actionable copy
 	await publish.click();
 	await submitEditor(page.getByRole("dialog", { name: "Create sponsor offer" }));
 
-	await expect(
-		page.getByText(
+	const saveError = page.getByRole("alert").filter({
+		hasText:
 			"Add a Tribute payment link for this subscription in Payment links before making it visible on Home",
-			{ exact: true },
-		),
-	).toBeVisible();
+	});
+	await expectActionErrorRevealed(saveError);
+	const accessibility = await new AxeBuilder({ page }).analyze();
+	const serious = accessibility.violations.filter((violation) =>
+		["serious", "critical"].includes(violation.impact ?? ""),
+	);
+	expect(serious).toEqual([]);
+	if (testInfo.project.name === "mobile-chromium") {
+		await page
+			.getByRole("dialog", { name: "Create sponsor offer" })
+			.screenshot({ path: testInfo.outputPath("sponsor-offer-action-error-dark.png") });
+	}
 	await expect(page.getByText(/Could not save this sponsor offer/)).toHaveCount(0);
 	await expect(page.getByLabel("Offer title")).toHaveValue("Monthly sponsor access");
 });
@@ -1998,6 +2023,40 @@ test("Home blocks duplicate payment while confirmation or access delivery is pen
 	await expect(page.getByRole("heading", { name: "Payment needs review" })).toBeVisible();
 	await expect(page.getByText(/Do not pay again/)).toBeVisible();
 	await expect(page.getByText("Monthly sponsor access", { exact: true })).toHaveCount(0);
+	await assertNoHorizontalOverflow(page);
+});
+
+test("failed sponsor refresh keeps stale access visible and reveals an action error", async ({
+	page,
+	mockApi,
+}) => {
+	const offer = sponsorSubscriptionOffer();
+	const provisioningState = {
+		status: "provisioning",
+		accessLevel: "base",
+		primaryAction: "refresh",
+		paidExpiresAt: null,
+		baseExpiresAt: "2027-01-01T00:00:00Z",
+		currentOfferId: null,
+		managementUrl: null,
+		pendingCheckout: null,
+		offers: [offer],
+	};
+	mockApi.mock("GET", "/api/me/sponsor", [
+		{ body: provisioningState },
+		{ status: 503, body: { detail: "Unavailable" } },
+		{ status: 503, body: { detail: "Unavailable" } },
+	]);
+
+	await page.goto("/");
+	await expect(page.getByRole("heading", { name: "Payment received" })).toBeVisible();
+	await page.getByRole("button", { name: "Refresh status" }).click();
+	const error = page
+		.getByRole("alert")
+		.filter({ hasText: "Could not refresh sponsor status. Your existing access is unchanged" });
+	await expectActionErrorRevealed(error);
+	await expect(page.getByRole("heading", { name: "Payment received" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Sponsor status unavailable" })).toHaveCount(0);
 	await assertNoHorizontalOverflow(page);
 });
 

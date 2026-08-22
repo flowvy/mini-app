@@ -55,7 +55,9 @@ export const UserDetailView: FC<UserDetailViewProps> = ({ user, onDeleted }) => 
 
 	return (
 		<div className={styles.detailPage}>
-			{actionFailed && <InlineFeedback>{t("admin.actions.error")}</InlineFeedback>}
+			{actionFailed && (
+				<InlineFeedback attention="action">{t("admin.actions.error")}</InlineFeedback>
+			)}
 			<AdminUserHero user={user} onAction={handleAction} actionLoading={actionLoading} />
 			<AdminUserDetail user={user} />
 		</div>

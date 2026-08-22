@@ -325,7 +325,9 @@ export function CommerceActivity() {
 						</FormField>
 					)}
 					{actionMutation.isError && (
-						<InlineFeedback>{t("settings.tribute.activity.action.error")}</InlineFeedback>
+						<InlineFeedback attention="action">
+							{t("settings.tribute.activity.action.error")}
+						</InlineFeedback>
 					)}
 				</div>
 			</ConfirmDialog>

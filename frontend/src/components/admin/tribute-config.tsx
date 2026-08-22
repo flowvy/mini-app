@@ -84,7 +84,9 @@ export const TributeConfig: FC<TributeConfigProps> = ({ settings }) => {
 					}
 				/>
 			</SettingsPanel>
-			{checkFailed && <InlineFeedback>{t("settings.tribute.testError")}</InlineFeedback>}
+			{checkFailed && (
+				<InlineFeedback attention="action">{t("settings.tribute.testError")}</InlineFeedback>
+			)}
 
 			<TributePaymentDestinations settings={settings} />
 			<CommerceRulesConfig />

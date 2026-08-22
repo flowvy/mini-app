@@ -55,7 +55,7 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings }) => {
 
 	return (
 		<div className={ss.formPage}>
-			{saveFailed && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
+			{saveFailed && <InlineFeedback attention="action">{t("settings.saveError")}</InlineFeedback>}
 			<SettingsPanel title={t("settings.branding.identitySection")}>
 				<SettingsFields>
 					<FormField label={t("settings.branding.appNameLabel")} htmlFor="branding-app-name">

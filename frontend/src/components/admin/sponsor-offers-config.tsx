@@ -453,7 +453,7 @@ export function SponsorOffersConfig({ subscriptionUrls }: SponsorOffersConfigPro
 			</SettingsSection>
 
 			{save.isError && (
-				<InlineFeedback>
+				<InlineFeedback attention="action">
 					{getLocalizedError(save.error, "settings.tribute.offers.toggleError")}
 				</InlineFeedback>
 			)}
@@ -598,6 +598,12 @@ function SponsorOfferEditor({
 					primaryVisible: !confirmDelete,
 				}}
 			>
+				{save.isError && (
+					<InlineFeedback attention="action">
+						{getLocalizedError(save.error, "settings.tribute.offers.saveError")}
+					</InlineFeedback>
+				)}
+
 				<section className={editorStyles.card} aria-labelledby="sponsor-offer-copy-title">
 					<h3 id="sponsor-offer-copy-title" className={editorStyles.cardTitle}>
 						{t("settings.tribute.offers.presentationSection")}
@@ -847,22 +853,14 @@ function SponsorOfferEditor({
 							ref={deleteTriggerRef}
 							variant="dangerOutline"
 							size="sm"
-							onClick={() => setConfirmDelete(true)}
+							onClick={() => {
+								remove.reset();
+								setConfirmDelete(true);
+							}}
 						>
 							{t("settings.tribute.offers.deleteAction")}
 						</ActionBtn>
 					</section>
-				)}
-
-				{save.isError && (
-					<InlineFeedback>
-						{getLocalizedError(save.error, "settings.tribute.offers.saveError")}
-					</InlineFeedback>
-				)}
-				{remove.isError && (
-					<InlineFeedback>
-						{getLocalizedError(remove.error, "settings.tribute.offers.deleteError")}
-					</InlineFeedback>
 				)}
 			</EditorDialog>
 
@@ -874,13 +872,21 @@ function SponsorOfferEditor({
 				confirmVariant="danger"
 				confirmLoading={remove.isPending}
 				returnFocusRef={deleteTriggerRef}
-				onCancel={() => setConfirmDelete(false)}
+				onCancel={() => {
+					remove.reset();
+					setConfirmDelete(false);
+				}}
 				onConfirm={() => {
 					if (!offer) return;
 					remove.mutate(offer.id, { onSuccess: onClose });
 				}}
 			>
 				{t("settings.tribute.offers.deleteConfirmBody", { name: offer?.title })}
+				{remove.isError && (
+					<InlineFeedback attention="action">
+						{getLocalizedError(remove.error, "settings.tribute.offers.deleteError")}
+					</InlineFeedback>
+				)}
 			</ConfirmDialog>
 		</>
 	);

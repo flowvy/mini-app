@@ -105,7 +105,9 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 						</label>
 					)}
 					{error && (
-						<InlineFeedback>{getLocalizedError(error, "onboarding.error.generic")}</InlineFeedback>
+						<InlineFeedback attention="action">
+							{getLocalizedError(error, "onboarding.error.generic")}
+						</InlineFeedback>
 					)}
 					<button
 						type="submit"

@@ -99,7 +99,9 @@ export const TributePaymentDestinations: FC<TributePaymentDestinationsProps> = (
 	return (
 		<>
 			{saveFailed && (
-				<InlineFeedback>{t("settings.tribute.destinations.saveError")}</InlineFeedback>
+				<InlineFeedback attention="action">
+					{t("settings.tribute.destinations.saveError")}
+				</InlineFeedback>
 			)}
 			{saved && (
 				<InlineFeedback tone="success">{t("settings.tribute.destinations.saved")}</InlineFeedback>

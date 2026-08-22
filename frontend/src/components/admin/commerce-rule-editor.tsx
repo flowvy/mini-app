@@ -316,6 +316,12 @@ export function CommerceRuleEditor({
 					primaryVisible: !confirmDelete,
 				}}
 			>
+				{save.isError && (
+					<InlineFeedback attention="action">
+						{getLocalizedError(save.error, "settings.tribute.rules.saveError")}
+					</InlineFeedback>
+				)}
+
 				<section className={styles.card} aria-labelledby="commerce-match-title">
 					<h3 id="commerce-match-title" className={styles.cardTitle}>
 						{t("settings.tribute.rules.matchSection")}
@@ -694,7 +700,9 @@ export function CommerceRuleEditor({
 									)}
 								</output>
 							)}
-							{previewError && <InlineFeedback>{previewErrorCopy()}</InlineFeedback>}
+							{previewError && (
+								<InlineFeedback attention="action">{previewErrorCopy()}</InlineFeedback>
+							)}
 						</div>
 					</section>
 				)}
@@ -717,12 +725,6 @@ export function CommerceRuleEditor({
 							{t("settings.tribute.rules.deleteAction")}
 						</ActionBtn>
 					</section>
-				)}
-
-				{save.isError && (
-					<InlineFeedback>
-						{getLocalizedError(save.error, "settings.tribute.rules.saveError")}
-					</InlineFeedback>
 				)}
 			</EditorDialog>
 
@@ -750,7 +752,7 @@ export function CommerceRuleEditor({
 			>
 				{t("settings.tribute.rules.deleteConfirmBody", { name: rule?.name })}
 				{remove.isError && (
-					<InlineFeedback>
+					<InlineFeedback attention="action">
 						{getLocalizedError(remove.error, "settings.tribute.rules.deleteError")}
 					</InlineFeedback>
 				)}

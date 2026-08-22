@@ -122,6 +122,7 @@
 			"paymentFeedback": {
 				"unchanged": "Checked just now. Tribute has not confirmed a payment yet",
 				"checkError": "Could not check the payment status. Your pending checkout is unchanged",
+				"refreshError": "Could not refresh sponsor status. Your existing access is unchanged",
 				"cancelled": "Payment attempt closed. You can choose another option",
 				"cancelError": "Could not close this payment attempt. It is still waiting for confirmation"
 			},
@@ -234,7 +235,8 @@
 			"allTimeLabel": "All Time",
 			"lastUpdatedLabel": "Last Updated",
 			"copied": "Copied",
-			"copyLink": "Copy subscription link"
+			"copyLink": "Copy subscription link",
+			"copyFailed": "Could not copy the subscription link. Try again"
 		},
 		"detail": {
 			"accountInfo": "Account Info",
@@ -345,6 +347,7 @@
 		"noProfiles": "No access profiles yet",
 		"noProfilesHint": "Create a reusable access template for new registrations",
 		"settingsSaveError": "Could not save registration settings. Try again",
+		"settingsLoadError": "Registration settings are temporarily unavailable",
 		"profileSaveError": "Could not save the access profile. Check the values and try again",
 		"deactivateError": "Could not deactivate the access profile. Try again",
 		"deactivate": "Deactivate profile",

@@ -9,6 +9,7 @@ import {
 	SettingsNavRow,
 	SettingsSection,
 } from "../../components/admin/settings-surface.tsx";
+import { ActionBtn } from "../../components/ui/action-btn.tsx";
 import { ErrorState } from "../../components/ui/error-state.tsx";
 import { InlineFeedback } from "../../components/ui/inline-feedback.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
@@ -65,7 +66,9 @@ export const AdminSettings: FC = () => {
 
 	return (
 		<div className={styles.page}>
-			{updateMutation.isError && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
+			{updateMutation.isError && (
+				<InlineFeedback attention="action">{t("settings.saveError")}</InlineFeedback>
+			)}
 			<SettingsSection title={t("settings.integrations")}>
 				<div className={styles.providerRow}>
 					<div className={styles.providerTitleRow}>
@@ -154,6 +157,14 @@ export const AdminSettings: FC = () => {
 					}
 					onClick={() => navigate({ to: "/admin/settings/access" })}
 				/>
+				{registration.isError && (
+					<div className={styles.relatedLoadError}>
+						<InlineFeedback>{t("access.settingsLoadError")}</InlineFeedback>
+						<ActionBtn variant="action" size="sm" onClick={() => void registration.refetch()}>
+							{t("common.retry")}
+						</ActionBtn>
+					</div>
+				)}
 				<SettingsDivider />
 				<SettingsNavRow
 					icon={<MessageSquareText size={17} strokeWidth={1.8} aria-hidden="true" />}

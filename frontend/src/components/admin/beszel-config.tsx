@@ -59,10 +59,11 @@ export const BeszelConfig: FC<BeszelConfigProps> = ({ settings }) => {
 			? t("settings.beszel.testError")
 			: t("settings.beszel.notTested");
 	const connectionTone = connection?.ok ? "positive" : connection?.error ? "negative" : "default";
+	const testFailed = !testMutation.isPending && (testMutation.isError || connection?.ok === false);
 
 	return (
 		<div className={ss.formPage}>
-			{saveFailed && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
+			{saveFailed && <InlineFeedback attention="action">{t("settings.saveError")}</InlineFeedback>}
 			<SettingsPanel title={t("settings.beszel.connectionSection")}>
 				<SettingsFields>
 					<FormField
@@ -115,7 +116,9 @@ export const BeszelConfig: FC<BeszelConfigProps> = ({ settings }) => {
 					}
 				/>
 			</SettingsPanel>
-			{testMutation.isError && <InlineFeedback>{t("settings.beszel.testError")}</InlineFeedback>}
+			{testFailed && (
+				<InlineFeedback attention="action">{t("settings.beszel.testError")}</InlineFeedback>
+			)}
 
 			<FormSaveButton
 				dirty={dirty && !saved}

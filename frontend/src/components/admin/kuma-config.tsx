@@ -69,10 +69,11 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings }) => {
 			? t("settings.kuma.testError")
 			: t("settings.kuma.notTested");
 	const connTone = connStatus?.ok ? "positive" : connStatus?.error ? "negative" : "default";
+	const testFailed = !testMutation.isPending && (testMutation.isError || connStatus?.ok === false);
 
 	return (
 		<div className={ss.formPage}>
-			{saveFailed && <InlineFeedback>{t("settings.saveError")}</InlineFeedback>}
+			{saveFailed && <InlineFeedback attention="action">{t("settings.saveError")}</InlineFeedback>}
 			<SettingsPanel title={t("settings.kuma.connectionSection")}>
 				<SettingsFields>
 					<FormField
@@ -131,7 +132,9 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings }) => {
 					}
 				/>
 			</SettingsPanel>
-			{testMutation.isError && <InlineFeedback>{t("settings.kuma.testError")}</InlineFeedback>}
+			{testFailed && (
+				<InlineFeedback attention="action">{t("settings.kuma.testError")}</InlineFeedback>
+			)}
 
 			<FormSaveButton
 				dirty={dirty && !saved}

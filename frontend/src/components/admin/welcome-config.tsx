@@ -110,7 +110,7 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 
 	return (
 		<div className={ss.formPage}>
-			{feedbackError && <InlineFeedback>{feedbackError}</InlineFeedback>}
+			{feedbackError && <InlineFeedback attention="action">{feedbackError}</InlineFeedback>}
 			<SettingsPanel title={t("settings.welcome.contentSection")}>
 				<SettingsFields>
 					<FormField

@@ -100,6 +100,7 @@ const TYPE_KEYS: Record<SponsorOffer["commerceType"], string> = {
 const PAYMENT_FEEDBACK_KEYS = {
 	unchanged: "home.sponsor.paymentFeedback.unchanged",
 	checkError: "home.sponsor.paymentFeedback.checkError",
+	refreshError: "home.sponsor.paymentFeedback.refreshError",
 	cancelled: "home.sponsor.paymentFeedback.cancelled",
 	cancelError: "home.sponsor.paymentFeedback.cancelError",
 } as const;
@@ -130,7 +131,7 @@ export function SponsorCard() {
 	const [offersVisible, setOffersVisible] = useState(state?.primaryAction === "choose_offer");
 	const [checkingPayment, setCheckingPayment] = useState(false);
 	const [paymentFeedback, setPaymentFeedback] = useState<
-		"unchanged" | "checkError" | "cancelled" | "cancelError" | null
+		"unchanged" | "checkError" | "refreshError" | "cancelled" | "cancelError" | null
 	>(null);
 	const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 	const cancelAttemptRef = useRef<HTMLButtonElement>(null);
@@ -153,7 +154,7 @@ export function SponsorCard() {
 		);
 	}
 
-	if (sponsor.isError) {
+	if (sponsor.isError && !sponsor.data) {
 		return (
 			<section className={styles.card}>
 				<div className={styles.heading}>
@@ -185,7 +186,12 @@ export function SponsorCard() {
 	const actionLabel = ACTION_KEYS[state.primaryAction];
 	const refreshOnly = state.primaryAction === "refresh";
 	const refreshAccess = async () => {
-		await sponsor.refetch();
+		setPaymentFeedback(null);
+		const result = await sponsor.refetch();
+		if (result.isError) {
+			setPaymentFeedback("refreshError");
+			return;
+		}
 		await queryClient.invalidateQueries({ queryKey: queryKeys.subscription });
 	};
 	const checkPaymentStatus = async () => {
@@ -440,6 +446,13 @@ export function SponsorCard() {
 
 			{paymentFeedback && (
 				<InlineFeedback
+					attention={
+						paymentFeedback === "checkError" ||
+						paymentFeedback === "refreshError" ||
+						paymentFeedback === "cancelError"
+							? "action"
+							: "passive"
+					}
 					tone={
 						paymentFeedback === "unchanged"
 							? "info"
@@ -460,7 +473,9 @@ export function SponsorCard() {
 			)}
 
 			{checkout.isError && (
-				<InlineFeedback>{t("home.sponsor.checkoutError", { appName })}</InlineFeedback>
+				<InlineFeedback attention="action">
+					{t("home.sponsor.checkoutError", { appName })}
+				</InlineFeedback>
 			)}
 
 			<ConfirmDialog

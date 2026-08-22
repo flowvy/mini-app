@@ -18,6 +18,7 @@ import {
 import { hapticNotification } from "../../lib/haptics.ts";
 import type { SubscriptionData } from "../../types/subscription.ts";
 import { CheckIcon, CopyIcon } from "../ui/icons.tsx";
+import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { StatusBadge } from "../ui/status-badge.tsx";
 import styles from "./hero-card.module.css";
 
@@ -36,15 +37,21 @@ export function HeroCard({ subscription }: HeroCardProps) {
 	const expiryColor = unlimitedExpiry ? "var(--v2-text-primary)" : getExpiryColor(daysLeft);
 
 	const [copied, setCopied] = useState(false);
+	const [copyFailed, setCopyFailed] = useState(false);
 	const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
-	const handleCopy = useCallback(() => {
-		navigator.clipboard.writeText(connectionLink).then(() => {
+	const handleCopy = useCallback(async () => {
+		setCopyFailed(false);
+		try {
+			await navigator.clipboard.writeText(connectionLink);
 			if (timerRef.current) clearTimeout(timerRef.current);
 			setCopied(true);
 			hapticNotification("success");
 			timerRef.current = setTimeout(() => setCopied(false), 2000);
-		});
+		} catch {
+			setCopied(false);
+			setCopyFailed(true);
+		}
 	}, [connectionLink]);
 
 	return (
@@ -142,13 +149,16 @@ export function HeroCard({ subscription }: HeroCardProps) {
 
 			{/* Row 5: action */}
 			<div className={styles.actions}>
-				<button type="button" className={styles.actionBtn} onClick={handleCopy}>
+				<button type="button" className={styles.actionBtn} onClick={() => void handleCopy()}>
 					<span className={styles.actionIcon}>
 						{copied ? <CheckIcon size={13} /> : <CopyIcon size={13} />}
 					</span>
 					{copied ? t("home.heroCard.copied") : t("home.heroCard.copyLink")}
 				</button>
 			</div>
+			{copyFailed && (
+				<InlineFeedback attention="action">{t("home.heroCard.copyFailed")}</InlineFeedback>
+			)}
 		</div>
 	);
 }

@@ -184,6 +184,12 @@ export function AccessProfileEditor({
 				primaryDisabled: !valid,
 			}}
 		>
+			{save.isError && (
+				<InlineFeedback attention="action">
+					{getLocalizedError(save.error, "access.profileSaveError")}
+				</InlineFeedback>
+			)}
+
 			{optionsState === "error" && (
 				<InlineFeedback>{t("access.providerOptionsUnavailable")}</InlineFeedback>
 			)}
@@ -430,10 +436,6 @@ export function AccessProfileEditor({
 					</FormField>
 				</div>
 			</details>
-
-			{save.isError && (
-				<InlineFeedback>{getLocalizedError(save.error, "access.profileSaveError")}</InlineFeedback>
-			)}
 		</EditorDialog>
 	);
 }

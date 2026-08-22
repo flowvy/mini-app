@@ -4,11 +4,12 @@ import { DeviceRow, getDeviceName } from "../components/devices/device-row.tsx";
 import { ConfirmDialog } from "../components/ui/confirm-dialog.tsx";
 import { ErrorState } from "../components/ui/error-state.tsx";
 import { FormSection, FormSectionCard } from "../components/ui/form-section.tsx";
+import { InlineFeedback } from "../components/ui/inline-feedback.tsx";
 import { PageLoading } from "../components/ui/page-loading.tsx";
 import { useDeleteAllDevices, useDeleteDevice, useDevices } from "../hooks/use-devices.ts";
 import { type PreparedDustEffect, prepareDustEffect } from "../lib/dust-effect.ts";
 import { formatRatio } from "../lib/format.ts";
-import { hapticImpact, hapticNotification } from "../lib/haptics.ts";
+import { hapticImpact } from "../lib/haptics.ts";
 import type { DeviceData } from "../types/devices.ts";
 import styles from "./devices.module.css";
 
@@ -136,7 +137,6 @@ export const Devices: FC = () => {
 			},
 			onError: () => {
 				cancelRemovalEffects(preparedEffects);
-				hapticNotification("error");
 				setMutationError(true);
 			},
 		});
@@ -153,7 +153,6 @@ export const Devices: FC = () => {
 			},
 			onError: () => {
 				cancelRemovalEffects(preparedEffects);
-				hapticNotification("error");
 				setMutationError(true);
 			},
 		});
@@ -286,9 +285,7 @@ export const Devices: FC = () => {
 							})}
 				</p>
 				{mutationError && (
-					<p className={styles.confirmError} role="alert">
-						{t("devices.removeError")}
-					</p>
+					<InlineFeedback attention="action">{t("devices.removeError")}</InlineFeedback>
 				)}
 			</ConfirmDialog>
 		</div>

@@ -120,7 +120,7 @@ export function AdminAccessSettings() {
 				</SettingsFields>
 			</SettingsPanel>
 			{updateSettings.isError && (
-				<InlineFeedback>
+				<InlineFeedback attention="action">
 					{getLocalizedError(updateSettings.error, "access.settingsSaveError")}
 				</InlineFeedback>
 			)}
@@ -200,7 +200,7 @@ export function AdminAccessSettings() {
 				/>
 			)}
 			{deactivate.isError && (
-				<InlineFeedback>
+				<InlineFeedback attention="action">
 					{getLocalizedError(deactivate.error, "access.deactivateError")}
 				</InlineFeedback>
 			)}

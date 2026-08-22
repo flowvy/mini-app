@@ -6,6 +6,11 @@
 	line-height: 1.4;
 }
 
+.message[data-attention="action"]:focus {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
 .error {
 	border: 1px solid var(--v2-border-negative-secondary);
 	background: var(--v2-bg-negative-secondary);

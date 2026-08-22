@@ -66,3 +66,14 @@
 .panelInset {
 	padding: 12px 14px;
 }
+
+.relatedLoadError {
+	display: flex;
+	align-items: flex-end;
+	gap: 8px;
+	padding: 0 14px 12px;
+}
+
+.relatedLoadError > :first-child {
+	flex: 1;
+}

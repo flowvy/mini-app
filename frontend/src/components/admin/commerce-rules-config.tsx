@@ -152,7 +152,7 @@ export function CommerceRulesConfig() {
 			</SettingsSection>
 
 			{toggle.isError && (
-				<InlineFeedback>
+				<InlineFeedback attention="action">
 					{getLocalizedError(toggle.error, "settings.tribute.rules.toggleError")}
 				</InlineFeedback>
 			)}

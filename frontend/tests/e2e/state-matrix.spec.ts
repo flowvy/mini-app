@@ -84,6 +84,52 @@ test("subscription loading, active, absent, and provider error states render saf
 	await assertNoHorizontalOverflow(page);
 });
 
+test("Home reports a rejected subscription-link copy through the shared action error", async ({
+	page,
+	mockApi: _mock,
+}, testInfo) => {
+	await installTelegramMainButton(page);
+	await page.goto(withTelegramMainButton("/"));
+	await page.evaluate(() => {
+		Object.defineProperty(navigator, "clipboard", {
+			configurable: true,
+			value: {
+				writeText: () => Promise.reject(new DOMException("Clipboard denied", "NotAllowedError")),
+			},
+		});
+	});
+
+	await page.getByRole("button", { name: "Copy subscription link" }).click();
+	const error = page
+		.getByRole("alert")
+		.filter({ hasText: "Could not copy the subscription link. Try again" });
+	await expect(error).toBeFocused();
+	await expect
+		.poll(() =>
+			page.evaluate(
+				() =>
+					(
+						window as typeof window & {
+							__telegramEvents?: Array<{ eventType: string; eventData?: string }>;
+						}
+					).__telegramEvents?.filter(
+						(event) => event.eventType === "web_app_trigger_haptic_feedback",
+					).length ?? 0,
+			),
+		)
+		.toBe(1);
+	await assertNoHorizontalOverflow(page);
+	if (testInfo.project.name === "mobile-chromium") {
+		await page.screenshot({ path: testInfo.outputPath("home-copy-action-error-dark.png") });
+		await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+		await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
+		await expect
+			.poll(() => error.evaluate((element) => getComputedStyle(element).backgroundColor))
+			.toBe("rgb(254, 238, 237)");
+		await page.screenshot({ path: testInfo.outputPath("home-copy-action-error-light.png") });
+	}
+});
+
 test("device confirmations support cancel, failure, and successful remove-all", async ({
 	page,
 	mockApi,
@@ -526,9 +572,13 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 	await expect(urlInput).toBeFocused();
 
 	await page.getByRole("button", { name: "Test" }).click();
-	await expect(page.getByRole("alert")).toContainText("Connection test failed");
+	const testError = page.getByRole("alert").filter({ hasText: "Connection test failed" });
+	await expect(testError).toBeFocused();
 	await pressTelegramMainButton(page);
-	await expect(page.getByText("Could not save changes. Try again")).toBeVisible();
+	const saveError = page
+		.getByRole("alert")
+		.filter({ hasText: "Could not save changes. Try again" });
+	await expect(saveError).toBeFocused();
 
 	mockApi.mock("POST", "/api/debug/admin/settings/welcome-media", [
 		{ status: 413, body: { detail: "Too large" } },
@@ -541,13 +591,78 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 		mimeType: "video/mp4",
 		buffer: Buffer.from("x"),
 	});
-	await expect(page.getByRole("alert")).toContainText("Upload failed");
+	const uploadError = page.getByRole("alert").filter({ hasText: "Upload failed" });
+	await expect(uploadError).toBeFocused();
 	await fileInput.setInputFiles({
 		name: "welcome.mp4",
 		mimeType: "video/mp4",
 		buffer: Buffer.from("ok"),
 	});
 	await expect(page.getByText("welcome.mp4")).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+});
+
+test("provider business failures use the same focused action error as transport failures", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.mock("POST", "/api/debug/admin/settings/kuma/test", {
+		body: { ok: false, error: "private Kuma diagnostic" },
+	});
+	mockApi.mock("POST", "/api/debug/admin/settings/beszel/test", {
+		body: { ok: false, error: "private Beszel diagnostic" },
+	});
+
+	for (const [path, label, privateDiagnostic] of [
+		["/admin/settings/kuma", "Connection test failed", "private Kuma diagnostic"],
+		["/admin/settings/beszel", "Connection test failed", "private Beszel diagnostic"],
+	] as const) {
+		await page.goto(path);
+		await page.getByRole("button", { name: "Test" }).click();
+		const error = page.getByRole("alert").filter({ hasText: label });
+		await expect(error).toBeFocused();
+		await expect(page.getByText(privateDiagnostic)).toHaveCount(0);
+		await page.getByRole("button", { name: "Test" }).click();
+		await expect(error).toBeFocused();
+		await expect(page.getByText(privateDiagnostic)).toHaveCount(0);
+	}
+
+	await assertNoHorizontalOverflow(page);
+});
+
+test("settings overview exposes and retries a partial registration-settings load failure", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	mockApi.mock("GET", "/api/debug/admin/registration", [
+		{ status: 503, body: { detail: "Unavailable" } },
+		{ status: 503, body: { detail: "Unavailable" } },
+		{
+			body: {
+				registrationMode: "open",
+				defaultAccessProfileId: null,
+			},
+		},
+	]);
+
+	await page.goto("/admin/settings");
+	const error = page
+		.getByRole("alert")
+		.filter({ hasText: "Registration settings are temporarily unavailable" });
+	await expect(error).toBeVisible();
+	await expect(error).not.toBeFocused();
+	if (testInfo.project.name === "mobile-chromium") {
+		await page.screenshot({ path: testInfo.outputPath("settings-partial-load-error-dark.png") });
+		await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+		await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
+		await expect
+			.poll(() => error.evaluate((element) => getComputedStyle(element).backgroundColor))
+			.toBe("rgb(254, 238, 237)");
+		await page.screenshot({ path: testInfo.outputPath("settings-partial-load-error-light.png") });
+	}
+	await page.getByRole("button", { name: "Retry" }).click();
+	await expect(error).toHaveCount(0);
+	await expect(page.getByRole("button", { name: /Registration & Access.*Open/ })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
 

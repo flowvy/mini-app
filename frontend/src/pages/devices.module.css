@@ -132,13 +132,3 @@
 .confirmCopy {
 	margin: 0;
 }
-
-.confirmError {
-	margin: 12px 0 0;
-	padding: 9px 12px;
-	border: 1px solid var(--v2-border-negative-secondary);
-	border-radius: var(--radius-sm);
-	background: var(--v2-bg-negative-secondary);
-	color: var(--v2-text-negative);
-	font-size: 12px;
-}
