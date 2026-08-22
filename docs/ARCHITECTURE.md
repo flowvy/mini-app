@@ -446,7 +446,9 @@ dev-процесс использует polling. Отдельного worker с�
 До появления local user `AuthGuard` показывает отдельный onboarding без app navigation. Успешная
 mutation сразу кладёт полученного user в общий TanStack Query cache, поэтому вход не требует reload.
 Для launch invite frontend получает от backend только boolean о наличии корректного signed
-`start_param` и вызывает no-body mutation; сам код из URL/SDK frontend не читает и не пересылает.
+`start_param` и вызывает no-body mutation в open и invite-only mode; сам код из URL/SDK frontend не
+читает и не пересылает. Валидный launch invite сохраняет referral attribution до обычной open
+registration.
 
 Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Support остаётся product-owned
 заглушкой `Coming Soon` и не читает provider settings или operator content. Admin URL:

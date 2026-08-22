@@ -35,7 +35,6 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 	useEffect(() => {
 		if (
 			!statusQuery.isSuccess ||
-			effectiveState !== "invite_required" ||
 			!statusQuery.data.launchInviteAvailable ||
 			autoRedeemStarted.current
 		) {
@@ -43,7 +42,7 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 		}
 		autoRedeemStarted.current = true;
 		redeemLaunchMutation.mutate();
-	}, [effectiveState, redeemLaunchMutation, statusQuery.data, statusQuery.isSuccess]);
+	}, [redeemLaunchMutation, statusQuery.data, statusQuery.isSuccess]);
 
 	const submit = () => {
 		registerMutation.reset();

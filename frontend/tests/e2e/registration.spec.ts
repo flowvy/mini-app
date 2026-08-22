@@ -101,6 +101,77 @@ test("invite-only onboarding redeems only the server-validated Main Mini App ref
 	expect(requestBody).toBeNull();
 });
 
+test("open onboarding preserves the server-validated Main Mini App referral", async ({
+	page,
+	mockApi,
+}) => {
+	let requestBody: string | null | undefined;
+	page.on("request", (request) => {
+		if (new URL(request.url()).pathname === "/api/onboarding/redeem-launch") {
+			requestBody = request.postData();
+		}
+	});
+	await page.addInitScript(() => localStorage.setItem("flowvy:mock-auth", "onboarding"));
+	mockApi.mock("GET", "/api/me", {
+		status: 403,
+		body: { detail: { code: "registration_required", message: "Registration is required" } },
+	});
+	mockApi.mock("GET", "/api/onboarding", {
+		body: {
+			state: "open",
+			registrationMode: "open",
+			appName: "Flowvy Test",
+			logoUrl: null,
+			launchInviteAvailable: true,
+		},
+	});
+	mockApi.mock("POST", "/api/onboarding/redeem-launch", { body: registeredUser });
+
+	await page.goto("/");
+	await expect(page.getByText("Account Info")).toBeVisible();
+	await expect
+		.poll(
+			() => mockApi.calls.filter((call) => call === "POST /api/onboarding/redeem-launch").length,
+		)
+		.toBe(1);
+	expect(requestBody).toBeNull();
+});
+
+test("open onboarding falls back to regular registration after a stale launch invite", async ({
+	page,
+	mockApi,
+}) => {
+	await page.addInitScript(() => localStorage.setItem("flowvy:mock-auth", "onboarding"));
+	mockApi.mock("GET", "/api/me", {
+		status: 403,
+		body: { detail: { code: "registration_required", message: "Registration is required" } },
+	});
+	mockApi.mock("GET", "/api/onboarding", {
+		body: {
+			state: "open",
+			registrationMode: "open",
+			appName: "Flowvy Test",
+			logoUrl: null,
+			launchInviteAvailable: true,
+		},
+	});
+	mockApi.mock("POST", "/api/onboarding/redeem-launch", {
+		status: 400,
+		body: { detail: { code: "invalid_invite", message: "Invite is invalid" } },
+	});
+	mockApi.mock("POST", "/api/onboarding/register", { body: registeredUser });
+
+	await page.goto("/");
+	await expect(page.getByRole("alert")).toContainText(
+		"This invite code is invalid or no longer available",
+	);
+	await page.getByRole("button", { name: "Get started" }).click();
+	await expect(page.getByText("Account Info")).toBeVisible();
+	expect(
+		mockApi.calls.filter((call) => call === "POST /api/onboarding/redeem-launch"),
+	).toHaveLength(1);
+});
+
 test("open onboarding registers with one explicit action", async ({ page, mockApi }) => {
 	await page.addInitScript(() => localStorage.setItem("flowvy:mock-auth", "onboarding"));
 	mockApi.mock("GET", "/api/me", {

@@ -199,9 +199,10 @@
 - На Home есть персональный invite code, число прямых приглашений, копирование с feedback и
   официальный Telegram share. Ссылка приходит с backend только после `getMe.has_main_web_app` и
   имеет один формат Main Mini App `t.me/<bot>?startapp=…`; при неподтверждённой capability UI не
-  публикует ложную ссылку и оставляет copy/manual code. Invite-only onboarding вызывает отдельный
-  no-body launch-redeem только по server-validated признаку и открывает приложение без reload. Во
-  время загрузки карточка остаётся согласованным skeleton в итоговой позиции.
+  публикует ложную ссылку и оставляет copy/manual code. Open и invite-only onboarding вызывают
+  отдельный no-body launch-redeem только по server-validated признаку, сохраняют referral attribution
+  и открывают приложение без reload. Во время загрузки карточка остаётся согласованным skeleton в
+  итоговой позиции.
   Admin detail показывает число приглашённых без выпуска admin codes.
 - Active subscription card и состояние без активной подписки используют одну HeroCard surface;
   пустое состояние больше не выпадает отдельной текстовой строкой из карточной композиции.

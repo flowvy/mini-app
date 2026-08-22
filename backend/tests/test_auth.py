@@ -252,9 +252,11 @@ class TestGetMe:
         assert invite is not None
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize("registration_mode", ["open", "invite_only"])
     async def test_signed_main_app_start_param_redeems_invite_without_request_body(
         self,
         engine: AsyncEngine,
+        registration_mode: str,
     ) -> None:
         owner_id = 900001
         invite_code = "FVY23456789ABCDEFGHJKMN"
@@ -269,7 +271,7 @@ class TestGetMe:
                 created_by_id=owner.id,
             )
             await ProviderSettingsRepository(session).update_partial(
-                {"registration_mode": "invite_only"},
+                {"registration_mode": registration_mode},
             )
             await session.commit()
 
