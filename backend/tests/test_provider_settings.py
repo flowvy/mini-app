@@ -37,9 +37,6 @@ def _row(**overrides: object) -> SimpleNamespace:
         "welcome_media_file_id": None,
         "welcome_media_file_name": None,
         "welcome_button_text": None,
-        "bot_invite_media_type": None,
-        "bot_invite_media_file_id": None,
-        "bot_invite_media_file_name": None,
         "content_default_locale": "en",
         "content_locales": {},
         "tribute_donation_url": None,
@@ -229,51 +226,11 @@ async def test_settings_response_exposes_typed_localized_content() -> None:
 
     assert payload["contentLocales"]["en"]["inviteTitle"] == "Invite friends"
     assert payload["contentLocales"]["ru"]["inviteTitle"] == "Позвать друзей"
+    assert "botInviteRequired" not in payload["contentTemplateVariables"]
+    assert "botInviteMediaType" not in payload
     assert "supportUrl" not in payload
     assert payload["contentTemplateVariables"]["inviteShareText"] == ["appName", "code"]
     assert payload["sponsorOfferTemplateVariables"] == ["appName"]
-
-
-@pytest.mark.asyncio
-async def test_bot_invite_media_is_persisted_and_reset_as_one_consistent_slot() -> None:
-    row = _row()
-    service, _kuma, _beszel, _redis = _service(row)
-
-    await service.update(
-        ProviderSettingsPatch(
-            bot_invite_media_type="photo",
-            bot_invite_media_file_id="telegram-file-id",
-            bot_invite_media_file_name="invite.png",
-        )
-    )
-
-    service._repo.update_partial.assert_awaited_once_with(
-        {
-            "bot_invite_media_type": "photo",
-            "bot_invite_media_file_id": "telegram-file-id",
-            "bot_invite_media_file_name": "invite.png",
-        }
-    )
-
-    service._repo.update_partial.reset_mock()
-    row.bot_invite_media_type = "photo"
-    row.bot_invite_media_file_id = "telegram-file-id"
-    row.bot_invite_media_file_name = "invite.png"
-
-    await service.update(ProviderSettingsPatch(bot_invite_media_file_id=None))
-
-    service._repo.update_partial.assert_awaited_once_with(
-        {
-            "bot_invite_media_file_id": None,
-            "bot_invite_media_type": None,
-            "bot_invite_media_file_name": None,
-        }
-    )
-
-
-def test_bot_invite_media_rejects_unknown_type() -> None:
-    with pytest.raises(ValidationError):
-        ProviderSettingsPatch(bot_invite_media_type="video")  # type: ignore[arg-type]
 
 
 def test_public_branding_contains_only_resolved_operator_locale() -> None:

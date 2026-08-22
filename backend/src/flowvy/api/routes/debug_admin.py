@@ -224,10 +224,6 @@ async def debug_test_tribute(
     "/settings/welcome-media",
     response_model=WelcomeMediaUploadResponse,
 )
-@router.post(
-    "/settings/bot-invite-media",
-    response_model=WelcomeMediaUploadResponse,
-)
 async def debug_upload_welcome_media(
     file: UploadFile,
     request: Request,

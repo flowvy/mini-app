@@ -26,7 +26,7 @@ const screens = [
 	{
 		name: "admin-settings-content",
 		path: "/admin/settings/content",
-		marker: "Invite-only prompt",
+		marker: "Registration",
 	},
 ] as const;
 

@@ -74,7 +74,7 @@ test("admin saves allow-listed provider content as a locale map", async ({
 	await expect(page.getByText("English", { exact: true })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Support" })).toHaveCount(0);
 
-	await page.getByLabel("Invite-only prompt").fill("Welcome to {{appName}}. Send your code here.");
+	await page.getByLabel("Invite registration title").fill("Private {{appName}} access");
 	await page.getByLabel("Invite card title").fill("Bring your crew");
 	const patchRequest = page.waitForRequest(
 		(request) =>
@@ -84,14 +84,13 @@ test("admin saves allow-listed provider content as a locale map", async ({
 	await pressTelegramMainButton(page);
 
 	const payload = (await patchRequest).postDataJSON();
-	expect(payload.contentLocales.en.botInviteRequired).toBe(
-		"Welcome to {{appName}}. Send your code here.",
-	);
+	expect(payload.contentLocales.en.onboardingInviteTitle).toBe("Private {{appName}} access");
 	expect(payload.contentLocales.en.inviteTitle).toBe("Bring your crew");
+	expect(payload.contentLocales.en).not.toHaveProperty("botInviteRequired");
 	expect(payload).not.toHaveProperty("supportUrl");
 });
 
-test("plain, Telegram, and CommonMark fields share one global text scale", async ({
+test("plain and CommonMark Content fields share one global text scale", async ({
 	page,
 	mockApi: _mock,
 }) => {
@@ -100,22 +99,19 @@ test("plain, Telegram, and CommonMark fields share one global text scale", async
 
 	const expectedSize = 13;
 	const title = page.getByLabel("Invite registration title");
-	const telegramText = page.getByLabel("Invite-only prompt");
 	const description = page.getByRole("textbox", { name: "Invite registration description" });
 
-	for (const control of [title, telegramText, description]) {
+	for (const control of [title, description]) {
 		expect(
 			await control.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize)),
 		).toBe(expectedSize);
 	}
 
-	for (const control of [title, telegramText]) {
-		const typography = await control.evaluate((element) => ({
-			value: Number.parseFloat(getComputedStyle(element).fontSize),
-			placeholder: Number.parseFloat(getComputedStyle(element, "::placeholder").fontSize),
-		}));
-		expect(typography.placeholder).toBe(typography.value);
-	}
+	const typography = await title.evaluate((element) => ({
+		value: Number.parseFloat(getComputedStyle(element).fontSize),
+		placeholder: Number.parseFloat(getComputedStyle(element, "::placeholder").fontSize),
+	}));
+	expect(typography.placeholder).toBe(typography.value);
 
 	const commonMarkPlaceholder = description.locator("p.is-editor-empty");
 	await expect(commonMarkPlaceholder).toHaveCount(1);
@@ -124,66 +120,6 @@ test("plain, Telegram, and CommonMark fields share one global text scale", async
 			Number.parseFloat(getComputedStyle(element, "::before").fontSize),
 		),
 	).toBe(expectedSize);
-
-	const telegramEditor = telegramText.locator("xpath=ancestor::div[1]");
-	await telegramEditor.getByRole("button", { name: "Custom emoji" }).click();
-	await expect(telegramEditor.getByLabel("Emoji ID")).toHaveCSS("font-size", `${expectedSize}px`);
-	await expect(telegramEditor.getByLabel("Fallback emoji")).toHaveCSS(
-		"font-size",
-		`${expectedSize}px`,
-	);
-});
-
-test("Telegram editors insert formatting, custom emoji, templates, and invite media", async ({
-	page,
-	mockApi: _mock,
-}) => {
-	await installTelegramMainButton(page);
-	await page.goto(withTelegramMainButton("/admin/settings/content"));
-
-	const prompt = page.getByLabel("Invite-only prompt");
-	await prompt.fill("Welcome {{appName}}");
-	await prompt.evaluate((element: HTMLTextAreaElement) => element.setSelectionRange(0, 7));
-	const telegramEditor = prompt.locator("xpath=ancestor::div[1]");
-	await telegramEditor.getByRole("button", { name: "Bold" }).click();
-	await expect(prompt).toHaveValue("<b>Welcome</b> {{appName}}");
-
-	await telegramEditor.getByRole("button", { name: "Custom emoji" }).click();
-	await telegramEditor.getByLabel("Emoji ID").fill("5368324170671202286");
-	await telegramEditor.getByLabel("Fallback emoji").fill("👍");
-	await telegramEditor.getByRole("button", { name: "Insert custom emoji" }).click();
-	await expect(prompt).toHaveValue(/<tg-emoji emoji-id="5368324170671202286">👍<\/tg-emoji>/);
-
-	const templates = page
-		.getByRole("heading", { name: "Telegram bot" })
-		.locator("xpath=ancestor::section[1]")
-		.locator("details");
-	await expect(templates).not.toHaveAttribute("open", "");
-	await templates.getByText("Templates", { exact: true }).click();
-	await templates.getByRole("button", { name: "Copy {{appName}}" }).click();
-	await expect(templates).toContainText("Current app name");
-	await expect(templates).toContainText("Copied {{appName}}");
-
-	const fileInput = page.locator('input[type="file"]');
-	await fileInput.setInputFiles({
-		name: "invite.png",
-		mimeType: "image/png",
-		buffer: Buffer.from("image"),
-	});
-	await expect(page.getByText("invite.png", { exact: true })).toBeVisible();
-
-	const patchRequest = page.waitForRequest(
-		(request) =>
-			request.method() === "PATCH" &&
-			new URL(request.url()).pathname === "/api/debug/admin/settings",
-	);
-	await pressTelegramMainButton(page);
-	const payload = (await patchRequest).postDataJSON();
-	expect(payload.botInviteMediaFileId).toBe("telegram-file-2");
-	expect(payload.botInviteMediaType).toBe("photo");
-	expect(payload.contentLocales.en.botInviteRequired).toContain("<b>Welcome");
-	expect(payload.contentLocales.en.botInviteRequired).toContain("<tg-emoji");
-	await assertNoHorizontalOverflow(page);
 });
 
 test("Welcome editor preserves Telegram HTML and exposes copyable templates", async ({
@@ -198,6 +134,13 @@ test("Welcome editor preserves Telegram HTML and exposes copyable templates", as
 	await greeting.evaluate((element: HTMLTextAreaElement) => element.setSelectionRange(0, 5));
 	await page.getByRole("button", { name: "Italic" }).click();
 	await expect(greeting).toHaveValue("<i>Hello</i> {{appName}}");
+	await greeting.press("End");
+	const telegramEditor = greeting.locator("xpath=ancestor::div[1]");
+	await telegramEditor.getByRole("button", { name: "Custom emoji" }).click();
+	await telegramEditor.getByLabel("Emoji ID").fill("5368324170671202286");
+	await telegramEditor.getByLabel("Fallback emoji").fill("👍");
+	await telegramEditor.getByRole("button", { name: "Insert custom emoji" }).click();
+	await expect(greeting).toHaveValue(/<tg-emoji emoji-id="5368324170671202286">👍<\/tg-emoji>/);
 
 	const templates = page
 		.getByRole("heading", { name: "Content" })
@@ -214,7 +157,9 @@ test("Welcome editor preserves Telegram HTML and exposes copyable templates", as
 	);
 	await pressTelegramMainButton(page);
 	const payload = (await patchRequest).postDataJSON();
-	expect(payload.contentLocales.en.welcomeText).toBe("<i>Hello</i> {{appName}}");
+	expect(payload.contentLocales.en.welcomeText).toContain("<i>Hello");
+	expect(payload.contentLocales.en.welcomeText).toContain("{{appName}}");
+	expect(payload.contentLocales.en.welcomeText).toContain("<tg-emoji");
 });
 
 test("Welcome editor remains compact in light and dark themes", async ({
@@ -378,7 +323,8 @@ test("capture dark Content settings", async ({ page, mockApi }, testInfo) => {
 	await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
 	await page.goto("/admin/settings/content");
 	await setDarkTheme(page);
-	await expect(page.getByRole("heading", { name: "Telegram bot" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Registration" })).toBeVisible();
+	await expect(page.getByText("Invite-only prompt", { exact: true })).toHaveCount(0);
 	await expect(page.getByRole("heading", { name: "Support" })).toHaveCount(0);
 	await assertStableDarkPage(page);
 	await page.screenshot({
@@ -522,7 +468,7 @@ test("content editor remains usable in light and dark themes", async ({
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
-		await expect(page.getByRole("heading", { name: "Telegram bot" })).toBeVisible();
+		await expect(page.getByRole("heading", { name: "Registration" })).toBeVisible();
 		await expect(page.getByText("Loading editor…", { exact: true })).toHaveCount(0);
 		await assertNoHorizontalOverflow(page);
 		const accessibility = await new AxeBuilder({ page }).analyze();

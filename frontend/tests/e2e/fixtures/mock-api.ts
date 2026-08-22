@@ -78,15 +78,11 @@ export const mockData = {
 		welcomeMediaFileId: null,
 		welcomeMediaFileName: null,
 		welcomeButtonText: "Open Flowvy",
-		botInviteMediaType: null,
-		botInviteMediaFileId: null,
-		botInviteMediaFileName: null,
 		contentDefaultLocale: "en",
 		contentLocales: {},
 		contentTemplateVariables: {
 			welcomeText: ["appName"],
 			welcomeButtonText: ["appName"],
-			botInviteRequired: ["appName"],
 			onboardingInviteTitle: ["appName"],
 			onboardingInviteDescription: ["appName"],
 			onboardingOpenTitle: ["appName"],
@@ -258,7 +254,7 @@ export const mockData = {
 	invite: {
 		code: "FVY-2345-6789-ABCD-EFGH-JKMN",
 		invitedCount: 3,
-		referralUrl: "https://t.me/flowvy_testBot?startapp=ref_FVY23456789ABCDEFGHJKMN",
+		referralUrl: "https://t.me/flowvy_testBot?start=ref_FVY23456789ABCDEFGHJKMN",
 		referralStatus: "ready",
 	},
 } as const;
@@ -375,12 +371,6 @@ async function handleApi(
 	if (method === "POST" && path === "/api/debug/admin/settings/welcome-media") {
 		await reply(route, {
 			body: { fileId: "telegram-file-1", fileName: "welcome.mp4", mediaType: "animation" },
-		});
-		return;
-	}
-	if (method === "POST" && path === "/api/debug/admin/settings/bot-invite-media") {
-		await reply(route, {
-			body: { fileId: "telegram-file-2", fileName: "invite.png", mediaType: "photo" },
 		});
 		return;
 	}

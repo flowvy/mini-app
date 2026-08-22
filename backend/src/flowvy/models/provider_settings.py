@@ -32,12 +32,6 @@ class ProviderSettings(Base):
             "jsonb_typeof(content_locales) = 'object'",
             name="ck_provider_settings_content_locales_object",
         ),
-        CheckConstraint(
-            "(bot_invite_media_file_id IS NULL AND bot_invite_media_type IS NULL) OR "
-            "(bot_invite_media_file_id IS NOT NULL AND "
-            "bot_invite_media_type IN ('photo', 'animation'))",
-            name="ck_provider_settings_bot_invite_media",
-        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -59,9 +53,6 @@ class ProviderSettings(Base):
     welcome_media_file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     welcome_media_file_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     welcome_button_text: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    bot_invite_media_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    bot_invite_media_file_id: Mapped[str | None] = mapped_column(Text, nullable=True)
-    bot_invite_media_file_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     content_default_locale: Mapped[str] = mapped_column(
         String(35),
         default="en",

@@ -214,8 +214,28 @@ VALUES (
             -c $localizedContentSeedSql
         if ($LASTEXITCODE -ne 0) { throw "Could not seed localized-content predecessor data." }
 
+        uv run --frozen alembic upgrade c8d9e0f1a2b3
+        if ($LASTEXITCODE -ne 0) { throw "Localized-content predecessor upgrade failed." }
+
+        $obsoleteBotInviteSeedSql = @'
+UPDATE provider_settings
+SET content_locales = jsonb_set(
+        content_locales,
+        '{en,bot_invite_required}',
+        to_jsonb('Legacy invite-only prompt'::text),
+        true
+    ),
+    bot_invite_media_type = 'photo',
+    bot_invite_media_file_id = 'legacy-invite-file-id',
+    bot_invite_media_file_name = 'legacy-invite.png'
+WHERE id = 1;
+'@
+        docker exec $containerId psql -U flowvy -d $databaseName -v ON_ERROR_STOP=1 `
+            -c $obsoleteBotInviteSeedSql
+        if ($LASTEXITCODE -ne 0) { throw "Could not seed obsolete bot invite content." }
+
         uv run --frozen alembic upgrade head
-        if ($LASTEXITCODE -ne 0) { throw "Localized-content previous-head upgrade failed." }
+        if ($LASTEXITCODE -ne 0) { throw "Universal-entry previous-head upgrade failed." }
 
         $localizedContentProofSql = @'
 SELECT
@@ -223,12 +243,24 @@ SELECT
         SELECT content_default_locale = 'en'
             AND content_locales #>> '{en,welcome_text}' = 'Legacy welcome'
             AND content_locales #>> '{en,welcome_button_text}' = 'Open legacy app'
+            AND content_locales #> '{en,bot_invite_required}' IS NULL
             AND NOT EXISTS (
                 SELECT 1
                 FROM information_schema.columns
                 WHERE table_schema = 'public'
                     AND table_name = 'provider_settings'
                     AND column_name = 'support_url'
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                    AND table_name = 'provider_settings'
+                    AND column_name IN (
+                        'bot_invite_media_type',
+                        'bot_invite_media_file_id',
+                        'bot_invite_media_file_name'
+                    )
             )
         FROM provider_settings
         WHERE id = 1

@@ -19,9 +19,6 @@ export interface AdminSettings {
 	welcomeMediaFileId: string | null;
 	welcomeMediaFileName: string | null;
 	welcomeButtonText: string | null;
-	botInviteMediaType: string | null;
-	botInviteMediaFileId: string | null;
-	botInviteMediaFileName: string | null;
 	contentDefaultLocale: string;
 	contentLocales: OperatorContentLocales;
 	contentTemplateVariables: Record<string, string[]>;
@@ -46,9 +43,6 @@ export interface AdminSettingsPatch {
 	welcomeMediaFileId?: string | null;
 	welcomeMediaFileName?: string | null;
 	welcomeButtonText?: string | null;
-	botInviteMediaType?: string | null;
-	botInviteMediaFileId?: string | null;
-	botInviteMediaFileName?: string | null;
 	contentDefaultLocale?: string;
 	contentLocales?: OperatorContentLocales;
 }

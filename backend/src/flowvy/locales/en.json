@@ -5,12 +5,5 @@
   "welcome": {
     "text": "Welcome! <tg-emoji emoji-id=\"5262526163959453517\">☺</tg-emoji>\nManage your service directly in Telegram.",
     "button": "Open {{ app_name }}"
-  },
-  "registration": {
-    "inviteRequired": "Access is invite-only. Send your invite code in this chat.",
-    "invalidInvite": "This invite code is invalid or no longer available.",
-    "rateLimited": "Too many attempts. Try again later.",
-    "accountDisabled": "Your account is disabled.",
-    "unavailable": "Registration is temporarily unavailable. Please try again later."
   }
 }

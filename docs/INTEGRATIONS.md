@@ -15,11 +15,13 @@ Flowvy использует один Telegram product contract — Main Mini App
 целевого бота через `@BotFather` → `/mybots` → bot → **Bot Settings** → **Configure Mini App** →
 **Enable Mini App** и указывать на постоянный публичный HTTPS URL. При startup backend
 вызывает официальный `getMe`; для timeout/network/Telegram 5xx разрешён один ограниченный повтор,
-но auth и остальные Bot API errors закрываются сразу. Только `has_main_web_app=true` и корректный bot username разрешают
-выдать ссылку `t.me/<bot>?startapp=ref_<compact-code>`. Проверенный статус и ссылка приходят в
-`GET /api/me/invite`; frontend не угадывает username, `short_name` или тип Telegram-ссылки. Если
-capability не подтверждена, share link не публикуется, но personal code остаётся доступен для
-копирования и ручного ввода.
+но auth и остальные Bot API errors закрываются сразу. Только `has_main_web_app=true` и корректный bot
+username разрешают выдать публичную referral-ссылку
+`t.me/<bot>?start=ref_<compact-code>`. Проверенный статус и ссылка приходят в `GET /api/me/invite`;
+frontend не угадывает username, `short_name` или тип Telegram-ссылки. Переход создаёт bot chat и
+вызывает `/start ref_…`; бот присылает обычный neutral Welcome, но его кнопка ведёт на
+`t.me/<bot>?startapp=ref_<compact-code>`. Если capability не подтверждена, share link не
+публикуется, но personal code остаётся доступен для копирования и ручного ввода.
 
 В локальном named-Tunnel режиме `scripts/dev-up.ps1 -EnableTelegram -NamedTunnelUrl
 'https://<test-host>'` задаёт этот exact origin только запускаемому backend как `WEBAPP_URL` и
@@ -43,10 +45,11 @@ Flowvy задать другой стартовый desktop-размер.
 /api/onboarding` сообщает только наличие валидного server-side payload, а `POST
 /api/onboarding/redeem-launch` не принимает code в body и извлекает его из уже проверенного
 `WebAppInitData.start_param`. Ручной ввод остаётся отдельным `POST /api/onboarding/redeem`. После
-успеха frontend обновляет Query cache без reload. Кнопка отправки оборачивает подтверждённую Main
-Mini App URL в официальный `t.me/share/url`; форматированный code остаётся в тексте для ручного
-ввода. Bot `?start=` не используется как referral transport и обычный `/start` не разбирает
-реферальный payload.
+успеха frontend обновляет Query cache без reload. Кнопка отправки оборачивает подтверждённую bot
+deep link в официальный `t.me/share/url`; форматированный code остаётся в тексте для ручного ввода.
+Обычный `/start` и referral `/start ref_…` показывают один и тот же Welcome. Payload проходит
+строгую валидацию и влияет только на URL кнопки; registration mode, создание пользователя и ручной
+invite остаются в Mini App.
 Поля используют нативные HTML focus, form submit, `enterkeyhint` и IME semantics. Frontend не
 вызывает `blur()`/`Telegram.WebApp.hideKeyboard()`, не вычисляет состояние клавиатуры из
 `VisualViewport` и не переписывает геометрию shell/dialog при её открытии или закрытии. Telegram SDK
@@ -75,10 +78,11 @@ Telegram хранит ещё не полученные updates до 24 часо�
 одновременные попытки одной Telegram identity через Redis lease: атомарный `SET NX EX 120`,
 случайный token и token-checked Lua finish. После стабильного ответа остаётся cooldown 5 секунд;
 после временной ошибки lease удаляется, чтобы следующий осознанный retry не блокировался. При сбое
-Redis бот fail closed возвращает временную ошибку. Это дополняет уникальный Telegram `update_id`:
-два сообщения пользователя являются двумя корректными updates, а не повторной доставкой одного.
+Redis безопасный Welcome всё равно отправляется без дедупликации: этот handler больше не создаёт
+пользователя и не вызывает provider. Это дополняет уникальный Telegram `update_id`: два сообщения
+пользователя являются двумя корректными updates, а не повторной доставкой одного.
 
-Primary evidence, проверено 2026-08-04, 2026-08-08 и 2026-08-21:
+Primary evidence, проверено 2026-08-04, 2026-08-08, 2026-08-21 и 2026-08-22:
 
 - [Telegram Main Mini App](https://core.telegram.org/bots/webapps#launching-the-main-mini-app): её
   настраивают через `@BotFather` (`/mybots` → bot → Bot Settings → Configure Mini App → Enable Mini
@@ -95,8 +99,8 @@ Primary evidence, проверено 2026-08-04, 2026-08-08 и 2026-08-21:
   `WebAppInitData.start_param`; locked Telegram Apps SDK 3.11.8 остаётся только transport raw
   `initData`, не источником решения.
 - [Telegram bot deep linking](https://core.telegram.org/api/links#bot-links): `?start=` открывает
-  bot chat и лишь после отдельного нажатия Start вызывает `/start <parameter>`, поэтому не является
-  one-tap Main Mini App flow Flowvy.
+  bot chat и после Start вызывает `/start <parameter>`; Flowvy намеренно использует этот шаг, чтобы
+  чат появился в списке до отдельного запуска Main Mini App кнопкой сообщения.
 - [Telegram share links](https://core.telegram.org/api/links#share-links): `t.me/share/url` открывает
   выбор чата и принимает URL плюс редактируемый текст.
 - [Telegram Mini Apps API](https://core.telegram.org/bots/webapps): `viewportHeight` обновляется

@@ -53,13 +53,14 @@ Telegram-переход, ручной запасной путь и прозра�
    `users.invited_by_id` навсегда фиксируется непосредственный пригласивший; считаются только прямые
    регистрации. Повторный запрос того же Telegram identity не создаёт пользователя заново и не
    меняет attribution.
-5. Flowvy использует один referral transport — Main Mini App
-   `t.me/<bot>?startapp=ref_<compact-code>`. Backend выдаёт ссылку только после
-   `getMe.has_main_web_app=true`; frontend не конструирует её из environment и не переключается на
-   bot/Direct Mini App fallback. Auto-redeem endpoint не принимает code в body и извлекает его
-   только из HMAC-проверенного `WebAppInitData.start_param`. Ручной ввод остаётся отдельным явным
-   flow. Кнопка отправки использует официальный `t.me/share/url`, а копирование показывает краткое
-   подтверждение.
+5. Referral transport состоит из двух нативных Telegram deep links. Backend выдаёт публичный
+   `t.me/<bot>?start=ref_<compact-code>` только после `getMe.has_main_web_app=true`; он создаёт bot
+   chat и вызывает универсальный `/start`. Кнопка neutral Welcome использует
+   `t.me/<bot>?startapp=ref_<compact-code>` и переносит code в Main Mini App. Frontend не
+   конструирует ссылки из environment и не переключается на Direct Mini App fallback. Auto-redeem
+   endpoint не принимает code в body и извлекает его только из HMAC-проверенного
+   `WebAppInitData.start_param`. Ручной ввод остаётся отдельным явным flow. Кнопка отправки
+   использует официальный `t.me/share/url`, а копирование показывает краткое подтверждение.
 6. Неактивный владелец не может приглашать. Отсутствующий код, выключенный код и код неактивного
    владельца дают одинаковую ошибку. Попытки ограничиваются по Telegram ID и fail closed при сбое
    Redis.

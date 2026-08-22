@@ -44,7 +44,17 @@ class TelegramMainApp:
         return cls(status="ready", bot_username=username)
 
     def referral_url(self, invite_code: str) -> str | None:
-        """Build one official Main Mini App link for a canonical Flowvy invite code."""
+        """Build a bot deep link that creates the chat before opening the Mini App."""
+        if self.status != "ready" or self.bot_username is None:
+            return None
+        compact_code = re.sub(r"[\s-]+", "", invite_code).upper()
+        if _INVITE_CODE_RE.fullmatch(compact_code) is None:
+            return None
+        query = urlencode({"start": f"{_START_PREFIX}{compact_code}"})
+        return f"https://t.me/{self.bot_username}?{query}"
+
+    def referral_launch_url(self, invite_code: str) -> str | None:
+        """Build the Main Mini App link carried by a referral-aware Welcome button."""
         if self.status != "ready" or self.bot_username is None:
             return None
         compact_code = re.sub(r"[\s-]+", "", invite_code).upper()
@@ -76,7 +86,7 @@ async def discover_main_app(
     for attempt in range(attempts):
         try:
             async with asyncio.timeout(timeout_seconds):
-                profile = await bot.get_me()
+                profile = await bot.me()
         except (TelegramNetworkError, TelegramServerError, TimeoutError):
             if attempt + 1 >= attempts:
                 return TelegramMainApp.unavailable()

@@ -21,7 +21,7 @@ Flowvy распространяется как open-source Mini App. У разн
    экранов, пояснения, кнопки, placeholders, accessible names, статусы, единицы/разделители,
    validation copy и безопасные error messages. Видимые литералы в JSX запрещены.
 2. Оператор управляет только контентом, который действительно описывает его сервис и tone of voice:
-   identity, Telegram welcome/invite prompt, open/invite onboarding, referral card/share text и
+   identity, универсальный Telegram welcome, open/invite onboarding, referral card/share text и
    входом в sponsor storefront. Поля имеют versioned typed contract и
    хранятся как `locale -> semantic fields`, а не как произвольные locale keys или generic CMS.
    Отсутствие значения включает product fallback текущей locale.
@@ -49,8 +49,9 @@ Flowvy распространяется как open-source Mini App. У разн
    рендерят raw HTML.
 9. Автоматические тесты проверяют locale catalog, placeholder allow-list, fallback, public
    projection, отсутствие прямого user-visible bot hardcode и UI/runtime states.
-10. Telegram welcome/invite-only text использует отдельный allow-listed HTML contract с explicit
-    parse mode, custom-emoji fallback и caption-safe limit. Admin UI получает canonical template
+10. Единственный Telegram welcome использует отдельный allow-listed HTML contract с explicit parse
+    mode, custom-emoji fallback и caption-safe limit. Registration-specific bot prompt отсутствует:
+    open/invite states показываются Mini App onboarding. Admin UI получает canonical template
     capabilities от backend и показывает их в collapsed copyable disclosure; `appName` является
     публичным token, а legacy `app_name` остаётся только compatibility input.
 

@@ -16,7 +16,7 @@ from flowvy.telegram_main_app import (
 )
 
 
-def test_main_app_builds_only_the_official_startapp_link() -> None:
+def test_main_app_builds_bot_entry_and_main_app_launch_links() -> None:
     main_app = TelegramMainApp.from_bot_user(
         username="flowvy_testBot",
         has_main_web_app=True,
@@ -24,6 +24,9 @@ def test_main_app_builds_only_the_official_startapp_link() -> None:
 
     assert main_app.status == "ready"
     assert main_app.referral_url("FVY-2345-6789-ABCD-EFGH-JKMN") == (
+        "https://t.me/flowvy_testBot?start=ref_FVY23456789ABCDEFGHJKMN"
+    )
+    assert main_app.referral_launch_url("FVY-2345-6789-ABCD-EFGH-JKMN") == (
         "https://t.me/flowvy_testBot?startapp=ref_FVY23456789ABCDEFGHJKMN"
     )
 
@@ -36,7 +39,11 @@ def test_main_app_link_is_unavailable_without_confirmed_capability() -> None:
 
     assert not_configured.status == "main_app_not_configured"
     assert not_configured.referral_url("FVY-2345-6789-ABCD-EFGH-JKMN") is None
+    assert not_configured.referral_launch_url("FVY-2345-6789-ABCD-EFGH-JKMN") is None
     assert TelegramMainApp.unavailable().referral_url("FVY-2345-6789-ABCD-EFGH-JKMN") is None
+    assert (
+        TelegramMainApp.unavailable().referral_launch_url("FVY-2345-6789-ABCD-EFGH-JKMN") is None
+    )
 
 
 def test_start_param_parser_accepts_only_the_flowvy_contract() -> None:
@@ -51,7 +58,7 @@ def test_start_param_parser_accepts_only_the_flowvy_contract() -> None:
 @pytest.mark.asyncio
 async def test_discovery_uses_get_me_and_retries_only_transient_failures() -> None:
     bot = AsyncMock()
-    bot.get_me = AsyncMock(
+    bot.me = AsyncMock(
         return_value=SimpleNamespace(
             username="flowvy_testBot",
             has_main_web_app=True,
@@ -61,9 +68,9 @@ async def test_discovery_uses_get_me_and_retries_only_transient_failures() -> No
     discovered = await discover_main_app(bot)
 
     assert discovered.status == "ready"
-    bot.get_me.assert_awaited_once_with()
+    bot.me.assert_awaited_once_with()
 
-    bot.get_me = AsyncMock(
+    bot.me = AsyncMock(
         side_effect=[
             TimeoutError,
             SimpleNamespace(
@@ -74,23 +81,23 @@ async def test_discovery_uses_get_me_and_retries_only_transient_failures() -> No
     )
     discovered = await discover_main_app(bot, retry_delay_seconds=0)
     assert discovered.status == "main_app_not_configured"
-    assert bot.get_me.await_count == 2
+    assert bot.me.await_count == 2
 
-    bot.get_me = AsyncMock(
+    bot.me = AsyncMock(
         side_effect=TelegramUnauthorizedError(method=GetMe(), message="unauthorized"),
     )
     assert (
         await discover_main_app(bot, attempts=3, retry_delay_seconds=0)
     ).status == "telegram_unavailable"
-    bot.get_me.assert_awaited_once_with()
+    bot.me.assert_awaited_once_with()
 
 
 @pytest.mark.asyncio
 async def test_discovery_fails_closed_after_bounded_transient_attempts() -> None:
     bot = AsyncMock()
-    bot.get_me = AsyncMock(side_effect=TimeoutError)
+    bot.me = AsyncMock(side_effect=TimeoutError)
 
     assert (
         await discover_main_app(bot, attempts=2, retry_delay_seconds=0)
     ).status == "telegram_unavailable"
-    assert bot.get_me.await_count == 2
+    assert bot.me.await_count == 2

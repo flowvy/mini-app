@@ -1,30 +1,23 @@
 import { useBlocker } from "@tanstack/react-router";
-import { BadgeInfo } from "lucide-react";
 import { type ChangeEvent, type FC, Suspense, lazy, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import { SUPPORTED_LOCALES, localeLabel } from "../../i18n";
-import { apiUploadFile } from "../../lib/api.ts";
-import { isMockAuth } from "../../lib/runtime.ts";
 import ss from "../../pages/admin/settings.module.css";
-import type { AdminSettings, WelcomeMediaUpload } from "../../types/admin-settings.ts";
+import type { AdminSettings } from "../../types/admin-settings.ts";
 import type { OperatorContent } from "../../types/operator-content.ts";
-import { TelegramHtmlEditor } from "../content/telegram-html-editor.tsx";
 import { TemplateVariables } from "../content/template-variables.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { FormSaveButton } from "../ui/form-save-button.tsx";
 import { FormField, FormFieldInput, FormFieldTextarea } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { SegmentedControl } from "../ui/segmented-control.tsx";
-import { SettingsFields, SettingsInlineNotice, SettingsPanel } from "./settings-surface.tsx";
-import { WelcomeMediaRow } from "./welcome-media-row.tsx";
+import { SettingsFields, SettingsPanel } from "./settings-surface.tsx";
 
 const FormattedTextEditor = lazy(async () => {
 	const module = await import("../content/formatted-text-editor.tsx");
 	return { default: module.FormattedTextEditor };
 });
-
-const prefix = isMockAuth ? "/debug/admin/settings" : "/admin/settings";
 
 type ContentField = Exclude<keyof OperatorContent, "welcomeText" | "welcomeButtonText">;
 
@@ -33,7 +26,7 @@ interface FieldDefinition {
 	labelKey: string;
 	fallbackKey: string;
 	maxLength: number;
-	format?: "plain-multiline" | "commonmark" | "telegram-html";
+	format?: "plain-multiline" | "commonmark";
 }
 
 interface GroupDefinition {
@@ -42,18 +35,6 @@ interface GroupDefinition {
 }
 
 const GROUPS: GroupDefinition[] = [
-	{
-		titleKey: "settings.content.botSection",
-		fields: [
-			{
-				field: "botInviteRequired",
-				labelKey: "settings.content.fields.botInviteRequired",
-				fallbackKey: "settings.content.botInviteFallback",
-				maxLength: 1_000,
-				format: "telegram-html",
-			},
-		],
-	},
 	{
 		titleKey: "settings.content.onboardingSection",
 		fields: [
@@ -171,15 +152,6 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings }) => {
 	const [contentLocales, setContentLocales] = useState(() =>
 		structuredClone(settings.contentLocales),
 	);
-	const [initialBotMedia] = useState(() => ({
-		fileId: settings.botInviteMediaFileId,
-		fileName: settings.botInviteMediaFileName,
-		type: settings.botInviteMediaType,
-	}));
-	const [botMediaFileId, setBotMediaFileId] = useState(initialBotMedia.fileId);
-	const [botMediaFileName, setBotMediaFileName] = useState(initialBotMedia.fileName);
-	const [botMediaType, setBotMediaType] = useState(initialBotMedia.type);
-	const [uploadingBotMedia, setUploadingBotMedia] = useState(false);
 	const [locale, setLocale] = useState(
 		SUPPORTED_LOCALES.includes(settings.contentDefaultLocale)
 			? settings.contentDefaultLocale
@@ -189,11 +161,7 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings }) => {
 	const [saveFailed, setSaveFailed] = useState(false);
 	const updateMutation = useUpdateSettings();
 	const content = contentLocales[locale] ?? {};
-	const dirty =
-		JSON.stringify(contentLocales) !== JSON.stringify(initialLocales) ||
-		botMediaFileId !== initialBotMedia.fileId ||
-		botMediaFileName !== initialBotMedia.fileName ||
-		botMediaType !== initialBotMedia.type;
+	const dirty = JSON.stringify(contentLocales) !== JSON.stringify(initialLocales);
 	const blocker = useBlocker({
 		shouldBlockFn: () => dirty && !saved,
 		enableBeforeUnload: dirty && !saved,
@@ -217,39 +185,11 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings }) => {
 	const handleSave = async () => {
 		setSaveFailed(false);
 		try {
-			await updateMutation.mutateAsync({
-				contentLocales,
-				botInviteMediaFileId: botMediaFileId,
-				botInviteMediaFileName: botMediaFileName,
-				botInviteMediaType: botMediaType,
-			});
+			await updateMutation.mutateAsync({ contentLocales });
 			setSaved(true);
 		} catch {
 			setSaveFailed(true);
 		}
-	};
-
-	const handlePickBotMedia = async (file: File) => {
-		setSaveFailed(false);
-		setUploadingBotMedia(true);
-		try {
-			const result = await apiUploadFile<WelcomeMediaUpload>(`${prefix}/bot-invite-media`, file);
-			setBotMediaFileId(result.fileId);
-			setBotMediaFileName(result.fileName);
-			setBotMediaType(result.mediaType);
-			setSaved(false);
-		} catch {
-			setSaveFailed(true);
-		} finally {
-			setUploadingBotMedia(false);
-		}
-	};
-
-	const resetBotMedia = () => {
-		setBotMediaFileId(null);
-		setBotMediaFileName(null);
-		setBotMediaType(null);
-		setSaved(false);
 	};
 
 	return (
@@ -285,26 +225,8 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings }) => {
 								placeholder: t(definition.fallbackKey),
 							};
 							return (
-								<FormField
-									key={definition.field}
-									label={t(definition.labelKey)}
-									htmlFor={id}
-									notice={
-										definition.format === "telegram-html" ? (
-											<SettingsInlineNotice icon={<BadgeInfo size={13} aria-hidden="true" />}>
-												{t("settings.welcome.premiumWarning")}
-											</SettingsInlineNotice>
-										) : undefined
-									}
-								>
-									{definition.format === "telegram-html" ? (
-										<TelegramHtmlEditor
-											{...commonProps}
-											ariaLabel={t(definition.labelKey)}
-											maxLength={4_000}
-											onChange={(value) => updateField(definition.field, value)}
-										/>
-									) : definition.format === "commonmark" ? (
+								<FormField key={definition.field} label={t(definition.labelKey)} htmlFor={id}>
+									{definition.format === "commonmark" ? (
 										<Suspense fallback={<output>{t("common.formattedText.loading")}</output>}>
 											<FormattedTextEditor
 												{...commonProps}
@@ -335,28 +257,6 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings }) => {
 								</FormField>
 							);
 						})}
-						{group.titleKey === "settings.content.botSection" && (
-							<FormField label={t("settings.content.botMediaLabel")}>
-								<WelcomeMediaRow
-									fileName={botMediaFileName ?? t("settings.content.botMediaNone")}
-									mediaType={botMediaType ?? "animation"}
-									description={
-										botMediaFileId
-											? t(
-													botMediaType === "photo"
-														? "settings.welcome.mediaType.photo"
-														: "settings.welcome.mediaType.animation",
-												)
-											: t("settings.content.botMediaHint")
-									}
-									isDefault={!botMediaFileId}
-									empty={!botMediaFileId}
-									uploading={uploadingBotMedia}
-									onPickFile={handlePickBotMedia}
-									onReset={resetBotMedia}
-								/>
-							</FormField>
-						)}
 						{(() => {
 							const variables = [
 								...new Set(

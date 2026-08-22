@@ -1,4 +1,4 @@
-"""Bot registration and invite onboarding behavior."""
+"""Bot entry behavior for the universal Mini App launcher."""
 
 from __future__ import annotations
 
@@ -8,11 +8,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from flowvy.bot.handlers.start import cmd_start, redeem_invite_message
+from flowvy.bot.handlers.start import cmd_start
 from flowvy.config import Settings
-from flowvy.schemas.operator_content import OperatorContentLocale
-from flowvy.schemas.registration import OnboardingStatusResponse
-from flowvy.services.registration import InvalidInviteError, RegistrationUnavailableError
+from flowvy.services.registration import RegistrationUnavailableError
 
 
 def _message(text: str = "/start", language_code: str = "en") -> SimpleNamespace:
@@ -26,91 +24,108 @@ def _message(text: str = "/start", language_code: str = "en") -> SimpleNamespace
         ),
         chat=SimpleNamespace(id=123456),
         text=text,
-        delete=AsyncMock(),
     )
 
 
+def _command(args: str | None = None) -> SimpleNamespace:
+    return SimpleNamespace(args=args)
+
+
 @pytest.mark.asyncio
-async def test_start_prompts_unknown_user_when_registration_is_invite_only() -> None:
+@pytest.mark.parametrize("registration_mode", ["open", "invite_only"])
+async def test_start_sends_the_same_neutral_welcome_without_registering(
+    registration_mode: str,
+) -> None:
     message = _message()
     sender = AsyncMock()
     registration = AsyncMock()
-    registration.resolve_existing = AsyncMock(return_value=None)
-    registration.get_status = AsyncMock(
-        return_value=OnboardingStatusResponse(
-            state="invite_required",
-            registration_mode="invite_only",
-        ),
-    )
+    registration.begin_bot_start = AsyncMock(return_value="lease-token")
     provider_settings = AsyncMock()
-    configured = SimpleNamespace()
+    configured = SimpleNamespace(registration_mode=registration_mode)
     provider_settings.get.return_value = configured
+    settings = Settings()
 
     await cmd_start.__dishka_orig_func__(  # type: ignore[attr-defined]
         message,
-        Settings(),
+        _command(),
+        settings,
         sender,
         provider_settings,
         registration,
     )
 
-    sender.send_invite_required.assert_awaited_once_with(123456, configured, "en")
-    registration.register_open.assert_not_awaited()
-
-
-@pytest.mark.asyncio
-async def test_start_delegates_locale_resolved_operator_invite_prompt() -> None:
-    message = _message(language_code="ru")
-    sender = AsyncMock()
-    registration = AsyncMock()
-    registration.resolve_existing = AsyncMock(return_value=None)
-    registration.get_status = AsyncMock(
-        return_value=OnboardingStatusResponse(
-            state="invite_required",
-            registration_mode="invite_only",
-            app_name="Shop & Co",
-            content=OperatorContentLocale(
-                bot_invite_required="<b>Join {{appName}}</b> with your code",
-            ),
-        ),
-    )
-    provider_settings = AsyncMock()
-    configured = SimpleNamespace()
-    provider_settings.get.return_value = configured
-
-    await cmd_start.__dishka_orig_func__(  # type: ignore[attr-defined]
-        message,
-        Settings(),
-        sender,
-        provider_settings,
-        registration,
-    )
-
-    assert registration.get_status.await_args.args[1] == "ru"
-    sender.send_invite_required.assert_awaited_once_with(123456, configured, "ru")
-
-
-@pytest.mark.asyncio
-async def test_start_welcomes_provider_only_user_without_invite_prompt() -> None:
-    message = _message("/start ref_FVY23456789ABCDEFGHJKM")
-    sender = AsyncMock()
-    provider_settings = AsyncMock()
-    provider_settings.get = AsyncMock(return_value=SimpleNamespace())
-    registration = AsyncMock()
-    registration.resolve_existing = AsyncMock(return_value=SimpleNamespace())
-
-    await cmd_start.__dishka_orig_func__(  # type: ignore[attr-defined]
-        message,
-        Settings(),
-        sender,
-        provider_settings,
-        registration,
-    )
-
+    registration.resolve_existing.assert_not_awaited()
     registration.get_status.assert_not_awaited()
+    registration.register_open.assert_not_awaited()
     registration.redeem.assert_not_awaited()
-    sender.send.assert_not_awaited()
-    sender.send_welcome.assert_awaited_once()
+    sender.send_welcome.assert_awaited_once_with(
+        123456,
+        settings,
+        configured,
+        "en",
+        referral_code=None,
+    )
+    registration.finish_bot_start.assert_awaited_once_with(
+        123456,
+        "lease-token",
+        stable_response=True,
+    )
+
+
+@pytest.mark.asyncio
+async def test_referral_start_carries_only_a_strict_code_into_the_welcome_button() -> None:
+    sender = AsyncMock()
+    registration = AsyncMock()
+    registration.begin_bot_start = AsyncMock(return_value="lease-token")
+    provider_settings = AsyncMock()
+    configured = SimpleNamespace()
+    provider_settings.get.return_value = configured
+    settings = Settings()
+
+    await cmd_start.__dishka_orig_func__(  # type: ignore[attr-defined]
+        _message("/start ref_FVY23456789ABCDEFGHJKMN"),
+        _command("ref_FVY23456789ABCDEFGHJKMN"),
+        settings,
+        sender,
+        provider_settings,
+        registration,
+    )
+
+    sender.send_welcome.assert_awaited_once_with(
+        123456,
+        settings,
+        configured,
+        "en",
+        referral_code="FVY23456789ABCDEFGHJKMN",
+    )
+
+
+@pytest.mark.asyncio
+async def test_malformed_start_payload_falls_back_to_the_neutral_launcher() -> None:
+    sender = AsyncMock()
+    registration = AsyncMock()
+    registration.begin_bot_start = AsyncMock(return_value="lease-token")
+    provider_settings = AsyncMock()
+    configured = SimpleNamespace()
+    provider_settings.get.return_value = configured
+    settings = Settings()
+
+    await cmd_start.__dishka_orig_func__(  # type: ignore[attr-defined]
+        _message("/start ref_FVY-BROKEN"),
+        _command("ref_FVY-BROKEN"),
+        settings,
+        sender,
+        provider_settings,
+        registration,
+    )
+
+    sender.send_welcome.assert_awaited_once_with(
+        123456,
+        settings,
+        configured,
+        "en",
+        referral_code=None,
+    )
 
 
 @pytest.mark.asyncio
@@ -120,11 +135,11 @@ async def test_concurrent_duplicate_starts_send_one_welcome() -> None:
     provider_settings.get = AsyncMock(return_value=SimpleNamespace())
     registration = AsyncMock()
     registration.begin_bot_start = AsyncMock(side_effect=["lease-token", None])
-    registration.resolve_existing = AsyncMock(return_value=SimpleNamespace())
 
     await asyncio.gather(
         cmd_start.__dishka_orig_func__(  # type: ignore[attr-defined]
             _message(),
+            _command(),
             Settings(),
             sender,
             provider_settings,
@@ -132,6 +147,7 @@ async def test_concurrent_duplicate_starts_send_one_welcome() -> None:
         ),
         cmd_start.__dishka_orig_func__(  # type: ignore[attr-defined]
             _message(),
+            _command(),
             Settings(),
             sender,
             provider_settings,
@@ -139,7 +155,6 @@ async def test_concurrent_duplicate_starts_send_one_welcome() -> None:
         ),
     )
 
-    registration.resolve_existing.assert_awaited_once()
     sender.send_welcome.assert_awaited_once()
     registration.finish_bot_start.assert_awaited_once_with(
         123456,
@@ -149,111 +164,30 @@ async def test_concurrent_duplicate_starts_send_one_welcome() -> None:
 
 
 @pytest.mark.asyncio
-async def test_transient_start_failure_releases_lease_without_cooldown() -> None:
+async def test_redis_failure_does_not_block_the_neutral_welcome() -> None:
     message = _message()
     sender = AsyncMock()
     registration = AsyncMock()
-    registration.begin_bot_start = AsyncMock(return_value="lease-token")
-    registration.resolve_existing = AsyncMock(side_effect=RegistrationUnavailableError)
-
-    await cmd_start.__dishka_orig_func__(  # type: ignore[attr-defined]
-        message,
-        Settings(),
-        sender,
-        AsyncMock(),
-        registration,
-    )
-
-    sender.send.assert_awaited_once_with(
-        123456,
-        "Registration is temporarily unavailable. Please try again later.",
-    )
-    registration.finish_bot_start.assert_awaited_once_with(
-        123456,
-        "lease-token",
-        stable_response=False,
-    )
-
-
-@pytest.mark.asyncio
-async def test_private_text_registers_open_user_without_treating_it_as_a_code() -> None:
-    message = _message("hello")
-    sender = AsyncMock()
-    provider_settings = AsyncMock()
-    provider_settings.get = AsyncMock(return_value=SimpleNamespace())
-    registration = AsyncMock()
-    registration.resolve_existing = AsyncMock(return_value=None)
-    registration.get_status = AsyncMock(
-        return_value=OnboardingStatusResponse(state="open", registration_mode="open"),
-    )
-
-    await redeem_invite_message.__dishka_orig_func__(  # type: ignore[attr-defined]
-        message,
-        Settings(),
-        sender,
-        provider_settings,
-        registration,
-    )
-
-    registration.register_open.assert_awaited_once()
-    registration.redeem.assert_not_awaited()
-    message.delete.assert_not_awaited()
-    sender.send_welcome.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_bot_start_parameter_does_not_bypass_main_mini_app_invite_flow() -> None:
-    message = _message("/start ref_FVY23456789ABCDEFGHJKM")
-    sender = AsyncMock()
-    registration = AsyncMock()
-    registration.resolve_existing = AsyncMock(return_value=None)
-    registration.get_status = AsyncMock(
-        return_value=OnboardingStatusResponse(
-            state="invite_required",
-            registration_mode="invite_only",
-        ),
-    )
+    registration.begin_bot_start = AsyncMock(side_effect=RegistrationUnavailableError)
     provider_settings = AsyncMock()
     configured = SimpleNamespace()
     provider_settings.get.return_value = configured
+    settings = Settings()
 
     await cmd_start.__dishka_orig_func__(  # type: ignore[attr-defined]
         message,
-        Settings(),
+        _command(),
+        settings,
         sender,
         provider_settings,
         registration,
     )
 
-    registration.redeem.assert_not_awaited()
-    sender.send_invite_required.assert_awaited_once_with(123456, configured, "en")
-    sender.send_welcome.assert_not_awaited()
-
-
-@pytest.mark.asyncio
-async def test_invite_attempt_is_deleted_even_when_the_code_is_invalid() -> None:
-    message = _message("FVY-WRONG-CODE")
-    sender = AsyncMock()
-    registration = AsyncMock()
-    registration.resolve_existing = AsyncMock(return_value=None)
-    registration.get_status = AsyncMock(
-        return_value=OnboardingStatusResponse(
-            state="invite_required",
-            registration_mode="invite_only",
-        ),
-    )
-    registration.redeem = AsyncMock(side_effect=InvalidInviteError)
-
-    await redeem_invite_message.__dishka_orig_func__(  # type: ignore[attr-defined]
-        message,
-        Settings(),
-        sender,
-        AsyncMock(),
-        registration,
-    )
-
-    message.delete.assert_awaited_once()
-    sender.send.assert_awaited_once_with(
+    sender.send_welcome.assert_awaited_once_with(
         123456,
-        "This invite code is invalid or no longer available.",
+        settings,
+        configured,
+        "en",
+        referral_code=None,
     )
+    registration.finish_bot_start.assert_not_awaited()

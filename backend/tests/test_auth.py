@@ -316,6 +316,56 @@ class TestGetMe:
                 assert redeemed.json()["detail"]["code"] == "invalid_invite"
 
     @pytest.mark.asyncio
+    async def test_reopening_a_referral_button_never_reassigns_an_existing_user(
+        self,
+        engine: AsyncEngine,
+    ) -> None:
+        original_owner_id = 900001
+        other_owner_id = 900002
+        existing_user_id = 654321
+        invite_code = "FVY23456789ABCDEFGHJKMN"
+        async with async_sessionmaker(engine, expire_on_commit=False)() as session:
+            users = UserRepository(session)
+            await users.create(
+                id=original_owner_id,
+                username="original-owner",
+                full_name="Original Owner",
+            )
+            other_owner = await users.create(
+                id=other_owner_id,
+                username="other-owner",
+                full_name="Other Owner",
+            )
+            await users.create(
+                id=existing_user_id,
+                username="existing",
+                full_name="Existing User",
+                invited_by_id=original_owner_id,
+            )
+            await InviteRepository(session).create(
+                code=normalize_invite_code(invite_code),
+                created_by_id=other_owner.id,
+            )
+            await session.commit()
+
+        app = create_app()
+        transport = ASGITransport(app=app)  # type: ignore[arg-type]
+        init_data = _build_init_data(
+            user_id=existing_user_id,
+            start_param=f"ref_{invite_code}",
+        )
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.post(
+                "/api/onboarding/redeem-launch",
+                headers={"Authorization": f"tma {init_data}"},
+            )
+
+        assert response.status_code == 200
+        async with async_sessionmaker(engine, expire_on_commit=False)() as session:
+            existing = await UserRepository(session).get_by_telegram_id(existing_user_id)
+        assert existing is not None and existing.invited_by_id == original_owner_id
+
+    @pytest.mark.asyncio
     async def test_provider_lookup_failure_is_temporarily_unavailable(
         self,
         engine: AsyncEngine,

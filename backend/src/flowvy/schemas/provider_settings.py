@@ -24,7 +24,6 @@ from flowvy.schemas.operator_content import (
 )
 
 PulseProvider = Literal["disabled", "kuma", "beszel"]
-MessageMediaType = Literal["photo", "animation"]
 _PAYMENT_URL_ADAPTER = TypeAdapter(HttpUrl)
 
 
@@ -74,9 +73,6 @@ class ProviderSettingsResponse(BaseModel):
     welcome_media_file_id: str | None = None
     welcome_media_file_name: str | None = None
     welcome_button_text: str | None = None
-    bot_invite_media_type: MessageMediaType | None = None
-    bot_invite_media_file_id: str | None = None
-    bot_invite_media_file_name: str | None = None
     content_default_locale: str = DEFAULT_LOCALE
     content_locales: dict[str, OperatorContentLocale] = Field(default_factory=dict, max_length=20)
     content_template_variables: dict[str, list[str]] = Field(
@@ -130,9 +126,6 @@ class ProviderSettingsPatch(BaseModel):
     welcome_media_file_id: str | None = None
     welcome_media_file_name: str | None = None
     welcome_button_text: str | None = Field(default=None, max_length=100)
-    bot_invite_media_type: MessageMediaType | None = None
-    bot_invite_media_file_id: str | None = None
-    bot_invite_media_file_name: str | None = None
     content_default_locale: str | None = None
     content_locales: dict[str, OperatorContentLocale] | None = Field(
         default=None,

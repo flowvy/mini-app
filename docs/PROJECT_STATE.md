@@ -1,7 +1,7 @@
 # Текущее состояние Flowvy
 
 Последняя полная проверка: **2026-08-22**; последний change-aware gate: **2026-08-22**
-Проверенное текущее состояние: **`dev` с layered Telegram Back navigation, always-on Tribute delivery, multi-period sponsor offers, paid/base reconciliation и кроссплатформенным dev-tooling**
+Проверенное текущее состояние: **`dev` с universal Telegram entry, layered Back navigation, always-on Tribute delivery, multi-period sponsor offers, paid/base reconciliation и кроссплатформенным dev-tooling**
 Последний полный baseline: **`dd3b5c8`** (`dev`, 2026-08-04)
 Стадия: **незавершённый MVP; production readiness не подтверждена**
 
@@ -15,8 +15,10 @@
 - FastAPI BFF на `:8001`, Telegram bot на aiogram: защищённый `/webhook` в production и polling
   fallback для одного локального test-bot процесса.
 - При Telegram-enabled startup Bot API `getMe` проверяет `has_main_web_app`; backend выдаёт
-  персональную `?startapp=` ссылку только для подтверждённой Main Mini App. Auto-redeem извлекает
-  code только из HMAC-проверенного `WebAppInitData.start_param`, без client body/URL fallback.
+  персональную `?start=` bot deep link только для подтверждённой Main Mini App. Универсальный
+  `/start` отправляет neutral Welcome без регистрации в чате, а referral-aware кнопка переносит
+  code в `?startapp=`. Auto-redeem извлекает code только из HMAC-проверенного
+  `WebAppInitData.start_param`, без client body/URL fallback.
 - Проверка Telegram Mini App `initData`, синхронизация локального пользователя и admin-роли из
   `ADMIN_TELEGRAM_IDS`.
 - Пользовательские API для профиля, подписки, HWID-устройств и provider-neutral Pulse.
@@ -24,7 +26,7 @@
   `deviceModel`, `userAgent`, nullable `requestIp`, `createdAt` и `updatedAt`; provider metadata не
   сохраняется в Flowvy и не логируется.
 - Admin API для dashboard, пользователей, действий над пользователем, выбора Kuma/Beszel для Pulse,
-  branding, typed localized service content, welcome/invite-only Telegram template/media и
+  branding, typed localized Mini App content, единственного Welcome Telegram template/media и
   backend-computed template-variable capabilities,
   server-side Tribute API access check, persisted checkout
   destinations и commerce rules.
@@ -68,8 +70,8 @@
 - `scripts/verify-tribute-entitlements.ps1` проводит подписанный donation flow через production
   FastAPI/Dishka/PostgreSQL boundary с fake providers и без реальных внешних запросов.
 - Явная открытая/invite-only регистрация: `/api/me` не создаёт полностью неизвестного пользователя
-  чтением, но безопасно импортирует exact provider-only Remnawave match; onboarding работает
-  одинаково из Mini App и бота.
+  чтением, но безопасно импортирует exact provider-only Remnawave match; registration CTA, ручной
+  invite и signed referral redemption живут только в Mini App onboarding.
 - Access profiles задают local-only либо Remnawave grant со сроком, трафиком/reset strategy,
   устройствами, status, provider-owned tag, description и internal/external squads. Для rule-managed
   grant доступен явный `automation` без локальных дней/даты; он сохраняет только benefits и не может
@@ -83,7 +85,9 @@
   referral/default profile не применяются, существующий provider access не изменяется, lookup error
   закрывает flow временной недоступностью.
 - Одновременные `/start` одной Telegram identity объединяются Redis lease с конечным TTL и
-  token-safe завершением: накопившиеся после обрыва polling команды дают один согласованный ответ.
+  token-safe завершением: накопившиеся после обрыва polling команды дают один neutral Welcome.
+  При недоступном Redis безопасный Welcome отправляется без дедупликации, поскольку bot handler не
+  создаёт пользователя и не вызывает provider.
   Exact read-only Remnawave lookup делает один bounded retry только для явно transient transport/
   upstream ошибок; contract/auth/ambiguity failures не повторяются.
 - Remnawave client, HMAC-проверка Remnawave webhook и инвалидация связанных Redis cache keys.
@@ -188,9 +192,9 @@
   одинаковых нейтральных icon tiles; Pulse source тоже нейтрален и не маскируется под positive status.
   Welcome собран в одну content surface: Greeting использует компактный Telegram HTML toolbar,
   custom emoji insertion остаётся за Premium notice, media описана одной строкой, а template
-  variables скрыты в одном disclosure на секцию. Localized Content применяет тот же Telegram editor
-  к invite-only prompt, CommonMark editor только к Mini App descriptions и отдельное global
-  photo/animation для prompt. Title/action/share controls остаются plain. Создание access profile
+  variables скрыты в одном disclosure на секцию. Localized Content хранит только Mini App
+  onboarding/referral/sponsor copy: CommonMark editor используется для descriptions, а
+  title/action/share controls остаются plain. Отдельные bot invite prompt и media удалены. Создание access profile
   запускается из profiles surface: contextual action row для списка и один `Create profile` CTA в
   empty state; create/edit dialog различает title и submit action, provider fields остаются под
   `Advanced` disclosure.
@@ -198,8 +202,9 @@
   обновляет Query cache и открывает приложение без reload.
 - На Home есть персональный invite code, число прямых приглашений, копирование с feedback и
   официальный Telegram share. Ссылка приходит с backend только после `getMe.has_main_web_app` и
-  имеет один формат Main Mini App `t.me/<bot>?startapp=…`; при неподтверждённой capability UI не
-  публикует ложную ссылку и оставляет copy/manual code. Open и invite-only onboarding вызывают
+  использует `t.me/<bot>?start=…`, чтобы создать chat; кнопка neutral Welcome затем открывает
+  `t.me/<bot>?startapp=…`. При неподтверждённой capability UI не публикует ложную ссылку и оставляет
+  copy/manual code. Open и invite-only onboarding вызывают
   отдельный no-body launch-redeem только по server-validated признаку, сохраняют referral attribution
   и открывают приложение без reload. Во время загрузки карточка остаётся согласованным skeleton в
   итоговой позиции.
@@ -227,8 +232,8 @@
   документированный lifetime sentinel конца 2099 года; Home, sponsor state и admin user surfaces
   показывают его как `No expiry`, не как календарную дату 2100 года.
 - Identity, Content, Registration & Access и Welcome Message собраны в секции Flowvy Mini-App.
-  Branding contract позволяет оператору задать app name/logo. Typed locale maps покрывают bot
-  invite prompt, onboarding, referral и sponsor storefront framing; public API отдаёт
+  Branding contract позволяет оператору задать app name/logo. Typed locale maps покрывают
+  onboarding, referral и sponsor storefront framing; public API отдаёт
   только resolved locale, а незаполненные поля используют product fallback. Support остаётся
   product-owned заглушкой `Coming Soon` без provider content или destination. Access editor не
   дублирует список во время редактирования, явно объясняет бессрочный/безлимитный grant и использует
@@ -369,7 +374,8 @@
   панели: live проверка должна выполняться владельцем на отдельном тестовом invite/profile.
 - Main Mini App referral contract проверен deterministic tests. После включения Main App в
   BotFather свежий Telegram-enabled startup подтвердил для test bot
-  `getMe.has_main_web_app=true`; backend публикует только строгий `?startapp=` referral URL. Для
+  `getMe.has_main_web_app=true`; backend публикует строгий `?start=` referral URL, а кнопка bot
+  message строит строгий `?startapp=` launch URL. Для
   Flowvy создан отдельный named-Tunnel hostname с route на local port
   `80`: public root/health/readiness и production asset отвечают `200`, debug route — `404`.
   Hostname другого проекта не изменялся; системный connector продолжает работать отдельно от
@@ -590,6 +596,7 @@ Tribute показал success, endpoint вернул `200`, inbox осталс�
 | Unified action-error feedback | W3C WCAG 2.2 Error Identification/Status Messages; GOV.UK Error summary; Apple HIG Feedback/Writing; official Telegram Mini Apps HapticFeedback; complete route/action audit; `scripts/verify.ps1 -Scope Changed`; `scripts/verify.ps1 -Scope Full`; focused four-project matrix | User-initiated failures share persistent inline text, `role="alert"`, focus reveal, visible outline and one error haptic; passive load errors and field validation retain local behavior. Save errors in long access/rule/offer editors moved to the beginning of the scrollable body; sponsor delete failure moved inside its confirmation. Follow-up audit covered 16 routes, 21 TanStack mutations and direct upload/clipboard/refetch actions, then added provider `{ ok: false }`, Clipboard rejection, stale sponsor refresh and partial Settings load regressions. Fresh Full gate: tooling, one-head/upgrade/downgrade/re-upgrade/drift migrations, Ruff, 497 backend, 56 pinned Remnawave contracts, frontend lint/typecheck, 70 unit, production build, 125/125 mobile Playwright and docs passed. New focused matrix passed 16/16 across 430x932, 320x568, iOS WebKit and desktop; exact action errors passed focus/viewport, one-haptic, overflow and console/network assertions. Home and Settings error evidence was inspected in light/dark. No real provider requests were made. |
 | Global semantic typography | Apple HIG Typography; W3C WCAG Resize Text/Reflow; CSS `::placeholder` and Tiptap placeholder contracts; static source regression; focused and full four-project Playwright; `scripts/verify.ps1 -Scope Full` | Все 165 прежних size declarations распределены по семи semantic roles: overline, caption, label, body/control, heading, title и display. Raw component sizes запрещены unit regression; plain inputs/textareas, select/date/search/onboarding, Telegram HTML и CommonMark используют один invariant 13px control token для value и placeholder без pointer/browser-specific sizing, app-owned `text-size-adjust` или viewport zoom restriction. Full all-project matrix прошла 564/564 на 430x932, 320x568, iOS WebKit и desktop; light/dark route/editor evidence просмотрены без overflow, serious Axe, console или network failures. Full gate прошёл migrations/drift, Ruff, 520 backend, 56 pinned contracts, frontend lint/typecheck/75 unit/build, 141/141 mobile Playwright и docs. Найденный dark destructive contrast доведён выше WCAG AA; тесты ожидают завершения реальной route/theme state вместо проверки промежуточной анимации. Commit/push и реальные provider calls не выполнялись. |
 | Route-level code splitting | official TanStack Router `lazyRouteComponent` and code-splitting contracts; installed `@tanstack/react-router` 1.168.10; Vite production build; accessed 2026-08-22; static router regression; focused four-project navigation matrix; `scripts/verify.ps1 -Scope Full` | Все 17 code-based routes используют preload-aware dynamic imports и общий route-level pending spinner. Main minified/gzip chunk уменьшен с 670.56/198.56 kB до 453.06/142.26 kB; Vite 500 kB warning исчез без поднятия лимита. Direct load, nested refresh, mode switch и Back/Forward прошли 20/20 на 430x932, 320x568, iOS WebKit и desktop. Light/dark Home и admin route evidence просмотрены на mobile/desktop без blank state, overflow или visual regression. Axe regression теперь дожидается финального кадра route reveal вместо анализа промежуточной opacity; повторный focused run прошёл 3/3. Fresh Full gate прошёл migrations/drift, Ruff, 520 backend, 56 pinned contracts, frontend lint/typecheck/77 unit/build, 142/142 mobile Playwright и docs. |
+| Universal Telegram entry | official bot `start` and Main Mini App `startapp` contracts checked 2026-08-22; locked aiogram 3.26.0; bot/link/auth/settings/migration regressions; Content/onboarding visual evidence; Changed/Full gates; standard dev restart | Публичный referral теперь открывает bot chat через строгий `?start=ref_…`; одинаковый для обычного и referral `/start` neutral Welcome открывает Mini App обычной `web_app` кнопкой либо referral-aware `?startapp=ref_…`. Бот больше не регистрирует пользователя и не принимает invite code в chat; open/invite-only state остаётся в Mini App. Повторный referral launch существующего user не меняет `invited_by_id`. Устаревшие invite-prompt copy/media удалены из `Settings > Content`, API и БД migration `d9e0f1a2b3c4`; Welcome остаётся единственным bot content. Focused прошёл 76 backend и 30 browser; Changed — 410 backend, 77 unit, build и 144/144 browser; Full — migration one-head/zero/predecessor/downgrade/re-upgrade/drift, Ruff, 518 backend, 56 pinned contracts, 77 unit, build, 144/144 browser и docs. Content/open/invite light/dark evidence просмотрены без overflow/serious Axe findings. Standard Telegram-enabled dev пересобран и применил head с сохранением volumes; local `5173`/`8001`/`4173` и public root/health/ready вернули `200`, public debug — `404`, production asset `index-DhYPq-8q.js` совпадает, `telegram_main_app_ready` подтверждён. Commit/push и provider/payment mutations не выполнялись. |
 ## Следующее действие
 
 Следующие live evidence зависят от внешнего события Tribute: фактический period-end

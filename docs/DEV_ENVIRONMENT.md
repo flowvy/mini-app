@@ -148,8 +148,9 @@ Vite слушает только `http://127.0.0.1:5173` и проксирует
 `VITE_API_URL=/api` одинаково работает с localhost, preview и Tunnel.
 Bot username и тип Mini App не являются frontend configuration. При Telegram-enabled startup
 backend читает их через Bot API `getMe` и публикует referral URL только при
-`has_main_web_app=true`. Flowvy использует Main Mini App link `t.me/<bot>?startapp=ref_…`; Direct
-Mini App и bot `?start=` для referral не поддерживаются.
+`has_main_web_app=true`. Публичный referral использует bot deep link `t.me/<bot>?start=ref_…`, чтобы
+создать чат; кнопка полученного neutral Welcome открывает Main Mini App через
+`t.me/<bot>?startapp=ref_…`. Direct Mini App для referral не поддерживается.
 
 До live referral-теста откройте `@BotFather` → `/mybots` → точный test bot → **Bot Settings** →
 **Configure Mini App** → **Enable Mini App** и задайте постоянный публичный HTTPS URL текущего

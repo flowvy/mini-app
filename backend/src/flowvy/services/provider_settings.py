@@ -22,9 +22,6 @@ from flowvy.services.remnawave import RemnawaveClient, RemnawaveError
 from flowvy.services.tribute import TributeClient, TributeError
 
 PULSE_FIELDS = frozenset({"pulse_provider", "kuma_url", "kuma_slug", "beszel_url"})
-BOT_INVITE_MEDIA_FIELDS = frozenset(
-    {"bot_invite_media_type", "bot_invite_media_file_id", "bot_invite_media_file_name"}
-)
 
 
 class ProviderSettingsError(ValueError):
@@ -75,9 +72,6 @@ class ProviderSettingsService:
             welcome_media_file_id=row.welcome_media_file_id,
             welcome_media_file_name=row.welcome_media_file_name,
             welcome_button_text=row.welcome_button_text,
-            bot_invite_media_type=getattr(row, "bot_invite_media_type", None),
-            bot_invite_media_file_id=getattr(row, "bot_invite_media_file_id", None),
-            bot_invite_media_file_name=getattr(row, "bot_invite_media_file_name", None),
             content_default_locale=getattr(row, "content_default_locale", DEFAULT_LOCALE),
             content_locales=content_locales,
             tribute_donation_url=row.tribute_donation_url,
@@ -120,21 +114,6 @@ class ProviderSettingsService:
             }
             content_locales[default_locale] = default_content.model_copy(update=updates)
             data["content_locales"] = dump_locale_map(content_locales)
-        if BOT_INVITE_MEDIA_FIELDS.intersection(data):
-            current = await self._repo.get()
-            media_file_id = data.get(
-                "bot_invite_media_file_id",
-                getattr(current, "bot_invite_media_file_id", None),
-            )
-            media_type = data.get(
-                "bot_invite_media_type",
-                getattr(current, "bot_invite_media_type", None),
-            )
-            if media_file_id is None:
-                data["bot_invite_media_type"] = None
-                data["bot_invite_media_file_name"] = None
-            elif media_type not in {"photo", "animation"}:
-                raise ProviderSettingsError("Bot invite media type is required")
         if PULSE_FIELDS.intersection(data):
             current = await self._repo.get()
             provider = data.get("pulse_provider", current.pulse_provider)

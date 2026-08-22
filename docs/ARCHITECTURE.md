@@ -108,11 +108,13 @@ aiogram validation с `BOT_TOKEN`, проверяет TTL и наличие по
 время активности записывается в Redis hash.
 
 При Telegram-enabled startup backend вызывает Bot API `getMe` и кэширует только username и
-`has_main_web_app`. Ссылка приглашения имеет единственный формат Main Mini App
-`t.me/<bot>?startapp=ref_<code>` и выдаётся только при `has_main_web_app=true`. Client launch
-parameter и `initDataUnsafe` не участвуют в attribution: auto-redeem извлекает код только из уже
-HMAC-проверенного raw `initData`. Если capability нельзя подтвердить, система не подменяет этот
-flow bot- или Direct Mini App-ссылкой.
+`has_main_web_app`. Публичная ссылка приглашения имеет формат
+`t.me/<bot>?start=ref_<code>` и выдаётся только при `has_main_web_app=true`: она открывает чат и
+передаёт payload обычному `/start`. Бот отправляет neutral Welcome, а его referral-aware кнопка
+ведёт на `t.me/<bot>?startapp=ref_<code>`. Только этот второй переход переносит code в signed Main
+Mini App `start_param`. Client launch parameter и `initDataUnsafe` не участвуют в attribution:
+auto-redeem извлекает код только из уже HMAC-проверенного raw `initData`. Если capability нельзя
+подтвердить, система не подменяет flow Direct Mini App-ссылкой.
 
 При `GET /api/me` локальная запись синхронизируется, если уже существует. После local miss выполняется
 exact Remnawave lookup по Telegram ID: provider-only user импортируется в local user/invite/subscription
@@ -393,14 +395,15 @@ PostgreSQL и инвалидирует dashboard/Pulse cache по scope/event. T
 contracts signature, freshness, replay, idempotency, payload size и retention проверяются до/после
 сохранения в соответствующей границе.
 
-Aiogram dispatcher содержит обычный `/start` flow, ручной ввод invite code и отправку localized
-welcome/invite-only template с optional global photo/animation. Оба сообщения используют явный
-`ParseMode.HTML`, server allow-list Telegram markup/attributes и caption-safe лимит 1 024 видимых
-символа; при ошибке сохранённого media sender повторяет безопасный text-only вариант. Custom emoji
-хранит обязательный fallback emoji и numeric `emoji-id`. `/start` не является referral transport и
-не разбирает `ref_` payload: приглашение в Main Mini App приходит по HTTPS вместе с подписанным
-initData. В production Telegram webhook живёт в том же FastAPI process; при пустом `WEBHOOK_URL`
-dev-процесс использует polling. Отдельного worker сейчас нет.
+Aiogram dispatcher обрабатывает только универсальный `/start`: независимо от registration mode и
+наличия local user он отправляет один localized Welcome с optional global photo/animation и не
+регистрирует пользователя в чате. Строгий `ref_` payload меняет только destination кнопки с
+обычного `web_app` на Main Mini App `startapp`; видимый content остаётся тем же. Welcome использует
+явный `ParseMode.HTML`, server allow-list Telegram markup/attributes и caption-safe лимит 1 024
+видимых символа; при ошибке сохранённого media sender повторяет безопасный text-only вариант.
+Custom emoji хранит обязательный fallback emoji и numeric `emoji-id`. Ручной invite code вводится
+только в Mini App onboarding. В production Telegram webhook живёт в том же FastAPI process; при
+пустом `WEBHOOK_URL` dev-процесс использует polling. Отдельного worker сейчас нет.
 
 ## Frontend
 

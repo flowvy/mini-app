@@ -496,8 +496,8 @@ test("registered user can copy and share a reusable personal invite", async ({
 	const referralUrl = new URL(shareUrl.searchParams.get("url") ?? "");
 	expect(shareUrl.origin).toBe("https://t.me");
 	expect(shareUrl.pathname).toBe("/share/url");
-	expect(referralUrl.searchParams.get("startapp")).toBe("ref_FVY23456789ABCDEFGHJKMN");
-	expect(referralUrl.searchParams.has("start")).toBe(false);
+	expect(referralUrl.searchParams.get("start")).toBe("ref_FVY23456789ABCDEFGHJKMN");
+	expect(referralUrl.searchParams.has("startapp")).toBe(false);
 	expect(shareUrl.searchParams.get("text")).toContain("FVY-2345-6789-ABCD-EFGH-JKMN");
 	await assertNoHorizontalOverflow(page);
 });

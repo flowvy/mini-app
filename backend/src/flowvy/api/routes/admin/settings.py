@@ -121,16 +121,12 @@ async def test_tribute(
     "/settings/welcome-media",
     response_model=WelcomeMediaUploadResponse,
 )
-@router.post(
-    "/settings/bot-invite-media",
-    response_model=WelcomeMediaUploadResponse,
-)
 async def upload_welcome_media(
     file: UploadFile,
     admin: CurrentAdminForm,
     bot: FromDishka[Bot] = None,  # type: ignore[assignment]
 ) -> WelcomeMediaUploadResponse:
-    """Upload one configured bot-message attachment. Does NOT write to DB."""
+    """Upload the configured Welcome attachment. Does NOT write to DB."""
     media_type = ALLOWED_MIME.get(file.content_type or "")
     if not media_type:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Unsupported file type")

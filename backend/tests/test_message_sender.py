@@ -144,6 +144,29 @@ async def test_send_welcome_with_webapp(sender: MessageSender, bot: AsyncMock) -
     assert "Flowvy" in markup.inline_keyboard[0][0].text
 
 
+async def test_send_welcome_referral_button_opens_the_signed_main_app_link(
+    sender: MessageSender,
+    bot: AsyncMock,
+) -> None:
+    settings = Settings(webapp_url="https://app.example.com")
+    bot.me = AsyncMock(
+        return_value=SimpleNamespace(
+            username="flowvy_testBot",
+            has_main_web_app=True,
+        )
+    )
+
+    await sender.send_welcome(
+        chat_id=123,
+        settings=settings,
+        referral_code="FVY23456789ABCDEFGHJKMN",
+    )
+
+    button = bot.send_animation.call_args.kwargs["reply_markup"].inline_keyboard[0][0]
+    assert button.url == ("https://t.me/flowvy_testBot?startapp=ref_FVY23456789ABCDEFGHJKMN")
+    assert button.web_app is None
+
+
 async def test_send_welcome_custom_app_name(sender: MessageSender, bot: AsyncMock) -> None:
     """Welcome uses app_name from provider_settings."""
     settings = Settings(webapp_url="https://app.example.com")
@@ -187,35 +210,6 @@ async def test_send_welcome_escapes_template_values_but_preserves_html(
     assert sent["caption"] == "<b>Hello Shop &amp; &lt;Co&gt;</b>"
     assert sent["parse_mode"] == ParseMode.HTML
     assert sent["reply_markup"].inline_keyboard[0][0].text == "Open Shop & <Co>"
-
-
-async def test_send_invite_required_supports_html_custom_emoji_and_media(
-    sender: MessageSender,
-    bot: AsyncMock,
-) -> None:
-    ps = SimpleNamespace(
-        app_name="Shop & Co",
-        content_default_locale="en",
-        content_locales={
-            "en": {
-                "bot_invite_required": (
-                    "<b>Join {{appName}}</b> "
-                    '<tg-emoji emoji-id="5368324170671202286">👍</tg-emoji>'
-                )
-            }
-        },
-        bot_invite_media_type="photo",
-        bot_invite_media_file_id="invite-photo-id",
-    )
-
-    await sender.send_invite_required(123, ps, "en-US")
-
-    sent = bot.send_photo.call_args.kwargs
-    assert sent["photo"] == "invite-photo-id"
-    assert sent["caption"] == (
-        '<b>Join Shop &amp; Co</b> <tg-emoji emoji-id="5368324170671202286">👍</tg-emoji>'
-    )
-    assert sent["parse_mode"] == ParseMode.HTML
 
 
 async def test_send_welcome_uses_operator_content_for_requested_locale(

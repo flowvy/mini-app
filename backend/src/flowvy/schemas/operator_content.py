@@ -19,7 +19,6 @@ _CANONICAL_PLACEHOLDERS: dict[str, tuple[str, ...]] = {
 _ALLOWED_PLACEHOLDERS: dict[str, frozenset[str]] = {
     "welcome_text": _APP_PLACEHOLDERS,
     "welcome_button_text": _APP_PLACEHOLDERS,
-    "bot_invite_required": _APP_PLACEHOLDERS,
     "onboarding_invite_title": _APP_PLACEHOLDERS,
     "onboarding_invite_description": _APP_PLACEHOLDERS,
     "onboarding_open_title": _APP_PLACEHOLDERS,
@@ -36,7 +35,7 @@ _ALLOWED_PLACEHOLDERS: dict[str, frozenset[str]] = {
     "sponsor_choose_action": _APP_PLACEHOLDERS,
 }
 
-_TELEGRAM_HTML_FIELDS = frozenset({"welcome_text", "bot_invite_required"})
+_TELEGRAM_HTML_FIELDS = frozenset({"welcome_text"})
 _FORMATTED_FIELDS: dict[str, int] = {
     "onboarding_invite_description": 500,
     "onboarding_open_description": 500,
@@ -66,7 +65,6 @@ class OperatorContentLocale(CamelModel):
 
     welcome_text: str | None = Field(default=None, max_length=4_000)
     welcome_button_text: str | None = Field(default=None, max_length=100)
-    bot_invite_required: str | None = Field(default=None, max_length=4_000)
     onboarding_invite_title: str | None = Field(default=None, max_length=120)
     onboarding_invite_description: str | None = Field(default=None, max_length=4_000)
     onboarding_open_title: str | None = Field(default=None, max_length=120)

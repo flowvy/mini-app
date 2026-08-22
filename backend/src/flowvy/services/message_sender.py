@@ -25,6 +25,7 @@ from flowvy.config import Settings
 from flowvy.localization import product_text
 from flowvy.models.provider_settings import ProviderSettings
 from flowvy.services.operator_content import resolve_operator_content
+from flowvy.telegram_main_app import TelegramMainApp
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +126,7 @@ class MessageSender:
         settings: Settings,
         provider_settings: ProviderSettings | None = None,
         locale: str | None = None,
+        referral_code: str | None = None,
     ) -> Message | None:
         """Send welcome message resolved from template + provider overrides."""
         tmpl = self.resolve_template("welcome", provider_settings, locale)
@@ -134,7 +136,19 @@ class MessageSender:
         html_app_name = html.escape(app_name)
         text = render(tmpl.text, {"appName": html_app_name, "app_name": html_app_name})
 
-        if not settings.webapp_url:
+        referral_launch_url = None
+        if referral_code is not None:
+            try:
+                bot_user = await self._bot.me()
+            except TelegramAPIError:
+                logger.warning("Could not resolve referral-aware Main Mini App button")
+            else:
+                referral_launch_url = TelegramMainApp.from_bot_user(
+                    username=bot_user.username,
+                    has_main_web_app=bot_user.has_main_web_app,
+                ).referral_launch_url(referral_code)
+
+        if not settings.webapp_url and referral_launch_url is None:
             return await self.send(chat_id=chat_id, text=text)
 
         button_text = (
@@ -142,11 +156,11 @@ class MessageSender:
             if tmpl.button_text
             else None
         )
-        buttons = (
-            [InlineButton(text=button_text, web_app_url=settings.webapp_url)]
-            if button_text
-            else None
-        )
+        buttons = None
+        if button_text and referral_launch_url is not None:
+            buttons = [InlineButton(text=button_text, url=referral_launch_url)]
+        elif button_text and settings.webapp_url:
+            buttons = [InlineButton(text=button_text, web_app_url=settings.webapp_url)]
         return await self.send(
             chat_id=chat_id,
             text=text,
@@ -155,35 +169,6 @@ class MessageSender:
             media_file_id=tmpl.media_file_id,
             media_type=tmpl.media_type,
             buttons=buttons,
-        )
-
-    async def send_invite_required(
-        self,
-        chat_id: int,
-        provider_settings: ProviderSettings | None = None,
-        locale: str | None = None,
-    ) -> Message | None:
-        """Send the locale-resolved invite prompt with optional provider media."""
-
-        app_name = product_text(locale, "common.appName")
-        template = html.escape(product_text(locale, "registration.inviteRequired"))
-        media_type = None
-        media_file_id = None
-        if provider_settings is not None:
-            if provider_settings.app_name:
-                app_name = provider_settings.app_name
-            content = resolve_operator_content(provider_settings, locale)
-            if content.bot_invite_required:
-                template = content.bot_invite_required
-            media_type = getattr(provider_settings, "bot_invite_media_type", None)
-            media_file_id = getattr(provider_settings, "bot_invite_media_file_id", None)
-        escaped_name = html.escape(app_name)
-        text = render(template, {"appName": escaped_name, "app_name": escaped_name})
-        return await self.send(
-            chat_id=chat_id,
-            text=text,
-            media_type=media_type,
-            media_file_id=media_file_id,
         )
 
     @staticmethod
