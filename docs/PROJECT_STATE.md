@@ -203,6 +203,8 @@
   no-body launch-redeem только по server-validated признаку и открывает приложение без reload. Во
   время загрузки карточка остаётся согласованным skeleton в итоговой позиции.
   Admin detail показывает число приглашённых без выпуска admin codes.
+- Active subscription card и состояние без активной подписки используют одну HeroCard surface;
+  пустое состояние больше не выпадает отдельной текстовой строкой из карточной композиции.
 - Home также читает server-computed sponsor state. No/base access показывает ready offers; one-time
   active — точную дату и `Extend`; subscription trial/active — `Manage in Tribute` без повторной
   покупки, подтверждённый paid-through срок и branded note о том, что отмена отобразится после

@@ -23,10 +23,27 @@ import { StatusBadge } from "../ui/status-badge.tsx";
 import styles from "./hero-card.module.css";
 
 interface HeroCardProps {
-	subscription: SubscriptionData;
+	subscription: SubscriptionData | null;
 }
 
 export function HeroCard({ subscription }: HeroCardProps) {
+	const { t } = useTranslation();
+
+	if (!subscription) {
+		return (
+			<article
+				className={`${styles.hero} ${styles.emptyHero}`}
+				aria-label={t("home.noSubscription")}
+			>
+				<span className={styles.emptyTitle}>{t("home.noSubscription")}</span>
+			</article>
+		);
+	}
+
+	return <ActiveHeroCard subscription={subscription} />;
+}
+
+function ActiveHeroCard({ subscription }: { subscription: SubscriptionData }) {
 	const { t } = useTranslation();
 	const { usedBytes, totalBytes, deviceLimit, connectionLink } = subscription;
 	const unlimitedTraffic = isUnlimitedTraffic(totalBytes);

@@ -357,7 +357,7 @@ test("home keeps the invite card in skeleton state until the page data settles",
 	await expect(page.getByLabel("Loading invite")).toBeVisible();
 	await expect(page.getByText("Invite friends", { exact: true })).not.toBeVisible();
 
-	await expect(page.getByText("No active subscription")).toBeVisible();
+	await expect(page.getByRole("article", { name: "No active subscription" })).toBeVisible();
 	await expect(page.getByText("Invite friends", { exact: true })).toBeVisible();
 });
 

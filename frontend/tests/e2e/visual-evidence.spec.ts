@@ -101,6 +101,27 @@ test("capture the unified Home loading state", async ({ page, mockApi }, testInf
 	});
 });
 
+test("capture Home without an active subscription", async ({ page, mockApi }, testInfo) => {
+	mockApi.mock("GET", "/api/me/subscription", {
+		status: 404,
+		body: { detail: "No subscription" },
+	});
+
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await expect(page.getByRole("article", { name: "No active subscription" })).toBeVisible();
+		await assertNoHorizontalOverflow(page);
+		await page.screenshot({
+			path: testInfo.outputPath(`home-no-subscription-${colorScheme}.png`),
+			animations: "disabled",
+		});
+	}
+});
+
 test("capture deterministic visual evidence for key screens", async ({
 	page,
 	mockApi: _mock,

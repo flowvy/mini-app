@@ -78,7 +78,17 @@ test("subscription loading, active, absent, and provider error states render saf
 	await expect(page.getByText("Active", { exact: true })).toBeVisible();
 
 	await page.reload();
-	await expect(page.getByText("No active subscription")).toBeVisible();
+	const emptySubscriptionCard = page.getByRole("article", { name: "No active subscription" });
+	await expect(emptySubscriptionCard).toBeVisible();
+	await expect(emptySubscriptionCard).toHaveText("No active subscription");
+	const accessibility = await new AxeBuilder({ page })
+		.include('article[aria-label="No active subscription"]')
+		.analyze();
+	expect(
+		accessibility.violations.filter((violation) =>
+			["serious", "critical"].includes(violation.impact ?? ""),
+		),
+	).toEqual([]);
 
 	await page.reload();
 	await expect(page.getByRole("heading", { name: "Unable to load data" })).toBeVisible();

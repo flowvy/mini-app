@@ -1,5 +1,4 @@
 import type { FC } from "react";
-import { useTranslation } from "react-i18next";
 import { DetailSection } from "../components/home/detail-section.tsx";
 import { HeroCard } from "../components/home/hero-card.tsx";
 import { InviteCard, InviteCardSkeleton } from "../components/home/invite-card.tsx";
@@ -12,7 +11,6 @@ import styles from "./home.module.css";
 
 export const Home: FC = () => {
 	const { subscription, isPending, error, refetch } = useSubscription();
-	const { t } = useTranslation();
 
 	if (isPending) {
 		return (
@@ -59,7 +57,7 @@ export const Home: FC = () => {
 	if (!subscription || (error instanceof ApiError && error.status === 404)) {
 		return (
 			<div className={styles.page}>
-				<p className={styles.noSubscription}>{t("home.noSubscription")}</p>
+				<HeroCard subscription={null} />
 				<SponsorCard />
 				<InviteCard />
 			</div>

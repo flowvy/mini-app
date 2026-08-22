@@ -1752,7 +1752,7 @@ test("Home starts a subscription checkout without treating the redirect as payme
 	});
 
 	await page.goto("/");
-	await expect(page.getByText("No active subscription", { exact: true })).toBeVisible();
+	await expect(page.getByRole("article", { name: "No active subscription" })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Get sponsor access" })).toBeVisible();
 	const subscriptionOffer = page.getByRole("article", { name: "Monthly sponsor access" });
 	await expect(subscriptionOffer).toBeVisible();
