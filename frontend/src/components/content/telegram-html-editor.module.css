@@ -63,7 +63,7 @@
 	min-height: 32px;
 	height: 32px;
 	padding: 5px 7px;
-	font-size: 11px;
+	font-size: var(--font-size-control);
 }
 
 .emojiEditor > button:disabled {
@@ -77,7 +77,7 @@
 	border-radius: 0;
 	background: transparent;
 	font-family: var(--font-mono);
-	font-size: 12px;
+	font-size: var(--font-size-control);
 	box-shadow: none;
 }
 
@@ -91,7 +91,7 @@
 	gap: 10px;
 	padding: 6px 9px 7px;
 	border-top: 1px solid var(--v2-border-tertiary);
-	font-size: 9.5px;
+	font-size: var(--font-size-overline);
 	line-height: 1.35;
 	color: var(--v2-text-secondary);
 }

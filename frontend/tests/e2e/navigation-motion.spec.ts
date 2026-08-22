@@ -45,21 +45,16 @@ test("selection motion follows the system Reduce Motion preference", async ({
 	expect(await selectedLayerDurationMs(dashboardView)).toBeLessThan(1);
 });
 
-test("form controls avoid the iOS focus-zoom threshold without disabling user zoom", async ({
+test("form controls use the global type scale without disabling user zoom", async ({
 	page,
 	mockApi: _mock,
 }) => {
 	await page.goto("/admin/settings/beszel");
 	const urlInput = page.getByPlaceholder("https://monitor.example.com");
-	const { fontSize, touchInput } = await urlInput.evaluate((element) => ({
-		fontSize: Number.parseFloat(getComputedStyle(element).fontSize),
-		touchInput: window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
-	}));
-	if (touchInput) {
-		expect(fontSize).toBeGreaterThanOrEqual(16);
-	} else {
-		expect(fontSize).toBeLessThan(16);
-	}
+	await expect(urlInput).toHaveCSS("font-size", "13px");
+	expect(
+		await urlInput.evaluate((element) => getComputedStyle(element, "::placeholder").fontSize),
+	).toBe("13px");
 	const viewport = await page.locator('meta[name="viewport"]').getAttribute("content");
 	expect(viewport).not.toContain("user-scalable=no");
 	expect(viewport).not.toContain("maximum-scale=1");
@@ -95,24 +90,13 @@ test("access controls keep Flowvy typography with native input values", async ({
 		placeholderSize: Number.parseFloat(getComputedStyle(element, "::placeholder").fontSize),
 		placeholderFamily: getComputedStyle(element, "::placeholder").fontFamily,
 	}));
-	const touchInput = await page.evaluate(
-		() => window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0,
-	);
-	if (touchInput) {
-		expect(typography.controlSize).toBeGreaterThanOrEqual(16);
-	} else {
-		expect(typography.controlSize).toBe(13);
-	}
+	expect(typography.controlSize).toBe(13);
 	expect(typography.controlFamily).toContain("Geist");
-	expect(typography.placeholderSize).toBe(13);
+	expect(typography.placeholderSize).toBe(typography.controlSize);
 	expect(typography.placeholderFamily).toContain("Geist");
 
 	const days = page.getByLabel("Number of days");
-	if (touchInput) {
-		await expect(days).toHaveCSS("font-size", "16px");
-	} else {
-		await expect(days).toHaveCSS("font-size", "13px");
-	}
+	await expect(days).toHaveCSS("font-size", "13px");
 	await expect(days).toHaveCSS("font-family", /Geist/);
 	await expect(days).toHaveValue("30");
 

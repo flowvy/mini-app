@@ -346,6 +346,7 @@ test("stable support screen has no serious automated accessibility violations", 
 }) => {
 	await page.goto("/support");
 	await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
+	await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
 
 	const result = await new AxeBuilder({ page }).analyze();
 	const serious = result.violations.filter((violation) =>

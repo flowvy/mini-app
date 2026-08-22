@@ -186,10 +186,6 @@
 				"manageAutoDonation": "Manage auto-donation in Tribute",
 				"resume": "Resume sponsor access"
 			},
-			"type": {
-				"donation": "Donation",
-				"subscription": "Subscription"
-			},
 			"state": {
 				"noAccess": {
 					"title": "Get sponsor access",

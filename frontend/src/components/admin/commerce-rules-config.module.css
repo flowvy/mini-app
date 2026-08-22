@@ -7,14 +7,14 @@
 
 .intro strong,
 .empty strong {
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	color: var(--v2-text-primary);
 }
 
 .intro span,
 .empty span,
 .state {
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	line-height: 1.45;
 	color: var(--v2-text-secondary);
 }
@@ -77,7 +77,7 @@
 
 .ruleTitleLine strong {
 	overflow: hidden;
-	font-size: 12.5px;
+	font-size: var(--font-size-body);
 	font-weight: 600;
 	color: var(--v2-text-primary);
 	text-overflow: ellipsis;
@@ -88,7 +88,7 @@
 	padding: 3px 6px;
 	border-radius: 999px;
 	background: var(--v2-bg-secondary);
-	font-size: 9.5px;
+	font-size: var(--font-size-overline);
 	font-weight: 600;
 	color: var(--v2-text-secondary);
 	white-space: nowrap;
@@ -99,7 +99,7 @@
 	align-items: center;
 	gap: 6px;
 	overflow: hidden;
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	line-height: 1.4;
 	color: var(--v2-text-secondary);
 	text-overflow: ellipsis;

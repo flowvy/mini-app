@@ -28,7 +28,7 @@
 }
 
 .name {
-	font-size: 12.5px;
+	font-size: var(--font-size-body);
 	font-weight: 600;
 	color: var(--v2-text-primary);
 	overflow: hidden;
@@ -50,14 +50,14 @@
 	column-gap: 6px;
 	min-width: 0;
 	align-items: baseline;
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	line-height: 1.35;
 	color: var(--v2-text-secondary);
 }
 
 .dateLine {
 	column-gap: 4px;
-	font-size: 9.5px;
+	font-size: var(--font-size-overline);
 	letter-spacing: -0.1px;
 	white-space: nowrap;
 }

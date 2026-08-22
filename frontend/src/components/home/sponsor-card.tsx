@@ -98,11 +98,6 @@ const ACTION_KEYS: Partial<Record<SponsorPrimaryAction, string>> = {
 	resume_recurring: "home.sponsor.action.resume",
 };
 
-const TYPE_KEYS: Record<SponsorOffer["commerceType"], string> = {
-	donation: "home.sponsor.type.donation",
-	subscription: "home.sponsor.type.subscription",
-};
-
 const PAYMENT_FEEDBACK_KEYS = {
 	unchanged: "home.sponsor.paymentFeedback.unchanged",
 	checkError: "home.sponsor.paymentFeedback.checkError",
@@ -319,10 +314,7 @@ export function SponsorCard() {
 				aria-label={offerTitle}
 			>
 				<div className={styles.offerHeader}>
-					<div className={styles.offerTitleLine}>
-						<strong>{offerTitle}</strong>
-						<small>{t(TYPE_KEYS[offer.commerceType])}</small>
-					</div>
+					<strong className={styles.offerTitle}>{offerTitle}</strong>
 					{offerDescription && (
 						<FormattedText className={styles.offerDescription}>{offerDescription}</FormattedText>
 					)}

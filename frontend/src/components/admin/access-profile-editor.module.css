@@ -7,7 +7,7 @@
 	padding: 7px 14px;
 	border-bottom: 1px solid var(--v2-border-tertiary);
 	background: color-mix(in srgb, var(--v2-bg-tertiary) 50%, transparent);
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	font-weight: 600;
 	line-height: 1.35;
 	letter-spacing: 0.05em;
@@ -40,7 +40,7 @@
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-sm);
 	background: var(--v2-bg-secondary);
-	font-size: 11px;
+	font-size: var(--font-size-caption);
 	line-height: 1.5;
 	color: var(--v2-text-secondary);
 }
@@ -65,7 +65,7 @@
 	justify-content: space-between;
 	min-height: 48px;
 	padding: 8px 14px;
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	font-weight: 600;
 	cursor: pointer;
 	list-style: none;
@@ -99,7 +99,7 @@
 
 .checks legend {
 	margin-bottom: 6px;
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	font-weight: 600;
 	color: var(--v2-text-secondary);
 }
@@ -109,7 +109,7 @@
 	align-items: center;
 	gap: 8px;
 	min-height: 40px;
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	cursor: pointer;
 }
 

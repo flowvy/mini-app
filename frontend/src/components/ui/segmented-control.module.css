@@ -57,7 +57,7 @@
 	border: none;
 	background: transparent;
 	color: var(--v2-text-secondary);
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	font-weight: 600;
 	font-family: var(--font-sans);
 	line-height: 1.15;

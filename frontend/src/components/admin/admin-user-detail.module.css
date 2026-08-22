@@ -14,12 +14,12 @@
 }
 
 .rowLabel {
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	color: var(--v2-text-secondary);
 }
 
 .rowValue {
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	color: var(--v2-text-primary);
 	text-align: right;
 	max-width: 55%;

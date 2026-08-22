@@ -1,7 +1,7 @@
 /* ── Status Badge ── */
 
 .badge {
-	font-size: 10px;
+	font-size: var(--font-size-overline);
 	font-weight: 600;
 	line-height: 1;
 	padding: 3px 8px;

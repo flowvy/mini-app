@@ -40,7 +40,7 @@
 }
 
 .title {
-	font-size: 18px;
+	font-size: var(--font-size-title);
 	font-weight: 700;
 	color: var(--v2-text-primary);
 }

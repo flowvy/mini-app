@@ -34,13 +34,13 @@
 }
 
 .title {
-	font-size: 18px;
+	font-size: var(--font-size-title);
 	font-weight: 650;
 	color: var(--v2-text-primary);
 }
 
 .description {
-	font-size: 13px;
+	font-size: var(--font-size-body);
 	line-height: 1.55;
 	color: var(--v2-text-secondary);
 	white-space: pre-wrap;

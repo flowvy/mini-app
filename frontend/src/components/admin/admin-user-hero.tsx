@@ -197,9 +197,7 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 				onConfirm={handleConfirm}
 				onCancel={() => setConfirm(null)}
 			>
-				<p style={{ fontSize: 12, color: "var(--v2-text-secondary)", lineHeight: 1.5, margin: 0 }}>
-					{confirm?.desc}
-				</p>
+				<p>{confirm?.desc}</p>
 			</ConfirmDialog>
 		</>
 	);

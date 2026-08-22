@@ -7,7 +7,7 @@
 
 .counter {
 	font-family: var(--font-mono);
-	font-size: 11px;
+	font-size: var(--font-size-caption);
 	font-weight: 600;
 	color: var(--v2-text-positive);
 }
@@ -94,14 +94,14 @@
 }
 
 .emptyTitle {
-	font-size: 14px;
+	font-size: var(--font-size-heading);
 	font-weight: 600;
 	color: var(--v2-text-secondary);
 	margin-top: 8px;
 }
 
 .emptyDesc {
-	font-size: 11px;
+	font-size: var(--font-size-caption);
 	color: var(--v2-text-tertiary);
 	text-align: center;
 }
@@ -115,7 +115,7 @@
 	border: 1px solid var(--v2-border-negative-secondary);
 	background: transparent;
 	color: var(--v2-text-negative);
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	font-weight: 600;
 	cursor: pointer;
 	transition: color var(--duration-base), background-color var(--duration-base), border-color

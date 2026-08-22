@@ -5,6 +5,14 @@
 	color-scheme: light;
 	--font-sans: "Geist Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
 	--font-mono: "Geist Mono Variable", ui-monospace, "Cascadia Code", "Fira Code", monospace;
+	--font-size-overline: 10px;
+	--font-size-caption: 11px;
+	--font-size-label: 12px;
+	--font-size-body: 13px;
+	--font-size-control: var(--font-size-body);
+	--font-size-heading: 15px;
+	--font-size-title: 18px;
+	--font-size-display: 22px;
 }
 
 /* ── Radius & timing ── */
@@ -161,7 +169,7 @@
 		--v2-text-tertiary: #424242;
 		--v2-text-primary-inverted: #171717;
 		--v2-text-positive: #49dd93;
-		--v2-text-negative: #f84235;
+		--v2-text-negative: #ff554a;
 		--v2-text-warning: #ffcb2f;
 		--v2-text-info: #4cd6ee;
 
@@ -253,7 +261,7 @@
 	--v2-text-tertiary: #424242;
 	--v2-text-primary-inverted: #171717;
 	--v2-text-positive: #49dd93;
-	--v2-text-negative: #f84235;
+	--v2-text-negative: #ff554a;
 	--v2-text-warning: #ffcb2f;
 	--v2-text-info: #4cd6ee;
 

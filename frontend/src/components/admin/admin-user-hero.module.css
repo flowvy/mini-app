@@ -23,7 +23,7 @@
 	min-width: 0;
 	overflow: hidden;
 	color: var(--v2-text-primary);
-	font-size: 14px;
+	font-size: var(--font-size-heading);
 	font-weight: 700;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -44,14 +44,14 @@
 }
 
 .heroUsed {
-	font-size: 22px;
+	font-size: var(--font-size-display);
 	font-weight: 800;
 	font-family: var(--font-mono);
 	line-height: 1;
 }
 
 .heroTotal {
-	font-size: 13px;
+	font-size: var(--font-size-body);
 	color: var(--v2-text-secondary);
 	font-family: var(--font-mono);
 }
@@ -67,14 +67,14 @@
 }
 
 .heroKpiValue {
-	font-size: 14px;
+	font-size: var(--font-size-heading);
 	font-weight: 700;
 	font-family: var(--font-mono);
 	line-height: 1.1;
 }
 
 .heroKpiLabel {
-	font-size: 9px;
+	font-size: var(--font-size-overline);
 	color: var(--v2-text-secondary);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
@@ -113,7 +113,7 @@
 }
 
 .heroBarLabel {
-	font-size: 10px;
+	font-size: var(--font-size-overline);
 	color: var(--v2-text-secondary);
 	display: flex;
 	align-items: center;
@@ -147,13 +147,13 @@
 }
 
 .heroStatValue {
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	font-weight: 700;
 	font-family: var(--font-mono);
 }
 
 .heroStatLabel {
-	font-size: 9px;
+	font-size: var(--font-size-overline);
 	color: var(--v2-text-secondary);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;

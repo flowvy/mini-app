@@ -27,7 +27,7 @@
 	border: 1px solid var(--v2-border-tertiary);
 	background: transparent;
 	color: var(--v2-text-secondary);
-	font-size: 13px;
+	font-size: var(--font-size-body);
 	font-weight: 500;
 	font-family: var(--font-sans);
 	cursor: pointer;
@@ -46,7 +46,7 @@
 }
 
 .count {
-	font-size: 10px;
+	font-size: var(--font-size-overline);
 	font-family: var(--font-mono);
 	opacity: 0.55;
 }

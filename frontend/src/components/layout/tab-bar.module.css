@@ -104,7 +104,7 @@
 /* ── Label ── */
 
 .label {
-	font-size: 10px;
+	font-size: var(--font-size-overline);
 	font-weight: 400;
 	line-height: 1;
 	height: 12px;

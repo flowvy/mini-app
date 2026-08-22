@@ -44,14 +44,14 @@
 }
 
 .header h2 {
-	font-size: 16px;
+	font-size: var(--font-size-heading);
 	line-height: 1.25;
 	color: var(--v2-text-primary);
 	outline: none;
 }
 
 .eyebrow {
-	font-size: 10px;
+	font-size: var(--font-size-overline);
 	font-weight: 600;
 	letter-spacing: 0.05em;
 	text-transform: uppercase;
@@ -61,7 +61,7 @@
 .subtitle {
 	max-width: 430px;
 	overflow: hidden;
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	line-height: 1.4;
 	color: var(--v2-text-secondary);
 	text-overflow: ellipsis;

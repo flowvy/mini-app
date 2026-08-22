@@ -1239,6 +1239,11 @@ test("rule deletion consequence is accessible in light and dark themes", async (
 			.getByRole("heading", { name: "Delete automation rule?" })
 			.locator("xpath=ancestor::dialog[1]");
 		await expect(confirmation).toContainText(/payment choices linked to it will be removed/);
+		await expect(
+			page
+				.getByRole("dialog", { name: "Edit automation rule" })
+				.getByRole("button", { name: "Delete", exact: true }),
+		).toHaveCSS("color", colorScheme === "dark" ? "rgb(255, 85, 74)" : "rgb(198, 53, 42)");
 		const result = await new AxeBuilder({ page }).analyze();
 		const serious = result.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),
@@ -1385,11 +1390,7 @@ test("formatted offer copy keeps one fixed toolbar and renders safely on Home", 
 	await expect(templates).not.toHaveAttribute("open", "");
 	await templates.getByText("Templates", { exact: true }).click();
 	await expect(templates.getByRole("button", { name: "Copy {{appName}}" })).toBeVisible();
-	if (testInfo.project.use.hasTouch) {
-		await expect(description).toHaveCSS("font-size", "16px");
-	} else {
-		await expect(description).toHaveCSS("font-size", "13px");
-	}
+	await expect(description).toHaveCSS("font-size", "13px");
 	await placeCaretAtEnd(description);
 	await description.press("Enter");
 	await description.pressSequentially("Faster support");
@@ -1415,11 +1416,7 @@ test("formatted offer copy keeps one fixed toolbar and renders safely on Home", 
 	await selectElementContents(description.locator("strong"));
 	await formattingToolbar.getByRole("button", { name: "Add or edit link" }).click();
 	const linkAddress = page.getByRole("textbox", { name: "Link address" });
-	if (testInfo.project.use.hasTouch) {
-		await expect(linkAddress).toHaveCSS("font-size", "16px");
-	} else {
-		await expect(linkAddress).toHaveCSS("font-size", "11px");
-	}
+	await expect(linkAddress).toHaveCSS("font-size", "13px");
 	await linkAddress.fill("example.com/composing");
 	await linkAddress.evaluate((element) =>
 		element.dispatchEvent(
@@ -1520,34 +1517,37 @@ test("admin can relink an existing sponsor offer to another automation rule", as
 	mockApi.seedCommerceRules([currentRule, nextRule]);
 	mockApi.seedSponsorOffers([offer]);
 
-	await page.goto("/admin/settings/tribute");
-	await page
-		.getByRole("article", { name: offer.title })
-		.getByRole("button", { name: "Edit" })
-		.click();
-	const editor = page.getByRole("dialog", { name: "Edit sponsor offer" });
-	const ruleSelect = editor.getByLabel("Automation rule");
-	await expect(ruleSelect).toBeEnabled();
-	await ruleSelect.selectOption(nextRule.id);
-	await expect(ruleSelect).toHaveValue(nextRule.id);
-	await expect(
-		editor.getByText("A payment already started keeps the rule captured when it began", {
-			exact: false,
-		}),
-	).toBeVisible();
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/admin/settings/tribute");
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
+		await page
+			.getByRole("article", { name: offer.title })
+			.getByRole("button", { name: "Edit" })
+			.click();
+		const themedEditor = page.getByRole("dialog", { name: "Edit sponsor offer" });
+		const ruleSelect = themedEditor.getByLabel("Automation rule");
+		await expect(ruleSelect).toBeEnabled();
+		await ruleSelect.selectOption(nextRule.id);
+		await expect(ruleSelect).toHaveValue(nextRule.id);
+		await expect(
+			themedEditor.getByText("A payment already started keeps the rule captured when it began", {
+				exact: false,
+			}),
+		).toBeVisible();
 		const accessibility = await new AxeBuilder({ page }).analyze();
 		const serious = accessibility.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),
 		);
 		expect(serious).toEqual([]);
-		await editor.screenshot({ path: testInfo.outputPath(`offer-rule-relink-${colorScheme}.png`) });
+		await themedEditor.screenshot({
+			path: testInfo.outputPath(`offer-rule-relink-${colorScheme}.png`),
+		});
 	}
 
+	const editor = page.getByRole("dialog", { name: "Edit sponsor offer" });
 	const requestPromise = page.waitForRequest(
 		(request) =>
 			request.method() === "PUT" &&
@@ -2234,8 +2234,8 @@ test("checking a completed donation refreshes access and offers every renewal ty
 	await page.getByRole("button", { name: "Extend access" }).click();
 	await expect(page.getByText("One month sponsor", { exact: true })).toBeVisible();
 	await expect(page.getByText("Monthly sponsor access", { exact: true })).toBeVisible();
-	await expect(activeCard.getByText("Donation", { exact: true })).toBeVisible();
-	await expect(activeCard.getByText("Subscription", { exact: true })).toBeVisible();
+	await expect(activeCard.getByText("Donation", { exact: true })).toHaveCount(0);
+	await expect(activeCard.getByText("Subscription", { exact: true })).toHaveCount(0);
 	await assertNoHorizontalOverflow(page);
 });
 

@@ -17,14 +17,14 @@
 
 .title {
 	display: block;
-	font-size: 15px;
+	font-size: var(--font-size-heading);
 	line-height: 1.2;
 	color: var(--v2-text-primary);
 }
 
 .description {
 	margin: 4px 0 0;
-	font-size: 11px;
+	font-size: var(--font-size-caption);
 	line-height: 1.35;
 	color: var(--v2-text-secondary);
 }
@@ -39,13 +39,13 @@
 }
 
 .count strong {
-	font: 700 16px / 1 var(--font-mono);
+	font: 700 var(--font-size-heading) / 1 var(--font-mono);
 }
 
 .count span {
 	grid-column: 1 / -1;
 	margin-top: 3px;
-	font-size: 8px;
+	font-size: var(--font-size-overline);
 	text-align: right;
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
@@ -64,7 +64,7 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 10px;
-	font: 600 12px / 1.2 var(--font-mono);
+	font: 600 var(--font-size-label) / 1.2 var(--font-mono);
 	cursor: pointer;
 }
 
@@ -72,13 +72,13 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 5px;
-	font: 600 10px / 1 var(--font-family);
+	font: 600 var(--font-size-overline) / 1 var(--font-sans);
 	color: var(--v2-text-secondary);
 }
 
 .notice {
 	margin: 0;
-	font-size: 11px;
+	font-size: var(--font-size-caption);
 	line-height: 1.35;
 	color: var(--v2-text-secondary);
 }
@@ -94,7 +94,7 @@
 	align-items: center;
 	justify-content: center;
 	gap: 7px;
-	font: 600 12px / 1 var(--font-family);
+	font: 600 var(--font-size-label) / 1 var(--font-sans);
 	text-decoration: none;
 	cursor: pointer;
 }

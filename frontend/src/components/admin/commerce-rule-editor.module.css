@@ -10,7 +10,7 @@
 	padding: 7px 14px;
 	border-bottom: 1px solid var(--v2-border-tertiary);
 	background: color-mix(in srgb, var(--v2-bg-tertiary) 50%, transparent);
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	font-weight: 600;
 	line-height: 1.35;
 	letter-spacing: 0.05em;
@@ -37,7 +37,7 @@
 }
 
 .help {
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	line-height: 1.5;
 	color: var(--v2-text-secondary);
 }
@@ -52,18 +52,18 @@
 }
 
 .providerExpiry strong {
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	color: var(--v2-text-primary);
 }
 
 .providerExpiry span {
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	line-height: 1.5;
 	color: var(--v2-text-secondary);
 }
 
 .fieldNotice {
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	line-height: 1.45;
 	color: var(--v2-text-secondary);
 }
@@ -96,7 +96,7 @@
 }
 
 .bandHeader strong {
-	font-size: 11px;
+	font-size: var(--font-size-caption);
 	font-weight: 600;
 	color: var(--v2-text-secondary);
 }
@@ -125,7 +125,7 @@
 
 .bandUnit {
 	min-width: 32px;
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	line-height: 1;
 	color: var(--v2-text-secondary);
 	text-align: left;
@@ -168,12 +168,12 @@
 }
 
 .previewResult strong {
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	color: var(--v2-text-positive);
 }
 
 .previewResult span {
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	color: var(--v2-text-secondary);
 }
 
@@ -194,12 +194,12 @@
 }
 
 .dangerZone strong {
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	color: var(--v2-text-primary);
 }
 
 .dangerZone span {
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	line-height: 1.4;
 	color: var(--v2-text-secondary);
 }

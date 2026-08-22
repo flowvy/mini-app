@@ -20,7 +20,7 @@
 
 .header h2 {
 	min-width: 0;
-	font-size: 11px;
+	font-size: var(--font-size-caption);
 	font-weight: 600;
 	line-height: 1.2;
 	color: var(--v2-text-secondary);
@@ -39,7 +39,7 @@
 .footer {
 	padding-top: 6px;
 	padding-left: 14px;
-	font-size: 11px;
+	font-size: var(--font-size-caption);
 	color: var(--v2-text-secondary);
 	line-height: 1.45;
 }
@@ -74,7 +74,7 @@
 }
 
 .rowLabel {
-	font-size: 13px;
+	font-size: var(--font-size-body);
 	color: var(--v2-text-primary);
 	flex-shrink: 0;
 }
@@ -104,13 +104,13 @@
 }
 
 .fieldLabel {
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	font-weight: 600;
 	color: var(--v2-text-secondary);
 }
 
 .fieldHint {
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	font-weight: 400;
 	line-height: 1.45;
 	color: var(--v2-text-secondary);
@@ -130,7 +130,7 @@
 	background: var(--v2-bg-secondary);
 	color: var(--v2-text-primary);
 	font-family: var(--font-sans);
-	font-size: 13px;
+	font-size: var(--font-size-control);
 	line-height: 1.25;
 	outline: none;
 	scroll-margin-block: 20px;
@@ -141,7 +141,8 @@
 .fieldControl::placeholder {
 	color: var(--v2-text-secondary);
 	font-family: var(--font-sans);
-	font-size: 13px;
+	font-size: inherit;
+	line-height: inherit;
 	opacity: 0.72;
 }
 
@@ -173,7 +174,7 @@
 	max-width: 100%;
 	color: var(--v2-text-primary);
 	font-family: var(--font-sans);
-	font-size: 13px;
+	font-size: var(--font-size-control);
 	line-height: 1.25;
 	touch-action: manipulation;
 	-webkit-tap-highlight-color: transparent;
@@ -202,7 +203,7 @@
 	min-width: 0;
 	overflow: hidden;
 	font-family: var(--font-sans);
-	font-size: 13px;
+	font-size: var(--font-size-control);
 	line-height: 1.25;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -285,7 +286,7 @@
 
 .inlineFieldLabel {
 	min-width: 0;
-	font-size: 13px;
+	font-size: var(--font-size-body);
 	font-weight: 500;
 	color: var(--v2-text-primary);
 }
@@ -324,7 +325,7 @@
 	border: none;
 	background: transparent;
 	color: var(--v2-text-primary);
-	font-size: 13px;
+	font-size: var(--font-size-control);
 	font-family: var(--font-mono);
 	resize: none;
 	line-height: 1.5;
@@ -334,7 +335,8 @@
 
 .textarea::placeholder {
 	color: var(--v2-text-tertiary);
-	font-size: 13px;
+	font-size: inherit;
+	line-height: inherit;
 }
 
 /* ── Inline Input ── */
@@ -346,14 +348,15 @@
 	border: none;
 	background: transparent;
 	color: var(--v2-text-primary);
-	font-size: 13px;
+	font-size: var(--font-size-control);
 	font-family: var(--font-sans);
 	outline: none;
 }
 
 .inlineInput::placeholder {
 	color: var(--v2-text-tertiary);
-	font-size: 13px;
+	font-size: inherit;
+	line-height: inherit;
 }
 
 .inlineInput.mono {

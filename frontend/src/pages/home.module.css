@@ -9,7 +9,7 @@
 
 .noSubscription {
 	margin: 0;
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	color: var(--v2-text-secondary);
 }
 

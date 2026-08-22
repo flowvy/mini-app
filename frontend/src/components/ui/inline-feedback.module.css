@@ -2,7 +2,7 @@
 	margin: var(--layout-section-gap) 0 0;
 	padding: 9px 12px;
 	border-radius: var(--radius-sm);
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	line-height: 1.4;
 }
 

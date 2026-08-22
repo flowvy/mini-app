@@ -33,7 +33,7 @@
 
 .title {
 	margin: 0;
-	font-size: 14px;
+	font-size: var(--font-size-heading);
 	font-weight: 700;
 	color: var(--v2-text-primary);
 	outline: none;
@@ -64,7 +64,7 @@
 	min-height: 0;
 	padding: 18px;
 	overflow-y: auto;
-	font-size: 13px;
+	font-size: var(--font-size-body);
 	color: var(--v2-text-secondary);
 	line-height: 1.5;
 }

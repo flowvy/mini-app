@@ -34,11 +34,9 @@ body {
 	background: var(--v2-floor-0);
 	color: var(--v2-text-primary);
 	font-family: var(--font-sans);
-	font-size: 13px;
+	font-size: var(--font-size-body);
 	line-height: 1.4;
 	font-feature-settings: "liga" 1, "calt" 1;
-	-webkit-text-size-adjust: 100%;
-	text-size-adjust: 100%;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
@@ -86,25 +84,20 @@ input,
 textarea,
 select {
 	font: inherit;
+	font-size: var(--font-size-control);
 	color: inherit;
 	scroll-margin-block: 20px;
 }
 
-/* iOS/WKWebView zooms focused controls whose rendered text is below 16px.
-   Apply the threshold only to touch UIs so desktop forms keep the app type scale. */
-@media (pointer: coarse) {
-	input[type]:not([data-allow-focus-zoom]),
-	input:not([type]):not([data-allow-focus-zoom]),
-	textarea:not([data-allow-focus-zoom]),
-	select:not([data-allow-focus-zoom]),
-	[contenteditable="true"]:not([data-allow-focus-zoom]) {
-		font-size: max(16px, 1em);
-	}
+[contenteditable="true"] {
+	font-size: var(--font-size-control);
 }
 
 input::placeholder,
 textarea::placeholder {
-	font-size: 13px;
+	font-family: inherit;
+	font-size: inherit;
+	line-height: inherit;
 }
 
 a {
@@ -162,32 +155,6 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
 	border-color: var(--v2-border-positive-primary);
-}
-
-/* ── Shared input ── */
-
-.fv-input {
-	width: 100%;
-	padding: 8px 10px;
-	border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);
-	border-radius: var(--radius-sm);
-	background: var(--v2-bg-primary);
-	color: var(--v2-text-primary);
-	font-size: 12px;
-	font-family: var(--font-mono);
-	outline: none;
-	transition: border-color 0.15s;
-}
-
-.fv-input:focus {
-	border-color: var(--v2-bg-positive-secondary);
-}
-.fv-input::placeholder {
-	color: var(--v2-text-tertiary);
-}
-.fv-input:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
 }
 
 /* ── Auth screen (full-page loading / error) ── */

@@ -29,13 +29,13 @@
 
 .option strong {
 	flex: 0 0 auto;
-	font: 650 13px / 1.2 var(--font-mono);
+	font: 650 var(--font-size-body) / 1.2 var(--font-mono);
 	color: var(--v2-text-positive);
 }
 
 .option span {
 	min-width: 0;
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	font-weight: 500;
 	line-height: 1.3;
 	color: var(--v2-text-secondary);
@@ -47,13 +47,5 @@
 		gap: 10px;
 		min-height: 40px;
 		padding: 9px 10px;
-	}
-
-	.option strong {
-		font-size: 12px;
-	}
-
-	.option span {
-		font-size: 10px;
 	}
 }

@@ -17,7 +17,7 @@
 }
 
 .value {
-	font-size: 20px;
+	font-size: var(--font-size-display);
 	font-weight: 800;
 	font-family: var(--font-mono);
 	line-height: 1.1;
@@ -25,7 +25,7 @@
 }
 
 .label {
-	font-size: 10px;
+	font-size: var(--font-size-overline);
 	font-weight: 600;
 	color: var(--v2-text-secondary);
 	text-transform: uppercase;
@@ -34,7 +34,7 @@
 }
 
 .sub {
-	font-size: 10px;
+	font-size: var(--font-size-overline);
 	color: var(--v2-text-tertiary);
 	margin-top: 1px;
 }

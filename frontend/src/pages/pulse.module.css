@@ -23,7 +23,7 @@
 }
 
 .incidentsEmptyText {
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	color: var(--v2-text-secondary);
 }
 
@@ -36,7 +36,7 @@
 	justify-content: space-between;
 	gap: 12px;
 	padding: 8px 0;
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	color: var(--v2-text-primary);
 }
 
@@ -47,5 +47,5 @@
 .incident time {
 	flex-shrink: 0;
 	color: var(--v2-text-tertiary);
-	font-size: 11px;
+	font-size: var(--font-size-caption);
 }

@@ -27,7 +27,7 @@
 }
 
 .name {
-	font-size: 15px;
+	font-size: var(--font-size-heading);
 	font-weight: 700;
 	color: var(--v2-text-primary);
 	line-height: 1.2;
@@ -48,14 +48,14 @@
 }
 
 .kpiValue {
-	font-size: 16px;
+	font-size: var(--font-size-heading);
 	font-weight: 700;
 	font-family: var(--font-mono);
 	line-height: 1.1;
 }
 
 .kpiLabel {
-	font-size: 9px;
+	font-size: var(--font-size-overline);
 	color: var(--v2-text-secondary);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
@@ -77,14 +77,14 @@
 }
 
 .trafficUsed {
-	font-size: 22px;
+	font-size: var(--font-size-display);
 	font-weight: 800;
 	font-family: var(--font-mono);
 	line-height: 1;
 }
 
 .trafficTotal {
-	font-size: 13px;
+	font-size: var(--font-size-body);
 	color: var(--v2-text-secondary);
 	font-family: var(--font-mono);
 }
@@ -115,7 +115,7 @@
 }
 
 .barLabel {
-	font-size: 10px;
+	font-size: var(--font-size-overline);
 	color: var(--v2-text-secondary);
 	display: flex;
 	align-items: center;
@@ -149,13 +149,13 @@
 }
 
 .statValue {
-	font-size: 11px;
+	font-size: var(--font-size-caption);
 	font-weight: 700;
 	font-family: var(--font-mono);
 }
 
 .statLabel {
-	font-size: 8px;
+	font-size: var(--font-size-overline);
 	color: var(--v2-text-secondary);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
@@ -179,7 +179,7 @@
 	padding: 8px 14px;
 	border: 1px solid transparent;
 	border-radius: var(--radius-sm);
-	font-size: 11px;
+	font-size: var(--font-size-caption);
 	font-weight: 600;
 	line-height: 1;
 	white-space: nowrap;

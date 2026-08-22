@@ -91,6 +91,49 @@ test("admin saves allow-listed provider content as a locale map", async ({
 	expect(payload).not.toHaveProperty("supportUrl");
 });
 
+test("plain, Telegram, and CommonMark fields share one global text scale", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.goto("/admin/settings/content");
+	await expect(page.getByText("Loading editor…", { exact: true })).toHaveCount(0);
+
+	const expectedSize = 13;
+	const title = page.getByLabel("Invite registration title");
+	const telegramText = page.getByLabel("Invite-only prompt");
+	const description = page.getByRole("textbox", { name: "Invite registration description" });
+
+	for (const control of [title, telegramText, description]) {
+		expect(
+			await control.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize)),
+		).toBe(expectedSize);
+	}
+
+	for (const control of [title, telegramText]) {
+		const typography = await control.evaluate((element) => ({
+			value: Number.parseFloat(getComputedStyle(element).fontSize),
+			placeholder: Number.parseFloat(getComputedStyle(element, "::placeholder").fontSize),
+		}));
+		expect(typography.placeholder).toBe(typography.value);
+	}
+
+	const commonMarkPlaceholder = description.locator("p.is-editor-empty");
+	await expect(commonMarkPlaceholder).toHaveCount(1);
+	expect(
+		await commonMarkPlaceholder.evaluate((element) =>
+			Number.parseFloat(getComputedStyle(element, "::before").fontSize),
+		),
+	).toBe(expectedSize);
+
+	const telegramEditor = telegramText.locator("xpath=ancestor::div[1]");
+	await telegramEditor.getByRole("button", { name: "Custom emoji" }).click();
+	await expect(telegramEditor.getByLabel("Emoji ID")).toHaveCSS("font-size", `${expectedSize}px`);
+	await expect(telegramEditor.getByLabel("Fallback emoji")).toHaveCSS(
+		"font-size",
+		`${expectedSize}px`,
+	);
+});
+
 test("Telegram editors insert formatting, custom emoji, templates, and invite media", async ({
 	page,
 	mockApi: _mock,

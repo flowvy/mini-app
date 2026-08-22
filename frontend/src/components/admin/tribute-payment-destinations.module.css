@@ -9,14 +9,14 @@
 }
 
 .subheading strong {
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	font-weight: 600;
 	color: var(--v2-text-primary);
 }
 
 .subheading small,
 .catalogState {
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	font-weight: 400;
 	line-height: 1.45;
 	color: var(--v2-text-secondary);
@@ -39,7 +39,7 @@
 }
 
 .fieldError {
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	line-height: 1.4;
 	color: var(--v2-text-negative);
 }

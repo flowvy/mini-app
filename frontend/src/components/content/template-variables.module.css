@@ -12,7 +12,7 @@
 	min-height: 34px;
 	padding: 5px 9px;
 	color: var(--v2-text-secondary);
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	font-weight: 600;
 	cursor: pointer;
 	list-style: none;
@@ -44,7 +44,7 @@
 }
 
 .body > p {
-	font-size: 10px;
+	font-size: var(--font-size-overline);
 	line-height: 1.4;
 	color: var(--v2-text-secondary);
 }
@@ -70,7 +70,7 @@
 }
 
 .variable code {
-	font: 10.5px / 1.2 var(--font-mono);
+	font: var(--font-size-caption) / 1.2 var(--font-mono);
 	color: var(--v2-text-positive);
 }
 
@@ -82,13 +82,13 @@
 
 .variableDescription > span,
 .variableDescription small {
-	font-size: 10px;
+	font-size: var(--font-size-overline);
 	line-height: 1.35;
 	color: var(--v2-text-secondary);
 }
 
 .variableDescription small {
-	font-size: 9px;
+	font-size: var(--font-size-overline);
 	opacity: 0.86;
 }
 

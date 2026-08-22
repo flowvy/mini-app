@@ -1,7 +1,7 @@
 .state {
 	margin: 0;
 	padding: 16px 14px;
-	font-size: 11px;
+	font-size: var(--font-size-caption);
 	line-height: 1.45;
 	color: var(--v2-text-secondary);
 }
@@ -39,7 +39,7 @@
 .more {
 	margin: 0;
 	padding: 10px 14px;
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	line-height: 1.4;
 	color: var(--v2-text-tertiary);
 }

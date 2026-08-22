@@ -47,7 +47,7 @@
 	background: var(--v2-bg-primary);
 	color: var(--v2-text-tertiary);
 	font: inherit;
-	font-size: 16px;
+	font-size: var(--font-size-control);
 	text-align: left;
 	cursor: text;
 	box-sizing: border-box;
@@ -66,7 +66,7 @@
 	background: transparent;
 	color: var(--v2-text-positive);
 	font: inherit;
-	font-size: 13px;
+	font-size: var(--font-size-body);
 	font-weight: 600;
 	cursor: pointer;
 }
@@ -83,7 +83,7 @@
 	border-radius: 16px;
 	background: var(--v2-bg-primary);
 	color: var(--v2-text-primary);
-	font-size: 16px;
+	font-size: var(--font-size-control);
 	font-family: var(--font-sans);
 	outline: none;
 	transition: border-color var(--duration-base);
@@ -113,7 +113,7 @@
 	align-items: center;
 	justify-content: center;
 	cursor: pointer;
-	font-size: 12px;
+	font-size: var(--font-size-label);
 	line-height: 1;
 	padding: 0;
 }
@@ -143,14 +143,14 @@
 }
 
 .emptyTitle {
-	font-size: 14px;
+	font-size: var(--font-size-heading);
 	font-weight: 600;
 	color: var(--v2-text-secondary);
 	margin-top: 8px;
 }
 
 .emptyDesc {
-	font-size: 11px;
+	font-size: var(--font-size-caption);
 	color: var(--v2-text-tertiary);
 	text-align: center;
 }

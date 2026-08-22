@@ -25,6 +25,7 @@ test("authentication retry and direct admin denial are explicit", async ({
 	await page.evaluate(() => localStorage.removeItem("flowvy:mock-auth"));
 	await page.getByRole("button", { name: "Retry" }).click();
 	await expect(page.getByText("Account Info")).toBeVisible();
+	await page.waitForLoadState("networkidle");
 
 	await page.evaluate(() => localStorage.setItem("flowvy:mock-role", "user"));
 	await page.reload();

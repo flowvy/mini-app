@@ -21,14 +21,14 @@
 
 .policyCopy > span,
 .listRow strong {
-	font-size: 13px;
+	font-size: var(--font-size-body);
 	font-weight: 600;
 	color: var(--v2-text-primary);
 }
 
 .policyCopy small,
 .listRow small {
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	line-height: 1.4;
 	color: var(--v2-text-secondary);
 }
@@ -79,14 +79,14 @@
 }
 
 .empty strong {
-	font-size: 13px;
+	font-size: var(--font-size-body);
 	font-weight: 600;
 	color: var(--v2-text-primary);
 }
 
 .empty p {
 	max-width: 330px;
-	font-size: 10.5px;
+	font-size: var(--font-size-caption);
 	line-height: 1.45;
 	color: var(--v2-text-secondary);
 }

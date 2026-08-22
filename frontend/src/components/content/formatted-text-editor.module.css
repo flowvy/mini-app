@@ -30,7 +30,7 @@
 	min-height: 112px;
 	padding: 11px 12px;
 	outline: none;
-	font-size: 13px;
+	font-size: var(--font-size-control);
 	line-height: 1.5;
 	white-space: pre-wrap;
 	caret-color: var(--v2-text-positive);
@@ -109,7 +109,7 @@
 .linkEditor legend {
 	display: block;
 	padding: 1px 4px 5px;
-	font-size: 10px;
+	font-size: var(--font-size-overline);
 	font-weight: 600;
 	color: var(--v2-text-secondary);
 }
@@ -129,7 +129,7 @@
 	border-radius: 7px;
 	background: var(--v2-bg-secondary);
 	color: var(--v2-text-primary);
-	font: 11px / 1.2 var(--font-sans);
+	font: var(--font-size-control) / 1.2 var(--font-sans);
 }
 
 .linkRow input[aria-invalid="true"] {
@@ -139,7 +139,7 @@
 .linkError {
 	display: block;
 	padding: 5px 4px 1px;
-	font-size: 9.5px;
+	font-size: var(--font-size-overline);
 	color: var(--v2-text-negative);
 }
 
@@ -150,7 +150,7 @@
 	gap: 10px;
 	padding: 6px 9px 7px;
 	border-top: 1px solid var(--v2-border-tertiary);
-	font-size: 9.5px;
+	font-size: var(--font-size-overline);
 	line-height: 1.35;
 	color: var(--v2-text-secondary);
 }
