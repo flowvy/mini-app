@@ -49,6 +49,13 @@ def _row(**overrides: object) -> SimpleNamespace:
         "content_locales": {},
         "tribute_donation_url": None,
         "tribute_subscription_urls": {},
+        "referral_reward_enabled": False,
+        "referral_reward_days": None,
+        "referral_reward_access_profile_id": None,
+        "welcome_discount_enabled": False,
+        "welcome_discount_offer_id": None,
+        "welcome_discount_url": None,
+        "welcome_discount_percent": None,
         "updated_at": datetime(2026, 8, 2, tzinfo=UTC),
     }
     values.update(overrides)
@@ -57,6 +64,9 @@ def _row(**overrides: object) -> SimpleNamespace:
 
 def _service(
     row: SimpleNamespace,
+    *,
+    profiles: AsyncMock | None = None,
+    offers: AsyncMock | None = None,
 ) -> tuple[ProviderSettingsService, AsyncMock, AsyncMock, AsyncMock]:
     repo = AsyncMock()
     repo.get = AsyncMock(return_value=row)
@@ -70,6 +80,8 @@ def _service(
     tribute.credentials_configured = False
     redis = AsyncMock()
     redis.delete = AsyncMock(return_value=1)
+    profiles = profiles or AsyncMock()
+    offers = offers or AsyncMock()
     return (
         ProviderSettingsService(
             repo,
@@ -79,11 +91,89 @@ def _service(
             tribute,
             redis,
             Settings(_env_file=None),
+            profiles,
+            offers,
         ),
         kuma,
         beszel,
         redis,
     )
+
+
+@pytest.mark.asyncio
+async def test_referral_reward_requires_active_automation_profile() -> None:
+    profiles = AsyncMock()
+    profiles.get_active.return_value = SimpleNamespace(
+        validity_mode="duration",
+        status="ACTIVE",
+    )
+    service, _kuma, _beszel, _redis = _service(_row(), profiles=profiles)
+
+    with pytest.raises(ProviderSettingsError, match="automation access profile"):
+        await service.update(
+            ProviderSettingsPatch(
+                referral_reward_enabled=True,
+                referral_reward_days=7,
+                referral_reward_access_profile_id="11111111-1111-4111-8111-111111111111",
+            )
+        )
+
+
+@pytest.mark.asyncio
+async def test_independent_referral_benefits_accept_complete_configuration() -> None:
+    profile_id = "11111111-1111-4111-8111-111111111111"
+    offer_id = "22222222-2222-4222-8222-222222222222"
+    profiles = AsyncMock()
+    profiles.get_active.return_value = SimpleNamespace(
+        validity_mode="automation",
+        status="ACTIVE",
+    )
+    offers = AsyncMock()
+    offers.get_ready.return_value = SimpleNamespace(commerce_type="subscription")
+    service, _kuma, _beszel, _redis = _service(
+        _row(),
+        profiles=profiles,
+        offers=offers,
+    )
+
+    await service.update(
+        ProviderSettingsPatch(
+            referral_reward_enabled=True,
+            referral_reward_days=7,
+            referral_reward_access_profile_id=profile_id,
+            welcome_discount_enabled=True,
+            welcome_discount_offer_id=offer_id,
+            welcome_discount_url="https://t.me/tribute/app?startapp=promo",
+            welcome_discount_percent=25,
+        )
+    )
+
+    profiles.get_active.assert_awaited_once()
+    offers.get_ready.assert_awaited_once()
+
+
+@pytest.mark.parametrize("percent", [0, 100])
+def test_welcome_discount_percentage_must_be_between_one_and_ninety_nine(
+    percent: int,
+) -> None:
+    with pytest.raises(ValidationError):
+        ProviderSettingsPatch(welcome_discount_percent=percent)
+
+
+@pytest.mark.asyncio
+async def test_welcome_discount_requires_configured_percentage() -> None:
+    offers = AsyncMock()
+    offers.get_ready.return_value = SimpleNamespace(commerce_type="subscription")
+    service, _kuma, _beszel, _redis = _service(_row(), offers=offers)
+
+    with pytest.raises(ProviderSettingsError, match="percentage"):
+        await service.update(
+            ProviderSettingsPatch(
+                welcome_discount_enabled=True,
+                welcome_discount_offer_id="22222222-2222-4222-8222-222222222222",
+                welcome_discount_url="https://t.me/tribute/app?startapp=promo",
+            )
+        )
 
 
 @pytest.mark.parametrize(

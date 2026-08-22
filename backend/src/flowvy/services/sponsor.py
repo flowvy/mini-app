@@ -19,6 +19,7 @@ from flowvy.models.commerce_rule import CommerceRule
 from flowvy.models.entitlement_operation import EntitlementOperation
 from flowvy.models.sponsor_checkout import SponsorCheckout
 from flowvy.models.sponsor_offer import SponsorOffer
+from flowvy.models.user import User
 from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.commerce_rule import CommerceRuleRepository
 from flowvy.repositories.entitlement_baseline import EntitlementBaselineRepository
@@ -38,6 +39,7 @@ from flowvy.schemas.commerce import (
     SponsorOfferResponse,
     SponsorStateResponse,
 )
+from flowvy.schemas.provider_settings import normalize_payment_destination
 from flowvy.services.commerce import (
     CommerceRuleError,
     commerce_rule_response,
@@ -497,6 +499,7 @@ class SponsorStateService:
         baselines: EntitlementBaselineRepository,
         subscriptions: SubscriptionRepository,
         users: UserRepository,
+        provider_settings: ProviderSettingsRepository,
         config: Settings,
         clock: Callable[[], datetime.datetime] | None = None,
     ) -> None:
@@ -508,6 +511,7 @@ class SponsorStateService:
         self._baselines = baselines
         self._subscriptions = subscriptions
         self._users = users
+        self._provider_settings = provider_settings
         self._config = config
         self._clock = clock or (lambda: datetime.datetime.now(datetime.UTC))
 
@@ -515,11 +519,29 @@ class SponsorStateService:
         now = self._clock()
         pending_checkout = await self._checkouts.expire_pending(user_id, now)
         published = await self._offers.list_published(locale)
+        welcome_discount = await self._welcome_discount_details(user_id)
+        if welcome_discount is not None:
+            welcome_discount_offer_id, welcome_discount_percent, _ = welcome_discount
+            published = [
+                offer.model_copy(
+                    update={
+                        "welcome_discount": offer.id == welcome_discount_offer_id,
+                        "welcome_discount_percent": (
+                            welcome_discount_percent
+                            if offer.id == welcome_discount_offer_id
+                            else None
+                        ),
+                    }
+                )
+                for offer in published
+            ]
         operations = await self._operations.list_for_user(user_id)
         active_grants = [
             operation
             for operation in await self._operations.uncompensated_applied_grants(user_id)
-            if operation.target_expiry is not None and operation.target_expiry > now
+            if operation.provider == "tribute"
+            and operation.target_expiry is not None
+            and operation.target_expiry > now
         ]
         latest_subscription = await self._events.latest_subscription_for_user(user_id)
         latest_recurring_donation_payment = (
@@ -574,6 +596,7 @@ class SponsorStateService:
                 operation
                 for operation in reversed(operations)
                 if operation.operation_kind in {"grant", "refund"}
+                and operation.provider == "tribute"
                 and operation.status in {"pending", "processing", "retry"}
             ),
             None,
@@ -582,7 +605,9 @@ class SponsorStateService:
             (
                 operation
                 for operation in reversed(operations)
-                if operation.operation_kind in {"grant", "refund"} and operation.status == "review"
+                if operation.provider == "tribute"
+                and operation.operation_kind in {"grant", "refund"}
+                and operation.status == "review"
             ),
             None,
         )
@@ -619,7 +644,7 @@ class SponsorStateService:
                 (
                     operation
                     for operation in reversed(operations)
-                    if operation.operation_kind == "grant"
+                    if operation.provider == "tribute" and operation.operation_kind == "grant"
                 ),
                 None,
             )
@@ -710,6 +735,18 @@ class SponsorStateService:
                 )
         if offer.checkout_url is None:
             raise SponsorOfferError("Sponsor offer has no checkout destination")
+        welcome_discount = await self._welcome_discount_checkout(user, offer)
+        checkout_offer = (
+            offer.model_copy(
+                update={
+                    "checkout_url": welcome_discount[0],
+                    "welcome_discount": True,
+                    "welcome_discount_percent": welcome_discount[1],
+                }
+            )
+            if welcome_discount is not None
+            else offer
+        )
         expires_at = now + datetime.timedelta(
             minutes=self._config.sponsor_checkout_pending_minutes,
         )
@@ -725,10 +762,49 @@ class SponsorStateService:
             ),
             external_item_id=offer.external_item_id,
             status="pending",
-            offer_snapshot=offer.model_dump(mode="json"),
+            offer_snapshot=checkout_offer.model_dump(mode="json"),
             expires_at=expires_at,
         )
         return self._checkout_response(checkout)
+
+    async def _welcome_discount_details(
+        self,
+        user_id: int,
+    ) -> tuple[uuid.UUID, int, str] | None:
+        user = await self._users.get_by_telegram_id(user_id)
+        if user is None:
+            return None
+        settings = await self._provider_settings.get()
+        if (
+            not settings.welcome_discount_enabled
+            or settings.welcome_discount_offer_id is None
+            or settings.welcome_discount_url is None
+            or settings.welcome_discount_percent is None
+            or user.invited_by_id is None
+            or await self._operations.has_applied_tribute_grant(user.id)
+        ):
+            return None
+        try:
+            normalize_payment_destination(settings.welcome_discount_url)
+        except ValueError:
+            return None
+        if not 1 <= settings.welcome_discount_percent <= 99:
+            return None
+        return (
+            settings.welcome_discount_offer_id,
+            settings.welcome_discount_percent,
+            normalize_payment_destination(settings.welcome_discount_url),
+        )
+
+    async def _welcome_discount_checkout(
+        self,
+        user: User,
+        offer: SponsorOfferResponse,
+    ) -> tuple[str, int] | None:
+        details = await self._welcome_discount_details(user.id)
+        if details is None or details[0] != offer.id or offer.commerce_type != "subscription":
+            return None
+        return details[2], details[1]
 
     async def abandon_checkout(self, user_id: int, checkout_id: uuid.UUID) -> None:
         """Abandon only Flowvy's local redirect intent; a late signed event still wins."""

@@ -570,6 +570,9 @@ def _state_service(
     pending_checkout: SponsorCheckout | None = None,
     source_event: object | None = None,
     confirmed_checkout: SponsorCheckout | None = None,
+    invited_by_id: int | None = None,
+    discount_enabled: bool = False,
+    has_paid: bool = False,
 ) -> SponsorStateService:
     offer_service = AsyncMock()
     offer_service.list_published.return_value = [_public_offer()]
@@ -587,6 +590,7 @@ def _state_service(
     operation_repo = AsyncMock()
     operation_repo.list_for_user.return_value = operations
     operation_repo.uncompensated_applied_grants.return_value = active
+    operation_repo.has_applied_tribute_grant.return_value = has_paid
     events = AsyncMock()
     events.get_by_id.return_value = source_event
     events.latest_subscription_for_user.return_value = latest_subscription
@@ -598,6 +602,20 @@ def _state_service(
     baselines.get_by_id.return_value = baseline
     subscriptions = AsyncMock()
     subscriptions.get_by_user_id.return_value = []
+    users = AsyncMock()
+    users.get_by_telegram_id.return_value = SimpleNamespace(
+        id=123,
+        invited_by_id=invited_by_id,
+    )
+    provider_settings = AsyncMock()
+    provider_settings.get.return_value = SimpleNamespace(
+        welcome_discount_enabled=discount_enabled,
+        welcome_discount_offer_id=OFFER_ID if discount_enabled else None,
+        welcome_discount_url=(
+            "https://t.me/tribute/app?startapp=promo" if discount_enabled else None
+        ),
+        welcome_discount_percent=25 if discount_enabled else None,
+    )
     return SponsorStateService(
         offer_service,
         offer_repository,
@@ -606,7 +624,8 @@ def _state_service(
         events,
         baselines,
         subscriptions,
-        AsyncMock(),
+        users,
+        provider_settings,
         _settings(monkeypatch),
         clock=lambda: NOW,
     )
@@ -860,11 +879,51 @@ async def test_review_is_visible_even_when_previous_paid_access_is_still_active(
     assert result.access_level == "paid"
 
 
+@pytest.mark.asyncio
+async def test_invited_first_time_user_sees_welcome_discount_on_configured_offer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = _state_service(
+        monkeypatch,
+        operations=[],
+        active=[],
+        invited_by_id=321,
+        discount_enabled=True,
+    )
+
+    result = await service.get_state(123)
+
+    assert result.offers[0].welcome_discount is True
+    assert result.offers[0].welcome_discount_percent == 25
+
+
+@pytest.mark.asyncio
+async def test_returning_payer_does_not_see_welcome_discount(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = _state_service(
+        monkeypatch,
+        operations=[],
+        active=[],
+        invited_by_id=321,
+        discount_enabled=True,
+        has_paid=True,
+    )
+
+    result = await service.get_state(123)
+
+    assert result.offers[0].welcome_discount is False
+    assert result.offers[0].welcome_discount_percent is None
+
+
 def _checkout_service(
     monkeypatch: pytest.MonkeyPatch,
     *,
     pending: SponsorCheckout | None,
     active: list[EntitlementOperation] | None = None,
+    invited_by_id: int | None = None,
+    discount_enabled: bool = False,
+    has_paid: bool = False,
 ) -> tuple[SponsorStateService, AsyncMock, AsyncMock]:
     offers = AsyncMock()
     offers.get_ready.return_value = _public_offer()
@@ -875,9 +934,24 @@ def _checkout_service(
         **values,
     )
     users = AsyncMock()
-    users.get_by_telegram_id_for_update.return_value = SimpleNamespace(id=123, is_active=True)
+    users.get_by_telegram_id_for_update.return_value = SimpleNamespace(
+        id=123,
+        is_active=True,
+        invited_by_id=invited_by_id,
+    )
+    users.get_by_telegram_id.return_value = users.get_by_telegram_id_for_update.return_value
     operations = AsyncMock()
     operations.uncompensated_applied_grants.return_value = active or []
+    operations.has_applied_tribute_grant.return_value = has_paid
+    provider_settings = AsyncMock()
+    provider_settings.get.return_value = SimpleNamespace(
+        welcome_discount_enabled=discount_enabled,
+        welcome_discount_offer_id=OFFER_ID if discount_enabled else None,
+        welcome_discount_url=(
+            "https://t.me/tribute/app?startapp=promo" if discount_enabled else None
+        ),
+        welcome_discount_percent=25 if discount_enabled else None,
+    )
     service = SponsorStateService(
         offers,
         AsyncMock(),
@@ -887,6 +961,7 @@ def _checkout_service(
         AsyncMock(),
         AsyncMock(),
         users,
+        provider_settings,
         _settings(monkeypatch),
         clock=lambda: NOW,
     )
@@ -910,6 +985,44 @@ async def test_start_checkout_records_intent_without_confirming_payment(
     assert values["external_item_id"] == "42"
     assert values["status"] == "pending"
     assert "confirmed_at" not in values
+
+
+@pytest.mark.asyncio
+async def test_invited_first_time_checkout_freezes_welcome_promo_destination(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, _offers, checkouts = _checkout_service(
+        monkeypatch,
+        pending=None,
+        invited_by_id=321,
+        discount_enabled=True,
+    )
+
+    result = await service.start_checkout(123, OFFER_ID)
+
+    assert result.checkout_url == "https://t.me/tribute/app?startapp=promo"
+    snapshot = checkouts.create.await_args.kwargs["offer_snapshot"]
+    assert snapshot["checkout_url"] == "https://t.me/tribute/app?startapp=promo"
+    assert snapshot["welcome_discount"] is True
+    assert snapshot["welcome_discount_percent"] == 25
+
+
+@pytest.mark.asyncio
+async def test_non_invited_checkout_keeps_standard_destination(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, _offers, checkouts = _checkout_service(
+        monkeypatch,
+        pending=None,
+        discount_enabled=True,
+    )
+
+    result = await service.start_checkout(123, OFFER_ID)
+
+    assert result.checkout_url == "https://t.me/tribute/app?startapp=sub"
+    snapshot = checkouts.create.await_args.kwargs["offer_snapshot"]
+    assert snapshot["welcome_discount"] is False
+    assert snapshot["welcome_discount_percent"] is None
 
 
 @pytest.mark.asyncio

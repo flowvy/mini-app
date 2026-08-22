@@ -9,6 +9,7 @@ from flowvy.models.entitlement_operation import EntitlementOperation
 from flowvy.models.entitlement_operation_action import EntitlementOperationAction
 from flowvy.models.invite import Invite
 from flowvy.models.provider_settings import ProviderSettings
+from flowvy.models.referral_conversion import ReferralConversion
 from flowvy.models.sponsor_checkout import SponsorCheckout
 from flowvy.models.sponsor_offer import SponsorOffer
 from flowvy.models.subscription import Subscription, SubscriptionStatus
@@ -27,6 +28,7 @@ __all__ = [
     "EntitlementOperationAction",
     "Invite",
     "ProviderSettings",
+    "ReferralConversion",
     "SponsorCheckout",
     "SponsorOffer",
     "Subscription",

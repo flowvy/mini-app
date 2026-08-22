@@ -131,10 +131,11 @@ timeout, повторный exact lookup завершает локальную �
 
 ### Данные и кэш
 
-PostgreSQL хранит пользователей, подписки, access profiles, commerce rules, Tribute inbox и
-entitlement operations, один публичный invite code на пользователя, прямую attribution в
-`users.invited_by_id`, singleton provider settings, историю bot metrics и принятые Remnawave webhook
-events. Код не является authentication credential; доступ задаёт общий registration profile. Код
+PostgreSQL хранит пользователей, подписки, access profiles, commerce rules, Tribute inbox,
+entitlement operations и одноразовые referral conversions, один публичный invite code на
+пользователя, прямую attribution в `users.invited_by_id`, singleton provider settings, историю bot
+metrics и принятые Remnawave webhook events. Код не является authentication credential; доступ
+задаёт общий registration profile. Код
 хранится в БД, потому что владелец может посмотреть и переслать его снова. Alembic migrations
 образуют одну линейную цепочку.
 
@@ -267,6 +268,27 @@ Authenticated `GET /api/me/sponsor` не вызывает Tribute и возвр�
 только published ready offers. `POST /api/me/sponsor/checkouts` сериализует active local user,
 записывает один 30-minute local `sponsor_checkouts` intent с immutable offer snapshot и возвращает
 provider-hosted URL. Повтор того же offer переиспользует intent, другой offer получает conflict.
+
+Provider-wide referral benefits настраиваются в той же Payments route двумя независимыми
+переключателями. Inviter reward требует фиксированное число дней и active `automation` access
+profile. После первой Tribute grant operation приглашённого, которая действительно перешла в
+`applied`, executor один раз фиксирует `referral_conversions` по unique invitee и создаёт отдельную
+`provider=flowvy`, `event_name=referral_reward`, `extend` grant operation пригласившему с immutable
+profile snapshot. Повтор webhook, renewal и последующие donation не создают вторую конверсию;
+выключенная либо невалидная на момент первой оплаты конфигурация также записывается как terminal
+decision без отложенной награды.
+
+Welcome discount доступен только приглашённому active user без прежней applied Tribute grant и
+только для одного выбранного published ready subscription offer. Flowvy хранит готовый общий
+absolute HTTPS promo link Tribute как opaque destination и введённый оператором процент 1–99:
+backend подменяет destination и фиксирует процент до создания immutable checkout snapshot. Home
+получает `welcomeDiscount` и `welcomeDiscountPercent` только для eligible offer, зачёркивает
+provider price и рассчитывает ориентировочную first-payment price в minor units. Обычный URL и цена
+остаются для остальных пользователей и offers. Flowvy не создаёт и не валидирует promo code и не
+обещает персональность ссылки; фактические validity, activation limit, minimum EUR 1, non-stacking и
+финальная checkout price принадлежат Tribute. За соответствие введённого процента promo code
+отвечает оператор.
+
 Authenticated `DELETE /api/me/sponsor/checkouts/{id}` под row lock переводит только принадлежащий
 пользователю pending intent в существующий terminal `expired`; это идемпотентное локальное действие
 не обращается к Tribute и не утверждает отмену платежа. Поздний matching signed event по-прежнему

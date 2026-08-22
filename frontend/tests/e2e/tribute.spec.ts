@@ -78,6 +78,8 @@ function sponsorSubscriptionOffer(
 		priceOptions: [{ priceMajor: "500", currency: "RUB", period: "monthly" }],
 		requiresNonAnonymous: false,
 		availability: "ready",
+		welcomeDiscount: false,
+		welcomeDiscountPercent: null,
 	};
 }
 
@@ -347,6 +349,148 @@ test("payment links expose catalog loading and empty states", async ({ page, moc
 
 	await expect(page.getByText("Loading Tribute subscriptions…", { exact: true })).toBeVisible();
 	await expect(page.getByText(/Tribute returned no subscriptions/)).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+});
+
+test("admin independently configures inviter days and a shared welcome discount", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	const offer = sponsorSubscriptionOffer();
+	const automationProfile = {
+		...mockData.accessProfiles[0],
+		id: "00000000-0000-4000-8000-000000000099",
+		name: "Referral benefits",
+		validityMode: "automation",
+		validityDays: null,
+	};
+	mockApi.seedAccessProfiles([automationProfile]);
+	mockApi.seedSponsorOffers([offer]);
+	const patches: Array<Record<string, unknown>> = [];
+	page.on("request", (request) => {
+		if (
+			request.method() === "PATCH" &&
+			new URL(request.url()).pathname === "/api/debug/admin/settings"
+		) {
+			patches.push(request.postDataJSON() as Record<string, unknown>);
+		}
+	});
+
+	await page.goto("/admin/settings/tribute");
+	const section = page
+		.getByRole("heading", { name: "Referral benefits" })
+		.locator("xpath=ancestor::section[1]");
+	await section.getByRole("switch", { name: "Enable welcome discount" }).click();
+	await expect(section.getByLabel("Subscription offer")).toBeVisible();
+	await expect(section.getByLabel("Reward days", { exact: true })).toHaveCount(0);
+	await section.getByLabel("Discount percentage").fill("25");
+	await section.getByLabel("Subscription offer").selectOption(offer.id);
+	await section
+		.getByLabel("Tribute promo link")
+		.fill("https://t.me/tribute/app?startapp=welcome_promo");
+
+	await section.getByRole("switch", { name: "Enable inviter reward days" }).click();
+	await section.getByLabel("Reward days", { exact: true }).fill("7");
+	await section.getByLabel("Reward benefits profile").selectOption(automationProfile.id);
+	await page.getByRole("button", { name: "Save referral benefits" }).click();
+
+	await expect.poll(() => patches.length).toBe(1);
+	expect(patches[0]).toEqual({
+		referralRewardEnabled: true,
+		referralRewardDays: 7,
+		referralRewardAccessProfileId: automationProfile.id,
+		welcomeDiscountEnabled: true,
+		welcomeDiscountOfferId: offer.id,
+		welcomeDiscountUrl: "https://t.me/tribute/app?startapp=welcome_promo",
+		welcomeDiscountPercent: 25,
+	});
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await assertNoHorizontalOverflow(page);
+		await section.screenshot({
+			path: testInfo.outputPath(`referral-benefits-configured-${colorScheme}.png`),
+		});
+	}
+});
+
+test("referral benefits protect unsaved changes with localized copy", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	const automationProfile = {
+		...mockData.accessProfiles[0],
+		id: "00000000-0000-4000-8000-000000000099",
+		name: "Referral benefits",
+		validityMode: "automation",
+		validityDays: null,
+	};
+	mockApi.seedAccessProfiles([automationProfile]);
+
+	await page.goto("/admin/settings");
+	const payments = page
+		.getByRole("heading", { name: "Payments" })
+		.locator("xpath=ancestor::section[1]");
+	await payments.getByRole("button", { name: /^Tribute Subscriptions/ }).click();
+	const section = page
+		.getByRole("heading", { name: "Referral benefits" })
+		.locator("xpath=ancestor::section[1]");
+	await section.getByRole("switch", { name: "Enable inviter reward days" }).click();
+	await section.getByLabel("Reward days", { exact: true }).fill("7");
+	await section.getByLabel("Reward benefits profile").selectOption(automationProfile.id);
+
+	await page.goBack();
+	const dialog = page.getByRole("dialog", { name: "Discard referral benefit changes?" });
+	await expect(dialog).toBeVisible();
+	await expect(dialog).toContainText("The unsaved referral benefit changes will be lost");
+	await expect(dialog.getByText(/^settings\./)).toHaveCount(0);
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await dialog.screenshot({
+			path: testInfo.outputPath(`referral-discard-${colorScheme}.png`),
+		});
+	}
+	await dialog.getByRole("button", { name: "Keep editing", exact: true }).click();
+	await expect(page).toHaveURL(/\/admin\/settings\/tribute$/);
+	await expect(section.getByLabel("Reward days", { exact: true })).toHaveValue("7");
+
+	await page.goBack();
+	await dialog.getByRole("button", { name: "Discard", exact: true }).click();
+	await expect(page).toHaveURL(/\/admin\/settings$/);
+	await assertNoHorizontalOverflow(page);
+});
+
+test("referral configuration recovers when its profile and offer data fail to load", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.mock("GET", "/api/debug/admin/registration/access-profiles", [
+		{ status: 503, body: { detail: "private profile diagnostic" } },
+		{ status: 503, body: { detail: "private profile diagnostic" } },
+		{ body: mockData.accessProfiles },
+	]);
+	mockApi.mock("GET", "/api/debug/admin/commerce/offers", [
+		{ status: 503, body: { detail: "private offer diagnostic" } },
+		{ status: 503, body: { detail: "private offer diagnostic" } },
+		{ body: [] },
+	]);
+
+	await page.goto("/admin/settings/tribute");
+	const section = page
+		.getByRole("heading", { name: "Referral benefits" })
+		.locator("xpath=ancestor::section[1]");
+	await expect(section.getByRole("alert")).toContainText(
+		"Could not load referral profiles or sponsor offers",
+	);
+	await expect(page.getByText("private profile diagnostic")).toHaveCount(0);
+	await expect(page.getByText("private offer diagnostic")).toHaveCount(0);
+	await section.getByRole("button", { name: "Retry", exact: true }).click();
+	await expect(section.getByRole("alert")).toHaveCount(0);
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -1770,6 +1914,52 @@ test("Home starts a subscription checkout without treating the redirect as payme
 	const request = await requestPromise;
 	expect(request.postDataJSON()).toEqual({ offerId: offer.id });
 	expect(mockApi.calls).toContain("POST /api/me/sponsor/checkouts");
+});
+
+test("Home labels the eligible subscription as a welcome discount", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	const offer = {
+		...sponsorSubscriptionOffer(),
+		welcomeDiscount: true,
+		welcomeDiscountPercent: 25,
+		priceOptions: [
+			{ priceMajor: "500", currency: "RUB", period: "monthly" },
+			{ priceMajor: "5000", currency: "RUB", period: "annually" },
+		],
+	};
+	mockApi.seedSponsorState({
+		status: "no_access",
+		accessLevel: "none",
+		primaryAction: "choose_offer",
+		paidExpiresAt: null,
+		baseExpiresAt: null,
+		currentOfferId: null,
+		managementUrl: null,
+		pendingCheckout: null,
+		offers: [offer],
+	});
+
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		const subscriptionOffer = page.getByRole("article", { name: "Monthly sponsor access" });
+		await expect(subscriptionOffer.getByText("25% off your first payment")).toBeVisible();
+		await expect(subscriptionOffer.locator("del")).toHaveCount(2);
+		await expect(subscriptionOffer).toContainText("375");
+		await expect(subscriptionOffer).toContainText("3,750");
+		await expect(
+			subscriptionOffer.getByRole("button", { name: "Get 25% off in Tribute" }),
+		).toBeVisible();
+		await assertNoHorizontalOverflow(page);
+		await subscriptionOffer.screenshot({
+			path: testInfo.outputPath(`welcome-discount-${colorScheme}.png`),
+		});
+	}
 });
 
 test("Home reports confirmed subscription access without guessing cancellation state", async ({

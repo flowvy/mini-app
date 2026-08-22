@@ -12,6 +12,7 @@ from redis.asyncio import Redis
 from flowvy.beszel_target import BeszelTargetPolicy
 from flowvy.config import Settings
 from flowvy.kuma_target import KumaTargetPolicy
+from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.user import UserRepository
@@ -23,6 +24,7 @@ from flowvy.services.kuma import UptimeKumaClient
 from flowvy.services.provider_settings import ProviderSettingsService
 from flowvy.services.pulse import PulseService
 from flowvy.services.remnawave import RemnawaveClient
+from flowvy.services.sponsor import SponsorOfferService
 from flowvy.services.subscription import SubscriptionService
 from flowvy.services.tribute import TributeClient
 
@@ -120,6 +122,8 @@ class BffServiceProvider(Provider):
         tribute: TributeClient,
         redis: Redis,
         settings: Settings,
+        profiles: AccessProfileRepository,
+        offers: SponsorOfferService,
     ) -> ProviderSettingsService:
         """Create provider settings service."""
         return ProviderSettingsService(
@@ -130,6 +134,8 @@ class BffServiceProvider(Provider):
             tribute,
             redis,
             settings,
+            profiles,
+            offers,
         )
 
     @provide(scope=Scope.REQUEST)

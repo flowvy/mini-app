@@ -6,6 +6,7 @@ from redis.asyncio import Redis
 
 from flowvy.config import Settings
 from flowvy.localization import DEFAULT_LOCALE, dump_locale_map, normalize_locale_map
+from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.schemas.operator_content import OperatorContentLocale
 from flowvy.schemas.provider_settings import (
@@ -19,6 +20,7 @@ from flowvy.services.beszel import BeszelClient, BeszelError
 from flowvy.services.kuma import KumaError, UptimeKumaClient
 from flowvy.services.pulse import CACHE_KEY
 from flowvy.services.remnawave import RemnawaveClient, RemnawaveError
+from flowvy.services.sponsor import SponsorOfferError, SponsorOfferService
 from flowvy.services.tribute import TributeClient, TributeError
 
 PULSE_FIELDS = frozenset({"pulse_provider", "kuma_url", "kuma_slug", "beszel_url"})
@@ -40,6 +42,8 @@ class ProviderSettingsService:
         tribute: TributeClient,
         redis: Redis,
         config: Settings,
+        profiles: AccessProfileRepository,
+        offers: SponsorOfferService,
     ) -> None:
         self._repo = repo
         self._remnawave = remnawave
@@ -48,6 +52,8 @@ class ProviderSettingsService:
         self._tribute = tribute
         self._redis = redis
         self._config = config
+        self._profiles = profiles
+        self._offers = offers
 
     async def get(self) -> ProviderSettingsResponse:
         """Return current settings with system info."""
@@ -84,6 +90,13 @@ class ProviderSettingsService:
             content_locales=content_locales,
             tribute_donation_url=row.tribute_donation_url,
             tribute_subscription_urls=row.tribute_subscription_urls,
+            referral_reward_enabled=row.referral_reward_enabled,
+            referral_reward_days=row.referral_reward_days,
+            referral_reward_access_profile_id=row.referral_reward_access_profile_id,
+            welcome_discount_enabled=row.welcome_discount_enabled,
+            welcome_discount_offer_id=row.welcome_discount_offer_id,
+            welcome_discount_url=row.welcome_discount_url,
+            welcome_discount_percent=row.welcome_discount_percent,
             remnawave_version=version,
             updated_at=int(row.updated_at.timestamp()),
         )
@@ -94,6 +107,7 @@ class ProviderSettingsService:
     ) -> ProviderSettingsResponse:
         """Apply partial update and return refreshed settings."""
         data = patch.model_dump(exclude_unset=True)
+        await self._validate_referral_configuration(data)
         audience_fields = (
             "invite_share_allow_user_chats",
             "invite_share_allow_bot_chats",
@@ -158,6 +172,66 @@ class ProviderSettingsService:
         if PULSE_FIELDS.intersection(data):
             await self._redis.delete(CACHE_KEY)
         return await self.get()
+
+    async def _validate_referral_configuration(self, data: dict[str, object]) -> None:
+        referral_fields = {
+            "referral_reward_enabled",
+            "referral_reward_days",
+            "referral_reward_access_profile_id",
+            "welcome_discount_enabled",
+            "welcome_discount_offer_id",
+            "welcome_discount_url",
+            "welcome_discount_percent",
+        }
+        if not referral_fields.intersection(data):
+            return
+        current = await self._repo.get()
+        reward_enabled = bool(data.get("referral_reward_enabled", current.referral_reward_enabled))
+        reward_days = data.get("referral_reward_days", current.referral_reward_days)
+        reward_profile_id = data.get(
+            "referral_reward_access_profile_id",
+            current.referral_reward_access_profile_id,
+        )
+        if reward_enabled:
+            if not isinstance(reward_days, int) or reward_profile_id is None:
+                raise ProviderSettingsError("Referral reward days and access profile are required")
+            profile = await self._profiles.get_active(reward_profile_id)  # type: ignore[arg-type]
+            if profile is None or profile.validity_mode != "automation":
+                raise ProviderSettingsError(
+                    "Referral rewards require an active automation access profile"
+                )
+            if profile.status != "ACTIVE":
+                raise ProviderSettingsError("Referral reward access profile is not grantable")
+
+        discount_enabled = bool(
+            data.get("welcome_discount_enabled", current.welcome_discount_enabled)
+        )
+        discount_offer_id = data.get(
+            "welcome_discount_offer_id",
+            current.welcome_discount_offer_id,
+        )
+        discount_url = data.get("welcome_discount_url", current.welcome_discount_url)
+        discount_percent = data.get(
+            "welcome_discount_percent",
+            current.welcome_discount_percent,
+        )
+        if not discount_enabled:
+            return
+        if (
+            discount_offer_id is None
+            or not isinstance(discount_url, str)
+            or not discount_url
+            or not isinstance(discount_percent, int)
+        ):
+            raise ProviderSettingsError(
+                "Welcome discount offer, percentage, and promo link are required"
+            )
+        try:
+            offer = await self._offers.get_ready(discount_offer_id)  # type: ignore[arg-type]
+        except SponsorOfferError as exc:
+            raise ProviderSettingsError("Welcome discount offer is unavailable") from exc
+        if offer.commerce_type != "subscription":
+            raise ProviderSettingsError("Welcome discount requires a subscription offer")
 
     async def test_kuma(self) -> KumaTestResponse:
         """Test connection to Uptime Kuma status page."""

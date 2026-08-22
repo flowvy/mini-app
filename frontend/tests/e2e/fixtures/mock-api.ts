@@ -70,6 +70,13 @@ export const mockData = {
 		tributeCredentialsConfigured: true,
 		tributeDonationUrl: null,
 		tributeSubscriptionUrls: {},
+		referralRewardEnabled: false,
+		referralRewardDays: null,
+		referralRewardAccessProfileId: null,
+		welcomeDiscountEnabled: false,
+		welcomeDiscountOfferId: null,
+		welcomeDiscountUrl: null,
+		welcomeDiscountPercent: null,
 		appName: "Flowvy",
 		logoUrl: null,
 		welcomeText: "Welcome to Flowvy",
@@ -289,6 +296,7 @@ export interface MockApi {
 	calls: string[];
 	mock: (method: string, path: string | RegExp, reply: MockReply | MockReply[]) => void;
 	seedSettings: (patch: Record<string, unknown>) => void;
+	seedAccessProfiles: (profiles: Array<Record<string, unknown>>) => void;
 	seedCommerceRules: (rules: Array<Record<string, unknown>>) => void;
 	seedSponsorOffers: (offers: Array<Record<string, unknown>>) => void;
 	seedSponsorState: (state: Record<string, unknown>) => void;
@@ -700,6 +708,9 @@ export const test = base.extend<{ mockApi: MockApi }>({
 			},
 			seedSettings(patch) {
 				state.settings = { ...state.settings, ...clone(patch) };
+			},
+			seedAccessProfiles(profiles) {
+				state.accessProfiles = clone(profiles);
 			},
 			seedCommerceRules(rules) {
 				state.commerceRules = clone(rules);

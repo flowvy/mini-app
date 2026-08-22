@@ -29,7 +29,7 @@ class EntitlementOperation(Base):
     __tablename__ = "entitlement_operations"
     __table_args__ = (
         CheckConstraint(
-            "provider IN ('tribute')",
+            "provider IN ('tribute', 'flowvy')",
             name="ck_entitlement_operations_provider",
         ),
         CheckConstraint(

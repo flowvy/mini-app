@@ -9,6 +9,7 @@ import { ActionBtn } from "../ui/action-btn.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { CommerceActivity } from "./commerce-activity.tsx";
 import { CommerceRulesConfig } from "./commerce-rules-config.tsx";
+import { ReferralBenefitsConfig } from "./referral-benefits-config.tsx";
 import {
 	SettingsDivider,
 	SettingsInlineNotice,
@@ -89,6 +90,7 @@ export const TributeConfig: FC<TributeConfigProps> = ({ settings }) => {
 			)}
 
 			<TributePaymentDestinations settings={settings} />
+			<ReferralBenefitsConfig settings={settings} />
 			<CommerceRulesConfig />
 			<SponsorOffersConfig
 				subscriptionUrls={settings.tributeSubscriptionUrls}

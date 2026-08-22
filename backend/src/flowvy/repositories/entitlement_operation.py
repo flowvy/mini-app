@@ -205,6 +205,21 @@ class EntitlementOperationRepository(BaseRepository[EntitlementOperation]):
         )
         return list((await self._session.scalars(stmt)).all())
 
+    async def has_applied_tribute_grant(self, user_id: int) -> bool:
+        """Return whether local durable facts prove a prior Tribute payment grant."""
+        return bool(
+            await self._session.scalar(
+                select(
+                    exists().where(
+                        EntitlementOperation.user_id == user_id,
+                        EntitlementOperation.provider == "tribute",
+                        EntitlementOperation.operation_kind == "grant",
+                        EntitlementOperation.status == "applied",
+                    )
+                )
+            )
+        )
+
     async def cancel_scheduled_restores(self, user_id: int, reason: str) -> int:
         """Cancel future restore work superseded by a newer effective-access decision."""
         stmt = (

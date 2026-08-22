@@ -47,6 +47,14 @@ class ProviderSettings(Base):
             "invite_share_allow_group_chats OR invite_share_allow_channel_chats",
             name="ck_provider_settings_invite_share_audience",
         ),
+        CheckConstraint(
+            "referral_reward_days IS NULL OR referral_reward_days BETWEEN 1 AND 3650",
+            name="ck_provider_settings_referral_reward_days",
+        ),
+        CheckConstraint(
+            "welcome_discount_percent IS NULL OR welcome_discount_percent BETWEEN 1 AND 99",
+            name="ck_provider_settings_welcome_discount_percent",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -102,4 +110,27 @@ class ProviderSettings(Base):
         default=dict,
         server_default=text("'{}'::jsonb"),
     )
+    referral_reward_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default=text("false"),
+    )
+    referral_reward_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    referral_reward_access_profile_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("access_profiles.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    welcome_discount_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default=text("false"),
+    )
+    welcome_discount_offer_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("sponsor_offers.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    welcome_discount_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    welcome_discount_percent: Mapped[int | None] = mapped_column(Integer, nullable=True)
     updated_at: Mapped[updated_at]

@@ -12,8 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from flowvy.config import Settings
 from flowvy.models.entitlement_operation import EntitlementOperation
+from flowvy.models.referral_conversion import ReferralConversion
+from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.entitlement_baseline import EntitlementBaselineRepository
 from flowvy.repositories.entitlement_operation import EntitlementOperationRepository
+from flowvy.repositories.provider_settings import ProviderSettingsRepository
 from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.user import UserRepository
 from flowvy.schemas.registration import AccessProfileInput
@@ -242,6 +245,106 @@ async def test_subscription_applies_provider_expiry_without_adding_local_days(
     assert stored.target_expiry == tribute_expiry
     request = provider.update_user_access.await_args.args[1]
     assert request.expire_at == tribute_expiry
+
+
+@pytest.mark.asyncio
+async def test_first_applied_invitee_payment_creates_one_referral_reward(
+    engine: AsyncEngine,
+) -> None:
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    current_expiry = datetime.datetime.now(datetime.UTC).replace(
+        microsecond=0
+    ) + datetime.timedelta(days=2)
+    async with factory() as session:
+        users = UserRepository(session)
+        await users.create(id=321, username="inviter", full_name="Inviter")
+        await users.create(
+            id=123,
+            username="invitee",
+            full_name="Invitee",
+            invited_by_id=321,
+        )
+        await SubscriptionRepository(session).create(
+            user_id=123,
+            remnawave_user_id=42,
+            status="active",
+            expires_at=datetime.datetime.now() + datetime.timedelta(days=1),
+        )
+        profile = await AccessProfileRepository(session).create(
+            name="Referral reward",
+            validity_mode="automation",
+            validity_days=None,
+            fixed_expire_at=None,
+            traffic_limit_bytes=0,
+            traffic_limit_strategy="NO_RESET",
+            hwid_device_limit=2,
+            status="ACTIVE",
+            internal_squad_uuids=[],
+            is_active=True,
+        )
+        settings = await ProviderSettingsRepository(session).get()
+        settings.referral_reward_enabled = True
+        settings.referral_reward_days = 7
+        settings.referral_reward_access_profile_id = profile.id
+        source = await _pending_grant(session)
+        source_id = source.id
+        await session.commit()
+
+    provider = _remnawave(_provider_user(current_expiry))
+    executor = EntitlementExecutor(factory, provider, _settings())
+    assert await executor.process_next() is True
+
+    async with factory() as session:
+        conversion = (await session.scalars(select(ReferralConversion))).one()
+        reward = await EntitlementOperationRepository(session).get_by_id(
+            conversion.reward_operation_id
+        )
+        source = await EntitlementOperationRepository(session).get_by_id(source_id)
+    assert source is not None and source.status == "applied"
+    assert conversion.inviter_user_id == 321
+    assert conversion.invitee_user_id == 123
+    assert conversion.reward_days == 7
+    assert conversion.reason_code is None
+    assert reward is not None
+    assert reward.provider == "flowvy"
+    assert reward.event_name == "referral_reward"
+    assert reward.user_id == 321
+    assert reward.duration_days == 7
+    assert reward.status == "pending"
+
+    async with factory() as session, session.begin():
+        renewal = await EntitlementOperationRepository(session).create(
+            provider="tribute",
+            semantic_key="subscription:state:renewal",
+            event_name="renewed_subscription",
+            operation_kind="grant",
+            status="applied",
+            provider_created_at=datetime.datetime.now(datetime.UTC),
+            telegram_user_id=123,
+            user_id=123,
+            duration_days=30,
+            grant_mode="extend",
+            profile_snapshot=_profile_snapshot(),
+        )
+        await executor._create_referral_reward(
+            session,
+            renewal,
+            datetime.datetime.now(datetime.UTC),
+        )
+
+    async with factory() as session:
+        conversions = list((await session.scalars(select(ReferralConversion))).all())
+        rewards = list(
+            (
+                await session.scalars(
+                    select(EntitlementOperation).where(
+                        EntitlementOperation.event_name == "referral_reward"
+                    )
+                )
+            ).all()
+        )
+    assert len(conversions) == 1
+    assert len(rewards) == 1
 
 
 @pytest.mark.asyncio

@@ -328,6 +328,8 @@ class SponsorOfferResponse(SponsorOfferInput):
     price_options: list[SponsorOfferPriceOption]
     requires_non_anonymous: bool
     availability: SponsorOfferAvailability
+    welcome_discount: bool = False
+    welcome_discount_percent: int | None = Field(default=None, ge=1, le=99)
     content_locales: dict[str, SponsorOfferLocale] = Field(default_factory=dict, max_length=20)
 
 

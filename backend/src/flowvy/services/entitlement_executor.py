@@ -11,15 +11,20 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from flowvy.config import Settings
 from flowvy.models.entitlement_operation import EntitlementOperation
+from flowvy.repositories.access_profile import AccessProfileRepository
 from flowvy.repositories.entitlement_baseline import EntitlementBaselineRepository
 from flowvy.repositories.entitlement_operation import EntitlementOperationRepository
+from flowvy.repositories.provider_settings import ProviderSettingsRepository
+from flowvy.repositories.referral_conversion import ReferralConversionRepository
 from flowvy.repositories.subscription import SubscriptionRepository
+from flowvy.repositories.user import UserRepository
 from flowvy.schemas.registration import AccessProfileInput
 from flowvy.schemas.remnawave import (
     RemnawaveCreateUserRequest,
     RemnawaveUpdateUserRequest,
     RemnawaveUserData,
 )
+from flowvy.services.access_profile_snapshot import access_profile_snapshot
 from flowvy.services.remnawave import RemnawaveClient, RemnawaveError
 
 logger = logging.getLogger(__name__)
@@ -665,6 +670,81 @@ class EntitlementExecutor:
                             operation,
                             provider_user,
                         )
+                await self._create_referral_reward(session, operation, now)
+
+    async def _create_referral_reward(
+        self,
+        session: AsyncSession,
+        source: EntitlementOperation,
+        now: datetime.datetime,
+    ) -> None:
+        """Create one inviter grant after an invitee's first applied Tribute payment."""
+        if (
+            source.provider != "tribute"
+            or source.operation_kind != "grant"
+            or source.status != "applied"
+            or source.user_id is None
+        ):
+            return
+        invitee = await UserRepository(session).get_by_telegram_id(source.user_id)
+        if invitee is None or invitee.invited_by_id is None:
+            return
+
+        inviter_id = invitee.invited_by_id
+        inviter = await UserRepository(session).get_by_telegram_id(inviter_id)
+        settings = await ProviderSettingsRepository(session).get()
+        reward_days = settings.referral_reward_days if settings.referral_reward_enabled else None
+        profile = (
+            await AccessProfileRepository(session).get_active(
+                settings.referral_reward_access_profile_id
+            )
+            if settings.referral_reward_access_profile_id is not None
+            else None
+        )
+
+        reason_code: str | None = None
+        if not settings.referral_reward_enabled:
+            reason_code = "referral_reward_disabled"
+        elif inviter is None or not inviter.is_active or inviter.id == invitee.id:
+            reason_code = "referral_inviter_unavailable"
+        elif reward_days is None:
+            reason_code = "referral_reward_invalid"
+        elif (
+            profile is None or profile.validity_mode != "automation" or profile.status != "ACTIVE"
+        ):
+            reason_code = "referral_profile_unavailable"
+
+        conversion = await ReferralConversionRepository(session).create_once(
+            inviter_user_id=inviter_id,
+            invitee_user_id=invitee.id,
+            source_operation_id=source.id,
+            reward_days=reward_days,
+            reason_code=reason_code,
+        )
+        if conversion is None or reason_code is not None or inviter is None or profile is None:
+            return
+
+        semantic_key = f"referral:invitee:{invitee.id}"
+        operations = EntitlementOperationRepository(session)
+        reward = await operations.create_once(
+            provider="flowvy",
+            semantic_key=semantic_key,
+            event_name="referral_reward",
+            operation_kind="grant",
+            status="pending",
+            provider_created_at=now,
+            telegram_user_id=inviter.id,
+            user_id=inviter.id,
+            duration_days=reward_days,
+            grant_mode="extend",
+            access_profile_id=profile.id,
+            profile_snapshot=access_profile_snapshot(profile),
+        )
+        if reward is None:
+            reward = await operations.get_by_semantic_key("flowvy", semantic_key)
+        if reward is not None:
+            conversion.reward_operation_id = reward.id
+            await session.flush()
 
     async def _schedule_restore(
         self,

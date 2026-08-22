@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, HeartHandshake, LockKeyhole, RefreshCw } from "lucide-react";
+import { BadgePercent, ExternalLink, HeartHandshake, LockKeyhole, RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -306,6 +306,7 @@ export function SponsorCard() {
 		const donationPrice = !isSubscription ? offer.priceOptions[0] : null;
 		const offerTitle = renderTemplate(offer.title, operatorContext);
 		const offerDescription = renderFormattedTemplate(offer.description, operatorContext);
+		const welcomeDiscountPercent = offer.welcomeDiscount ? offer.welcomeDiscountPercent : null;
 		return (
 			<article
 				className={styles.offerCard}
@@ -322,9 +323,32 @@ export function SponsorCard() {
 
 				{isSubscription ? (
 					<>
-						<SubscriptionBillingList options={offer.priceOptions} tone="plain" />
+						{welcomeDiscountPercent !== null && (
+							<div className={styles.welcomeDiscount}>
+								<span className={styles.welcomeDiscountIcon} aria-hidden="true">
+									<BadgePercent size={18} />
+								</span>
+								<span>
+									<strong>
+										{t("home.sponsor.welcomeDiscountTitle", {
+											percent: welcomeDiscountPercent,
+										})}
+									</strong>
+									<small>{t("home.sponsor.welcomeDiscountDescription")}</small>
+								</span>
+							</div>
+						)}
+						<SubscriptionBillingList
+							options={offer.priceOptions}
+							tone="plain"
+							discountPercent={welcomeDiscountPercent}
+						/>
 						<p className={styles.providerSelectionHint}>
-							{t("home.sponsor.subscriptionPeriodHint")}
+							{t(
+								welcomeDiscountPercent === null
+									? "home.sponsor.subscriptionPeriodHint"
+									: "home.sponsor.welcomeDiscountFinal",
+							)}
 						</p>
 					</>
 				) : (
@@ -359,13 +383,15 @@ export function SponsorCard() {
 					) : (
 						<ExternalLink size={14} aria-hidden="true" />
 					)}
-					{t(
-						blocked
-							? "home.sponsor.offerAction.locked"
-							: isSubscription
-								? "home.sponsor.action.continue"
-								: "home.sponsor.offerAction.donation",
-					)}
+					{welcomeDiscountPercent !== null && !blocked
+						? t("home.sponsor.welcomeDiscountAction", { percent: welcomeDiscountPercent })
+						: t(
+								blocked
+									? "home.sponsor.offerAction.locked"
+									: isSubscription
+										? "home.sponsor.action.continue"
+										: "home.sponsor.offerAction.donation",
+							)}
 				</ActionBtn>
 			</article>
 		);

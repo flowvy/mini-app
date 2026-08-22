@@ -27,13 +27,25 @@
 	border-top: 1px solid var(--v2-border-tertiary);
 }
 
-.option strong {
+.price {
+	display: flex;
+	align-items: baseline;
+	gap: 7px;
+	min-width: 0;
+}
+
+.price del {
+	font: 500 var(--font-size-caption) / 1.2 var(--font-mono);
+	color: var(--v2-text-tertiary);
+}
+
+.price strong {
 	flex: 0 0 auto;
 	font: 650 var(--font-size-body) / 1.2 var(--font-mono);
 	color: var(--v2-text-positive);
 }
 
-.option span {
+.option > span:last-child {
 	min-width: 0;
 	font-size: var(--font-size-caption);
 	font-weight: 500;

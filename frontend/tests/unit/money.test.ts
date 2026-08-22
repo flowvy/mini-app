@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	currencyFractionDigits,
+	discountedMinorAmount,
 	formatMajorMoney,
 	formatMinorMoney,
 	formatPlanMoney,
@@ -27,5 +28,10 @@ describe("minor-unit money fields", () => {
 		expect(formatMajorMoney("not-a-number", "RUB", "en-US")).toBe("not-a-number RUB");
 		expect(formatPlanMoney("3500.00", "RUB", "en-US")).not.toContain(".00");
 		expect(formatPlanMoney("100.50", "RUB", "en-US")).toContain("100.5");
+	});
+
+	it("rounds configured percentage discounts to the nearest minor unit", () => {
+		expect(discountedMinorAmount(50_000, 25)).toBe(37_500);
+		expect(discountedMinorAmount(999, 15)).toBe(849);
 	});
 });

@@ -1,0 +1,19 @@
+.intro {
+	padding: 12px 14px;
+}
+
+.error {
+	font-size: var(--font-size-caption);
+	line-height: 1.4;
+	color: var(--v2-text-negative);
+}
+
+.errorState {
+	display: grid;
+	gap: 10px;
+	padding: 0 14px 14px;
+}
+
+.errorState > button {
+	justify-self: start;
+}

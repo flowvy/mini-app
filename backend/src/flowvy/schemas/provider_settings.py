@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from typing import Annotated, Literal, Self
 
 from pydantic import (
@@ -97,6 +98,13 @@ class ProviderSettingsResponse(BaseModel):
         default_factory=dict,
         max_length=100,
     )
+    referral_reward_enabled: bool = False
+    referral_reward_days: int | None = Field(default=None, ge=1, le=3650)
+    referral_reward_access_profile_id: uuid.UUID | None = None
+    welcome_discount_enabled: bool = False
+    welcome_discount_offer_id: uuid.UUID | None = None
+    welcome_discount_url: PaymentDestinationUrl | None = None
+    welcome_discount_percent: int | None = Field(default=None, ge=1, le=99)
     remnawave_version: str | None = None
     flowvy_version: str = "0.1.0"
     updated_at: int
@@ -155,6 +163,13 @@ class ProviderSettingsPatch(BaseModel):
         default_factory=dict,
         max_length=100,
     )
+    referral_reward_enabled: bool = False
+    referral_reward_days: int | None = Field(default=None, ge=1, le=3650)
+    referral_reward_access_profile_id: uuid.UUID | None = None
+    welcome_discount_enabled: bool = False
+    welcome_discount_offer_id: uuid.UUID | None = None
+    welcome_discount_url: PaymentDestinationUrl | None = None
+    welcome_discount_percent: int | None = Field(default=None, ge=1, le=99)
 
     @field_validator("kuma_url")
     @classmethod

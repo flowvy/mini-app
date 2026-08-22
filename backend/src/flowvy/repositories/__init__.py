@@ -7,6 +7,7 @@ from flowvy.repositories.entitlement_operation_action import (
     EntitlementOperationActionRepository,
 )
 from flowvy.repositories.invite import InviteRepository
+from flowvy.repositories.referral_conversion import ReferralConversionRepository
 from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.tribute_webhook_event import TributeWebhookEventRepository
 from flowvy.repositories.user import UserRepository
@@ -17,6 +18,7 @@ __all__ = [
     "EntitlementOperationActionRepository",
     "EntitlementOperationRepository",
     "InviteRepository",
+    "ReferralConversionRepository",
     "SubscriptionRepository",
     "TributeWebhookEventRepository",
     "UserRepository",

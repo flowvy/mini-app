@@ -49,6 +49,7 @@ const EVENT_KEYS: Record<string, string> = {
 	renewed_subscription: "settings.tribute.activity.event.renewed_subscription",
 	cancelled_subscription: "settings.tribute.activity.event.cancelled_subscription",
 	effective_access_restore: "settings.tribute.activity.event.effective_access_restore",
+	referral_reward: "settings.tribute.activity.event.referral_reward",
 };
 
 const UNKNOWN_EVENT_KEY = "settings.tribute.activity.event.other";

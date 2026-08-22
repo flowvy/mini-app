@@ -24,6 +24,7 @@ from flowvy.repositories.entitlement_operation_action import (
 )
 from flowvy.repositories.invite import InviteRepository
 from flowvy.repositories.provider_settings import ProviderSettingsRepository
+from flowvy.repositories.referral_conversion import ReferralConversionRepository
 from flowvy.repositories.sponsor_checkout import SponsorCheckoutRepository
 from flowvy.repositories.sponsor_offer import SponsorOfferRepository
 from flowvy.repositories.subscription import SubscriptionRepository
@@ -151,6 +152,14 @@ class RepositoryProvider(Provider):
         """Create provider settings repository bound to current session."""
         return ProviderSettingsRepository(session)
 
+    @provide(scope=Scope.REQUEST)
+    def get_referral_conversion_repo(
+        self,
+        session: AsyncSession,
+    ) -> ReferralConversionRepository:
+        """Create referral-conversion repository bound to current session."""
+        return ReferralConversionRepository(session)
+
 
 class ServiceProvider(Provider):
     """Provides business-logic services."""
@@ -219,6 +228,7 @@ class ServiceProvider(Provider):
         baselines: EntitlementBaselineRepository,
         subscriptions: SubscriptionRepository,
         users: UserRepository,
+        provider_settings: ProviderSettingsRepository,
         config: Settings,
     ) -> SponsorStateService:
         return SponsorStateService(
@@ -230,6 +240,7 @@ class ServiceProvider(Provider):
             baselines,
             subscriptions,
             users,
+            provider_settings,
             config,
         )
 

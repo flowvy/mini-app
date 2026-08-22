@@ -13,6 +13,13 @@ export interface AdminSettings {
 	tributeCredentialsConfigured: boolean;
 	tributeDonationUrl: string | null;
 	tributeSubscriptionUrls: Record<string, string>;
+	referralRewardEnabled: boolean;
+	referralRewardDays: number | null;
+	referralRewardAccessProfileId: string | null;
+	welcomeDiscountEnabled: boolean;
+	welcomeDiscountOfferId: string | null;
+	welcomeDiscountUrl: string | null;
+	welcomeDiscountPercent: number | null;
 	appName: string | null;
 	logoUrl: string | null;
 	welcomeText: string | null;
@@ -45,6 +52,13 @@ export interface AdminSettingsPatch {
 	beszelUrl?: string | null;
 	tributeDonationUrl?: string | null;
 	tributeSubscriptionUrls?: Record<string, string>;
+	referralRewardEnabled?: boolean;
+	referralRewardDays?: number | null;
+	referralRewardAccessProfileId?: string | null;
+	welcomeDiscountEnabled?: boolean;
+	welcomeDiscountOfferId?: string | null;
+	welcomeDiscountUrl?: string | null;
+	welcomeDiscountPercent?: number | null;
 	appName?: string | null;
 	logoUrl?: string | null;
 	welcomeText?: string | null;

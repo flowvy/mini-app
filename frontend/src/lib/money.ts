@@ -67,3 +67,8 @@ export function formatPlanMoney(value: string, currency: string, locale?: string
 		maximumFractionDigits: currencyFractionDigits(currency),
 	}).format(parsed);
 }
+
+/** Apply a whole-number percentage using integer minor units for stable storefront estimates. */
+export function discountedMinorAmount(value: number, percent: number): number {
+	return Math.round((value * (100 - percent)) / 100);
+}

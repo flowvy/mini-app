@@ -148,6 +148,8 @@ export interface SponsorOffer extends SponsorOfferInput {
 	priceOptions: SponsorOfferPriceOption[];
 	requiresNonAnonymous: boolean;
 	availability: SponsorOfferAvailability;
+	welcomeDiscount: boolean;
+	welcomeDiscountPercent: number | null;
 }
 
 export type SponsorStateStatus =
