@@ -16,8 +16,10 @@ import {
 	isUnlimitedTraffic,
 } from "../../lib/format.ts";
 import { hapticNotification } from "../../lib/haptics.ts";
+import { openExternalDestination } from "../../lib/telegram-link.ts";
 import type { SubscriptionData } from "../../types/subscription.ts";
-import { CheckIcon, CopyIcon } from "../ui/icons.tsx";
+import { ActionBtn } from "../ui/action-btn.tsx";
+import { CheckIcon, CopyIcon, ExternalLinkIcon } from "../ui/icons.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { StatusBadge } from "../ui/status-badge.tsx";
 import styles from "./hero-card.module.css";
@@ -56,6 +58,16 @@ function ActiveHeroCard({ subscription }: { subscription: SubscriptionData }) {
 	const [copied, setCopied] = useState(false);
 	const [copyFailed, setCopyFailed] = useState(false);
 	const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+	const handleOpen = useCallback(() => {
+		try {
+			const destination = new URL(connectionLink);
+			if (destination.protocol !== "https:") return;
+			if (!openExternalDestination(destination.href)) window.location.assign(destination.href);
+		} catch {
+			return;
+		}
+	}, [connectionLink]);
 
 	const handleCopy = useCallback(async () => {
 		setCopyFailed(false);
@@ -172,14 +184,23 @@ function ActiveHeroCard({ subscription }: { subscription: SubscriptionData }) {
 				</div>
 			</div>
 
-			{/* Row 5: action */}
-			<div className={styles.actions}>
-				<button type="button" className={styles.actionBtn} onClick={() => void handleCopy()}>
+			{/* Row 5: actions */}
+			<div className={styles.actions} data-ui="subscription-actions">
+				<ActionBtn variant="confirm" size="md" className={styles.actionBtn} onClick={handleOpen}>
+					<ExternalLinkIcon size={14} />
+					{t("home.heroCard.openLink")}
+				</ActionBtn>
+				<ActionBtn
+					variant="action"
+					size="md"
+					className={styles.actionBtn}
+					onClick={() => void handleCopy()}
+				>
 					<span className={styles.actionIcon}>
 						{copied ? <CheckIcon size={13} /> : <CopyIcon size={13} />}
 					</span>
 					{copied ? t("home.heroCard.copied") : t("home.heroCard.copyLink")}
-				</button>
+				</ActionBtn>
 			</div>
 			{copyFailed && (
 				<InlineFeedback attention="action">{t("home.heroCard.copyFailed")}</InlineFeedback>

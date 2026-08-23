@@ -272,6 +272,7 @@
 			"nextResetLabel": "Next Reset",
 			"allTimeLabel": "All Time",
 			"lastUpdatedLabel": "Last Updated",
+			"openLink": "Open setup instructions",
 			"copied": "Copied",
 			"copyLink": "Copy subscription link",
 			"copyFailed": "Could not copy the subscription link. Try again"

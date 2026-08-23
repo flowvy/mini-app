@@ -174,38 +174,18 @@
 	letter-spacing: 0.04em;
 }
 
-/* ── Row 5: action button ── */
+/* ── Row 5: action buttons ── */
 
 .actions {
-	display: flex;
-	gap: 8px;
+	display: grid;
+	gap: 6px;
 	border-top: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);
 	padding-top: 12px;
 }
 
 .actionBtn {
-	flex: 1;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 5px;
-	padding: 8px 14px;
-	border: 1px solid transparent;
-	border-radius: var(--radius-sm);
-	font-size: var(--font-size-caption);
-	font-weight: 600;
-	line-height: 1;
-	white-space: nowrap;
-	background: var(--v2-bg-primary-inverted);
-	color: var(--v2-text-primary-inverted);
-	cursor: pointer;
-	transition: opacity var(--duration-base);
-}
-
-@media (hover: hover) and (pointer: fine) {
-	.actionBtn:hover {
-		opacity: 0.85;
-	}
+	width: 100%;
+	min-height: 40px;
 }
 
 .actionIcon {

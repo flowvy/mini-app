@@ -162,6 +162,103 @@ test("Home reports a rejected subscription-link copy through the shared action e
 	}
 });
 
+test("Home opens setup instructions as the primary action and keeps copy secondary", async ({
+	page,
+	mockApi: _mock,
+}, testInfo) => {
+	await installTelegramMainButton(page);
+	await page.goto(withTelegramMainButton("/"));
+
+	const openButton = page.getByRole("button", { name: "Open setup instructions" });
+	const copyButton = page.getByRole("button", { name: "Copy subscription link" });
+	await expect(openButton).toBeVisible();
+	await expect(copyButton).toBeVisible();
+	expect(
+		await openButton.evaluate((button) => button.nextElementSibling?.textContent?.trim()),
+	).toBe("Copy subscription link");
+	await openButton.click();
+	await expect
+		.poll(() =>
+			page.evaluate(() => {
+				const telegramWindow = window as typeof window & {
+					__telegramEvents?: Array<{ eventType: string; eventData?: string }>;
+				};
+				return telegramWindow.__telegramEvents
+					?.filter((event) => event.eventType === "web_app_open_link")
+					.at(-1)?.eventData;
+			}),
+		)
+		.toContain("https://panel.example.test/sub/user-1");
+
+	await page.goto("/");
+	await expect(openButton).toBeVisible();
+
+	for (const theme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+		await page.evaluate((nextTheme) => {
+			document.documentElement.setAttribute("data-theme", nextTheme);
+		}, theme);
+		await page.evaluate(
+			() =>
+				new Promise<void>((resolve) => {
+					requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+				}),
+		);
+
+		const hierarchy = await page.evaluate(() => {
+			const buttons = Array.from(document.querySelectorAll("button"));
+			const open = buttons.find((button) =>
+				button.textContent?.includes("Open setup instructions"),
+			);
+			const copy = buttons.find((button) => button.textContent?.includes("Copy subscription link"));
+			if (!open || !copy) throw new Error("Subscription actions are missing");
+
+			const resolveColor = (token: string) => {
+				const probe = document.createElement("span");
+				probe.style.color = `var(${token})`;
+				document.body.append(probe);
+				const resolved = getComputedStyle(probe).color;
+				probe.remove();
+				return resolved;
+			};
+			const expected = {
+				primaryBackground: resolveColor("--v2-bg-primary-inverted"),
+				primaryText: resolveColor("--v2-text-primary-inverted"),
+				secondaryBorder: resolveColor("--v2-border-secondary"),
+				secondaryText: resolveColor("--v2-text-secondary"),
+			};
+			const openStyles = getComputedStyle(open);
+			const copyStyles = getComputedStyle(copy);
+			return {
+				expected,
+				actual: {
+					primaryBackground: openStyles.backgroundColor,
+					primaryText: openStyles.color,
+					secondaryBackground: copyStyles.backgroundColor,
+					secondaryBorder: copyStyles.borderColor,
+					secondaryText: copyStyles.color,
+				},
+			};
+		});
+		expect(hierarchy.actual).toEqual({
+			primaryBackground: hierarchy.expected.primaryBackground,
+			primaryText: hierarchy.expected.primaryText,
+			secondaryBackground: "rgba(0, 0, 0, 0)",
+			secondaryBorder: hierarchy.expected.secondaryBorder,
+			secondaryText: hierarchy.expected.secondaryText,
+		});
+		expect(
+			(await new AxeBuilder({ page }).include('[data-ui="subscription-actions"]').analyze())
+				.violations,
+		).toEqual([]);
+		await page.locator("main").screenshot({
+			path: testInfo.outputPath(`home-subscription-actions-${theme}.png`),
+			animations: "disabled",
+		});
+	}
+	await assertNoHorizontalOverflow(page);
+});
+
 test("device confirmations support cancel, failure, and successful remove-all", async ({
 	page,
 	mockApi,

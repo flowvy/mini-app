@@ -137,7 +137,7 @@ export const mockData = {
 		refillDate: 1_788_134_400,
 		lifetimeUsedBytes: 20 * 1024 ** 3,
 		updatedAt: 1_785_542_400,
-		connectionLink: "vless://example.invalid/profile",
+		connectionLink: "https://panel.example.test/sub/user-1",
 		email: "user@example.test",
 		telegramId: "123456789",
 		autoUpdate: true,
