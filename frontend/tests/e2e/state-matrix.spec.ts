@@ -92,7 +92,9 @@ test("subscription loading, active, absent, and provider error states render saf
 	]);
 
 	await page.goto("/");
-	await expect(page.locator('[class*="skeletonHero"]').first()).toBeVisible();
+	await expect(
+		page.locator('[data-ui="loading-skeleton"][data-skeleton-variant="home"]'),
+	).toBeVisible();
 	await expect(page.getByText("Account Info")).toBeVisible();
 	await expect(page.getByText("Active", { exact: true })).toBeVisible();
 

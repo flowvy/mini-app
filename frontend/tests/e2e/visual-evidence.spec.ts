@@ -128,7 +128,9 @@ test("capture the unified Home loading state", async ({ page, mockApi }, testInf
 	});
 
 	await page.goto("/");
-	await expect(page.getByLabel("Loading invite")).toBeVisible();
+	await expect(
+		page.locator('[data-ui="loading-skeleton"][data-skeleton-variant="home"]'),
+	).toBeVisible();
 	await expect(page.getByText("Invite friends", { exact: true })).not.toBeVisible();
 	await assertNoHorizontalOverflow(page);
 	await page.screenshot({
@@ -175,7 +177,6 @@ test("capture deterministic visual evidence for key screens", async ({
 				await expect(
 					page.getByRole("textbox", { name: "Invite registration description" }),
 				).toBeVisible();
-				await expect(page.getByText("Loading editor…", { exact: true })).toHaveCount(0);
 			}
 			await assertNoHorizontalOverflow(page);
 			await page.screenshot({

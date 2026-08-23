@@ -17,6 +17,7 @@ import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { FormSaveButton } from "../ui/form-save-button.tsx";
 import { FormField, FormFieldInput } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
+import { SectionSkeleton } from "../ui/page-skeleton.tsx";
 import { SettingsFields, SettingsInlineNotice, SettingsPanel } from "./settings-surface.tsx";
 import styles from "./tribute-payment-destinations.module.css";
 
@@ -117,11 +118,7 @@ export const TributePaymentDestinations: FC<TributePaymentDestinationsProps> = (
 						<strong>{t("settings.tribute.destinations.subscriptions")}</strong>
 						<small>{t("settings.tribute.destinations.subscriptionsHint")}</small>
 					</div>
-					{catalogQuery.isPending && (
-						<output className={styles.catalogState}>
-							{t("settings.tribute.destinations.loading")}
-						</output>
-					)}
+					{catalogQuery.isPending && <SectionSkeleton rows={2} fields />}
 					{catalogQuery.isError && (
 						<div className={styles.catalogError}>
 							<InlineFeedback>{t("settings.tribute.destinations.catalogError")}</InlineFeedback>

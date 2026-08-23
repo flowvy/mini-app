@@ -23,6 +23,7 @@ import {
 	FormFieldTextarea,
 } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
+import { EditorSkeleton } from "../ui/page-skeleton.tsx";
 import { SegmentedControl } from "../ui/segmented-control.tsx";
 import { Toggle } from "../ui/toggle.tsx";
 import { SettingsFields, SettingsPanel, SettingsStatusRow } from "./settings-surface.tsx";
@@ -424,7 +425,7 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 										onChange={(value) => updateField(definition.field, value)}
 									/>
 								) : "format" in definition && definition.format === "commonmark" ? (
-									<Suspense fallback={<output>{t("common.formattedText.loading")}</output>}>
+									<Suspense fallback={<EditorSkeleton />}>
 										<FormattedTextEditor
 											{...commonProps}
 											ariaLabel={t(definition.labelKey)}

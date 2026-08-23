@@ -1,10 +1,5 @@
-import styles from "./page-loading.module.css";
-import { SpinnerIcon } from "./spinner-icon.tsx";
+import { PageSkeleton, pageSkeletonVariantForPath } from "./page-skeleton.tsx";
 
 export function PageLoading() {
-	return (
-		<div className={styles.loading}>
-			<SpinnerIcon size={24} color="var(--v2-icon-secondary)" />
-		</div>
-	);
+	return <PageSkeleton variant={pageSkeletonVariantForPath(window.location.pathname)} />;
 }

@@ -16,6 +16,7 @@ import { ActionBtn } from "../ui/action-btn.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { FormField, FormFieldTextarea } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
+import { SectionSkeleton } from "../ui/page-skeleton.tsx";
 import styles from "./commerce-activity.module.css";
 import { SettingsDivider, SettingsPanel, SettingsStatusRow } from "./settings-surface.tsx";
 
@@ -216,11 +217,7 @@ export function CommerceActivity() {
 					</ActionBtn>
 				}
 			>
-				{activity.isPending && (
-					<output className={styles.state} aria-live="polite">
-						{t("settings.tribute.activity.loading")}
-					</output>
-				)}
+				{activity.isPending && <SectionSkeleton rows={4} />}
 				{activity.isError && (
 					<div className={styles.error}>
 						<InlineFeedback>{t("settings.tribute.activity.loadError")}</InlineFeedback>

@@ -1,8 +1,0 @@
-/* ── Full-page loading spinner (between header and tab bar) ── */
-
-.loading {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	min-height: calc(100dvh - 176px);
-}

@@ -432,7 +432,7 @@ test("access profile editor traps focus, passes Axe, and returns focus to its tr
 	await expect(create).toBeFocused();
 });
 
-test("home keeps the invite card in skeleton state until the page data settles", async ({
+test("home keeps its structural skeleton until the page data settles", async ({
 	page,
 	mockApi,
 }) => {
@@ -443,11 +443,13 @@ test("home keeps the invite card in skeleton state until the page data settles",
 	});
 
 	await page.goto("/");
-	await expect(page.getByLabel("Loading invite")).toBeVisible();
+	const skeleton = page.locator('[data-ui="loading-skeleton"][data-skeleton-variant="home"]');
+	await expect(skeleton).toBeVisible();
 	await expect(page.getByText("Invite friends", { exact: true })).not.toBeVisible();
 
 	await expect(page.getByRole("article", { name: "No active subscription" })).toBeVisible();
 	await expect(page.getByText("Invite friends", { exact: true })).toBeVisible();
+	await expect(skeleton).toHaveCount(0);
 });
 
 test("access editor fails safely when Remnawave options are unavailable", async ({

@@ -13,7 +13,7 @@ semantic roles и computed colors.
 
 Построчный аудит актуальных source trees зафиксировал desktop commit `dedd324a9a9baac4da660b8a9a760a2afacef168`
 как design reference и Mini App commit `9334014279817e21034674b8c2d63644e291299d` как исходный target.
-Проверены все 25 Mini App routes, 59 актуальных CSS-файлов, 87 TSX-файлов и color-bearing TS/SVG surfaces.
+Проверены все 25 Mini App routes, 58 актуальных CSS-файлов, 87 TSX-файлов и color-bearing TS/SVG surfaces.
 
 Desktop light `text-positive` и `text-warning`, а также `static-white` на общем
 `bg-negative-primary` не проходят некоторые текущие Mini App contrast contexts. Возвращённый к
@@ -108,19 +108,19 @@ Playwright projects, но не образуют новый debt.
 
 ## Coverage ledger
 
-Все 60 Mini App CSS sources входят в semantic mapping:
+Все 58 Mini App CSS sources входят в semantic mapping:
 
 | Mini App sources under `frontend/src` | Desktop reference и color roles |
 |---|---|
 | `styles/tokens.css`, `styles/global.css` | Полный desktop token catalog, global floor/text/selection/focus/scrollbar roles; Telegram theme selection сохраняется |
 | `components/layout/{app-shell,edge-blur,header,tab-bar}.module.css` | Dashboard/Popup floors и Sidebar navigation; floating Header/TabBar разделяют единственное glass exception |
-| `components/ui/{action-btn,app-logo,coming-soon,confirm-dialog,editor-dialog,error-state,form-save-button,form-section,inline-feedback,page-loading,segmented-control,skeleton,spinner-icon,status-badge,toggle}.module.css` | ActionButton, LogoIcon, shared Support/Broadcast neutral placeholder, Modal, ErrorBoundary/Profiles error, Settings/Bypass fields, BusyToggle, ModeSelector, Profiles loading, StatusBadge и Toggle |
+| `components/ui/{action-btn,app-logo,coming-soon,confirm-dialog,editor-dialog,error-state,form-save-button,form-section,inline-feedback,page-skeleton,segmented-control,skeleton,spinner-icon,status-badge,toggle}.module.css` | ActionButton, LogoIcon, shared Support/Broadcast neutral placeholder, Modal, ErrorBoundary/Profiles error, Settings/Bypass fields, BusyToggle, route/section/editor loading compositions, StatusBadge и Toggle |
 | `components/content/{formatted-text-editor,formatted-text,telegram-html-editor,template-variables}.module.css` | Release Notes renderer, YAML/Config editor framing, CustomSelect/rule controls |
 | `components/home/{detail-section,hero-card,invite-card,sponsor-card}.module.css`, `components/commerce/subscription-billing-list.module.css` | ProfileDetail/HeroCard, AddSub preview, основная опубликованная Sponsor offer-card accent и provider-confirmed neutral billing facts |
 | `components/pulse/{heartbeat-bar,monitor-row,status-banner}.module.css`, `pages/pulse.module.css` | StatusBadge/Toast semantic positive, negative и owner-selected warning maintenance roles |
 | `components/devices/device-row.module.css`, `pages/devices.module.css` | Connections rows, ProcessIcon/fallback glyphs и neutral DataTable empty/list roles |
 | `components/admin/{access-profile-editor,admin-user-detail,admin-user-hero,commerce-activity,commerce-rule-editor,commerce-rules-config,dashboard-bandwidth-row,dashboard-kpi-grid,filter-chips,referral-benefits-config,settings-surface,sponsor-offers-config,tribute-payment-destinations,user-row,virtualized-user-list,welcome-media}.module.css` | SettingsPage/SettingsRow, ProfileDetail, DataTable/Connections/Logs, RuleForm/RulesEditor/EditSubModal и neutral provider facts |
-| `pages/admin/{dashboard,settings-access,settings,users-skeleton,users}.module.css`, `pages/home.module.css` | Dashboard/Profile lists, Settings surfaces, Profiles loading and negative real-error roles |
+| `pages/admin/{dashboard,settings-access,settings,users}.module.css`, `pages/home.module.css` | Dashboard/Profile lists, Settings surfaces and negative real-error roles |
 | `components/onboarding-screen.module.css` | AddSub/Modal neutral onboarding surface и filled confirm CTA |
 
 Non-CSS color owners также проверяются: built-in AppLogo, Home/Admin traffic and expiry indicators,

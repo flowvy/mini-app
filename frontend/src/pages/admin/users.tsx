@@ -5,9 +5,9 @@ import { useTranslation } from "react-i18next";
 import { FILTER_KEYS, FilterChips, type FilterKey } from "../../components/admin/filter-chips.tsx";
 import { VirtualizedUserList } from "../../components/admin/virtualized-user-list.tsx";
 import { ErrorState } from "../../components/ui/error-state.tsx";
+import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { useAllAdminUsers } from "../../hooks/use-all-admin-users.ts";
 import type { AdminUser } from "../../types/admin-users.ts";
-import { UsersListSkeleton } from "./users-skeleton.tsx";
 import styles from "./users.module.css";
 
 const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
@@ -111,7 +111,7 @@ export const AdminUsers: FC<AdminUsersProps> = ({ searchMode = false }) => {
 		void navigate({ to: "/admin/users", replace: true });
 	}, [navigate, router]);
 
-	if (isPending) return <UsersListSkeleton />;
+	if (isPending) return <PageLoading />;
 
 	if (error) {
 		return <ErrorState onAction={refetch} />;

@@ -34,6 +34,7 @@ import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { EditorDialog } from "../ui/editor-dialog.tsx";
 import { FormField, FormFieldInput, FormFieldSelect } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
+import { EditorSkeleton, SectionSkeleton } from "../ui/page-skeleton.tsx";
 import { SegmentedControl } from "../ui/segmented-control.tsx";
 import { Toggle } from "../ui/toggle.tsx";
 import editorStyles from "./commerce-rule-editor.module.css";
@@ -239,7 +240,7 @@ export function SponsorOffersConfig({
 				{(offers.isPending || rules.isPending) && (
 					<>
 						<SettingsDivider />
-						<p className={styles.state}>{t("settings.tribute.offers.loading")}</p>
+						<SectionSkeleton rows={3} />
 					</>
 				)}
 
@@ -700,13 +701,7 @@ function SponsorOfferEditor({
 							htmlFor="sponsor-offer-description"
 							hint={t("settings.tribute.offers.descriptionHint")}
 						>
-							<Suspense
-								fallback={
-									<output className={offerStyles.editorLoading}>
-										{t("common.formattedText.loading")}
-									</output>
-								}
-							>
+							<Suspense fallback={<EditorSkeleton />}>
 								<FormattedTextEditor
 									id="sponsor-offer-description"
 									ariaLabel={t("settings.tribute.offers.descriptionLabel")}

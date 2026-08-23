@@ -2,8 +2,8 @@
 	"common": {
 		"retry": "Retry",
 		"cancel": "Cancel",
+		"loading": "Loading page…",
 		"formattedText": {
-			"loading": "Loading editor…",
 			"toolbar": "Text formatting",
 			"bold": "Bold",
 			"italic": "Italic",
@@ -553,7 +553,6 @@
 				"subscriptions": "Subscription links",
 				"subscriptionsHint": "Each link must come from the Links screen of the matching Tribute subscription",
 				"placeholder": "https://…",
-				"loading": "Loading Tribute subscriptions…",
 				"catalogError": "Could not load subscriptions. Saved links remain unchanged",
 				"empty": "Tribute returned no subscriptions. Create one in Tribute, then retry this page",
 				"unavailable": "Unavailable subscription · ID {{id}}",
@@ -609,7 +608,6 @@
 				"add": "Add rule",
 				"introTitle": "Map payments to access",
 				"introHint": "One Tribute subscription needs one automation rule for all of its billing periods. Subscriptions synchronize Tribute's exact expiration; anonymous donations always require review",
-				"loading": "Loading automation rules…",
 				"loadError": "Could not load automation rules or access profiles",
 				"emptyTitle": "No automation rules",
 				"emptyHint": "Create an explicit mapping from a Tribute payment scenario to one internal access profile",
@@ -713,7 +711,6 @@
 				"introTitle": "Publish payment choices on Home",
 				"introHint": "Each card is an offer shown on Home. Subscription prices and billing intervals come from Tribute; Flowvy does not create separate plan names",
 				"legacyDuplicates": "Some saved cards reuse the same Tribute subscription. One public card can include every available period; review or delete the extras when ready",
-				"loading": "Loading sponsor offers…",
 				"loadError": "Could not load sponsor offers or automation rules",
 				"emptyTitle": "No sponsor offers",
 				"emptyHint": "Create the first user-facing choice from an existing automation rule",
@@ -783,7 +780,6 @@
 			"activity": {
 				"section": "Payment activity",
 				"refresh": "Refresh",
-				"loading": "Loading recent payment activity…",
 				"loadError": "Could not load payment activity. Try again",
 				"recent": "Recent events",
 				"empty": "No events yet",

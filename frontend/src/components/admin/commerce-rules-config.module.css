@@ -12,15 +12,10 @@
 }
 
 .intro span,
-.empty span,
-.state {
+.empty span {
 	font-size: var(--font-size-caption);
 	line-height: 1.45;
 	color: var(--v2-text-secondary);
-}
-
-.state {
-	padding: 14px;
 }
 
 .errorState,

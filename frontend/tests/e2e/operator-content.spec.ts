@@ -185,7 +185,6 @@ test("plain and CommonMark Tone of Voice fields share one global text scale", as
 	mockApi: _mock,
 }) => {
 	await page.goto("/admin/settings/content");
-	await expect(page.getByText("Loading editor…", { exact: true })).toHaveCount(0);
 
 	const expectedSize = 13;
 	const title = page.getByLabel("Invite registration title");
@@ -589,7 +588,6 @@ test("focused Tone of Voice editor remains usable in every required viewport and
 			});
 			await page.getByLabel("User-facing message").selectOption("inviteRegistration");
 
-			await expect(page.getByText("Loading editor…", { exact: true })).toHaveCount(0);
 			await assertNoHorizontalOverflow(page);
 			const accessibility = await new AxeBuilder({ page }).analyze();
 			const serious = accessibility.violations.filter((violation) =>

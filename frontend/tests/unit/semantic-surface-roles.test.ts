@@ -84,15 +84,17 @@ describe("semantic surface roles", () => {
 			expect(rule, `${path} ${selector}`).not.toMatch(/color:\s*var\(--v2-text-/);
 		}
 
-		for (const path of [
-			"components/auth-guard.tsx",
-			"components/onboarding-screen.tsx",
-			"components/ui/page-loading.tsx",
-		]) {
-			const source = readSource(path);
-			expect(source, path).toContain('color="var(--v2-icon-secondary)"');
-			expect(source, path).not.toContain('color="var(--v2-text-secondary)"');
-		}
+		expect(readSource("components/auth-guard.tsx")).toContain("<LaunchSkeleton />");
+		expect(readSource("components/onboarding-screen.tsx")).toContain("<LaunchSkeleton />");
+		expect(readSource("components/admin/content-config.tsx")).toContain(
+			"<Suspense fallback={<EditorSkeleton />}>",
+		);
+		expect(readSource("components/admin/sponsor-offers-config.tsx")).toContain(
+			"<Suspense fallback={<EditorSkeleton />}>",
+		);
+		expect(readSource("components/ui/page-loading.tsx")).toContain(
+			"pageSkeletonVariantForPath(window.location.pathname)",
+		);
 
 		expect(
 			declarations(

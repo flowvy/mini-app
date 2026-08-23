@@ -237,17 +237,6 @@
 	gap: 9px;
 }
 
-.editorLoading {
-	display: grid;
-	min-height: 146px;
-	place-items: center;
-	border: 1px solid var(--v2-border-tertiary);
-	border-radius: var(--radius-sm);
-	background: var(--v2-bg-secondary);
-	font-size: var(--font-size-caption);
-	color: var(--v2-text-secondary);
-}
-
 @media (max-width: 350px) {
 	.offerList {
 		padding: 10px;

@@ -8,6 +8,7 @@ import { formatMinorMoney } from "../../lib/money.ts";
 import { type CommerceRule, commerceRuleInput } from "../../types/commerce.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
+import { SectionSkeleton } from "../ui/page-skeleton.tsx";
 import { Toggle } from "../ui/toggle.tsx";
 import { CommerceRuleEditor } from "./commerce-rule-editor.tsx";
 import styles from "./commerce-rules-config.module.css";
@@ -72,7 +73,7 @@ export function CommerceRulesConfig() {
 				{(rules.isPending || profiles.isPending) && (
 					<>
 						<SettingsDivider />
-						<p className={styles.state}>{t("settings.tribute.rules.loading")}</p>
+						<SectionSkeleton rows={3} />
 					</>
 				)}
 

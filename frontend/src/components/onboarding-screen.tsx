@@ -8,6 +8,7 @@ import styles from "./onboarding-screen.module.css";
 import { AppLogo } from "./ui/app-logo.tsx";
 import { ErrorState } from "./ui/error-state.tsx";
 import { InlineFeedback } from "./ui/inline-feedback.tsx";
+import { LaunchSkeleton } from "./ui/page-skeleton.tsx";
 import { SpinnerIcon } from "./ui/spinner-icon.tsx";
 
 interface OnboardingScreenProps {
@@ -57,11 +58,7 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 		registerMutation.mutate();
 	};
 	if (statusQuery.isPending) {
-		return (
-			<div className="fv-auth-screen">
-				<SpinnerIcon size={24} color="var(--v2-icon-secondary)" />
-			</div>
-		);
+		return <LaunchSkeleton />;
 	}
 	if (statusQuery.isError) {
 		return <ErrorState onAction={() => statusQuery.refetch()} />;

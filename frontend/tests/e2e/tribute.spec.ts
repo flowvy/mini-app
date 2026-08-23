@@ -348,7 +348,9 @@ test("payment links expose catalog loading and empty states", async ({ page, moc
 	});
 	await page.goto("/admin/settings/tribute/payment-links");
 
-	await expect(page.getByText("Loading Tribute subscriptions…", { exact: true })).toBeVisible();
+	await expect(
+		page.locator('[data-ui="loading-skeleton"]:not([data-skeleton-variant])'),
+	).toBeVisible();
 	await expect(page.getByText(/Tribute returned no subscriptions/)).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
@@ -697,7 +699,9 @@ test("payment activity exposes loading, failure recovery, and a safe empty state
 	await expect(page.getByRole("alert")).toContainText("Could not load payment activity");
 	await expect(page.getByText("private activity diagnostic")).toHaveCount(0);
 	await page.getByRole("button", { name: "Retry", exact: true }).click();
-	await expect(page.getByText("Loading recent payment activity…", { exact: true })).toBeVisible();
+	await expect(
+		page.locator('[data-ui="loading-skeleton"]:not([data-skeleton-variant])'),
+	).toBeVisible();
 	await expect(page.getByText("No events yet", { exact: true })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
@@ -1221,7 +1225,9 @@ test("commerce rules expose loading, load-error, and unavailable-profile states"
 		body: [],
 	});
 	await page.goto(withTelegramMainButton("/admin/settings/tribute/automation-rules"));
-	await expect(page.getByText("Loading automation rules…", { exact: true })).toBeVisible();
+	await expect(
+		page.locator('[data-ui="loading-skeleton"]:not([data-skeleton-variant])'),
+	).toBeVisible();
 	await expect(page.getByText("No automation rules", { exact: true })).toBeVisible();
 
 	mockApi.mock("GET", "/api/debug/admin/commerce/rules", {

@@ -1,10 +1,10 @@
 import type { FC } from "react";
 import { DetailSection } from "../components/home/detail-section.tsx";
 import { HeroCard } from "../components/home/hero-card.tsx";
-import { InviteCard, InviteCardSkeleton } from "../components/home/invite-card.tsx";
+import { InviteCard } from "../components/home/invite-card.tsx";
 import { SponsorCard } from "../components/home/sponsor-card.tsx";
 import { ErrorState } from "../components/ui/error-state.tsx";
-import { Skeleton } from "../components/ui/skeleton.tsx";
+import { PageLoading } from "../components/ui/page-loading.tsx";
 import { useSubscription } from "../hooks/use-subscription.ts";
 import { ApiError } from "../lib/api.ts";
 import styles from "./home.module.css";
@@ -13,35 +13,7 @@ export const Home: FC = () => {
 	const { subscription, isPending, error, refetch } = useSubscription();
 
 	if (isPending) {
-		return (
-			<div className={styles.page}>
-				<div className={styles.skeletonHero}>
-					<div className={styles.skeletonHeroTop}>
-						<Skeleton width="40%" height={16} radius={4} />
-						<Skeleton width={60} height={16} radius={4} />
-					</div>
-					<Skeleton width="100%" height={6} radius={3} />
-					<div className={styles.skeletonStats}>
-						<Skeleton height={32} />
-						<Skeleton height={32} />
-						<Skeleton height={32} />
-					</div>
-				</div>
-				<InviteCardSkeleton />
-				<div className={styles.skeletonSection}>
-					<div className={styles.skeletonSectionTitle}>
-						<Skeleton width="30%" height={10} radius={3} />
-					</div>
-					{Array.from({ length: 4 }, (_, i) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: static skeleton
-						<div key={i} className={styles.skeletonRow}>
-							<Skeleton width="35%" height={12} radius={4} />
-							<Skeleton width="25%" height={12} radius={4} />
-						</div>
-					))}
-				</div>
-			</div>
-		);
+		return <PageLoading />;
 	}
 
 	if (error && !(error instanceof ApiError && error.status === 404)) {

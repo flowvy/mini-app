@@ -9,7 +9,7 @@ import { ApiError } from "../lib/api.ts";
 import { getLocalizedError } from "../lib/error-copy.ts";
 import { OnboardingScreen } from "./onboarding-screen.tsx";
 import { ErrorState } from "./ui/error-state.tsx";
-import { SpinnerIcon } from "./ui/spinner-icon.tsx";
+import { LaunchSkeleton } from "./ui/page-skeleton.tsx";
 
 const UserContext = createContext<UserResponse | null>(null);
 
@@ -34,11 +34,7 @@ export function AuthGuard({ children }: AuthGuardProps): ReactElement {
 	}, [t, user?.branding.appName]);
 
 	if (isLoading) {
-		return (
-			<div className="fv-auth-screen">
-				<SpinnerIcon size={24} color="var(--v2-icon-secondary)" />
-			</div>
-		);
+		return <LaunchSkeleton />;
 	}
 
 	if (error || !user) {
