@@ -32,6 +32,7 @@ from flowvy.repositories.tribute_webhook_event import TributeWebhookEventReposit
 from flowvy.repositories.user import UserRepository
 from flowvy.schemas.commerce import (
     SponsorCheckoutResponse,
+    SponsorOfferBenefits,
     SponsorOfferCheckoutSnapshot,
     SponsorOfferInput,
     SponsorOfferLocale,
@@ -72,7 +73,7 @@ class SponsorOfferDestinationMissingError(SponsorOfferError):
 
 
 class SponsorCheckoutConflictError(ValueError):
-    """A different unconfirmed checkout already owns this user's intent."""
+    """A checkout cannot safely start in the user's current paid state."""
 
 
 def _minor_to_major(value: int) -> str:
@@ -244,7 +245,8 @@ class SponsorOfferService:
     ) -> SponsorOfferCheckoutSnapshot:
         if not rule.is_enabled:
             raise SponsorOfferError("Enable the commerce rule before publishing its offer")
-        if await self._profiles.get_active(rule.access_profile_id) is None:
+        profile = await self._profiles.get_active(rule.access_profile_id)
+        if profile is None:
             raise SponsorOfferError("Access profile is unavailable")
 
         response = commerce_rule_response(rule)
@@ -322,6 +324,10 @@ class SponsorOfferService:
             ),
             price_options=price_options,
             requires_non_anonymous=requires_non_anonymous,
+            benefits=SponsorOfferBenefits(
+                traffic_limit_bytes=profile.traffic_limit_bytes,
+                device_limit=profile.hwid_device_limit,
+            ),
         )
 
     async def _require_unique_published_subscription(
@@ -395,11 +401,12 @@ class SponsorOfferService:
             and offer.expected_amount_minor is not None
             else []
         )
+        profile = await self._profiles.get_active(rule.access_profile_id)
         if not offer.is_published:
             availability = "draft"
         elif not rule.is_enabled:
             availability = "rule_disabled"
-        elif await self._profiles.get_active(rule.access_profile_id) is None:
+        elif profile is None:
             availability = "profile_unavailable"
         elif snapshot is None or not self._snapshot_matches_rule(rule, snapshot):
             availability = "configuration_changed"
@@ -439,6 +446,16 @@ class SponsorOfferService:
             external_item_id=rule.external_item_id,
             price_options=snapshot.price_options if snapshot else draft_prices,
             requires_non_anonymous=(snapshot.requires_non_anonymous if snapshot else False),
+            benefits=(
+                SponsorOfferBenefits(
+                    traffic_limit_bytes=profile.traffic_limit_bytes,
+                    device_limit=profile.hwid_device_limit,
+                )
+                if profile is not None
+                else snapshot.benefits
+                if snapshot is not None and snapshot.benefits is not None
+                else SponsorOfferBenefits(traffic_limit_bytes=0, device_limit=None)
+            ),
             availability=availability,  # type: ignore[arg-type]
         )
 
@@ -715,7 +732,6 @@ class SponsorStateService:
         if pending is not None:
             if pending.offer_id == offer_id:
                 return self._checkout_response(pending)
-            raise SponsorCheckoutConflictError("Another payment is still awaiting confirmation")
 
         offer = await self._offers.get_ready(offer_id)
         if offer.commerce_type == "subscription":
@@ -733,6 +749,8 @@ class SponsorStateService:
                 raise SponsorCheckoutConflictError(
                     "Another subscription can start after the current paid period ends",
                 )
+        if pending is not None:
+            await self._checkouts.abandon_pending(user_id, pending.id)
         if offer.checkout_url is None:
             raise SponsorOfferError("Sponsor offer has no checkout destination")
         welcome_discount = await self._welcome_discount_checkout(user, offer)

@@ -36,6 +36,14 @@ OFFER_ID = uuid.UUID("22222222-2222-4222-8222-222222222222")
 PROFILE_ID = uuid.UUID("33333333-3333-4333-8333-333333333333")
 
 
+def _profile() -> SimpleNamespace:
+    return SimpleNamespace(
+        id=PROFILE_ID,
+        traffic_limit_bytes=100 * 1024**3,
+        hwid_device_limit=5,
+    )
+
+
 def test_sponsor_offer_copy_preserves_portable_formatting() -> None:
     payload = SponsorOfferInput(
         title="  Sponsor   access  ",
@@ -127,7 +135,7 @@ async def test_subscription_offer_preserves_all_documented_provider_periods() ->
     rules = AsyncMock()
     rules.get_by_id.return_value = rule
     profiles = AsyncMock()
-    profiles.get_active.return_value = SimpleNamespace(id=PROFILE_ID)
+    profiles.get_active.return_value = _profile()
     provider_settings = AsyncMock()
     provider_settings.get.return_value = SimpleNamespace(
         tribute_donation_url=None,
@@ -176,6 +184,8 @@ async def test_subscription_offer_preserves_all_documented_provider_periods() ->
         ("500", "monthly"),
         ("3500", "yearly"),
     ]
+    assert result.benefits.traffic_limit_bytes == 100 * 1024**3
+    assert result.benefits.device_limit == 5
 
 
 @pytest.mark.asyncio
@@ -186,7 +196,7 @@ async def test_subscription_offer_reports_missing_destination_with_stable_code()
     rules = AsyncMock()
     rules.get_by_id.return_value = rule
     profiles = AsyncMock()
-    profiles.get_active.return_value = SimpleNamespace(id=PROFILE_ID)
+    profiles.get_active.return_value = _profile()
     provider_settings = AsyncMock()
     provider_settings.get.return_value = SimpleNamespace(tribute_subscription_urls={})
     catalog = AsyncMock()
@@ -261,7 +271,7 @@ async def test_one_published_subscription_offer_contains_all_provider_periods() 
     rules = AsyncMock()
     rules.get_by_id.return_value = rule
     profiles = AsyncMock()
-    profiles.get_active.return_value = SimpleNamespace(id=PROFILE_ID)
+    profiles.get_active.return_value = _profile()
     service = SponsorOfferService(
         offers,
         rules,
@@ -303,7 +313,7 @@ async def test_identified_donation_offer_publishes_its_own_link_and_expected_amo
     rules = AsyncMock()
     rules.get_by_id.return_value = rule
     profiles = AsyncMock()
-    profiles.get_active.return_value = SimpleNamespace(id=PROFILE_ID)
+    profiles.get_active.return_value = _profile()
     provider_settings = AsyncMock()
     provider_settings.get.return_value = SimpleNamespace(tribute_subscription_urls={})
     catalog = AsyncMock()
@@ -355,7 +365,7 @@ async def test_multiple_donation_offers_can_reuse_one_flexible_rule() -> None:
     rules = AsyncMock()
     rules.get_by_id.return_value = rule
     profiles = AsyncMock()
-    profiles.get_active.return_value = SimpleNamespace(id=PROFILE_ID)
+    profiles.get_active.return_value = _profile()
     provider_settings = AsyncMock()
     provider_settings.get.return_value = SimpleNamespace(tribute_subscription_urls={})
     service = SponsorOfferService(
@@ -387,7 +397,11 @@ async def test_multiple_donation_offers_can_reuse_one_flexible_rule() -> None:
 
 
 @pytest.mark.asyncio
-async def test_recurring_donation_offer_freezes_the_exact_provider_period() -> None:
+@pytest.mark.parametrize(
+    "period",
+    ["weekly", "monthly", "quarterly", "halfyearly", "yearly"],
+)
+async def test_recurring_donation_offer_freezes_the_exact_provider_period(period: str) -> None:
     rule = _rule("donation")
     rule.payment_mode = "any"
     offers = AsyncMock()
@@ -395,7 +409,7 @@ async def test_recurring_donation_offer_freezes_the_exact_provider_period() -> N
     rules = AsyncMock()
     rules.get_by_id.return_value = rule
     profiles = AsyncMock()
-    profiles.get_active.return_value = SimpleNamespace(id=PROFILE_ID)
+    profiles.get_active.return_value = _profile()
     service = SponsorOfferService(
         offers,
         rules,
@@ -411,15 +425,15 @@ async def test_recurring_donation_offer_freezes_the_exact_provider_period() -> N
             checkout_url="https://t.me/tribute/app?startapp=monthly",
             expected_amount_minor=50_000,
             expected_payment_mode="recurring",
-            expected_provider_period="monthly",
+            expected_provider_period=period,  # type: ignore[arg-type]
             is_published=True,
         ),
         admin_id=1,
     )
 
     assert result.expected_payment_mode == "recurring"
-    assert result.expected_provider_period == "monthly"
-    assert result.price_options[0].period == "monthly"
+    assert result.expected_provider_period == period
+    assert result.price_options[0].period == period
 
 
 @pytest.mark.asyncio
@@ -481,7 +495,7 @@ async def test_published_offer_fails_closed_after_its_rule_no_longer_matches() -
     rules = AsyncMock()
     rules.get_by_id.return_value = rule
     profiles = AsyncMock()
-    profiles.get_active.return_value = SimpleNamespace(id=PROFILE_ID)
+    profiles.get_active.return_value = _profile()
     service = SponsorOfferService(
         offers,
         rules,
@@ -521,7 +535,7 @@ async def test_public_offer_resolves_requested_locale_without_exposing_locale_ma
     rules = AsyncMock()
     rules.get_by_id.return_value = rule
     profiles = AsyncMock()
-    profiles.get_active.return_value = SimpleNamespace(id=PROFILE_ID)
+    profiles.get_active.return_value = _profile()
     provider_settings = AsyncMock()
     provider_settings.get.return_value = SimpleNamespace(content_default_locale="en")
     service = SponsorOfferService(
@@ -554,6 +568,7 @@ def _public_offer() -> SponsorOfferResponse:
         checkout_url="https://t.me/tribute/app?startapp=sub",
         price_options=[{"priceMajor": "500", "currency": "RUB", "period": "monthly"}],
         requires_non_anonymous=False,
+        benefits={"trafficLimitBytes": 100 * 1024**3, "deviceLimit": 5},
         availability="ready",
     )
 
@@ -1079,7 +1094,7 @@ async def test_abandon_checkout_requires_an_active_local_user(
 
 
 @pytest.mark.asyncio
-async def test_different_pending_offer_blocks_second_payment(
+async def test_different_pending_offer_is_expired_before_starting_the_selected_offer(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     pending = SponsorCheckout(
@@ -1096,11 +1111,12 @@ async def test_different_pending_offer_blocks_second_payment(
     )
     service, offers, checkouts = _checkout_service(monkeypatch, pending=pending)
 
-    with pytest.raises(SponsorCheckoutConflictError, match="still awaiting"):
-        await service.start_checkout(123, OFFER_ID)
+    result = await service.start_checkout(123, OFFER_ID)
 
-    offers.get_ready.assert_not_awaited()
-    checkouts.create.assert_not_awaited()
+    assert result.offer_id == OFFER_ID
+    offers.get_ready.assert_awaited_once_with(OFFER_ID)
+    checkouts.abandon_pending.assert_awaited_once_with(123, pending.id)
+    checkouts.create.assert_awaited_once()
 
 
 @pytest.mark.asyncio

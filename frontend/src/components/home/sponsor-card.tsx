@@ -1,6 +1,15 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, HeartHandshake, LockKeyhole, RefreshCw, TicketPercent } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { on } from "@telegram-apps/sdk-react";
+import {
+	ExternalLink,
+	Gauge,
+	HeartHandshake,
+	LockKeyhole,
+	MonitorSmartphone,
+	RefreshCw,
+	TicketPercent,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	useAbandonSponsorCheckout,
@@ -8,7 +17,12 @@ import {
 	useStartSponsorCheckout,
 } from "../../hooks/use-sponsor.ts";
 import { TRIBUTE_PERIOD_KEYS } from "../../lib/commerce-labels.ts";
-import { formatExpiryDate, isUnlimitedExpiry } from "../../lib/format.ts";
+import {
+	formatExpiryDate,
+	formatTraffic,
+	isUnlimitedExpiry,
+	isUnlimitedTraffic,
+} from "../../lib/format.ts";
 import { hapticImpact } from "../../lib/haptics.ts";
 import { formatMajorMoney, formatPlanMoney } from "../../lib/money.ts";
 import {
@@ -28,7 +42,6 @@ import { useCurrentUser } from "../auth-guard.tsx";
 import { SubscriptionBillingList } from "../commerce/subscription-billing-list.tsx";
 import { FormattedText } from "../content/formatted-text.tsx";
 import { ActionBtn } from "../ui/action-btn.tsx";
-import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { Skeleton } from "../ui/skeleton.tsx";
 import styles from "./sponsor-card.module.css";
@@ -99,10 +112,8 @@ const ACTION_KEYS: Partial<Record<SponsorPrimaryAction, string>> = {
 };
 
 const PAYMENT_FEEDBACK_KEYS = {
-	unchanged: "home.sponsor.paymentFeedback.unchanged",
 	checkError: "home.sponsor.paymentFeedback.checkError",
 	refreshError: "home.sponsor.paymentFeedback.refreshError",
-	cancelled: "home.sponsor.paymentFeedback.cancelled",
 	cancelError: "home.sponsor.paymentFeedback.cancelError",
 } as const;
 
@@ -130,18 +141,47 @@ export function SponsorCard() {
 		state?.primaryAction === "choose_offer" ||
 		state?.primaryAction === "renew" ||
 		state?.primaryAction === "resume_recurring";
-	const [offersVisible, setOffersVisible] = useState(state?.primaryAction === "choose_offer");
+	const [offersVisible, setOffersVisible] = useState(
+		state?.primaryAction === "choose_offer" || state?.status === "checkout_pending",
+	);
 	const [checkingPayment, setCheckingPayment] = useState(false);
-	const [paymentFeedback, setPaymentFeedback] = useState<
-		"unchanged" | "checkError" | "refreshError" | "cancelled" | "cancelError" | null
-	>(null);
-	const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-	const cancelAttemptRef = useRef<HTMLButtonElement>(null);
+	const [paymentFeedback, setPaymentFeedback] = useState<keyof typeof PAYMENT_FEEDBACK_KEYS | null>(
+		null,
+	);
 
 	useEffect(() => {
-		if (state?.primaryAction === "choose_offer") setOffersVisible(true);
-		if (!chooserAction) setOffersVisible(false);
-	}, [chooserAction, state?.primaryAction]);
+		if (state?.primaryAction === "choose_offer" || state?.status === "checkout_pending") {
+			setOffersVisible(true);
+		} else {
+			setOffersVisible(false);
+		}
+	}, [state?.primaryAction, state?.status]);
+
+	useEffect(() => {
+		if (state?.status !== "checkout_pending") return;
+		let lastRefresh = 0;
+		const refreshAfterReturn = () => {
+			const now = Date.now();
+			if (now - lastRefresh < 500) return;
+			lastRefresh = now;
+			void sponsor
+				.refetch()
+				.then(() => queryClient.invalidateQueries({ queryKey: queryKeys.subscription }));
+		};
+		const stopTelegramListener = on("visibility_changed", ({ is_visible }) => {
+			if (is_visible) refreshAfterReturn();
+		});
+		const handleVisibility = () => {
+			if (!document.hidden) refreshAfterReturn();
+		};
+		window.addEventListener("focus", refreshAfterReturn);
+		document.addEventListener("visibilitychange", handleVisibility);
+		return () => {
+			stopTelegramListener();
+			window.removeEventListener("focus", refreshAfterReturn);
+			document.removeEventListener("visibilitychange", handleVisibility);
+		};
+	}, [queryClient, sponsor.refetch, state?.status]);
 
 	if (sponsor.isPending) {
 		return (
@@ -185,6 +225,10 @@ export function SponsorCard() {
 	const stateCopy = STATE_KEYS[state.status];
 	const date = state.paidExpiresAt ?? state.baseExpiresAt;
 	const noExpiry = date ? isUnlimitedExpiry(date) : false;
+	const selectableOffers =
+		state.status === "checkout_pending" && state.pendingCheckout
+			? state.offers.filter((offer) => offer.id !== state.pendingCheckout?.offerId)
+			: state.offers;
 	const actionLabel = ACTION_KEYS[state.primaryAction];
 	const stateTitle =
 		state.status === "no_access"
@@ -229,30 +273,21 @@ export function SponsorCard() {
 		try {
 			const result = await sponsor.refetch();
 			await queryClient.invalidateQueries({ queryKey: queryKeys.subscription });
-			setPaymentFeedback(
-				result.isError
-					? "checkError"
-					: result.data?.status === "checkout_pending"
-						? "unchanged"
-						: null,
-			);
+			setPaymentFeedback(result.isError ? "checkError" : null);
 		} finally {
 			setCheckingPayment(false);
 		}
 	};
-	const confirmAbandonCheckout = async () => {
+	const cancelPendingCheckout = async () => {
 		if (!state.pendingCheckout) return;
+		hapticImpact("medium");
 		setPaymentFeedback(null);
 		try {
 			await abandonCheckout.mutateAsync(state.pendingCheckout.id);
-			setCancelDialogOpen(false);
-			setPaymentFeedback("cancelled");
 		} catch {
-			setCancelDialogOpen(false);
 			setPaymentFeedback("cancelError");
 		}
 	};
-
 	const handlePrimaryAction = () => {
 		hapticImpact("light");
 		if (chooserAction) {
@@ -307,6 +342,8 @@ export function SponsorCard() {
 		const offerTitle = renderTemplate(offer.title, operatorContext);
 		const offerDescription = renderFormattedTemplate(offer.description, operatorContext);
 		const welcomeDiscountPercent = offer.welcomeDiscount ? offer.welcomeDiscountPercent : null;
+		const unlimitedTraffic = isUnlimitedTraffic(offer.benefits.trafficLimitBytes);
+		const unlimitedDevices = !offer.benefits.deviceLimit;
 		return (
 			<article
 				className={styles.offerCard}
@@ -373,6 +410,25 @@ export function SponsorCard() {
 					<p className={styles.offerInstruction}>{instruction}</p>
 				)}
 
+				<div className={styles.benefits} aria-label={t("home.sponsor.benefits.label")}>
+					<div className={styles.benefit}>
+						<Gauge size={16} aria-hidden="true" />
+						<span>{t("home.sponsor.benefits.traffic")}</span>
+						<strong>
+							{unlimitedTraffic
+								? t("home.sponsor.benefits.unlimited")
+								: formatTraffic(offer.benefits.trafficLimitBytes)}
+						</strong>
+					</div>
+					<div className={styles.benefit}>
+						<MonitorSmartphone size={16} aria-hidden="true" />
+						<span>{t("home.sponsor.benefits.devices")}</span>
+						<strong>
+							{unlimitedDevices ? t("home.sponsor.benefits.unlimited") : offer.benefits.deviceLimit}
+						</strong>
+					</div>
+				</div>
+
 				<ActionBtn
 					variant={blocked ? "action" : "confirm"}
 					size="md"
@@ -436,24 +492,31 @@ export function SponsorCard() {
 				</div>
 			)}
 
-			{actionLabel && !(state.primaryAction === "choose_offer" && offersVisible) && (
-				<ActionBtn
-					variant={refreshOnly ? "action" : "confirm"}
-					size="md"
-					className={styles.primaryAction}
-					loading={refreshOnly && sponsor.isFetching}
-					onClick={handlePrimaryAction}
-				>
-					{refreshOnly ? (
-						<RefreshCw size={14} aria-hidden="true" />
-					) : (
-						<ExternalLink size={14} aria-hidden="true" />
-					)}
-					{state.primaryAction === "choose_offer"
-						? operatorText(branding.content, "sponsorChooseAction", t(actionLabel), operatorContext)
-						: t(actionLabel)}
-				</ActionBtn>
-			)}
+			{actionLabel &&
+				state.primaryAction !== "continue_checkout" &&
+				!(state.primaryAction === "choose_offer" && offersVisible) && (
+					<ActionBtn
+						variant={refreshOnly ? "action" : "confirm"}
+						size="md"
+						className={styles.primaryAction}
+						loading={refreshOnly && sponsor.isFetching}
+						onClick={handlePrimaryAction}
+					>
+						{refreshOnly ? (
+							<RefreshCw size={14} aria-hidden="true" />
+						) : (
+							<ExternalLink size={14} aria-hidden="true" />
+						)}
+						{state.primaryAction === "choose_offer"
+							? operatorText(
+									branding.content,
+									"sponsorChooseAction",
+									t(actionLabel),
+									operatorContext,
+								)
+							: t(actionLabel)}
+					</ActionBtn>
+				)}
 
 			{state.status === "recurring_donation_active" && (
 				<p className={styles.checkoutNotice} role="note">
@@ -480,9 +543,9 @@ export function SponsorCard() {
 			)}
 
 			{state.primaryAction === "continue_checkout" && (
-				<div className={styles.pendingActions}>
+				<div className={styles.pendingActions} data-ui="pending-checkout-actions">
 					<ActionBtn
-						variant="action"
+						variant="confirm"
 						size="md"
 						className={styles.pendingAction}
 						loading={checkingPayment}
@@ -492,11 +555,21 @@ export function SponsorCard() {
 						<RefreshCw size={13} aria-hidden="true" /> {t("home.sponsor.checkStatus")}
 					</ActionBtn>
 					<ActionBtn
-						ref={cancelAttemptRef}
-						variant="ghost"
-						size="sm"
+						variant="action"
+						size="md"
+						className={styles.pendingAction}
 						disabled={checkingPayment || abandonCheckout.isPending}
-						onClick={() => setCancelDialogOpen(true)}
+						onClick={handlePrimaryAction}
+					>
+						<ExternalLink size={13} aria-hidden="true" /> {t("home.sponsor.action.continue")}
+					</ActionBtn>
+					<ActionBtn
+						variant="ghost"
+						size="md"
+						className={styles.pendingAction}
+						loading={abandonCheckout.isPending}
+						disabled={checkingPayment}
+						onClick={() => void cancelPendingCheckout()}
 					>
 						{t("home.sponsor.cancelAttempt.action")}
 					</ActionBtn>
@@ -504,29 +577,14 @@ export function SponsorCard() {
 			)}
 
 			{paymentFeedback && (
-				<InlineFeedback
-					attention={
-						paymentFeedback === "checkError" ||
-						paymentFeedback === "refreshError" ||
-						paymentFeedback === "cancelError"
-							? "action"
-							: "passive"
-					}
-					tone={
-						paymentFeedback === "unchanged"
-							? "info"
-							: paymentFeedback === "cancelled"
-								? "success"
-								: "error"
-					}
-				>
+				<InlineFeedback attention="action" tone="error">
 					{t(PAYMENT_FEEDBACK_KEYS[paymentFeedback], { appName })}
 				</InlineFeedback>
 			)}
 
-			{offersVisible && state.offers.length > 0 && (
+			{offersVisible && selectableOffers.length > 0 && (
 				<div className={styles.offers}>
-					{state.offers.map((offer) => renderOffer(offer))}
+					{selectableOffers.map((offer) => renderOffer(offer))}
 					<p className={styles.checkoutNotice}>{t("home.sponsor.checkoutNotice", { appName })}</p>
 				</div>
 			)}
@@ -536,20 +594,6 @@ export function SponsorCard() {
 					{t("home.sponsor.checkoutError", { appName })}
 				</InlineFeedback>
 			)}
-
-			<ConfirmDialog
-				open={cancelDialogOpen}
-				title={t("home.sponsor.cancelAttempt.title")}
-				confirmLabel={t("home.sponsor.cancelAttempt.confirm")}
-				cancelLabel={t("common.cancel")}
-				confirmLoading={abandonCheckout.isPending}
-				initialFocus="title"
-				onConfirm={() => void confirmAbandonCheckout()}
-				onCancel={() => setCancelDialogOpen(false)}
-				returnFocusRef={cancelAttemptRef}
-			>
-				<p>{t("home.sponsor.cancelAttempt.description", { appName })}</p>
-			</ConfirmDialog>
 		</section>
 	);
 }

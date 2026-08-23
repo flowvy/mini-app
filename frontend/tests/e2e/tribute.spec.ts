@@ -77,6 +77,7 @@ function sponsorSubscriptionOffer(
 		expectedProviderPeriod: null,
 		priceOptions: [{ priceMajor: "500", currency: "RUB", period: "monthly" }],
 		requiresNonAnonymous: false,
+		benefits: { trafficLimitBytes: 100 * 1024 ** 3, deviceLimit: 5 },
 		availability: "ready",
 		welcomeDiscount: false,
 		welcomeDiscountPercent: null,
@@ -1882,7 +1883,15 @@ test("admin publishes exact one-time and recurring donation choices from one rul
 		await page.getByLabel("Amount the user must enter (RUB)").fill(amount);
 		if (mode === "recurring" && period) {
 			await page.getByRole("radio", { name: "Auto-donation" }).click();
-			await page.getByLabel("Auto-donation frequency").selectOption(period);
+			const frequency = page.getByLabel("Auto-donation frequency");
+			expect(await frequency.locator("option").allTextContents()).toEqual([
+				"week",
+				"month",
+				"3 months",
+				"6 months",
+				"year",
+			]);
+			await frequency.selectOption(period);
 		}
 		const publish = page.getByRole("switch", { name: "Publish this sponsor offer" });
 		await expect(publish).toBeEnabled();
@@ -2234,6 +2243,7 @@ test("Home keeps base access while offering an upgrade and handles one-time rene
 	mockApi,
 }) => {
 	const offer = sponsorSubscriptionOffer();
+	const donationOffer = sponsorDonationOffer();
 	mockApi.seedSponsorState({
 		status: "base_access",
 		accessLevel: "base",
@@ -2243,7 +2253,7 @@ test("Home keeps base access while offering an upgrade and handles one-time rene
 		currentOfferId: null,
 		managementUrl: null,
 		pendingCheckout: null,
-		offers: [offer],
+		offers: [offer, donationOffer],
 	});
 
 	await page.goto("/");
@@ -2274,11 +2284,12 @@ test("Home keeps base access while offering an upgrade and handles one-time rene
 	await expect(page.getByText("Monthly sponsor access", { exact: true })).toBeVisible();
 });
 
-test("Home blocks duplicate payment while confirmation or access delivery is pending", async ({
+test("Home keeps offer choice available only while provider confirmation is pending", async ({
 	page,
 	mockApi,
 }) => {
 	const offer = sponsorSubscriptionOffer();
+	const donationOffer = sponsorDonationOffer();
 	mockApi.seedSponsorState({
 		status: "checkout_pending",
 		accessLevel: "base",
@@ -2294,14 +2305,41 @@ test("Home blocks duplicate payment while confirmation or access delivery is pen
 			checkoutUrl: offer.checkoutUrl,
 			expiresAt: "2026-08-14T12:30:00Z",
 		},
-		offers: [offer],
+		offers: [offer, donationOffer],
 	});
 
 	await page.goto("/");
-	await expect(page.getByRole("heading", { name: "Payment not confirmed yet" })).toBeVisible();
-	await expect(page.getByRole("button", { name: "Continue in Tribute" })).toBeVisible();
-	await expect(page.getByRole("button", { name: "Check payment status" })).toBeVisible();
-	await expect(page.getByText("Monthly sponsor access", { exact: true })).toHaveCount(0);
+	const pendingCard = page.getByRole("region", { name: "Payment not confirmed yet" });
+	await expect(pendingCard).toBeVisible();
+	const checkPayment = pendingCard.getByRole("button", { name: "Check payment status" });
+	const continuePayment = pendingCard.getByRole("button", { name: "Continue in Tribute" });
+	const cancelPayment = pendingCard.getByRole("button", { name: "Cancel this attempt" });
+	await expect(checkPayment).toBeVisible();
+	await expect(continuePayment).toBeVisible();
+	await expect(cancelPayment).toBeVisible();
+	expect(
+		(await pendingCard.getByRole("button").allTextContents())
+			.slice(0, 3)
+			.map((label) => label.trim()),
+	).toEqual(["Check payment status", "Continue in Tribute", "Cancel this attempt"]);
+	expect(
+		await checkPayment.evaluate((element) => getComputedStyle(element).backgroundColor),
+	).not.toBe("rgba(0, 0, 0, 0)");
+	await expect(continuePayment).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+	await expect(cancelPayment).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+	const pendingActionsAccessibility = await new AxeBuilder({ page })
+		.include('[data-ui="pending-checkout-actions"]')
+		.analyze();
+	expect(
+		pendingActionsAccessibility.violations.filter((violation) =>
+			["serious", "critical"].includes(violation.impact ?? ""),
+		),
+	).toEqual([]);
+	await expect(page.getByRole("article", { name: "Monthly sponsor access" })).toHaveCount(0);
+	const alternativeOffer = page.getByRole("article", { name: "One month sponsor" });
+	await expect(alternativeOffer).toBeVisible();
+	await expect(alternativeOffer.getByText("100 GB", { exact: true })).toBeVisible();
+	await expect(alternativeOffer.getByText("5", { exact: true })).toBeVisible();
 
 	mockApi.seedSponsorState({
 		status: "provisioning",
@@ -2372,11 +2410,12 @@ test("failed sponsor refresh keeps stale access visible and reveals an action er
 	await assertNoHorizontalOverflow(page);
 });
 
-test("pending checkout reports an unchanged check and can be safely abandoned", async ({
+test("pending checkout checks quietly and switches directly to another offer", async ({
 	page,
 	mockApi,
 }) => {
 	const offer = sponsorSubscriptionOffer();
+	const donationOffer = sponsorDonationOffer();
 	const pendingState = {
 		status: "checkout_pending",
 		accessLevel: "base",
@@ -2392,59 +2431,81 @@ test("pending checkout reports an unchanged check and can be safely abandoned", 
 			checkoutUrl: offer.checkoutUrl,
 			expiresAt: "2026-08-14T12:30:00Z",
 		},
-		offers: [offer],
+		offers: [offer, donationOffer],
 	};
 	mockApi.seedSponsorState(pendingState);
+	mockApi.seedSponsorOffers([offer, donationOffer]);
 
 	await page.goto("/");
 	await expect(page.getByRole("heading", { name: "Payment not confirmed yet" })).toBeVisible();
 	mockApi.mock("GET", "/api/me/sponsor", [
 		{ delayMs: 350, body: pendingState },
-		{
-			body: {
-				...pendingState,
-				status: "base_access",
-				primaryAction: "choose_offer",
-				pendingCheckout: null,
-			},
-		},
+		{ body: pendingState },
 	]);
 
 	const checkStatus = page.getByRole("button", { name: "Check payment status" });
 	await checkStatus.click();
 	await expect(checkStatus).toHaveAttribute("aria-busy", "true");
 	await expect(checkStatus).toBeDisabled();
-	await expect(page.getByRole("status")).toContainText(
-		"Checked just now. Tribute has not confirmed a payment yet",
-	);
+	await expect(page.getByRole("status")).toHaveCount(0);
 
-	const chooseAnother = page.getByRole("button", { name: "Choose another option" });
-	await chooseAnother.click();
-	const dialog = page.getByRole("dialog", { name: "Stop waiting for this payment?" });
-	await expect(dialog).toBeVisible();
-	await expect(dialog).toContainText("This does not cancel anything in Tribute");
-	await dialog.getByRole("button", { name: "Cancel" }).click();
-	await expect(dialog).toHaveCount(0);
-	await expect(chooseAnother).toBeFocused();
-
-	await chooseAnother.click();
-	await dialog.getByRole("button", { name: "Stop waiting" }).click();
-	await expect(page.getByRole("heading", { name: "Upgrade your access" })).toBeVisible();
-	await expect(page.getByText("Monthly sponsor access", { exact: true })).toBeVisible();
-	await expect(page.getByRole("status")).toContainText(
-		"Payment attempt closed. You can choose another option",
+	const donationCard = page.getByRole("article", { name: "One month sponsor" });
+	const requestPromise = page.waitForRequest(
+		(request) =>
+			request.method() === "POST" &&
+			new URL(request.url()).pathname === "/api/me/sponsor/checkouts",
 	);
-	expect(mockApi.calls).toContain(
-		"DELETE /api/me/sponsor/checkouts/40000000-0000-4000-8000-000000000001",
-	);
-	await assertNoHorizontalOverflow(page);
+	await donationCard.getByRole("button", { name: "Support in Tribute" }).click();
+	await requestPromise;
+	expect(mockApi.calls).toContain("POST /api/me/sponsor/checkouts");
 });
 
-test("failed pending-checkout cancellation keeps the safe waiting state", async ({
+test("pending checkout can stop local waiting without losing the available offers", async ({
 	page,
 	mockApi,
 }) => {
 	const offer = sponsorSubscriptionOffer();
+	const donationOffer = sponsorDonationOffer();
+	const checkoutId = "40000000-0000-4000-8000-000000000001";
+	mockApi.seedSponsorState({
+		status: "checkout_pending",
+		accessLevel: "base",
+		primaryAction: "continue_checkout",
+		paidExpiresAt: null,
+		baseExpiresAt: "2027-01-01T00:00:00Z",
+		currentOfferId: null,
+		managementUrl: null,
+		pendingCheckout: {
+			id: checkoutId,
+			offerId: offer.id,
+			status: "pending",
+			checkoutUrl: offer.checkoutUrl,
+			expiresAt: "2026-08-14T12:30:00Z",
+		},
+		offers: [offer, donationOffer],
+	});
+
+	await page.goto("/");
+	const deleteRequest = page.waitForRequest(
+		(request) =>
+			request.method() === "DELETE" &&
+			new URL(request.url()).pathname.endsWith(`/checkouts/${checkoutId}`),
+	);
+	await page.getByRole("button", { name: "Cancel this attempt" }).click();
+	await deleteRequest;
+	await expect(page.getByRole("heading", { name: "Payment not confirmed yet" })).toHaveCount(0);
+	await expect(page.getByRole("status")).toHaveCount(0);
+	await expect(page.getByRole("article", { name: "Monthly sponsor access" })).toBeVisible();
+	await expect(page.getByRole("article", { name: "One month sponsor" })).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+});
+
+test("failed pending cancellation keeps all recovery actions available", async ({
+	page,
+	mockApi,
+}) => {
+	const offer = sponsorSubscriptionOffer();
+	const donationOffer = sponsorDonationOffer();
 	mockApi.seedSponsorState({
 		status: "checkout_pending",
 		accessLevel: "base",
@@ -2460,23 +2521,64 @@ test("failed pending-checkout cancellation keeps the safe waiting state", async 
 			checkoutUrl: offer.checkoutUrl,
 			expiresAt: "2026-08-14T12:30:00Z",
 		},
-		offers: [offer],
+		offers: [offer, donationOffer],
 	});
-	mockApi.mock("DELETE", "/api/me/sponsor/checkouts/40000000-0000-4000-8000-000000000001", {
+	mockApi.mock("DELETE", /^\/api\/(?:me\/sponsor|debug\/sponsor\/\d+)\/checkouts\/[^/]+$/, {
 		status: 503,
 		body: { detail: "Unavailable" },
 	});
 
 	await page.goto("/");
-	await page.getByRole("button", { name: "Choose another option" }).click();
-	await page.getByRole("dialog").getByRole("button", { name: "Stop waiting" }).click();
-	await expect(page.getByRole("heading", { name: "Payment not confirmed yet" })).toBeVisible();
+	await page.getByRole("button", { name: "Cancel this attempt" }).click();
 	await expect(page.getByRole("alert")).toContainText(
 		"Could not close this payment attempt. It is still waiting for confirmation",
 	);
+	await expect(page.getByRole("button", { name: "Check payment status" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Continue in Tribute" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Cancel this attempt" })).toBeVisible();
 });
 
-test("checking a completed donation refreshes access and offers every renewal type", async ({
+test("failed alternative checkout keeps the existing pending intent visible", async ({
+	page,
+	mockApi,
+}) => {
+	const offer = sponsorSubscriptionOffer();
+	const donationOffer = sponsorDonationOffer();
+	mockApi.seedSponsorState({
+		status: "checkout_pending",
+		accessLevel: "base",
+		primaryAction: "continue_checkout",
+		paidExpiresAt: null,
+		baseExpiresAt: "2027-01-01T00:00:00Z",
+		currentOfferId: null,
+		managementUrl: null,
+		pendingCheckout: {
+			id: "40000000-0000-4000-8000-000000000001",
+			offerId: offer.id,
+			status: "pending",
+			checkoutUrl: offer.checkoutUrl,
+			expiresAt: "2026-08-14T12:30:00Z",
+		},
+		offers: [offer, donationOffer],
+	});
+	mockApi.mock("POST", "/api/me/sponsor/checkouts", {
+		status: 503,
+		body: { detail: "Unavailable" },
+	});
+
+	await page.goto("/");
+	await page
+		.getByRole("article", { name: "One month sponsor" })
+		.getByRole("button", { name: "Support in Tribute" })
+		.click();
+	await expect(page.getByRole("heading", { name: "Payment not confirmed yet" })).toBeVisible();
+	await expect(page.getByRole("alert")).toContainText(
+		"Could not start this payment. No payment was created",
+	);
+	await expect(page.getByRole("button", { name: "Continue in Tribute" })).toHaveCount(1);
+});
+
+test("returning to a completed donation refreshes access and removes pending guidance", async ({
 	page,
 	mockApi,
 }) => {
@@ -2525,7 +2627,7 @@ test("checking a completed donation refreshes access and offers every renewal ty
 		body: { ...mockData.subscription, expiresAt: 1_789_315_189 },
 	});
 
-	await page.getByRole("button", { name: "Check payment status" }).click();
+	await page.evaluate(() => window.dispatchEvent(new Event("focus")));
 	const activeCard = page.getByRole("region", { name: "Sponsor access is active" });
 	await expect(activeCard).toBeVisible();
 	await expect(page.getByRole("button", { name: "Continue in Tribute" })).toHaveCount(0);
@@ -2552,6 +2654,7 @@ test("sponsor checkout card produces reviewable light and dark evidence", async 
 	mockApi,
 }, testInfo) => {
 	const offer = sponsorMultiPeriodOffer();
+	const donationOffer = sponsorDonationOffer();
 	const accessibilityByTheme: Array<{ theme: "light" | "dark"; serious: unknown[] }> = [];
 
 	for (const colorScheme of ["light", "dark"] as const) {
@@ -2603,6 +2706,9 @@ test("sponsor checkout card produces reviewable light and dark evidence", async 
 		await expect(paymentOptions.getByText("Billed monthly", { exact: true })).toBeVisible();
 		await expect(paymentOptions.getByText("Billed every 3 months", { exact: true })).toBeVisible();
 		await expect(paymentOptions.getByText("Billed yearly", { exact: true })).toBeVisible();
+		const benefits = availableOffer.getByLabel("Included access");
+		await expect(benefits.getByText("100 GB", { exact: true })).toBeVisible();
+		await expect(benefits.getByText("5", { exact: true })).toBeVisible();
 		await expect(
 			card.getByText(
 				"Prices and billing intervals come from Tribute. Choose the payment option there",
@@ -2637,7 +2743,7 @@ test("sponsor checkout card produces reviewable light and dark evidence", async 
 				checkoutUrl: offer.checkoutUrl,
 				expiresAt: "2026-08-14T12:30:00Z",
 			},
-			offers: [offer],
+			offers: [offer, donationOffer],
 		});
 		await page.reload();
 		await page.evaluate((theme) => {
@@ -2645,17 +2751,16 @@ test("sponsor checkout card produces reviewable light and dark evidence", async 
 		}, colorScheme);
 		const pendingCard = page.getByRole("region", { name: "Payment not confirmed yet" });
 		await expect(pendingCard).toBeVisible();
+		await expect(pendingCard.getByRole("article", { name: "Sponsor access" })).toHaveCount(0);
+		await expect(
+			pendingCard
+				.getByRole("article", { name: "One month sponsor" })
+				.getByRole("button", { name: "Support in Tribute" }),
+		).toBeVisible();
 		await pendingCard.screenshot({
 			path: testInfo.outputPath(`sponsor-pending-${colorScheme}.png`),
 		});
-		await pendingCard.getByRole("button", { name: "Choose another option" }).click();
-		const pendingDialog = page.getByRole("dialog", { name: "Stop waiting for this payment?" });
-		await expect(pendingDialog).toBeVisible();
-		await page.screenshot({
-			path: testInfo.outputPath(`sponsor-pending-dialog-${colorScheme}.png`),
-			fullPage: true,
-		});
-		await pendingDialog.getByRole("button", { name: "Cancel" }).click();
+		await expect(page.getByRole("dialog")).toHaveCount(0);
 		await assertNoHorizontalOverflow(page);
 
 		mockApi.seedSponsorState({

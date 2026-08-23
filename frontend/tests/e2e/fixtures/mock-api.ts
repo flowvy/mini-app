@@ -41,6 +41,7 @@ function sponsorOfferPaymentFields(
 			? input.expectedProviderPeriod
 			: null;
 	const currency = typeof rule?.currency === "string" ? rule.currency : "RUB";
+	const profile = mockData.accessProfiles.find((item) => item.id === rule?.accessProfileId);
 	return {
 		checkoutUrl: isDonation && typeof input.checkoutUrl === "string" ? input.checkoutUrl : null,
 		expectedAmountMinor,
@@ -57,6 +58,10 @@ function sponsorOfferPaymentFields(
 						},
 					],
 		requiresNonAnonymous: isDonation,
+		benefits: {
+			trafficLimitBytes: profile?.trafficLimitBytes ?? 0,
+			deviceLimit: profile?.hwidDeviceLimit ?? null,
+		},
 	};
 }
 

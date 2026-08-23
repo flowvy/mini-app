@@ -42,6 +42,7 @@ const offer = {
 	expectedProviderPeriod: null,
 	priceOptions: [{ priceMajor: "500", currency: "RUB", period: "monthly" }],
 	requiresNonAnonymous: false,
+	benefits: { trafficLimitBytes: 100 * 1024 ** 3, deviceLimit: 5 },
 	availability: "ready",
 	welcomeDiscount: false,
 	welcomeDiscountPercent: null,

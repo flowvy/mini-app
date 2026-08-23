@@ -149,19 +149,20 @@
 			"baseAccessUntil": "Basic access until",
 			"checkStatus": "Check payment status",
 			"cancelAttempt": {
-				"action": "Choose another option",
-				"title": "Stop waiting for this payment?",
-				"description": "{{appName}} will stop waiting for this checkout and show the payment options again. This does not cancel anything in Tribute. If you already paid, keep waiting and check the status instead",
-				"confirm": "Stop waiting"
+				"action": "Cancel this attempt"
 			},
 			"paymentFeedback": {
-				"unchanged": "Checked just now. Tribute has not confirmed a payment yet",
 				"checkError": "Could not check the payment status. Your pending checkout is unchanged",
 				"refreshError": "Could not refresh sponsor status. Your existing access is unchanged",
-				"cancelled": "Payment attempt closed. You can choose another option",
 				"cancelError": "Could not close this payment attempt. It is still waiting for confirmation"
 			},
 			"checkoutNotice": "Payment is completed in Tribute. Return to {{appName}} afterward; access changes only after {{appName}} receives and applies Tribute's confirmation",
+			"benefits": {
+				"label": "Included access",
+				"traffic": "Traffic",
+				"devices": "Devices",
+				"unlimited": "Unlimited"
+			},
 			"subscriptionPeriodHint": "Prices and billing intervals come from Tribute. Choose the payment option there",
 			"welcomeDiscountTitle": "{{percent}}% off your first payment",
 			"welcomeDiscountDescription": "Your invite benefit is already included in the prices below",
@@ -202,7 +203,7 @@
 				},
 				"checkoutPending": {
 					"title": "Payment not confirmed yet",
-					"description": "Finish the payment in Tribute, or check again after returning. Do not start a second payment while this one is pending"
+					"description": "Finish this payment in Tribute, or choose another option below. If you switch, {{appName}} still accepts a late valid confirmation from the earlier payment"
 				},
 				"provisioning": {
 					"title": "Payment received",

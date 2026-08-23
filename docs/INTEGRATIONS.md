@@ -464,7 +464,8 @@ read-only запрос подписок; платёж, отмена или provi
 Admin-only BFF отдаёт allow-listed subscription ID, название, валюту и периоды без API key и raw
 provider response. Для каждой подписки администратор отдельно сохраняет HTTPS destination из
 Tribute. Donation destination хранится в конкретном sponsor offer вместе с ожидаемыми суммой,
-режимом one-time/recurring и периодом recurring-платежа. URL валидируется как absolute HTTPS без
+режимом one-time/recurring и периодом recurring-платежа. Для recurring donation Flowvy принимает
+ровно `weekly`, `monthly`, `quarterly`, `halfyearly`, `yearly`. URL валидируется как absolute HTTPS без
 credentials и fragment, но сервер не делает по нему исходящий запрос.
 
 `commerce_rules` связывает donation или subscription с active access profile. Donation может
@@ -499,6 +500,11 @@ HMAC-SHA256 до JSON parsing, затем проверяет timestamp/freshness
 - donation: `new_donation`, `recurrent_donation`, `cancelled_donation`;
 - subscription: `new_subscription`, `renewed_subscription`, `cancelled_subscription`.
 
+Официальный webhook contract, повторно проверенный 2026-08-23, задаёт HMAC-SHA256 и retry примерно
+на сутки: 5 минут, 15 минут, 30 минут, 1 час, 2 часа, 4 часа, 8 часов, 8 часов. Поэтому локальный
+intent не считается окончательно потерянным только из-за возврата пользователя или истечения
+30-минутного UI-ожидания.
+
 Любое иное корректно подписанное имя события сохраняется только как нормализованная `ignored`
 audit metadata. Оно не сопоставляет checkout, не создаёт entitlement operation и не вызывает
 Remnawave. Raw payload, signature и Telegram username не сохраняются.
@@ -515,11 +521,13 @@ Local `sponsor_checkouts` — 30-минутный intent, а не платёж. 
 period с immutable offer snapshot. Subscription дополнительно требует exact external item ID.
 Несовпадение создаёт review без grant. Browser redirect и кнопка обновления статуса не подтверждают
 оплату сами по себе; они только перечитывают server state.
-Пользователь может закрыть принадлежащий ему pending intent через
-`DELETE /api/me/sponsor/checkouts/{id}` и вернуться к выбору offers, если покинул Tribute без оплаты.
-Операция не вызывает Tribute, не отменяет provider payment и не удаляет audit row: статус становится
-`expired`. Matching signed event допускает `pending` и `expired`, поэтому позднее подтверждение после
-локального закрытия всё равно безопасно атрибутируется и обрабатывается.
+При выборе другого опубликованного offer BFF под user row lock сначала проверяет новый destination и
+paid-state guard, затем переводит прежний pending intent в `expired` и создаёт новый. Отдельный
+confirm dialog и предварительный `DELETE` для переключения не нужны. Явная отмена в Home использует
+`DELETE`, чтобы закрыть только текущий local intent и сразу убрать waiting state. Операция не
+вызывает Tribute, не отменяет provider payment и не удаляет audit row. Matching signed event
+перебирает совместимые `pending` и `expired` intents от новых к старым, поэтому позднее точное подтверждение прежнего
+subscription item либо donation amount/currency/mode/period всё равно атрибутируется и обрабатывается.
 
 ### Entitlement planner и provider execution
 
@@ -547,8 +555,8 @@ Admin journal показывает только allow-listed поля и server-
 
 - без платного доступа — выбор опубликованного donation offer либо subscription offer со всеми
   доступными periods/prices;
-- pending — продолжить текущую оплату, проверить server status с явным результатом либо закрыть
-  только локальное ожидание и выбрать другой offer, без второй одновременной оплаты;
+- pending — primary-проверка server status, secondary-переход в текущую оплату и явная отмена
+  local attempt; другой offer можно выбрать сразу, текущая карточка не дублируется в каталоге;
 - applied one-time donation — точная дата и выбор любого опубликованного варианта продления;
 - recurring donation — точная оплаченная дата и управление автодонатом в Tribute;
 - active subscription — точная дата и управление подпиской в Tribute;
@@ -567,6 +575,15 @@ subscription link и не документируют URL-предвыбор `per
 локальная validity не используется. Режим profile `automation` делает это ограничение явным и не
 требует вводить фиктивные дни/дату; такой профиль нельзя использовать для регистрации. Разные
 benefits требуют отдельных subscriptions и rules.
+
+Home показывает allow-listed часть текущего active benefits profile прямо в каждом offer: лимит
+трафика и число устройств, включая `Unlimited` для provider-значений 0/null. После перехода в
+Tribute pending state автоматически перечитывается при Telegram `visibility_changed` и browser
+focus/visibility fallback. В pending state `Check payment status` является primary, а повторный
+переход в Tribute и отмена local attempt — secondary. Успешная проверка без нового provider state и
+успешная локальная отмена не создают отдельный notice; ошибки остаются явными. Redirect/return сам
+по себе всё равно не считается оплатой. После applied state pending copy и альтернативы скрываются
+до явного `Extend`/`Resume`.
 
 UX contract не маскирует это ограничение под локальный выбор: Home группирует название, мотивацию и
 все provider periods/prices в одной коммерческой карточке. Название и мотивацию задаёт оператор;
@@ -602,13 +619,14 @@ tests покрывают signature/freshness, strict schemas, exact duplicates, 
 checkout matching, planner, executor и restore. Deterministic Playwright matrix покрывает admin
 rules/offers/activity и Home states без реальных платежей.
 
-Контракт сверялся 2026-08-15 с официальными материалами Tribute:
+Контракт повторно сверялся 2026-08-23 с официальными материалами Tribute:
 
-- [Webhook API](https://wiki.tribute.tg/ru/api-dokumentaciya/vebhuki);
-- [Subscriptions API](https://wiki.tribute.tg/ru/api-dokumentaciya/podpiski);
-- [Donations](https://wiki.tribute.tg/ru/dlya-avtorov/donaty);
-- [Subscriptions](https://wiki.tribute.tg/ru/dlya-avtorov/podpiski).
-- [Subscription publishing](https://wiki.tribute.tg/ru/for-content-creators/subscriptions/subscription-publishing).
+- [Webhook API](https://wiki.tribute.tg/for-content-creators/api-documentation/webhooks);
+- [Subscriptions API 1.0.0](https://wiki.tribute.tg/for-content-creators/api-documentation/subscriptions);
+- [Donations](https://wiki.tribute.tg/for-content-creators/donations);
+- [Regular donations](https://wiki.tribute.tg/for-content-creators/donations/regular-donations);
+- [Subscriptions](https://wiki.tribute.tg/for-content-creators/subscriptions);
+- [Subscription publishing](https://wiki.tribute.tg/for-content-creators/subscriptions/subscription-publishing).
 
 ## Правила изменения контракта
 

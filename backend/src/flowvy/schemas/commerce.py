@@ -214,6 +214,13 @@ class SponsorOfferPriceOption(CamelModel):
     period: TributeSubscriptionPeriod | None = None
 
 
+class SponsorOfferBenefits(CamelModel):
+    """Small public projection of the configured access profile."""
+
+    traffic_limit_bytes: int = Field(ge=0, le=9_223_372_036_854_775_807)
+    device_limit: int | None = Field(default=None, ge=0, le=1000)
+
+
 class SponsorOfferCheckoutSnapshot(CamelModel):
     """Server-validated provider destination frozen into an offer/attempt."""
 
@@ -227,6 +234,7 @@ class SponsorOfferCheckoutSnapshot(CamelModel):
     expected_provider_period: TributeDonationPeriod | None = None
     price_options: list[SponsorOfferPriceOption] = Field(default_factory=list, max_length=20)
     requires_non_anonymous: bool = False
+    benefits: SponsorOfferBenefits | None = None
 
 
 class SponsorOfferLocale(CamelModel):
@@ -327,6 +335,7 @@ class SponsorOfferResponse(SponsorOfferInput):
     external_item_id: str | None
     price_options: list[SponsorOfferPriceOption]
     requires_non_anonymous: bool
+    benefits: SponsorOfferBenefits
     availability: SponsorOfferAvailability
     welcome_discount: bool = False
     welcome_discount_percent: int | None = Field(default=None, ge=1, le=99)
@@ -375,6 +384,7 @@ __all__ = [
     "CommerceRuleResponse",
     "SponsorCheckoutRequest",
     "SponsorCheckoutResponse",
+    "SponsorOfferBenefits",
     "SponsorOfferCheckoutSnapshot",
     "SponsorOfferInput",
     "SponsorOfferLocale",

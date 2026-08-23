@@ -108,59 +108,72 @@ class SponsorCheckoutRepository(BaseRepository[SponsorCheckout]):
             stmt = stmt.where(
                 SponsorCheckout.payment_mode.in_((source.payment_mode, "any")),
             )
-        checkout = (
-            await self._session.execute(
-                stmt.order_by(SponsorCheckout.created_at.desc()).with_for_update().limit(1),
-            )
-        ).scalar_one_or_none()
-        if checkout is None:
-            return None
-        checkout_created_at = _as_utc(checkout.created_at)
-        if (
-            _as_utc(source.received_at) < checkout_created_at
-            or _as_utc(source.provider_created_at) < checkout_created_at
-        ):
-            return None
-        if checkout.commerce_type == "donation":
-            expected_amount = checkout.offer_snapshot.get("expected_amount_minor")
-            expected_payment_mode = checkout.offer_snapshot.get("expected_payment_mode")
-            expected_provider_period = checkout.offer_snapshot.get("expected_provider_period")
-            price_options = checkout.offer_snapshot.get("price_options")
-            requires_non_anonymous = checkout.offer_snapshot.get("requires_non_anonymous")
-            expected_currency = None
-            if isinstance(price_options, list) and price_options:
-                first_price = price_options[0]
-                if isinstance(first_price, dict):
-                    expected_currency = first_price.get("currency")
-            schedule_matches = (
-                expected_payment_mode in {"one_time", "recurring"}
-                and source.payment_mode == expected_payment_mode
-                and (
-                    expected_provider_period is None
-                    if expected_payment_mode == "one_time"
-                    else expected_provider_period
-                    in {"weekly", "monthly", "quarterly", "halfyearly", "yearly"}
-                    and source.provider_period == expected_provider_period
+        checkouts = list(
+            (
+                await self._session.execute(
+                    stmt.order_by(SponsorCheckout.created_at.desc()).with_for_update(),
                 )
-            )
-            if (
-                (requires_non_anonymous is True and source.is_anonymous is not False)
-                or not isinstance(expected_amount, int)
-                or source.amount_minor != expected_amount
-                or source.currency != expected_currency
-                or not schedule_matches
-            ):
-                checkout.status = "expired"
+            ).scalars()
+        )
+        if not checkouts:
+            return None
+        eligible = [
+            checkout
+            for checkout in checkouts
+            if _as_utc(source.received_at) >= _as_utc(checkout.created_at)
+            and _as_utc(source.provider_created_at) >= _as_utc(checkout.created_at)
+        ]
+        for checkout in eligible:
+            if checkout.commerce_type != "donation" or self._donation_matches(checkout, source):
+                checkout.status = "confirmed"
+                checkout.provider_event_id = source.id
+                checkout.confirmed_at = now
                 await self._session.flush()
-                return SponsorCheckoutMatch(
-                    checkout=checkout,
-                    mismatch_reason="donation_offer_mismatch",
-                )
-        checkout.status = "confirmed"
-        checkout.provider_event_id = source.id
-        checkout.confirmed_at = now
-        await self._session.flush()
-        return SponsorCheckoutMatch(checkout=checkout)
+                return SponsorCheckoutMatch(checkout=checkout)
+
+        if eligible and eligible[0].commerce_type == "donation":
+            checkout = eligible[0]
+            checkout.status = "expired"
+            await self._session.flush()
+            return SponsorCheckoutMatch(
+                checkout=checkout,
+                mismatch_reason="donation_offer_mismatch",
+            )
+        return None
+
+    @staticmethod
+    def _donation_matches(
+        checkout: SponsorCheckout,
+        source: TributeWebhookEvent,
+    ) -> bool:
+        expected_amount = checkout.offer_snapshot.get("expected_amount_minor")
+        expected_payment_mode = checkout.offer_snapshot.get("expected_payment_mode")
+        expected_provider_period = checkout.offer_snapshot.get("expected_provider_period")
+        price_options = checkout.offer_snapshot.get("price_options")
+        requires_non_anonymous = checkout.offer_snapshot.get("requires_non_anonymous")
+        expected_currency = None
+        if isinstance(price_options, list) and price_options:
+            first_price = price_options[0]
+            if isinstance(first_price, dict):
+                expected_currency = first_price.get("currency")
+        schedule_matches = (
+            expected_payment_mode in {"one_time", "recurring"}
+            and source.payment_mode == expected_payment_mode
+            and (
+                expected_provider_period is None
+                if expected_payment_mode == "one_time"
+                else expected_provider_period
+                in {"weekly", "monthly", "quarterly", "halfyearly", "yearly"}
+                and source.provider_period == expected_provider_period
+            )
+        )
+        return not (
+            (requires_non_anonymous is True and source.is_anonymous is not False)
+            or not isinstance(expected_amount, int)
+            or source.amount_minor != expected_amount
+            or source.currency != expected_currency
+            or not schedule_matches
+        )
 
 
 __all__ = ["SponsorCheckoutMatch", "SponsorCheckoutRepository"]

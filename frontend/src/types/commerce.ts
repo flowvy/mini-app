@@ -120,6 +120,11 @@ export interface SponsorOfferPriceOption {
 	period: TributeSubscriptionPeriod | null;
 }
 
+export interface SponsorOfferBenefits {
+	trafficLimitBytes: number;
+	deviceLimit: number | null;
+}
+
 export interface SponsorOfferLocale {
 	title: string;
 	description: string;
@@ -147,6 +152,7 @@ export interface SponsorOffer extends SponsorOfferInput {
 	checkoutUrl: string | null;
 	priceOptions: SponsorOfferPriceOption[];
 	requiresNonAnonymous: boolean;
+	benefits: SponsorOfferBenefits;
 	availability: SponsorOfferAvailability;
 	welcomeDiscount: boolean;
 	welcomeDiscountPercent: number | null;

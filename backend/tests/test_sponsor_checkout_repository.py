@@ -511,3 +511,77 @@ async def test_donation_checkout_requires_the_exact_payment_schedule(
     assert result is not None
     assert (result.mismatch_reason is None) is matches
     assert result.checkout.status == ("confirmed" if matches else "expired")
+
+
+@pytest.mark.asyncio
+async def test_late_donation_confirms_the_matching_expired_attempt_after_offer_switch(
+    session: AsyncSession,
+) -> None:
+    checkout_repo = await _seed_checkout(session)
+    first = await checkout_repo.get_pending_for_user(123)
+    assert first is not None
+    first.commerce_type = "donation"
+    first.payment_mode = "one_time"
+    first.external_item_id = None
+    first.offer_snapshot = {
+        **first.offer_snapshot,
+        "commerce_type": "donation",
+        "payment_mode": "one_time",
+        "external_item_id": None,
+        "expected_amount_minor": 50_000,
+        "expected_payment_mode": "one_time",
+        "expected_provider_period": None,
+        "price_options": [{"price_major": "500", "currency": "RUB", "period": None}],
+        "requires_non_anonymous": True,
+    }
+    assert await checkout_repo.abandon_pending(123, first.id) is True
+    second_created_at = first.created_at + datetime.timedelta(seconds=1)
+    second = await checkout_repo.create(
+        user_id=123,
+        offer_id=first.offer_id,
+        provider="tribute",
+        commerce_type="donation",
+        payment_mode="one_time",
+        external_item_id=None,
+        status="pending",
+        offer_snapshot={
+            **first.offer_snapshot,
+            "expected_amount_minor": 100_000,
+            "price_options": [
+                {"price_major": "1000", "currency": "RUB", "period": None},
+            ],
+        },
+        expires_at=datetime.datetime(2026, 8, 14, 12, 30, tzinfo=datetime.UTC),
+        created_at=second_created_at,
+        updated_at=second_created_at,
+    )
+    await session.flush()
+    event_time = second_created_at.replace(tzinfo=datetime.UTC) + datetime.timedelta(seconds=1)
+    event = TributeWebhookInboxInput(
+        delivery_key="4" * 64,
+        event_name="new_donation",
+        event_family="donation",
+        processing_status="observed",
+        provider_created_at=event_time,
+        provider_sent_at=event_time,
+        provider_expires_at=None,
+        is_anonymous=False,
+        telegram_user_id=123,
+        external_item_id=None,
+        amount_minor=50_000,
+        currency="RUB",
+        payment_mode="one_time",
+        provider_period=None,
+        subscription_type=None,
+    )
+    source = await TributeWebhookEventRepository(session).record_once(event)
+    assert source is not None
+
+    result = await checkout_repo.confirm_matching(source, event_time)
+
+    assert result is not None
+    assert result.mismatch_reason is None
+    assert result.checkout.id == first.id
+    assert result.checkout.status == "confirmed"
+    assert (await checkout_repo.get_pending_for_user(123)) is not None
+    assert second.status == "pending"
