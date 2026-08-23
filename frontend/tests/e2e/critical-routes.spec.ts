@@ -306,7 +306,8 @@ test("admin routes render deterministic success and placeholder states", async (
 	await expect(premiumNotice).toBeVisible();
 
 	await page.goto("/admin/broadcast");
-	await expect(page.getByText("Coming soon")).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Broadcast" })).toBeVisible();
+	await expect(page.getByText("Broadcast is coming soon")).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -377,17 +378,22 @@ test("settings hubs stay accessible without mobile overflow", async ({ page, moc
 	expect(accessibilityByContext.filter(({ serious }) => serious.length > 0)).toEqual([]);
 });
 
-test("stable support screen has no serious automated accessibility violations", async ({
+test("stable Coming Soon screens have no serious automated accessibility violations", async ({
 	page,
 	mockApi: _mock,
 }) => {
-	await page.goto("/support");
-	await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
-	await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
+	for (const screen of [
+		{ path: "/support", title: "Support" },
+		{ path: "/admin/broadcast", title: "Broadcast" },
+	]) {
+		await page.goto(screen.path);
+		await expect(page.getByRole("heading", { name: screen.title })).toBeVisible();
+		await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
 
-	const result = await new AxeBuilder({ page }).analyze();
-	const serious = result.violations.filter((violation) =>
-		["serious", "critical"].includes(violation.impact ?? ""),
-	);
-	expect(serious).toEqual([]);
+		const result = await new AxeBuilder({ page }).analyze();
+		const serious = result.violations.filter((violation) =>
+			["serious", "critical"].includes(violation.impact ?? ""),
+		);
+		expect(serious, screen.path).toEqual([]);
+	}
 });

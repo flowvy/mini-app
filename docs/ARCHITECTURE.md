@@ -479,11 +479,10 @@ mutation сразу кладёт полученного user в общий TanSt
 читает и не пересылает. Валидный launch invite сохраняет referral attribution до обычной open
 registration.
 
-Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Support остаётся product-owned
-заглушкой `Coming Soon` и не читает provider settings или operator content. Admin URL:
+Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Support и admin Broadcast используют
+один product-owned `ComingSoon` без provider settings, operator content или external action. Admin URL:
 `/admin/dashboard`, `/admin/users`, `/admin/users/search`, `/admin/users/$userId`, `/admin/broadcast`, `/admin/settings` и
-отдельные Kuma, Beszel, Tribute, branding, welcome, localized Content и registration/access subroutes. Broadcast пока остаётся
-заглушкой.
+отдельные Kuma, Beszel, Tribute, branding, welcome, localized Content и registration/access subroutes.
 
 ## Автоматизация разработки
 

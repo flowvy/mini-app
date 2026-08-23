@@ -14,7 +14,7 @@ nesting are treated as one contract instead of independent color values.
 ## Current state
 
 The owner-approved strict token values are already frozen by ADR 0004. A read-only source audit of
-25 routes, 86 TSX files, and 60 CSS files found that token values match Desktop but some controls use
+25 routes, 87 current TSX files, and 59 current CSS files found that token values match Desktop but some controls use
 the wrong kind of surface. Standalone fields currently share the nested `bg-secondary +
 border-tertiary` contract, exact outline/stroke coverage is absent, and a few icon/text roles are
 misclassified. Commit `f0bf79c` is the pre-change rollback checkpoint.
@@ -131,3 +131,7 @@ Owner follow-up corrected the intermediate Header-only glass rule: TabBar again 
 faux-glass background, border and shadow tokens while keeping blur disabled. Focused computed-style,
 contrast and visual checks cover both themes and all four configured projects; documentation and the
 glass-owner source guard now name exactly these two floating chrome surfaces.
+
+A later UI consolidation moved Support and Broadcast onto one shared `ComingSoon` surface, replacing
+their two old page-specific CSS owners. The current source inventory therefore contains 59 CSS and 87 TSX files;
+both routes keep product-owned localized copy, distinct icons and identical neutral hierarchy.

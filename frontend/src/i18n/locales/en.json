@@ -1075,7 +1075,7 @@
 			"noData": "Remnawave unavailable"
 		},
 		"broadcast": {
-			"comingSoon": "Coming soon"
+			"comingSoon": "Broadcast is coming soon"
 		},
 		"users": {
 			"searchPlaceholder": "Search by name, ID or tag",

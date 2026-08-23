@@ -15,7 +15,7 @@ const screens = [
 	{ name: "admin-users", path: "/admin/users", marker: "alice" },
 	{ name: "admin-users-search", path: "/admin/users/search", marker: "alice" },
 	{ name: "admin-user-detail", path: "/admin/users/1", marker: "alice" },
-	{ name: "admin-broadcast", path: "/admin/broadcast", marker: "Coming soon" },
+	{ name: "admin-broadcast", path: "/admin/broadcast", marker: "Broadcast is coming soon" },
 	{ name: "admin-settings", path: "/admin/settings", marker: "Integrations" },
 	{ name: "admin-settings-pulse", path: "/admin/settings/pulse", marker: "Active source" },
 	{ name: "admin-access", path: "/admin/settings/access", marker: "Service mode" },
@@ -703,23 +703,27 @@ test("capture the shared load error state in light and dark themes", async ({
 	}
 });
 
-test("capture the in-app support placeholder in light and dark themes", async ({
+test("capture shared Coming Soon placeholders in light and dark themes", async ({
 	page,
 	mockApi: _mock,
 }, testInfo) => {
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		await page.goto("/support");
-		await page.evaluate((theme) => {
-			document.documentElement.setAttribute("data-theme", theme);
-		}, colorScheme);
-		await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
-		await expect(page.getByText("In-app support is coming soon")).toBeVisible();
-		await assertNoHorizontalOverflow(page);
-		await page.screenshot({
-			path: testInfo.outputPath(`support-placeholder-${colorScheme}.png`),
-			animations: "disabled",
-		});
+		for (const screen of [
+			{ name: "support", path: "/support", title: "Support" },
+			{ name: "broadcast", path: "/admin/broadcast", title: "Broadcast" },
+		]) {
+			await page.goto(screen.path);
+			await page.evaluate((theme) => {
+				document.documentElement.setAttribute("data-theme", theme);
+			}, colorScheme);
+			await expect(page.getByRole("heading", { name: screen.title })).toBeVisible();
+			await assertNoHorizontalOverflow(page);
+			await page.screenshot({
+				path: testInfo.outputPath(`${screen.name}-placeholder-${colorScheme}.png`),
+				animations: "disabled",
+			});
+		}
 	}
 });
 

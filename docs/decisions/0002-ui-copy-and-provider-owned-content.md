@@ -43,8 +43,8 @@ Flowvy распространяется как open-source Mini App. У разн
 7. Page-level ошибки используют один `ErrorState` с вариантами load/auth/forbidden/not-found.
    Ошибка локальной mutation остаётся inline, но также использует locale. Текст `message` от backend
    или внешнего provider пользователю не показывается; stable API code переводится в locale key.
-8. Support остаётся product-owned заглушкой `Coming Soon`: route и navigation стабильны, но страница
-   не читает provider settings, operator content или внешнюю destination. Mini App descriptions в
+8. Support и Broadcast используют общий product-owned `ComingSoon`: routes и navigation стабильны, но страницы
+   не читают provider settings, operator content или внешнюю destination. Mini App descriptions в
    перечисленных operator-owned slots поддерживают только allow-listed CommonMark и никогда не
    рендерят raw HTML.
 9. Автоматические тесты проверяют locale catalog, placeholder allow-list, fallback, public

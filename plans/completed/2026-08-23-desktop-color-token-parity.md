@@ -25,7 +25,7 @@ Completed: 2026-08-23
   `glass-*` оставлены только четыре shared floating Header/TabBar tokens.
 - Flowvy Desktop хранит source tokens в `src/styles/tokens.css`. Построчно проверены 52 CSS Modules,
   132 TSX и все прямые token consumers; source tree остался чистым.
-- Mini App inventory охватывает 25 routes, 86 TSX и 60 CSS-файлов, включая route branches,
+- Mini App inventory охватывает 25 routes, 87 current TSX и 59 current CSS-файлов, включая route branches,
   overlays, Telegram native surfaces и deterministic tests.
 - Три независимых read-only агента завершили source-token, target-inventory и cross-repository
   проверки. Память и старые отчёты не считаются доказательством текущего состояния.

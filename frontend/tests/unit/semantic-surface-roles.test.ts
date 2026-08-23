@@ -64,7 +64,7 @@ describe("semantic surface roles", () => {
 			["pages/admin/users.module.css", ".clearBtn", "--v2-icon-secondary"],
 			["pages/admin/users.module.css", ".emptyIcon", "--v2-icon-tertiary"],
 			["pages/devices.module.css", ".emptyIcon", "--v2-icon-tertiary"],
-			["pages/stub-page.module.css", ".icon", "--v2-icon-tertiary"],
+			["components/ui/coming-soon.module.css", ".icon", "--v2-icon-secondary"],
 			["components/devices/device-row.module.css", ".iconWrap", "--v2-icon-secondary"],
 			["components/devices/device-row.module.css", ".iconBtn", "--v2-icon-tertiary"],
 			["components/devices/device-row.module.css", ".iconBtn:hover", "--v2-icon-secondary"],
