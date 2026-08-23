@@ -112,24 +112,23 @@ export function Header() {
 					</div>
 				)}
 				{isAdmin && (
-					<div className={styles.toggle}>
-						<button
-							type="button"
-							className={`${styles.toggleBtn} ${mode === "user" ? styles.activeBtn : ""}`}
-							onClick={() => handleToggle("user")}
-							aria-label={t("common.header.userModeLabel")}
-						>
-							<User size={16} />
-						</button>
-						<button
-							type="button"
-							className={`${styles.toggleBtn} ${mode === "admin" ? styles.activeBtn : ""}`}
-							onClick={() => handleToggle("admin")}
-							aria-label={t("common.header.adminModeLabel")}
-						>
-							<UserStar size={16} />
-						</button>
-					</div>
+					<button
+						type="button"
+						role="switch"
+						aria-checked={mode === "admin"}
+						aria-label={t("common.header.adminModeLabel")}
+						className={`${styles.modeSwitch} ${mode === "admin" ? styles.adminMode : ""}`}
+						onClick={() => handleToggle(mode === "admin" ? "user" : "admin")}
+					>
+						<span className={styles.modeThumb} aria-hidden="true">
+							<span className={`${styles.modeIcon} ${styles.userIcon}`}>
+								<User size={14} strokeWidth={2.25} />
+							</span>
+							<span className={`${styles.modeIcon} ${styles.adminIcon}`}>
+								<UserStar size={14} strokeWidth={2.25} />
+							</span>
+						</span>
+					</button>
 				)}
 			</header>
 		</div>

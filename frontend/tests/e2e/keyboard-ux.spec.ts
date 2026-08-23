@@ -472,7 +472,7 @@ test("dedicated settings routes use one native save action with modal-safe clean
 	await expect
 		.poll(latestMainButton)
 		.toEqual(expect.objectContaining({ is_active: false, is_visible: true }));
-	await page.getByRole("button", { name: "User mode" }).click();
+	await page.getByRole("switch", { name: "Admin mode" }).click();
 	await expect(page).toHaveURL(/\/$/);
 	await expect.poll(latestMainButton).toEqual(expect.objectContaining({ is_visible: false }));
 

@@ -45,37 +45,77 @@
 	color: var(--v2-text-primary);
 }
 
-.toggle {
-	display: flex;
+.modeSwitch {
+	position: relative;
+	width: 52px;
+	height: 32px;
+	padding: 0;
+	flex-shrink: 0;
+	border: 1.5px solid var(--v2-border-secondary);
+	border-radius: 999px;
 	background: var(--v2-bg-secondary);
-	border: 1px solid var(--v2-border-secondary);
-	border-radius: var(--radius-sm);
-}
-
-.toggleBtn {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 5.5px 8px;
-	border: none;
-	border-radius: var(--radius-sm);
-	background: transparent;
-	color: var(--v2-icon-secondary);
 	cursor: pointer;
-	transition: color var(--duration-fast) ease, background-color var(--duration-fast) ease;
+	transition: background-color var(--duration-base) ease, border-color var(--duration-base) ease;
 }
 
-.activeBtn {
+.adminMode {
 	background: var(--v2-bg-positive-primary);
-	color: var(--v2-static-white);
+	border-color: transparent;
+}
+
+.modeThumb {
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	display: grid;
+	place-items: center;
+	width: 23px;
+	height: 23px;
+	border-radius: 50%;
+	background: var(--v2-bg-quaternary);
+	transform: translateX(0);
+	transition: transform var(--spring-duration) var(--spring-snappy), background-color
+		var(--duration-base) ease;
+	pointer-events: none;
+}
+
+.adminMode .modeThumb {
+	background: var(--v2-static-white);
+	transform: translateX(20px);
+}
+
+.modeIcon {
+	position: absolute;
+	display: grid;
+	place-items: center;
+	transition: color var(--duration-base) ease, opacity var(--duration-base) ease, transform
+		var(--spring-duration) var(--spring-snappy);
+}
+
+.userIcon {
+	color: var(--v2-icon-primary-inverted);
+	opacity: 1;
+	transform: rotate(0deg) scale(1);
+}
+
+.adminIcon {
+	color: var(--v2-icon-positive);
+	opacity: 0;
+	transform: rotate(-75deg) scale(0.65);
+}
+
+.adminMode .userIcon {
+	opacity: 0;
+	transform: rotate(75deg) scale(0.65);
+}
+
+.adminMode .adminIcon {
+	opacity: 1;
+	transform: rotate(0deg) scale(1);
 }
 
 @media (hover: hover) and (pointer: fine) {
-	.toggleBtn:hover {
-		color: var(--v2-icon-positive);
-	}
-
-	.activeBtn:hover {
-		color: var(--v2-static-white);
+	.modeSwitch:hover:not(.adminMode) {
+		border-color: var(--v2-border-primary);
 	}
 }

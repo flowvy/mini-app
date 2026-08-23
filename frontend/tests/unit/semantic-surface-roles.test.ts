@@ -73,8 +73,6 @@ describe("semantic surface roles", () => {
 				'.icon[data-active="true"]',
 				"--v2-icon-positive",
 			],
-			["components/layout/header.module.css", ".toggleBtn", "--v2-icon-secondary"],
-			["components/layout/header.module.css", ".toggleBtn:hover", "--v2-icon-positive"],
 			["components/admin/commerce-rule-editor.module.css", ".removeBand", "--v2-icon-negative"],
 		] as const;
 
@@ -83,6 +81,10 @@ describe("semantic surface roles", () => {
 			expect(rule, `${path} ${selector}`).toContain(`color: var(${token})`);
 			expect(rule, `${path} ${selector}`).not.toMatch(/color:\s*var\(--v2-text-/);
 		}
+
+		const header = readSource("components/layout/header.module.css");
+		expect(declarations(header, ".userIcon")).toContain("color: var(--v2-icon-primary-inverted)");
+		expect(declarations(header, ".adminIcon")).toContain("color: var(--v2-icon-positive)");
 
 		expect(readSource("components/auth-guard.tsx")).toContain("<LaunchSkeleton />");
 		expect(readSource("components/onboarding-screen.tsx")).toContain("<LaunchSkeleton />");

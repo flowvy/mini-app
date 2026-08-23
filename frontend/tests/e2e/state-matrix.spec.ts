@@ -787,7 +787,7 @@ test("provider identity updates the user experience without a reload", async ({
 	await pressTelegramMainButton(page);
 
 	await expect(page).toHaveTitle("Northstar Proxy");
-	await page.getByRole("button", { name: "User mode" }).click();
+	await page.getByRole("switch", { name: "Admin mode" }).click();
 	await page.getByRole("link", { name: "Home" }).click();
 	const share = page.getByRole("button", { name: "Share in Telegram" });
 	await expect(share).toBeVisible();
@@ -879,7 +879,7 @@ test("enabling a configured Beszel source exposes Pulse without reloading", asyn
 	await currentProvider.getByRole("radio", { name: "Beszel", exact: true }).click();
 	await expect(page.getByText("Active", { exact: true })).toBeVisible();
 
-	await page.getByRole("button", { name: "User mode" }).click();
+	await page.getByRole("switch", { name: "Admin mode" }).click();
 	await expect(page.getByRole("link", { name: "Pulse" })).toBeVisible();
 	await page.getByRole("link", { name: "Pulse" }).click();
 	await expect(page.getByText("All systems operational")).toBeVisible();

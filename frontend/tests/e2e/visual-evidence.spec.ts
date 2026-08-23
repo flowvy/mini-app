@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import {
 	assertNoHorizontalOverflow,
 	entitlementOperation,
@@ -184,6 +185,41 @@ test("capture deterministic visual evidence for key screens", async ({
 				animations: "disabled",
 			});
 		}
+	}
+});
+
+test("capture the user and admin mode switch states", async ({
+	page,
+	mockApi: _mock,
+}, testInfo) => {
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		const modeSwitch = page.getByRole("switch", { name: "Admin mode" });
+		await expect(modeSwitch).toHaveAttribute("aria-checked", "false");
+		expect(
+			(await new AxeBuilder({ page }).include('button[role="switch"]').analyze()).violations,
+		).toEqual([]);
+		await assertNoHorizontalOverflow(page);
+		await page.getByRole("banner").screenshot({
+			path: testInfo.outputPath(`mode-switch-user-${colorScheme}.png`),
+			animations: "disabled",
+		});
+
+		await modeSwitch.click();
+		await expect(page).toHaveURL(/\/admin\/dashboard$/);
+		await expect(modeSwitch).toHaveAttribute("aria-checked", "true");
+		expect(
+			(await new AxeBuilder({ page }).include('button[role="switch"]').analyze()).violations,
+		).toEqual([]);
+		await assertNoHorizontalOverflow(page);
+		await page.getByRole("banner").screenshot({
+			path: testInfo.outputPath(`mode-switch-admin-${colorScheme}.png`),
+			animations: "disabled",
+		});
 	}
 });
 

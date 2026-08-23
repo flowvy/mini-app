@@ -148,17 +148,24 @@ test("browser history keeps the visible tab mode aligned with the route", async 
 	mockApi: _mock,
 }) => {
 	await page.goto(`/?${launchParams.toString()}`);
-	await page.getByRole("button", { name: "Admin mode" }).click();
+	const modeSwitch = page.getByRole("switch", { name: "Admin mode" });
+	await expect(modeSwitch).toHaveAttribute("aria-checked", "false");
+	await modeSwitch.focus();
+	await expect(modeSwitch).toBeFocused();
+	await modeSwitch.press("Space");
 	await expect(page).toHaveURL(/\/admin\/dashboard$/);
 	await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
+	await expect(modeSwitch).toHaveAttribute("aria-checked", "true");
 
-	await page.getByRole("button", { name: "User mode" }).click();
+	await modeSwitch.click();
 	await expect(page).toHaveURL(/\/$/);
 	await expect(page.getByRole("link", { name: "Home" })).toBeVisible();
+	await expect(modeSwitch).toHaveAttribute("aria-checked", "false");
 
 	await page.goBack();
 	await expect(page).toHaveURL(/\/admin\/dashboard$/);
 	await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
+	await expect(modeSwitch).toHaveAttribute("aria-checked", "true");
 });
 
 test("lazy routes survive direct loading, refresh, and browser history", async ({
