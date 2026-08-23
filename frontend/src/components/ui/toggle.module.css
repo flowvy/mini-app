@@ -29,7 +29,6 @@
 	transform: translateY(-50%);
 	transition: left 0.2s, background-color 0.2s;
 	pointer-events: none;
-	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
 .on {
@@ -40,4 +39,10 @@
 .on .knob {
 	left: calc(100% - 17px);
 	background: var(--v2-static-white);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.track:hover:not(:disabled, [aria-disabled="true"]) {
+		border-color: var(--v2-border-primary);
+	}
 }

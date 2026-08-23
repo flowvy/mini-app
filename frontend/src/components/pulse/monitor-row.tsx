@@ -24,11 +24,12 @@ export const MonitorRow: FC<MonitorRowProps> = ({ monitor }) => {
 		monitor.uptime24H === 1 ? "100%" : `${(monitor.uptime24H * 100).toFixed(1)}%`;
 
 	return (
-		<div className={styles.row}>
+		<div className={styles.row} data-monitor-status={monitor.status}>
 			<div className={styles.header}>
 				<div className={styles.left}>
 					<span
 						className={`${styles.dot} ${styles[STATUS_CLASS[monitor.status] ?? "dotPending"]}`}
+						data-monitor-status-dot={monitor.status}
 					/>
 					<span className={styles.name}>{monitor.name}</span>
 				</div>

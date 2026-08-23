@@ -11,14 +11,14 @@
 }
 
 .icon {
-	color: var(--v2-icon-secondary);
+	color: var(--v2-icon-negative);
 }
 
 .title {
 	margin: 0;
 	font-size: var(--font-size-heading);
 	font-weight: 600;
-	color: var(--v2-text-primary);
+	color: var(--v2-text-negative);
 }
 
 .description {

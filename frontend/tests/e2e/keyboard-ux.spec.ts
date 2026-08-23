@@ -1,6 +1,10 @@
 import { expect, mockData, test } from "./fixtures/mock-api.ts";
 import { installVisualViewportMock, setTestVisualViewport } from "./fixtures/visual-viewport.ts";
 
+async function expectRouteSettled(page: import("@playwright/test").Page): Promise<void> {
+	await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
+}
+
 test("tab navigation renders only on primary routes and leaves before focused search", async ({
 	page,
 	mockApi: _mock,
@@ -17,6 +21,7 @@ test("tab navigation renders only on primary routes and leaves before focused se
 		"/admin/users/search",
 	]) {
 		await page.goto(path);
+		await expectRouteSettled(page);
 		await expect(page.getByRole("navigation")).toHaveCount(0);
 	}
 
@@ -200,6 +205,7 @@ test("native-only save actions never render DOM fallback buttons", async ({ page
 		"/admin/settings/welcome",
 	]) {
 		await page.goto(path);
+		await expectRouteSettled(page);
 		await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
 	}
 

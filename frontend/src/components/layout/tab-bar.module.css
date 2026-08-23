@@ -1,4 +1,4 @@
-/* iOS 26 tab bar — glass container + subtle selected tint + scale animations */
+/* Floating Mini App navigation using the desktop Sidebar color roles. */
 
 .tabBar {
 	position: absolute;
@@ -15,39 +15,19 @@
 	border-radius: 40px;
 	z-index: 100;
 
-	/* Light glass (default) */
-	background: var(--v2-glass-bg-bar);
+	background: var(--v2-floor-1);
 	backdrop-filter: none;
 	-webkit-backdrop-filter: none;
-	border: 0.5px solid var(--v2-glass-border);
-	box-shadow: var(--v2-glass-shadow-bar), var(--v2-glass-highlight);
+	border: 0.5px solid var(--v2-border-tertiary);
+	box-shadow: none;
 
-	/* Selected tab background — light accent */
-	--tab-selected-bg: rgba(58, 177, 118, 0.095);
+	--tab-selected-bg: var(--v2-bg-positive-quaternary);
 
 	transform: translateZ(0);
 	-webkit-backface-visibility: hidden;
 	backface-visibility: hidden;
 	transition: background-color 160ms ease-out, border-color 160ms ease-out, opacity 100ms ease-out,
 		transform 100ms ease-out;
-}
-
-/* Dark: system preference (before JS sets data-theme) */
-@media (prefers-color-scheme: dark) {
-	:root:not([data-theme]) .tabBar {
-		background: var(--v2-glass-bg-bar);
-		border-color: var(--v2-glass-border);
-		box-shadow: var(--v2-glass-shadow-bar), var(--v2-glass-highlight);
-		--tab-selected-bg: rgba(73, 221, 147, 0.095);
-	}
-}
-
-/* Dark: explicit */
-:root[data-theme="dark"] .tabBar {
-	background: var(--v2-glass-bg-bar);
-	border-color: var(--v2-glass-border);
-	box-shadow: var(--v2-glass-shadow-bar), var(--v2-glass-highlight);
-	--tab-selected-bg: rgba(73, 221, 147, 0.095);
 }
 
 /* ── Tab button ── */
@@ -121,7 +101,7 @@
 }
 
 .selected .icon {
-	color: var(--v2-text-positive);
+	color: var(--v2-icon-positive);
 }
 
 .selected .label {
@@ -131,6 +111,16 @@
 .selected::before {
 	opacity: 1;
 	transform: scale(1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.tab:hover:not(.selected) {
+		background: var(--v2-bg-secondary);
+	}
+
+	.selected:hover::before {
+		background: var(--v2-bg-positive-tertiary);
+	}
 }
 
 /* ── Compact: labels collapse on scroll ── */

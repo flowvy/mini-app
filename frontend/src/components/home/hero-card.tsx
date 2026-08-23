@@ -51,7 +51,7 @@ function ActiveHeroCard({ subscription }: { subscription: SubscriptionData }) {
 	const pct = unlimitedTraffic ? 0 : getTrafficPercent(usedBytes, totalBytes);
 	const fillColor = getTrafficColor(pct);
 	const daysLeft = getDaysLeft(subscription.expiresAt);
-	const expiryColor = unlimitedExpiry ? "var(--v2-text-primary)" : getExpiryColor(daysLeft);
+	const expiryColor = unlimitedExpiry ? "var(--v2-text-secondary)" : getExpiryColor(daysLeft);
 
 	const [copied, setCopied] = useState(false);
 	const [copyFailed, setCopyFailed] = useState(false);
@@ -81,7 +81,11 @@ function ActiveHeroCard({ subscription }: { subscription: SubscriptionData }) {
 				</div>
 				<div className={styles.topRight}>
 					<div className={styles.kpi}>
-						<div className={styles.kpiValue} style={{ color: expiryColor }}>
+						<div
+							className={styles.kpiValue}
+							data-ui={unlimitedExpiry ? "home-expiry-unlimited" : undefined}
+							style={{ color: expiryColor }}
+						>
 							{unlimitedExpiry ? <InfinityIcon size={18} /> : formatExpiry(daysLeft)}
 						</div>
 						<div className={styles.kpiLabel}>{t("home.heroCard.expiresLabel")}</div>
@@ -118,7 +122,11 @@ function ActiveHeroCard({ subscription }: { subscription: SubscriptionData }) {
 					<div className={styles.barTrack}>
 						<div
 							className={styles.barFill}
-							style={{ width: `${pct}%`, background: fillColor, opacity: 0.7 }}
+							style={{
+								width: `${pct}%`,
+								background:
+									"linear-gradient(90deg, var(--v2-bg-positive-primary), color-mix(in srgb, var(--v2-bg-positive-primary) 70%, transparent))",
+							}}
 						/>
 					</div>
 					<div className={styles.barLabels}>
@@ -127,7 +135,7 @@ function ActiveHeroCard({ subscription }: { subscription: SubscriptionData }) {
 							{t("home.heroCard.usedPercent", { pct: Math.round(pct) })}
 						</span>
 						<span className={styles.barLabel}>
-							<span className={styles.barDot} style={{ background: "var(--v2-bg-tertiary)" }} />
+							<span className={styles.barDot} style={{ background: "var(--v2-bg-secondary)" }} />
 							{formatTraffic(totalBytes - usedBytes)}
 						</span>
 					</div>

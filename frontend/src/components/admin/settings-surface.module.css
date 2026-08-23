@@ -170,7 +170,7 @@
 	padding: 8px 10px;
 	border: 1px solid var(--v2-border-warning-secondary);
 	border-radius: var(--radius-sm);
-	background: color-mix(in srgb, var(--v2-bg-warning) 72%, transparent);
+	background: var(--v2-bg-warning);
 	font-size: var(--font-size-caption);
 	font-weight: 400;
 	line-height: 1.45;

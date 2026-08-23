@@ -19,5 +19,5 @@ export function Skeleton({ width, height, radius, circle, className, style }: Sk
 		...style,
 	};
 
-	return <div className={cls} style={merged} />;
+	return <div className={cls} style={merged} data-ui="skeleton" />;
 }

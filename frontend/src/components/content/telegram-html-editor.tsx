@@ -115,7 +115,7 @@ export function TelegramHtmlEditor({
 	};
 
 	return (
-		<div className={styles.editor}>
+		<div className={styles.editor} data-ui="telegram-html-editor">
 			<div className={styles.menu}>
 				<div
 					className={styles.toolbar}

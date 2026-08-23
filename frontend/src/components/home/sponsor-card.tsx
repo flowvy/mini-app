@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { BadgePercent, ExternalLink, HeartHandshake, LockKeyhole, RefreshCw } from "lucide-react";
+import { ExternalLink, HeartHandshake, LockKeyhole, RefreshCw, TicketPercent } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -324,9 +324,13 @@ export function SponsorCard() {
 				{isSubscription ? (
 					<>
 						{welcomeDiscountPercent !== null && (
-							<div className={styles.welcomeDiscount}>
-								<span className={styles.welcomeDiscountIcon} aria-hidden="true">
-									<BadgePercent size={18} />
+							<div className={styles.welcomeDiscount} data-ui="welcome-discount">
+								<span
+									className={styles.welcomeDiscountIcon}
+									data-ui="welcome-discount-icon"
+									aria-hidden="true"
+								>
+									<TicketPercent data-ui="welcome-discount-ticket-icon" size={20} />
 								</span>
 								<span>
 									<strong>
@@ -340,7 +344,6 @@ export function SponsorCard() {
 						)}
 						<SubscriptionBillingList
 							options={offer.priceOptions}
-							tone="plain"
 							discountPercent={welcomeDiscountPercent}
 						/>
 						<p className={styles.providerSelectionHint}>
@@ -353,7 +356,7 @@ export function SponsorCard() {
 					</>
 				) : (
 					donationPrice && (
-						<div className={styles.donationPrice}>
+						<div className={styles.donationPrice} data-ui="sponsor-donation-price">
 							<strong>
 								{formatPlanMoney(donationPrice.priceMajor, donationPrice.currency, i18n.language)}
 							</strong>
@@ -417,7 +420,7 @@ export function SponsorCard() {
 			</div>
 
 			{date && (
-				<div className={styles.accessFact}>
+				<div className={styles.accessFact} data-ui="sponsor-access-fact">
 					<span>
 						{t(
 							state.paidExpiresAt

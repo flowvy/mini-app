@@ -29,3 +29,9 @@ Use `scripts/verify.ps1 -Scope Changed` while iterating and `scripts/verify.ps1 
 ## Completion report
 
 Report each command and fresh result. If a check cannot run, say exactly why and what remains unverified. Do not say "done", "fixed", or "all tests pass" when a required gate is skipped, stale, or failing.
+
+ADR 0004 defines one narrow completion exception: owner-accepted strict desktop-parity Axe
+`color-contrast` failures stay red and are reported against the exact current route/theme/node
+ledger, but do not block the color-parity task when every other required check is freshly green.
+Never call that accessibility gate passed. A new node, color pair, Axe rule, or non-accessibility
+failure is outside the exception and blocks completion.

@@ -5,7 +5,7 @@ Applies to `frontend/`. Follow the repository root and `tests/e2e/AGENTS.md` whe
 ## Current shape
 
 - React 19, strict TypeScript, Vite, TanStack Router/Query/Virtual, Telegram Apps SDK, i18next,
-  CSS Modules, and Flowvy design tokens in `src/styles/tokens.css`.
+  CSS Modules, and a runtime copy of Flowvy Desktop design tokens in `src/styles/tokens.css`.
 - `lib/api.ts` is the HTTP boundary and attaches Telegram init data. Hooks own query/mutation state;
   pages compose feature and UI components; `router.ts` is the route source of truth.
 - The frontend is a client of the FastAPI BFF. It must not call Remnawave, Kuma, Beszel, PostgreSQL,
@@ -21,8 +21,12 @@ Applies to `frontend/`. Follow the repository root and `tests/e2e/AGENTS.md` whe
   unstructured errors, cancellation, and retry behavior; do not parse every success as JSON.
 - Put every user-visible string and accessible label in the locale resources before using it. Keep
   translation keys grouped by feature and update the i18n catalog when it remains part of the repo.
-- Use existing CSS Modules and `--v2-*` tokens. Check Telegram safe areas, small mobile heights,
-  long text, focus visibility, reduced motion, and light/dark contrast. Avoid one-off inline colors.
+- Use existing CSS Modules and `--v2-*` tokens. `flowvy_desktop/src/styles/tokens.css` is authoritative
+  for shared color values and semantic roles; do not add local contrast replacements, aliases that
+  change values, or one-off UI colors. Header glass tokens are the only approved Mini App exception
+  and stay scoped to `components/layout/header.module.css`. Check Telegram safe areas, small mobile
+  heights, long text, focus visibility, reduced motion, and light/dark contrast. Report strict-parity
+  contrast findings honestly; never suppress or allow-list them.
 - Prefer semantic controls and accessible names. Dialogs need focus management, Escape/cancel,
   destructive-action clarity, and disabled/loading behavior.
 - Route and mode changes must work through direct navigation and browser Back/Forward, not only

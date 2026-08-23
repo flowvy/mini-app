@@ -189,6 +189,14 @@ mutation success/failure состояния. Functional assertions и visual ins
 screenshot baseline нельзя обновлять автоматически. Полная матрица описана в
 `frontend/tests/e2e/AGENTS.md` и `.agents/skills/flowvy-ui-verify/references/state-matrix.md`.
 
+Цветовой contract отдельно проверяет точную runtime-копию shared desktop tokens, semantic usage и
+отсутствие raw component colors, включая hex, CSS color functions и named colors. Strict desktop
+parity может давать известные `color-contrast` findings: Axe всё равно запускается без
+`disableRules`, allow-list или impact downgrade. Такой scan остаётся красным; handoff сверяет rule,
+route, theme, nodes и color pairs с точным ledger ADR 0004 и не выдаёт его за passed. Только полное
+совпадение ledger при зелёных остальных checks допускает узкое completion exception; новый finding
+блокирует завершение. Источник решения — `docs/decisions/0004-desktop-color-parity.md`.
+
 Публичная граница Tunnel проверяется без реальных secrets/providers:
 
 ```powershell
@@ -214,4 +222,5 @@ Workflow пока не заменяет локальную focused провер�
 
 В handoff перечисляются свежие команды и результаты, протестированные маршруты/состояния/viewports,
 console/network/accessibility/visual результат и каждый пропуск. Build без behavior test, mocked
-success без error paths или старый CI result не считаются достаточным подтверждением.
+success без error paths или старый CI result не считаются достаточным подтверждением. Accepted
+product tradeoff документирует причину, но не превращает failing accessibility scan в зелёный gate.

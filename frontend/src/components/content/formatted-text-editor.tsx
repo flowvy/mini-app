@@ -340,7 +340,11 @@ export function FormattedTextEditor({
 	}
 
 	return (
-		<div className={styles.editor} data-disabled={disabled ? "true" : undefined}>
+		<div
+			className={styles.editor}
+			data-disabled={disabled ? "true" : undefined}
+			data-ui="formatted-text-editor"
+		>
 			<div className={styles.fixedMenu}>
 				{toolbar}
 				{linkEditor}

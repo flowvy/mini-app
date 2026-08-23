@@ -89,8 +89,8 @@
 /* ── danger (solid — confirm dialogs) ── */
 
 .danger {
-	background: var(--v2-text-negative);
-	color: var(--v2-text-primary-inverted);
+	background: var(--v2-bg-negative-primary);
+	color: var(--v2-static-white);
 }
 
 .danger:disabled:not(.loading) {

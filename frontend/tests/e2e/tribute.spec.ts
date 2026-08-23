@@ -1368,6 +1368,7 @@ test("rule deletion consequence is accessible in light and dark themes", async (
 	const rule = sponsorDonationRule();
 	mockApi.seedCommerceRules([rule]);
 	mockApi.seedSponsorOffers([{ ...sponsorDonationOffer(), commerceRuleId: rule.id }]);
+	const accessibilityByTheme: Array<{ theme: "light" | "dark"; serious: unknown[] }> = [];
 
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
@@ -1388,16 +1389,17 @@ test("rule deletion consequence is accessible in light and dark themes", async (
 			page
 				.getByRole("dialog", { name: "Edit automation rule" })
 				.getByRole("button", { name: "Delete", exact: true }),
-		).toHaveCSS("color", colorScheme === "dark" ? "rgb(255, 85, 74)" : "rgb(198, 53, 42)");
+		).toHaveCSS("color", colorScheme === "dark" ? "rgb(248, 66, 53)" : "rgb(198, 53, 42)");
 		const result = await new AxeBuilder({ page }).analyze();
 		const serious = result.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),
 		);
-		expect(serious).toEqual([]);
+		accessibilityByTheme.push({ theme: colorScheme, serious });
 		await assertNoHorizontalOverflow(page);
 		await page.screenshot({ path: testInfo.outputPath(`rule-delete-${colorScheme}.png`) });
 		await confirmation.getByRole("button", { name: "Cancel", exact: true }).click();
 	}
+	expect(accessibilityByTheme.filter(({ serious }) => serious.length > 0)).toEqual([]);
 });
 
 test("admin creates a user-facing sponsor offer from an automation rule", async ({
@@ -1430,6 +1432,7 @@ test("admin creates a user-facing sponsor offer from an automation rule", async 
 	await expect(publish).not.toBeChecked();
 	await expect(page.getByText("Payment options from Tribute", { exact: true })).toBeVisible();
 	await expect(page.getByText(/user chooses one on the Tribute checkout screen/)).toBeVisible();
+	const accessibilityByTheme: Array<{ theme: "light" | "dark"; serious: unknown[] }> = [];
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
 		await page.evaluate((theme) => {
@@ -1439,12 +1442,13 @@ test("admin creates a user-facing sponsor offer from an automation rule", async 
 		const serious = accessibility.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),
 		);
-		expect(serious).toEqual([]);
+		accessibilityByTheme.push({ theme: colorScheme, serious });
 		await assertNoHorizontalOverflow(page);
 		await page
 			.getByRole("dialog", { name: "Create sponsor offer" })
 			.screenshot({ path: testInfo.outputPath(`missing-destination-${colorScheme}.png`) });
 	}
+	expect(accessibilityByTheme.filter(({ serious }) => serious.length > 0)).toEqual([]);
 	await page.getByRole("heading", { name: "Payment and access" }).click();
 	await submitEditor(page.getByRole("dialog", { name: "Create sponsor offer" }));
 
@@ -1586,23 +1590,24 @@ test("formatted offer copy keeps one fixed toolbar and renders safely on Home", 
 	).toHaveAttribute("href", "https://example.com/sponsor");
 	await expect(description).toBeFocused();
 
+	const accessibilityByTheme: Array<{ theme: "light" | "dark"; serious: unknown[] }> = [];
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
-		// Axe/WebKit can sample color tokens from different animation frames after a live theme
-		// switch. Contrast is inspected from the captured stable light/dark evidence below.
-		const accessibility = await new AxeBuilder({ page }).disableRules(["color-contrast"]).analyze();
+		await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
+		const accessibility = await new AxeBuilder({ page }).analyze();
 		const serious = accessibility.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),
 		);
-		expect(serious).toEqual([]);
+		accessibilityByTheme.push({ theme: colorScheme, serious });
 		await assertNoHorizontalOverflow(page);
 		await editor.screenshot({
 			path: testInfo.outputPath(`formatted-offer-editor-${colorScheme}.png`),
 		});
 	}
+	expect(accessibilityByTheme.filter(({ serious }) => serious.length > 0)).toEqual([]);
 	await page.evaluate(() => {
 		if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
 	});
@@ -1662,6 +1667,7 @@ test("admin can relink an existing sponsor offer to another automation rule", as
 	});
 	mockApi.seedCommerceRules([currentRule, nextRule]);
 	mockApi.seedSponsorOffers([offer]);
+	const accessibilityByTheme: Array<{ theme: "light" | "dark"; serious: unknown[] }> = [];
 
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
@@ -1687,11 +1693,12 @@ test("admin can relink an existing sponsor offer to another automation rule", as
 		const serious = accessibility.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),
 		);
-		expect(serious).toEqual([]);
+		accessibilityByTheme.push({ theme: colorScheme, serious });
 		await themedEditor.screenshot({
 			path: testInfo.outputPath(`offer-rule-relink-${colorScheme}.png`),
 		});
 	}
+	expect(accessibilityByTheme.filter(({ serious }) => serious.length > 0)).toEqual([]);
 
 	const editor = page.getByRole("dialog", { name: "Edit sponsor offer" });
 	const requestPromise = page.waitForRequest(
@@ -1767,11 +1774,36 @@ test("admin groups legacy subscription cards around one readable plan preview", 
 	await expect(offersSection.locator("details:not([open])")).toHaveCount(2);
 	await expect(offersSection.getByRole("button", { name: "Edit" })).toHaveCount(1);
 
+	const accessibilityByTheme: Array<{ theme: "light" | "dark"; serious: unknown[] }> = [];
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
+		await expect(page.locator("html")).toHaveAttribute("data-theme", colorScheme);
+		const warningSurface = colorScheme === "light" ? "rgb(255, 239, 204)" : "rgb(52, 45, 25)";
+		const warningBorder = colorScheme === "light" ? "rgb(252, 218, 146)" : "rgb(99, 82, 29)";
+		const warningText = colorScheme === "light" ? "rgb(243, 171, 17)" : "rgb(255, 203, 47)";
+		const primarySurface = colorScheme === "light" ? "rgb(255, 255, 255)" : "rgb(33, 33, 33)";
+		const firstLegacyOffer = offersSection.locator('[data-ui="legacy-sponsor-offer"]').first();
+		const duplicateNote = offersSection.getByRole("note");
+		const duplicateWarning = offersSection.locator('[data-ui="duplicate-sponsor-warning"]').first();
+		await firstLegacyOffer.locator("summary").click();
+		await expect(offersSection.locator('[data-ui="duplicate-notice"]')).toHaveCSS(
+			"background-color",
+			"rgba(0, 0, 0, 0)",
+		);
+		await expect(duplicateNote).toHaveCSS("background-color", warningSurface);
+		await expect(duplicateNote).toHaveCSS("border-color", warningBorder);
+		await expect(duplicateNote).toHaveCSS("color", warningText);
+		await expect(offersSection.locator('[data-ui="sponsor-offer-list"]')).toHaveCSS(
+			"background-color",
+			"rgba(0, 0, 0, 0)",
+		);
+		await expect(firstLegacyOffer).toHaveCSS("background-color", primarySurface);
+		await expect(duplicateWarning).toHaveCSS("background-color", warningSurface);
+		await expect(duplicateWarning).toHaveCSS("border-color", warningBorder);
+		await expect(duplicateWarning).toHaveCSS("color", warningText);
 		await offersSection.screenshot({
 			path: testInfo.outputPath(`admin-subscription-cards-${colorScheme}.png`),
 		});
@@ -1779,9 +1811,11 @@ test("admin groups legacy subscription cards around one readable plan preview", 
 		const serious = result.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),
 		);
-		expect(serious).toEqual([]);
+		accessibilityByTheme.push({ theme: colorScheme, serious });
 		await assertNoHorizontalOverflow(page);
+		await firstLegacyOffer.locator("summary").click();
 	}
+	expect(accessibilityByTheme.filter(({ serious }) => serious.length > 0)).toEqual([]);
 
 	await offersSection.locator("details", { hasText: "Three months" }).locator("summary").click();
 	await offersSection.locator("details", { hasText: "One year" }).locator("summary").click();
@@ -1942,6 +1976,11 @@ test("Home labels the eligible subscription as a welcome discount", async ({
 		pendingCheckout: null,
 		offers: [offer],
 	});
+	mockApi.mock("GET", "/api/me/subscription", {
+		status: 404,
+		body: { detail: "No subscription" },
+	});
+	const accessibilityByTheme: Array<{ theme: "light" | "dark"; serious: unknown[] }> = [];
 
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
@@ -1950,18 +1989,74 @@ test("Home labels the eligible subscription as a welcome discount", async ({
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
 		const subscriptionOffer = page.getByRole("article", { name: "Monthly sponsor access" });
-		await expect(subscriptionOffer.getByText("25% off your first payment")).toBeVisible();
+		await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
+		const discount = subscriptionOffer.locator('[data-ui="welcome-discount"]');
+		await expect(discount).toBeVisible();
+		const expectedColors =
+			colorScheme === "light"
+				? {
+						primary: "rgb(255, 255, 255)",
+						primaryText: "rgb(23, 23, 23)",
+						secondary: "rgb(242, 242, 242)",
+						secondaryText: "rgb(69, 69, 69)",
+						secondaryBorder: "rgb(199, 199, 199)",
+						positive: "rgb(58, 177, 118)",
+						positiveBorder: "rgb(198, 237, 217)",
+					}
+				: {
+						primary: "rgb(33, 33, 33)",
+						primaryText: "rgb(255, 255, 255)",
+						secondary: "rgb(41, 41, 41)",
+						secondaryText: "rgb(163, 163, 163)",
+						secondaryBorder: "rgb(66, 66, 66)",
+						positive: "rgb(73, 221, 147)",
+						positiveBorder: "rgb(37, 96, 66)",
+					};
+		await expect(subscriptionOffer).toHaveCSS("background-color", expectedColors.primary);
+		await expect(discount).toHaveCSS("background-color", expectedColors.secondary);
+		await expect(discount).toHaveCSS("border-color", expectedColors.positiveBorder);
+		await expect(discount.getByText("25% off your first payment")).toHaveCSS(
+			"color",
+			expectedColors.primaryText,
+		);
+		const discountIconWrapper = discount.locator('[data-ui="welcome-discount-icon"]');
+		await expect(discountIconWrapper).toHaveCSS("color", expectedColors.positive);
+		await expect(discountIconWrapper).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+		await expect(discountIconWrapper).toHaveCSS("border-style", "none");
+		await expect(discountIconWrapper).toHaveCSS("box-shadow", "none");
+		const discountIcon = discount.locator('[data-ui="welcome-discount-ticket-icon"]');
+		await expect(discountIcon).toHaveClass(/lucide-ticket-percent/);
+		await expect(discountIcon).toHaveAttribute("width", "20");
+		await expect(discountIcon).toHaveAttribute("height", "20");
+		const priceList = subscriptionOffer.getByRole("list", {
+			name: "Payment options from Tribute",
+		});
+		await expect(priceList).toHaveCSS("background-color", expectedColors.secondary);
+		await expect(priceList).toHaveCSS("border-color", expectedColors.secondaryBorder);
+		await expect(priceList.locator("del").first()).toHaveCSS("color", expectedColors.secondaryText);
 		await expect(subscriptionOffer.locator("del")).toHaveCount(2);
-		await expect(subscriptionOffer).toContainText("375");
-		await expect(subscriptionOffer).toContainText("3,750");
+		const monthlyPrice = priceList.getByRole("listitem").nth(0);
+		const yearlyPrice = priceList.getByRole("listitem").nth(1);
+		await expect(monthlyPrice.locator("del")).toContainText("500");
+		await expect(monthlyPrice.locator("strong")).toContainText("375");
+		await expect(yearlyPrice.locator("del")).toContainText("5,000");
+		await expect(yearlyPrice.locator("strong")).toContainText("3,750");
 		await expect(
 			subscriptionOffer.getByRole("button", { name: "Get 25% off in Tribute" }),
 		).toBeVisible();
 		await assertNoHorizontalOverflow(page);
+		const accessibility = await new AxeBuilder({ page }).analyze();
+		accessibilityByTheme.push({
+			theme: colorScheme,
+			serious: accessibility.violations.filter((violation) =>
+				["serious", "critical"].includes(violation.impact ?? ""),
+			),
+		});
 		await subscriptionOffer.screenshot({
 			path: testInfo.outputPath(`welcome-discount-${colorScheme}.png`),
 		});
 	}
+	expect(accessibilityByTheme.filter(({ serious }) => serious.length > 0)).toEqual([]);
 });
 
 test("Home reports confirmed subscription access without guessing cancellation state", async ({
@@ -2011,24 +2106,39 @@ test("Home reports confirmed subscription access without guessing cancellation s
 	});
 	await expect(yearlyButton).toBeDisabled();
 	await expect(yearlyButton).toHaveAttribute("aria-describedby", "other-subscriptions-warning");
+	await expect(yearlyOfferCard.getByText(/off your first payment/)).toHaveCount(0);
+	await expect(yearlyOfferCard.locator('[data-ui="welcome-discount"]')).toHaveCount(0);
+	await expect(yearlyOfferCard.locator("del")).toHaveCount(0);
 	await expect(page.getByText("One month sponsor", { exact: true })).toHaveCount(0);
 	await yearlyButton.evaluate((element) => (element as HTMLButtonElement).click());
 	expect(mockApi.calls).not.toContain("POST /api/me/sponsor/checkouts");
+	const accessibilityByTheme: Array<{ theme: "light" | "dark"; serious: unknown[] }> = [];
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
-		await activeCard.screenshot({
+		await expect(yearlyOfferCard).toHaveCSS(
+			"border-color",
+			colorScheme === "light" ? "rgb(230, 230, 230)" : "rgb(37, 37, 37)",
+		);
+		await expect(yearlyOfferCard).toHaveCSS(
+			"background-color",
+			colorScheme === "light" ? "rgb(242, 242, 242)" : "rgb(41, 41, 41)",
+		);
+		await expect(yearlyOfferCard).toHaveCSS("box-shadow", "none");
+		await yearlyOfferCard.scrollIntoViewIfNeeded();
+		await yearlyOfferCard.screenshot({
 			path: testInfo.outputPath(`subscription-alternatives-${colorScheme}.png`),
 		});
 		const activeResult = await new AxeBuilder({ page }).analyze();
 		const activeSerious = activeResult.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),
 		);
-		expect(activeSerious).toEqual([]);
+		accessibilityByTheme.push({ theme: colorScheme, serious: activeSerious });
 		await assertNoHorizontalOverflow(page);
 	}
+	expect(accessibilityByTheme.filter(({ serious }) => serious.length > 0)).toEqual([]);
 	await yearlyButton.scrollIntoViewIfNeeded();
 	await expect(yearlyButton).toBeInViewport();
 
@@ -2436,6 +2546,7 @@ test("sponsor checkout card produces reviewable light and dark evidence", async 
 	mockApi,
 }, testInfo) => {
 	const offer = sponsorMultiPeriodOffer();
+	const accessibilityByTheme: Array<{ theme: "light" | "dark"; serious: unknown[] }> = [];
 
 	for (const colorScheme of ["light", "dark"] as const) {
 		mockApi.seedSponsorState({
@@ -2458,7 +2569,31 @@ test("sponsor checkout card produces reviewable light and dark evidence", async 
 		await expect(card).toBeVisible();
 		await expect(card.getByText("Basic access", { exact: true })).toBeVisible();
 		await expect(card.getByText("No expiry", { exact: true })).toBeVisible();
+		const neutralBorder = colorScheme === "light" ? "rgb(199, 199, 199)" : "rgb(66, 66, 66)";
+		const accessFact = card.locator('[data-ui="sponsor-access-fact"]');
+		await expect(accessFact).toHaveCSS(
+			"background-color",
+			colorScheme === "light" ? "rgb(242, 242, 242)" : "rgb(41, 41, 41)",
+		);
+		await expect(accessFact).toHaveCSS("border-color", neutralBorder);
+		await expect(accessFact).toHaveCSS("border-style", "solid");
+		const availableOffer = card.getByRole("article", { name: "Sponsor access" });
+		const accentBorder = colorScheme === "light" ? "rgb(198, 237, 217)" : "rgb(37, 96, 66)";
+		const accentInset = colorScheme === "light" ? "rgb(58, 177, 118)" : "rgb(73, 221, 147)";
+		await expect(availableOffer).toHaveCSS("border-color", accentBorder);
+		await expect(availableOffer).toHaveCSS("box-shadow", `${accentInset} 3px 0px 0px 0px inset`);
 		const paymentOptions = card.getByRole("list", { name: "Payment options from Tribute" });
+		await expect(availableOffer.locator('[data-ui="welcome-discount"]')).toHaveCount(0);
+		await expect(paymentOptions.locator("del")).toHaveCount(0);
+		await expect(paymentOptions).toHaveCSS(
+			"background-color",
+			colorScheme === "light" ? "rgb(242, 242, 242)" : "rgb(41, 41, 41)",
+		);
+		await expect(paymentOptions).toHaveCSS("border-color", neutralBorder);
+		await expect(paymentOptions.getByRole("listitem").nth(1)).toHaveCSS(
+			"border-top-color",
+			colorScheme === "light" ? "rgb(230, 230, 230)" : "rgb(37, 37, 37)",
+		);
 		await expect(paymentOptions.getByText("Billed monthly", { exact: true })).toBeVisible();
 		await expect(paymentOptions.getByText("Billed every 3 months", { exact: true })).toBeVisible();
 		await expect(paymentOptions.getByText("Billed yearly", { exact: true })).toBeVisible();
@@ -2467,12 +2602,18 @@ test("sponsor checkout card produces reviewable light and dark evidence", async 
 				"Prices and billing intervals come from Tribute. Choose the payment option there",
 			),
 		).toBeVisible();
-		await card.screenshot({ path: testInfo.outputPath(`sponsor-card-${colorScheme}.png`) });
+		await availableOffer.scrollIntoViewIfNeeded();
+		await availableOffer.screenshot({
+			path: testInfo.outputPath(`sponsor-card-${colorScheme}.png`),
+		});
+		await card.screenshot({
+			path: testInfo.outputPath(`sponsor-access-hierarchy-${colorScheme}.png`),
+		});
 		const result = await new AxeBuilder({ page }).analyze();
 		const serious = result.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),
 		);
-		expect(serious).toEqual([]);
+		accessibilityByTheme.push({ theme: colorScheme, serious });
 		await assertNoHorizontalOverflow(page);
 
 		mockApi.seedSponsorState({
@@ -2567,6 +2708,7 @@ test("sponsor checkout card produces reviewable light and dark evidence", async 
 		await expect(page.getByRole("button", { name: "Extend access" })).toHaveCount(0);
 		await assertNoHorizontalOverflow(page);
 	}
+	expect(accessibilityByTheme.filter(({ serious }) => serious.length > 0)).toEqual([]);
 });
 
 test("identified donation checkout clearly warns against anonymous attribution", async ({
@@ -2612,6 +2754,18 @@ test("identified donation checkout clearly warns against anonymous attribution",
 		}, colorScheme);
 		const card = page.getByRole("region", { name: "Get sponsor access" });
 		await expect(card.getByText("Flexible sponsor donation", { exact: true })).toBeVisible();
+		const donationPriceRows = card.locator('[data-ui="sponsor-donation-price"]');
+		await expect(donationPriceRows).toHaveCount(2);
+		for (const priceRow of await donationPriceRows.all()) {
+			await expect(priceRow).toHaveCSS(
+				"background-color",
+				colorScheme === "light" ? "rgb(242, 242, 242)" : "rgb(41, 41, 41)",
+			);
+			await expect(priceRow).toHaveCSS(
+				"border-color",
+				colorScheme === "light" ? "rgb(199, 199, 199)" : "rgb(66, 66, 66)",
+			);
+		}
 		await expect(
 			card.getByText(/RUB.*500.*One-time donation.*same Telegram account/i),
 		).toBeVisible();

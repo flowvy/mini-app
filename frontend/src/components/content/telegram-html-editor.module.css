@@ -7,8 +7,8 @@
 }
 
 .editor:focus-within {
-	border-color: var(--v2-border-positive-primary);
-	box-shadow: 0 0 0 3px color-mix(in srgb, var(--v2-border-positive-primary) 16%, transparent);
+	border-color: var(--v2-border-positive-secondary);
+	box-shadow: none;
 }
 
 .menu {

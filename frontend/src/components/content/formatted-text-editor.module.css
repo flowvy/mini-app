@@ -13,8 +13,8 @@
 }
 
 .editor:focus-within {
-	border-color: var(--v2-border-positive-primary);
-	box-shadow: 0 0 0 3px color-mix(in srgb, var(--v2-border-positive-primary) 16%, transparent);
+	border-color: var(--v2-border-positive-secondary);
+	box-shadow: none;
 }
 
 .editor[data-disabled="true"] {
@@ -29,6 +29,7 @@
 	box-sizing: border-box;
 	min-height: 112px;
 	padding: 11px 12px;
+	color: var(--v2-text-primary);
 	outline: none;
 	font-size: var(--font-size-control);
 	line-height: 1.5;
@@ -39,9 +40,8 @@
 .contentEditable p:global(.is-editor-empty)::before {
 	float: left;
 	height: 0;
-	color: var(--v2-text-secondary);
+	color: var(--v2-text-tertiary);
 	content: attr(data-placeholder);
-	opacity: 0.72;
 	pointer-events: none;
 }
 

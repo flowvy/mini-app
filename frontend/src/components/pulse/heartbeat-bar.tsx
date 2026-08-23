@@ -25,14 +25,22 @@ export const HeartbeatBar: FC<HeartbeatBarProps> = ({ heartbeats }) => {
 	return (
 		<div className={styles.bar}>
 			{Array.from({ length: empty }, (_, i) => (
-				<div key={`e-${i}`} className={`${styles.beat} ${styles.empty}`} />
-			))}
-			{beats.map((b, i) => (
 				<div
-					key={`b-${i}`}
-					className={`${styles.beat} ${styles[STATUS_CLASS[b.status] ?? "empty"]}`}
+					key={`e-${i}`}
+					className={`${styles.beat} ${styles.empty}`}
+					data-heartbeat-status="empty"
 				/>
 			))}
+			{beats.map((b, i) => {
+				const status = STATUS_CLASS[b.status] ?? "empty";
+				return (
+					<div
+						key={`b-${i}`}
+						className={`${styles.beat} ${styles[status]}`}
+						data-heartbeat-status={status}
+					/>
+				);
+			})}
 		</div>
 	);
 };

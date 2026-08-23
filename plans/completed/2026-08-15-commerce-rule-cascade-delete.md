@@ -68,6 +68,9 @@ payments, deleting access profiles, or changing provider/webhook behavior.
 - Fresh Axe evidence exposed insufficient contrast in the shared solid danger button. Existing
   theme-adaptive negative/inverted tokens provide WCAG AA contrast without a one-off color.
 
+> Superseded 2026-08-23: локальные contrast-adjusted color values отменены strict desktop parity
+> решением. Этот раздел остаётся историческим evidence первоначального запуска.
+
 ## Decision Log
 
 - 2026-08-15 — Delete linked sponsor offers atomically with their rule. They are presentation
@@ -112,3 +115,6 @@ dependency-management chore. The rule remains the lifecycle owner of its present
 durable payment/access evidence is preserved. The confirmation now communicates the irreversible
 future-matching consequence, and its shared danger action meets WCAG AA in both themes. No schema or
 provider contract changed and no real external request was made.
+
+> Superseded 2026-08-23: утверждение о текущем color contrast больше не действует после возврата к
+> буквальным desktop tokens; functional outcome удаления rule остаётся актуальным.

@@ -1,6 +1,5 @@
 .duplicateNotice {
 	padding: 0 14px 12px;
-	background: color-mix(in srgb, var(--v2-bg-positive-quaternary) 60%, transparent);
 }
 
 .duplicateNotice > p {
@@ -12,7 +11,6 @@
 	gap: 10px;
 	padding: 12px;
 	border-top: 1px solid var(--v2-border-tertiary);
-	background: color-mix(in srgb, var(--v2-bg-secondary) 44%, transparent);
 }
 
 .offerCard {
@@ -118,7 +116,7 @@
 	padding: 7px 9px;
 	border: 1px solid var(--v2-border-warning-secondary);
 	border-radius: var(--radius-sm);
-	background: color-mix(in srgb, var(--v2-bg-warning) 70%, transparent);
+	background: var(--v2-bg-warning);
 	color: var(--v2-text-warning);
 }
 
@@ -170,7 +168,7 @@
 	overflow: clip;
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-md);
-	background: color-mix(in srgb, var(--v2-bg-primary) 80%, var(--v2-bg-secondary));
+	background: var(--v2-bg-primary);
 }
 
 .legacyOffer summary {

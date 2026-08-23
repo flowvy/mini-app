@@ -139,16 +139,15 @@
 }
 
 .fieldControl::placeholder {
-	color: var(--v2-text-secondary);
+	color: var(--v2-text-tertiary);
 	font-family: var(--font-sans);
 	font-size: inherit;
 	line-height: inherit;
-	opacity: 0.72;
 }
 
 .fieldControl:focus-visible {
-	border-color: var(--v2-border-positive-primary);
-	box-shadow: 0 0 0 3px color-mix(in srgb, var(--v2-border-positive-primary) 16%, transparent);
+	border-color: var(--v2-border-positive-secondary);
+	box-shadow: none;
 }
 
 .fieldControl:disabled {
@@ -244,8 +243,8 @@
 @media (hover: hover) and (pointer: fine) {
 	.selectShell:has(.nativeSelect:focus-visible),
 	.dateShell:has(.nativeDate:focus-visible) {
-		border-color: var(--v2-border-positive-primary);
-		box-shadow: 0 0 0 3px color-mix(in srgb, var(--v2-border-positive-primary) 16%, transparent);
+		border-color: var(--v2-border-positive-secondary);
+		box-shadow: none;
 	}
 }
 

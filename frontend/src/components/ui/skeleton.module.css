@@ -1,5 +1,5 @@
 .skeleton {
-	background: var(--v2-bg-tertiary);
+	background: var(--v2-bg-secondary);
 	animation: var(--fv-anim-pulse) 1.5s ease-in-out infinite;
 	border-radius: 8px;
 }

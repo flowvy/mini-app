@@ -2,7 +2,7 @@
 	display: grid;
 	gap: 3px;
 	padding: 12px 14px;
-	background: color-mix(in srgb, var(--v2-bg-positive-quaternary) 60%, transparent);
+	background: var(--v2-bg-primary);
 }
 
 .intro strong,

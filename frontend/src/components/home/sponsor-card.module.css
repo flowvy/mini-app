@@ -52,6 +52,7 @@
 	justify-content: space-between;
 	gap: 12px;
 	padding: 10px 12px;
+	border: 1px solid var(--v2-border-secondary);
 	border-radius: var(--radius-sm);
 	background: var(--v2-bg-secondary);
 }
@@ -114,13 +115,14 @@
 	gap: 10px;
 	min-width: 0;
 	padding: 12px;
-	border: 1px solid var(--v2-border-secondary);
+	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-md);
-	background: linear-gradient(
-		145deg,
-		var(--v2-bg-secondary),
-		color-mix(in srgb, var(--v2-bg-positive-quaternary) 55%, var(--v2-bg-secondary))
-	);
+	background: var(--v2-bg-primary);
+}
+
+.offerCard:not([data-blocked="true"]) {
+	border-color: var(--v2-border-positive-secondary);
+	box-shadow: inset 3px 0 0 var(--v2-border-positive-primary);
 }
 
 .offerCard[data-blocked="true"] {
@@ -141,12 +143,8 @@
 	padding: 10px 11px;
 	border: 1px solid var(--v2-border-positive-secondary);
 	border-radius: var(--radius-sm);
-	background: linear-gradient(
-		135deg,
-		var(--v2-bg-positive-tertiary),
-		color-mix(in srgb, var(--v2-bg-positive-quaternary) 45%, var(--v2-bg-primary))
-	);
-	color: var(--v2-text-positive);
+	background: var(--v2-bg-secondary);
+	color: var(--v2-text-primary);
 }
 
 .welcomeDiscountIcon {
@@ -155,9 +153,7 @@
 	width: 34px;
 	height: 34px;
 	place-items: center;
-	border-radius: 50%;
-	background: var(--v2-bg-primary);
-	box-shadow: inset 0 0 0 1px var(--v2-border-positive-secondary);
+	color: var(--v2-icon-positive);
 }
 
 .welcomeDiscount > span:last-child {
@@ -190,7 +186,7 @@
 	padding: 8px 10px;
 	border: 1px solid var(--v2-border-warning-secondary);
 	border-radius: var(--radius-sm);
-	background: color-mix(in srgb, var(--v2-bg-warning) 72%, transparent);
+	background: var(--v2-bg-warning);
 	color: var(--v2-text-warning);
 }
 
@@ -209,9 +205,9 @@
 	justify-content: space-between;
 	gap: 12px;
 	padding: 10px;
-	border: 1px solid var(--v2-border-tertiary);
+	border: 1px solid var(--v2-border-secondary);
 	border-radius: var(--radius-sm);
-	background: var(--v2-bg-primary);
+	background: var(--v2-bg-secondary);
 }
 
 .donationPrice strong {

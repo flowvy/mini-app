@@ -28,7 +28,7 @@
 }
 
 .info {
-	border: 1px solid var(--v2-border-info-secondary);
-	background: var(--v2-bg-info-secondary);
-	color: var(--v2-text-info);
+	border: 1px solid var(--v2-border-tertiary);
+	background: var(--v2-bg-primary);
+	color: var(--v2-text-secondary);
 }

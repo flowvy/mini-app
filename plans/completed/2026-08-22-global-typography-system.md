@@ -86,6 +86,9 @@ Telegram/provider вызовы.
 - Та же Axe matrix обнаружила реальный dark destructive-text contrast `4.46:1`; общий dark negative
   token скорректирован до значения, проходящего WCAG AA на используемых поверхностях.
 
+> Superseded 2026-08-23: dark `text-negative` возвращён с `#FF554A` на desktop `#F84235` по strict
+> color parity решению. Axe finding остаётся видимым и не suppressится.
+
 ## Decision Log
 
 - 2026-08-22 — отказаться от responsive размера, привязанного к `pointer: coarse`, как основания

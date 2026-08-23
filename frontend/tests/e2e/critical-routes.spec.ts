@@ -338,6 +338,12 @@ test("detail screens rely on Telegram Back instead of duplicate in-content heade
 });
 
 test("settings hubs stay accessible without mobile overflow", async ({ page, mockApi: _mock }) => {
+	const accessibilityByContext: Array<{
+		viewport: string;
+		theme: "light" | "dark";
+		path: string;
+		serious: unknown[];
+	}> = [];
 	for (const viewport of [
 		{ width: 320, height: 568 },
 		{ width: 430, height: 932 },
@@ -354,16 +360,21 @@ test("settings hubs stay accessible without mobile overflow", async ({ page, moc
 				await page.evaluate((theme) => {
 					document.documentElement.setAttribute("data-theme", theme);
 				}, colorScheme);
+				await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
 				await assertNoHorizontalOverflow(page);
 				const result = await new AxeBuilder({ page }).analyze();
-				expect(
-					result.violations.filter((violation) =>
+				accessibilityByContext.push({
+					viewport: `${viewport.width}x${viewport.height}`,
+					theme: colorScheme,
+					path,
+					serious: result.violations.filter((violation) =>
 						["serious", "critical"].includes(violation.impact ?? ""),
 					),
-				).toEqual([]);
+				});
 			}
 		}
 	}
+	expect(accessibilityByContext.filter(({ serious }) => serious.length > 0)).toEqual([]);
 });
 
 test("stable support screen has no serious automated accessibility violations", async ({

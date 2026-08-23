@@ -1,4 +1,4 @@
-/* ── AppLogo — theme-aware logo switching ── */
+/* ── AppLogo ── */
 
 .logo {
 	display: flex;
@@ -6,15 +6,7 @@
 	flex-shrink: 0;
 }
 
-.dark,
-.light {
+.logo > svg,
+.logo > img {
 	display: block;
-}
-
-:global([data-theme="dark"]) .light {
-	display: none;
-}
-
-:global([data-theme="light"]) .dark {
-	display: none;
 }

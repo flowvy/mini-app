@@ -107,8 +107,10 @@ Remnawave-доступа. Независимо от этого приглашё�
   это исключает награду за payment, который ушёл в review либо не применился в Remnawave.
 - 2026-08-22 — provider выбирает reward access profile только при включённых days. Frozen snapshot
   не зависит от будущего редактирования профиля и не копирует tier приглашённого неявно.
-- 2026-08-22 — welcome discount не показывает рассчитанную цену: Tribute применяет validity,
-  activation limit, minimum price и non-stacking rules только на своём checkout.
+- 2026-08-22 — исходное решение не показывать рассчитанную цену superseded планом
+  `2026-08-22-welcome-discount-price-presentation.md`: Home показывает явно оценочную first-payment
+  цену, а Tribute остаётся authority для validity, activation limit, minimum price и non-stacking
+  rules на checkout.
 
 ## Verification
 

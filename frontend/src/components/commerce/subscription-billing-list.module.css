@@ -3,13 +3,14 @@
 	margin: 0;
 	padding: 0;
 	overflow: hidden;
-	border: 1px solid var(--v2-border-tertiary);
+	border: 1px solid var(--v2-border-secondary);
 	border-radius: var(--radius-sm);
 	background: var(--v2-bg-secondary);
 	list-style: none;
 }
 
 .list[data-tone="plain"] {
+	border-color: var(--v2-border-tertiary);
 	background: var(--v2-bg-primary);
 }
 
@@ -36,7 +37,7 @@
 
 .price del {
 	font: 500 var(--font-size-caption) / 1.2 var(--font-mono);
-	color: var(--v2-text-tertiary);
+	color: var(--v2-text-secondary);
 }
 
 .price strong {

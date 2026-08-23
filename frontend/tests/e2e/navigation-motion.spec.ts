@@ -72,14 +72,21 @@ test("access controls keep Flowvy typography with native input values", async ({
 	await expect(defaultAccessValue).toHaveCSS("font-family", /Geist/);
 	await expect(defaultAccessValue).toHaveCSS("font-size", "13px");
 	await defaultAccess.focus();
-	const defaultAccessFocus = await defaultAccess.locator("..").evaluate((element) => ({
-		boxShadow: getComputedStyle(element).boxShadow,
-		finePointer: window.matchMedia("(hover: hover) and (pointer: fine)").matches,
-	}));
-	if (defaultAccessFocus.finePointer) {
-		expect(defaultAccessFocus.boxShadow).not.toBe("none");
-	} else {
-		expect(defaultAccessFocus.boxShadow).toBe("none");
+	const defaultAccessShell = defaultAccess.locator("..");
+	const positiveBorder = await page.evaluate(() => {
+		const probe = document.createElement("span");
+		probe.style.color = "var(--v2-border-positive-secondary)";
+		document.body.append(probe);
+		const color = getComputedStyle(probe).color;
+		probe.remove();
+		return color;
+	});
+	await expect(defaultAccessShell).toHaveCSS("box-shadow", "none");
+	const finePointer = await page.evaluate(
+		() => window.matchMedia("(hover: hover) and (pointer: fine)").matches,
+	);
+	if (finePointer) {
+		await expect(defaultAccessShell).toHaveCSS("border-color", positiveBorder);
 	}
 
 	await page.getByRole("button", { name: "Create profile" }).click();

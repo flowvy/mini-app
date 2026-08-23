@@ -65,6 +65,9 @@ Remnawave contract или данных.
 - [x] 2026-08-02 18:05 +03:00 — финальные frontend lint/type/unit/build и 156/156 all-project
   Playwright прошли; focused/date/lifetime screenshots просмотрены в light/dark на всех viewports,
   light-theme positive text приведён к WCAG AA контрасту.
+
+> Superseded 2026-08-23: локальный light `text-positive` override отменён принятым strict desktop
+> color parity решением; исторический результат этого запуска не изменяется.
 - [x] 2026-08-02 17:51 +03:00 — полный repository gate прошёл, public tunnel отдаёт новый bundle,
   health 200 и debug 404.
 - [x] 2026-08-02 — реальный iOS screenshot выявил, что закрытый native select всё ещё получает

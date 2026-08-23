@@ -27,6 +27,11 @@ and a clear first-payment benefit before opening the shared Tribute promo link.
 - [x] Add the conditional percentage field to the existing referral-benefits admin section.
 - [x] Present a dedicated first-payment benefit block, struck original prices, calculated prices for
   every billing period, and a discount-specific CTA on the Home offer card.
+- [x] Align the final Home composition with the owner-selected desktop system: neutral secondary
+  benefit surface with positive border and bare `TicketPercent`, plus a separately framed secondary
+  price shell with `border-secondary` on the primary offer surface; `Basic access` and standalone
+  donation-price rows use the same neutral framing, while internal separators remain
+  `border-tertiary`; struck source prices use readable secondary text.
 - [x] Cover settings validation, eligibility/snapshot contracts, price arithmetic, admin save flow,
   Home rendering, ineligible state, and multi-period presentation.
 - [x] Inspect light/dark UI at 320 px, 430 px, WebKit and desktop; check overflow, focus, Axe,
@@ -39,7 +44,8 @@ and a clear first-payment benefit before opening the shared Tribute promo link.
 - The entered percentage can drift from Tribute; the admin owns keeping it current.
 - Flowvy's calculated amount is informative. Tribute remains authoritative because its EUR 1 minimum
   and currency conversion can adjust the real checkout amount.
-- Existing non-discount cards and admin offer price lists must remain unchanged.
+- All Home subscription cards share the accepted secondary price-shell hierarchy; Admin
+  `tone="plain"` price lists retain their pre-change primary background and tertiary border.
 
 ## Verification
 

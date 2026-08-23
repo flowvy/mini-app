@@ -44,5 +44,6 @@ For applicable requests also cover loading, `401`, `403`, `404`, `500`, timeout/
 - No unexpected console errors, page errors, failed requests, or unknown API calls.
 - No horizontal overflow; critical controls remain visible and reachable.
 - Keyboard focus is visible and ordered; dialogs trap focus and return it to the trigger.
-- Automated accessibility scan passes for stable screens; known exceptions are documented.
+- Automated accessibility scan runs on stable screens. Known strict desktop-parity findings are
+  documented without filtering and keep the scan red; they are never reported as passed.
 - Screenshots were opened and visually inspected, not merely generated.

@@ -2,7 +2,7 @@
 	min-width: 0;
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: 8px;
-	background: color-mix(in srgb, var(--v2-bg-secondary) 72%, transparent);
+	background: var(--v2-bg-primary);
 }
 
 .static {

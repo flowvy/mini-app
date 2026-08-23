@@ -47,8 +47,10 @@ auth bypass или публичный destructive debug path.
 
 - закрыто: API-client unit tests и role/loading/empty/denied/error/malformed/mutation cases для
   критических user/admin routes;
-- закрыто: light/dark, small mobile, Telegram-like, WebKit, desktop, keyboard/dialog focus,
-  accessibility и reviewed visual evidence;
+- закрыто: light/dark, small mobile, Telegram-like, WebKit, desktop, keyboard/dialog focus и
+  reviewed visual evidence;
+- открыто: strict desktop color parity сохраняет известный `color-contrast` debt; Axe выполняется
+  без suppression/allow-list и соответствующие scans остаются красными до изменения desktop source;
 - осталось: component tests критических controls и реальный offline/browser-network pass;
 - integrated suite с ephemeral FastAPI/PostgreSQL/Redis и fake Remnawave/Kuma/Beszel.
 

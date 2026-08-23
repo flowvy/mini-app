@@ -18,7 +18,7 @@ import {
 	formatResetStrategy,
 	formatTraffic,
 	getDaysLeft,
-	getExpiryColorISO,
+	getExpiryColor,
 	getTrafficColor,
 	getTrafficPercent,
 	isUnlimitedDevices,
@@ -55,7 +55,14 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 	const pct = unlTraffic ? 0 : getTrafficPercent(ut.usedTrafficBytes, user.trafficLimitBytes);
 	const fillColor = getTrafficColor(pct);
 	const daysLeft = getDaysLeft(user.expireAt);
-	const expiryColor = unlExpiry ? undefined : getExpiryColorISO(daysLeft);
+	const expiryColor = unlExpiry ? "var(--v2-text-secondary)" : getExpiryColor(daysLeft);
+	const expiryTone = unlExpiry
+		? "unlimited"
+		: daysLeft < 0
+			? "negative"
+			: daysLeft <= 7
+				? "warning"
+				: "default";
 
 	const [confirm, setConfirm] = useState<ActionDef | null>(null);
 	const actionTriggerRef = useRef<HTMLButtonElement>(null);
@@ -92,7 +99,8 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 						<div className={styles.heroKpi}>
 							<div
 								className={styles.heroKpiValue}
-								style={expiryColor ? { color: expiryColor } : undefined}
+								data-expiry-tone={expiryTone}
+								style={{ color: expiryColor }}
 							>
 								{unlExpiry ? <InfinityIcon size={16} /> : formatExpiryCompact(daysLeft)}
 							</div>
@@ -117,7 +125,11 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 						<div className={styles.heroBarTrack}>
 							<div
 								className={styles.heroBarFill}
-								style={{ width: `${pct}%`, background: fillColor }}
+								style={{
+									width: `${pct}%`,
+									background:
+										"linear-gradient(90deg, var(--v2-bg-positive-primary), color-mix(in srgb, var(--v2-bg-positive-primary) 70%, transparent))",
+								}}
 							/>
 						</div>
 						<div className={styles.heroBarLabels}>

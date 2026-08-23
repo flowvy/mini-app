@@ -36,5 +36,5 @@
 }
 
 .maintenance {
-	background: var(--v2-bg-info-primary);
+	background: var(--v2-icon-warning);
 }

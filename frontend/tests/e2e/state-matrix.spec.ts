@@ -7,7 +7,7 @@ import {
 	withTelegramMainButton,
 } from "./fixtures/telegram-main-button.ts";
 
-async function assertOnlyExpectedViewportZoomRestriction(page: Page): Promise<void> {
+async function analyzeWithoutExpectedViewportZoomRestriction(page: Page) {
 	const { violations } = await new AxeBuilder({ page }).analyze();
 	const viewportViolations = violations.filter((violation) => violation.id === "meta-viewport");
 	expect(viewportViolations).toHaveLength(1);
@@ -17,7 +17,11 @@ async function assertOnlyExpectedViewportZoomRestriction(page: Page): Promise<vo
 			(check) => check.id === "meta-viewport" && check.data === "maximum-scale",
 		),
 	).toBe(true);
-	expect(violations.filter((violation) => violation.id !== "meta-viewport")).toEqual([]);
+	return violations.filter((violation) => violation.id !== "meta-viewport");
+}
+
+async function assertOnlyExpectedViewportZoomRestriction(page: Page): Promise<void> {
+	expect(await analyzeWithoutExpectedViewportZoomRestriction(page)).toEqual([]);
 }
 
 test("authentication retry and direct admin denial are explicit", async ({
@@ -43,6 +47,7 @@ test("authentication retry and direct admin denial are explicit", async ({
 
 	await page.evaluate(() => localStorage.setItem("flowvy:mock-role", "user"));
 	await page.reload();
+	await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
 	await page.goto("/admin/settings");
 	await expect(page.getByRole("alert")).toContainText("Access denied");
 	await expect(page.getByRole("button", { name: "Back to app" })).toBeVisible();
@@ -192,9 +197,10 @@ test("device confirmations support cancel, failure, and successful remove-all", 
 	await firstDeleteButton.click();
 	const deviceDialog = page.getByRole("alertdialog", { name: "Remove device?" });
 	await expect(deviceDialog).toBeVisible();
-	await expect(
-		deviceDialog.getByText("Pixel 8 will be removed from your connected devices"),
-	).toBeVisible();
+	const deviceConfirmCopy = deviceDialog.getByText(
+		"Pixel 8 will be removed from your connected devices",
+	);
+	await expect(deviceConfirmCopy).toBeVisible();
 	await expect(deviceDialog.getByRole("heading", { name: "Remove device?" })).toBeFocused();
 	const [nameAfter, addedAfter] = await Promise.all([
 		firstDeviceName.boundingBox(),
@@ -217,7 +223,27 @@ test("device confirmations support cancel, failure, and successful remove-all", 
 			),
 		)
 		.toBe(0);
-	await assertOnlyExpectedViewportZoomRestriction(page);
+	const accessibilityByTheme: Array<{ theme: "light" | "dark"; violations: unknown[] }> = [];
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await expect(deviceDialog).toHaveCSS(
+			"background-color",
+			colorScheme === "dark" ? "rgb(23, 23, 23)" : "rgb(242, 242, 242)",
+		);
+		await expect(deviceConfirmCopy).toHaveCSS(
+			"color",
+			colorScheme === "dark" ? "rgb(163, 163, 163)" : "rgb(69, 69, 69)",
+		);
+		accessibilityByTheme.push({
+			theme: colorScheme,
+			violations: await analyzeWithoutExpectedViewportZoomRestriction(page),
+		});
+	}
+	await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+	await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
 	await page.keyboard.press("Escape");
 	await expect(deviceDialog).toHaveCount(0);
 	await expect(firstDeleteButton).toBeFocused();
@@ -242,6 +268,7 @@ test("device confirmations support cancel, failure, and successful remove-all", 
 		page.getByText("Connect a device with your subscription to see it here"),
 	).toBeVisible();
 	await assertNoHorizontalOverflow(page);
+	expect(accessibilityByTheme.filter(({ violations }) => violations.length > 0)).toEqual([]);
 });
 
 test("device details use OS logos and compact provider metadata", async ({ page, mockApi }) => {
@@ -520,6 +547,17 @@ test("lifetime expiry uses the shared no-expiry presentation in admin detail", a
 	mockApi.mock("GET", "/api/debug/admin/users/1", { body: lifetimeUser });
 
 	await page.goto("/admin/users/1");
+	const noExpiry = page.locator('[data-expiry-tone="unlimited"]');
+	await expect(noExpiry).toBeVisible();
+	const secondaryText = await page.evaluate(() => {
+		const probe = document.createElement("span");
+		probe.style.color = "var(--v2-text-secondary)";
+		document.body.append(probe);
+		const color = getComputedStyle(probe).color;
+		probe.remove();
+		return color;
+	});
+	await expect(noExpiry).toHaveCSS("color", secondaryText);
 	await expect(page.getByText("No expiry", { exact: true })).toBeVisible();
 	await expect(page.getByText("Jan 1, 2100", { exact: true })).toHaveCount(0);
 	await assertNoHorizontalOverflow(page);
@@ -848,27 +886,40 @@ test("Beszel settings show missing credentials and a recoverable test failure", 
 	await assertNoHorizontalOverflow(page);
 });
 
-test("key interactive screens have no serious accessibility violations in light mode", async ({
+test("key interactive screens have no serious accessibility violations in both themes", async ({
 	page,
 	mockApi: _mock,
 }) => {
-	await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
-	for (const path of [
-		"/",
-		"/devices",
-		"/pulse",
-		"/admin/settings",
-		"/admin/settings/beszel",
-		"/admin/settings/tribute",
-	] as const) {
-		await page.goto(path);
-		await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
-		await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
-		const result = await new AxeBuilder({ page }).analyze();
-		const serious = result.violations.filter((violation) =>
-			["serious", "critical"].includes(violation.impact ?? ""),
-		);
-		expect(serious, `${path} must not have serious accessibility violations`).toEqual([]);
-		await assertNoHorizontalOverflow(page);
+	const accessibilityByContext: Array<{
+		theme: "light" | "dark";
+		path: string;
+		serious: unknown[];
+	}> = [];
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		for (const path of [
+			"/",
+			"/devices",
+			"/pulse",
+			"/admin/settings",
+			"/admin/settings/beszel",
+			"/admin/settings/tribute",
+		] as const) {
+			await page.goto(path);
+			await page.evaluate((theme) => {
+				document.documentElement.setAttribute("data-theme", theme);
+			}, colorScheme);
+			await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
+			const result = await new AxeBuilder({ page }).analyze();
+			accessibilityByContext.push({
+				theme: colorScheme,
+				path,
+				serious: result.violations.filter((violation) =>
+					["serious", "critical"].includes(violation.impact ?? ""),
+				),
+			});
+			await assertNoHorizontalOverflow(page);
+		}
 	}
+	expect(accessibilityByContext.filter(({ serious }) => serious.length > 0)).toEqual([]);
 });

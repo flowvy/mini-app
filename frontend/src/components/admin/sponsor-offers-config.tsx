@@ -229,7 +229,7 @@ export function SponsorOffersConfig({
 				</div>
 
 				{legacyDuplicateCount > 0 && (
-					<div className={offerStyles.duplicateNotice}>
+					<div className={offerStyles.duplicateNotice} data-ui="duplicate-notice">
 						<InlineFeedback tone="warning">
 							{t("settings.tribute.offers.legacyDuplicates")}
 						</InlineFeedback>
@@ -285,7 +285,7 @@ export function SponsorOffersConfig({
 				)}
 
 				{allOffers.length > 0 && (
-					<div className={offerStyles.offerList}>
+					<div className={offerStyles.offerList} data-ui="sponsor-offer-list">
 						{allOffers.map((offer) => {
 							const rule = rulesById.get(offer.commerceRuleId);
 							const subscriptionDestination = rule?.externalItemId
@@ -331,7 +331,11 @@ export function SponsorOffersConfig({
 								);
 							if (compactDuplicate) {
 								return (
-									<details className={offerStyles.legacyOffer} key={offer.id}>
+									<details
+										className={offerStyles.legacyOffer}
+										data-ui="legacy-sponsor-offer"
+										key={offer.id}
+									>
 										<summary>
 											<span>{offer.title}</span>
 											<span className={offerStyles.legacyMeta}>
@@ -347,7 +351,7 @@ export function SponsorOffersConfig({
 													{offer.description}
 												</FormattedText>
 											)}
-											<p className={offerStyles.duplicateHint}>
+											<p className={offerStyles.duplicateHint} data-ui="duplicate-sponsor-warning">
 												{t("settings.tribute.offers.duplicateExtraHint")}
 											</p>
 											<div className={offerStyles.legacyActions}>

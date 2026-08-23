@@ -553,6 +553,11 @@ test("focused Tone of Voice editor remains usable in every required viewport and
 	page,
 	mockApi: _mock,
 }, testInfo) => {
+	const accessibilityByContext: Array<{
+		viewport: string;
+		theme: "light" | "dark";
+		serious: unknown[];
+	}> = [];
 	for (const viewport of [
 		{ name: "narrow", width: 320, height: 568 },
 		{ name: "mobile", width: 430, height: 932 },
@@ -590,7 +595,11 @@ test("focused Tone of Voice editor remains usable in every required viewport and
 			const serious = accessibility.violations.filter((violation) =>
 				["serious", "critical"].includes(violation.impact ?? ""),
 			);
-			expect(serious).toEqual([]);
+			accessibilityByContext.push({
+				viewport: viewport.name,
+				theme: colorScheme,
+				serious,
+			});
 			await page.screenshot({
 				path: testInfo.outputPath(`tone-of-voice-${viewport.name}-${colorScheme}.png`),
 				fullPage: true,
@@ -598,4 +607,5 @@ test("focused Tone of Voice editor remains usable in every required viewport and
 			});
 		}
 	}
+	expect(accessibilityByContext.filter(({ serious }) => serious.length > 0)).toEqual([]);
 });

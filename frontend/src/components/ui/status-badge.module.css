@@ -39,5 +39,5 @@
 .unknown {
 	background: var(--v2-bg-secondary);
 	color: var(--v2-text-secondary);
-	border: 1px dashed var(--v2-border-secondary);
+	border: 1px solid var(--v2-border-tertiary);
 }

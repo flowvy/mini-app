@@ -12,15 +12,15 @@
 	width: 100%;
 	min-height: 46px;
 	padding: 12px 16px;
-	border: 1px solid var(--v2-border-tertiary);
+	border: 1px solid transparent;
 	border-radius: var(--radius-md);
-	background: var(--v2-bg-primary);
-	color: var(--v2-text-secondary);
+	background: var(--v2-bg-primary-inverted);
+	color: var(--v2-text-primary-inverted);
 	font-size: var(--font-size-body);
 	font-weight: 600;
 	font-family: inherit;
 	cursor: pointer;
-	box-shadow: 0 1px 0 color-mix(in srgb, var(--v2-border-tertiary) 42%, transparent);
+	box-shadow: none;
 	transition: opacity var(--duration-base), background-color var(--duration-base), color
 		var(--duration-base), border-color var(--duration-base);
 }
@@ -42,15 +42,18 @@
 }
 
 .btn[data-active] {
-	border-color: var(--v2-bg-primary-inverted);
 	background: var(--v2-bg-primary-inverted);
 	color: var(--v2-text-primary-inverted);
-	box-shadow: none;
 }
 
 .btn:disabled {
-	opacity: 1;
+	opacity: 0.4;
 	cursor: default;
+}
+
+.btn[aria-busy="true"] {
+	opacity: 0.7;
+	cursor: wait;
 }
 
 @media (hover: hover) and (pointer: fine) {
