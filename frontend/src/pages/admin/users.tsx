@@ -27,8 +27,8 @@ function emptyCounts(): Record<FilterKey, number> {
 	);
 }
 
-function onlineTs(user: AdminUser): number {
-	return user.userTraffic.onlineAt ? new Date(user.userTraffic.onlineAt).getTime() : 0;
+function compareByRegistrationDate(a: AdminUser, b: AdminUser): number {
+	return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || b.id - a.id;
 }
 
 interface AdminUsersProps {
@@ -80,7 +80,7 @@ export const AdminUsers: FC<AdminUsersProps> = ({ searchMode = false }) => {
 			});
 		}
 
-		return [...list].sort((a, b) => onlineTs(b) - onlineTs(a));
+		return [...list].sort(compareByRegistrationDate);
 	}, [allUsers, filter, searchInput]);
 
 	const handleUserClick = useCallback(

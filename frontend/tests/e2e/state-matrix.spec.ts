@@ -571,6 +571,7 @@ test("users support empty search, missing detail, and failed actions", async ({
 		...mockData.adminUser,
 		id: index + 1,
 		username: index === 0 ? "alice" : `user_${String(index + 1).padStart(3, "0")}`,
+		createdAt: index === 0 ? "2026-08-03T00:00:00Z" : "2026-01-01T00:00:00Z",
 	}));
 	mockApi.mock("GET", "/api/debug/admin/users/all", { body: { users, total: users.length } });
 
@@ -600,6 +601,52 @@ test("users support empty search, missing detail, and failed actions", async ({
 	await expect(page.getByRole("dialog")).toContainText("alice will lose proxy access");
 	await page.getByRole("button", { name: "Disable", exact: true }).last().click();
 	await expect(page.getByRole("alert")).toContainText("The action failed");
+	await assertNoHorizontalOverflow(page);
+});
+
+test("users are ordered by registration date with newest first", async ({ page, mockApi }) => {
+	const users = [
+		{
+			...mockData.adminUser,
+			id: 1,
+			username: "older_recently_online",
+			createdAt: "2026-01-01T00:00:00Z",
+			userTraffic: {
+				...mockData.adminUser.userTraffic,
+				onlineAt: "2026-08-01T00:00:00Z",
+			},
+		},
+		{
+			...mockData.adminUser,
+			id: 2,
+			username: "newest_offline",
+			createdAt: "2026-08-02T00:00:00Z",
+			userTraffic: {
+				...mockData.adminUser.userTraffic,
+				onlineAt: null,
+			},
+		},
+		{
+			...mockData.adminUser,
+			id: 3,
+			username: "newest_tiebreaker",
+			createdAt: "2026-08-02T00:00:00Z",
+			userTraffic: {
+				...mockData.adminUser.userTraffic,
+				onlineAt: null,
+			},
+		},
+	];
+	mockApi.mock("GET", "/api/debug/admin/users/all", { body: { users, total: users.length } });
+
+	await page.goto("/admin/users");
+	await expect(page.getByText("newest_tiebreaker", { exact: true })).toBeVisible();
+
+	const usernames = await page
+		.getByRole("list", { name: "Users list" })
+		.getByText(/^(newest_tiebreaker|newest_offline|older_recently_online)$/)
+		.allTextContents();
+	expect(usernames).toEqual(["newest_tiebreaker", "newest_offline", "older_recently_online"]);
 	await assertNoHorizontalOverflow(page);
 });
 
