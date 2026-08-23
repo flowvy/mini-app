@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, mockData, test } from "./fixtures/mock-api.ts";
 
 const expected = {
@@ -174,8 +175,26 @@ test("desktop color roles cover navigation, status, editors, and destructive act
 		await expect(logoRects.nth(6)).toHaveCSS("fill", colors.positive);
 
 		const navigation = page.getByRole("navigation");
-		await expect(navigation).toHaveCSS("background-color", colors.floor1);
-		await expect(navigation).toHaveCSS("border-color", colors.borderTertiary);
+		await expect(navigation).toHaveCSS("background-color", colors.glass);
+		for (const property of ["backgroundColor", "borderColor", "boxShadow"] as const) {
+			const headerValue = await header.evaluate(
+				(element, cssProperty) => getComputedStyle(element)[cssProperty],
+				property,
+			);
+			await expect
+				.poll(() =>
+					navigation.evaluate(
+						(element, cssProperty) => getComputedStyle(element)[cssProperty],
+						property,
+					),
+				)
+				.toBe(headerValue);
+		}
+		const navigationContrast = await new AxeBuilder({ page })
+			.include("nav")
+			.withRules(["color-contrast"])
+			.analyze();
+		expect(navigationContrast.violations).toEqual([]);
 		const home = navigation.getByRole("link", { name: "Home" });
 		await expect(home).toHaveCSS("color", colors.positive);
 		const selectedSurface = await home.evaluate(

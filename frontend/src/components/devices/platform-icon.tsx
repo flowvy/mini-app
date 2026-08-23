@@ -90,7 +90,7 @@ export const PlatformIcon: FC<PlatformIconProps> = ({ platform, size = 18 }) => 
 				/>
 				<ellipse cx="10.2" cy="7.2" rx="1.2" ry="1.55" fill="var(--v2-bg-secondary)" />
 				<ellipse cx="13.8" cy="7.2" rx="1.2" ry="1.55" fill="var(--v2-bg-secondary)" />
-				<path d="m10.2 9.15 1.8 1.15 1.8-1.15L12 8.45l-1.8.7Z" fill="var(--v2-text-warning)" />
+				<path d="m10.2 9.15 1.8 1.15 1.8-1.15L12 8.45l-1.8.7Z" fill="var(--v2-icon-warning)" />
 				<ellipse cx="12" cy="15.7" rx="3.15" ry="4.05" fill="var(--v2-bg-secondary)" />
 			</svg>
 		);

@@ -14,7 +14,7 @@
   accepted Creator sponsor offers/intents/billing state и восстановление базового доступа;
   недоступный Shop остаётся deferred upgrade;
 - [`0004-desktop-color-parity.md`](0004-desktop-color-parity.md) — desktop-authoritative color
-  values/roles, ограниченное Header glass exception и честная фиксация contrast debt.
+  values/roles, ограниченное Header/TabBar glass exception и честная фиксация contrast debt.
 
 ## Когда нужен ADR
 

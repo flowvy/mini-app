@@ -23,6 +23,36 @@ const screens = [
 	{ name: "admin-settings-beszel", path: "/admin/settings/beszel", marker: "Hub URL" },
 	{ name: "admin-settings-tribute", path: "/admin/settings/tribute", marker: "Management" },
 	{
+		name: "admin-settings-tribute-connection",
+		path: "/admin/settings/tribute/connection",
+		marker: "Configured on server",
+	},
+	{
+		name: "admin-settings-tribute-payment-links",
+		path: "/admin/settings/tribute/payment-links",
+		marker: "Payment links",
+	},
+	{
+		name: "admin-settings-tribute-referral-benefits",
+		path: "/admin/settings/tribute/referral-benefits",
+		marker: "Referral benefits",
+	},
+	{
+		name: "admin-settings-tribute-automation-rules",
+		path: "/admin/settings/tribute/automation-rules",
+		marker: "Access automation",
+	},
+	{
+		name: "admin-settings-tribute-sponsor-offers",
+		path: "/admin/settings/tribute/sponsor-offers",
+		marker: "Sponsor offers",
+	},
+	{
+		name: "admin-settings-tribute-activity",
+		path: "/admin/settings/tribute/activity",
+		marker: "Payment activity",
+	},
+	{
 		name: "admin-settings-communication",
 		path: "/admin/settings/communication",
 		marker: "Registration",
@@ -141,6 +171,12 @@ test("capture deterministic visual evidence for key screens", async ({
 				document.documentElement.setAttribute("data-theme", theme);
 			}, colorScheme);
 			await expect(page.getByText(screen.marker, { exact: true }).first()).toBeVisible();
+			if (screen.path === "/admin/settings/content") {
+				await expect(
+					page.getByRole("textbox", { name: "Invite registration description" }),
+				).toBeVisible();
+				await expect(page.getByText("Loading editor…", { exact: true })).toHaveCount(0);
+			}
 			await assertNoHorizontalOverflow(page);
 			await page.screenshot({
 				path: testInfo.outputPath(`${screen.name}-${colorScheme}.png`),

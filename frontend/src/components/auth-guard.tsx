@@ -36,7 +36,7 @@ export function AuthGuard({ children }: AuthGuardProps): ReactElement {
 	if (isLoading) {
 		return (
 			<div className="fv-auth-screen">
-				<SpinnerIcon size={24} color="var(--v2-text-secondary)" />
+				<SpinnerIcon size={24} color="var(--v2-icon-secondary)" />
 			</div>
 		);
 	}

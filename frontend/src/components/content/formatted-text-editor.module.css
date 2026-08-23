@@ -4,7 +4,7 @@
 	min-height: 146px;
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-sm);
-	background: var(--v2-bg-secondary);
+	background: var(--v2-bg-primary);
 }
 
 .editor {
@@ -34,7 +34,7 @@
 	font-size: var(--font-size-control);
 	line-height: 1.5;
 	white-space: pre-wrap;
-	caret-color: var(--v2-text-positive);
+	caret-color: var(--v2-icon-positive);
 }
 
 .contentEditable p:global(.is-editor-empty)::before {
@@ -86,7 +86,7 @@
 
 .toolbar button[aria-pressed="true"] {
 	background: var(--v2-bg-positive-quaternary);
-	color: var(--v2-text-positive);
+	color: var(--v2-icon-positive);
 }
 
 .toolbar button:focus-visible,
@@ -125,9 +125,9 @@
 	flex: 1 1 auto;
 	height: 32px;
 	padding: 0 8px;
-	border: 1px solid var(--v2-border-tertiary);
+	border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);
 	border-radius: 7px;
-	background: var(--v2-bg-secondary);
+	background: var(--v2-bg-primary);
 	color: var(--v2-text-primary);
 	font: var(--font-size-control) / 1.2 var(--font-sans);
 }
@@ -165,9 +165,9 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-	.toolbar button:hover,
+	.toolbar button:hover:not([aria-pressed="true"]),
 	.linkRow button:hover {
 		background: var(--v2-bg-tertiary);
-		color: var(--v2-text-primary);
+		color: var(--v2-icon-primary);
 	}
 }

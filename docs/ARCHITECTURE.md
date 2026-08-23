@@ -450,7 +450,7 @@ Custom emoji хранит обязательный fallback emoji и numeric `em
 - `styles/tokens.css` хранит runtime-копию color/effect values из authoritative
   `flowvy_desktop/src/styles/tokens.css`; CSS Modules назначают те же semantic roles, а Telegram
   theme/safe-area интеграция сохраняет Mini App runtime behavior. Единственное принятое локальное
-  исключение — glass surface Header. Политика и известный contrast tradeoff зафиксированы в
+  исключение — общая faux-glass surface floating Header и TabBar. Политика и известный contrast tradeoff зафиксированы в
   [`decisions/0004-desktop-color-parity.md`](decisions/0004-desktop-color-parity.md).
 - App shell не вычисляет состояние клавиатуры и не переписывает геометрию из `VisualViewport`.
   Web-owned tab navigation монтируется только на точных top-level tab routes; detail/settings task

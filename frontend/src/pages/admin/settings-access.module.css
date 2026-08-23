@@ -61,7 +61,7 @@
 }
 
 .iconButtonDanger {
-	color: var(--v2-text-negative);
+	color: var(--v2-icon-negative);
 }
 
 .iconButton:disabled,
@@ -98,7 +98,7 @@
 @media (hover: hover) and (pointer: fine) {
 	.iconButton:hover:not(:disabled) {
 		background: var(--v2-bg-positive-quaternary);
-		color: var(--v2-text-positive);
+		color: var(--v2-icon-positive);
 	}
 
 	.iconButtonDanger:hover:not(:disabled) {

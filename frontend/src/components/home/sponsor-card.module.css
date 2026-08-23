@@ -43,7 +43,7 @@
 
 .icon[data-active="true"] {
 	background: var(--v2-bg-positive-quaternary);
-	color: var(--v2-text-positive);
+	color: var(--v2-icon-positive);
 }
 
 .accessFact {

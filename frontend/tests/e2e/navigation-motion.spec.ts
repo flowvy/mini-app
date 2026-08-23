@@ -51,6 +51,24 @@ test("form controls use the global type scale with focus zoom constrained", asyn
 }) => {
 	await page.goto("/admin/settings/beszel");
 	const urlInput = page.getByPlaceholder("https://monitor.example.com");
+	const standaloneSurface = await page.evaluate(() => {
+		const probe = document.createElement("span");
+		probe.style.background = "var(--v2-bg-primary)";
+		probe.style.border =
+			"1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent)";
+		document.body.append(probe);
+		const style = getComputedStyle(probe);
+		const colors = {
+			background: style.backgroundColor,
+			border: style.borderColor,
+		};
+		probe.remove();
+		return colors;
+	});
+	await expect(urlInput).toHaveCSS("background-color", standaloneSurface.background);
+	await expect(urlInput).toHaveCSS("border-color", standaloneSurface.border);
+	await expect(urlInput).toHaveCSS("box-shadow", "none");
+	await expect(urlInput).toHaveCSS("outline-style", "none");
 	await expect(urlInput).toHaveCSS("font-size", "13px");
 	expect(
 		await urlInput.evaluate((element) => getComputedStyle(element, "::placeholder").fontSize),
@@ -69,10 +87,27 @@ test("access controls keep Flowvy typography with native input values", async ({
 	const defaultAccessValue = defaultAccess.locator("..").locator("span", {
 		hasText: "No proxy access",
 	});
+	const standaloneSurface = await page.evaluate(() => {
+		const probe = document.createElement("span");
+		probe.style.background = "var(--v2-bg-primary)";
+		probe.style.border =
+			"1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent)";
+		document.body.append(probe);
+		const style = getComputedStyle(probe);
+		const colors = {
+			background: style.backgroundColor,
+			border: style.borderColor,
+		};
+		probe.remove();
+		return colors;
+	});
 	await expect(defaultAccessValue).toHaveCSS("font-family", /Geist/);
 	await expect(defaultAccessValue).toHaveCSS("font-size", "13px");
-	await defaultAccess.focus();
 	const defaultAccessShell = defaultAccess.locator("..");
+	await expect(defaultAccessShell).toHaveCSS("background-color", standaloneSurface.background);
+	await expect(defaultAccessShell).toHaveCSS("border-color", standaloneSurface.border);
+	await expect(defaultAccessShell).toHaveCSS("box-shadow", "none");
+	await defaultAccess.focus();
 	const positiveBorder = await page.evaluate(() => {
 		const probe = document.createElement("span");
 		probe.style.color = "var(--v2-border-positive-secondary)";
@@ -82,12 +117,7 @@ test("access controls keep Flowvy typography with native input values", async ({
 		return color;
 	});
 	await expect(defaultAccessShell).toHaveCSS("box-shadow", "none");
-	const finePointer = await page.evaluate(
-		() => window.matchMedia("(hover: hover) and (pointer: fine)").matches,
-	);
-	if (finePointer) {
-		await expect(defaultAccessShell).toHaveCSS("border-color", positiveBorder);
-	}
+	await expect(defaultAccessShell).toHaveCSS("border-color", positiveBorder);
 
 	await page.getByRole("button", { name: "Create profile" }).click();
 	const name = page.getByPlaceholder("Free 30 days");
@@ -131,11 +161,26 @@ test("access controls keep Flowvy typography with native input values", async ({
 		const style = getComputedStyle(element);
 		return {
 			backgroundColor: style.backgroundColor,
+			borderColor: style.borderTopColor,
 			borderTopStyle: style.borderTopStyle,
 			borderTopWidth: style.borderTopWidth,
 		};
 	});
-	expect(dateRowStyle.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+	const nestedSurface = await page.evaluate(() => {
+		const probe = document.createElement("span");
+		probe.style.background = "var(--v2-bg-secondary)";
+		probe.style.border = "1px solid var(--v2-border-tertiary)";
+		document.body.append(probe);
+		const style = getComputedStyle(probe);
+		const colors = {
+			background: style.backgroundColor,
+			border: style.borderColor,
+		};
+		probe.remove();
+		return colors;
+	});
+	expect(dateRowStyle.backgroundColor).toBe(nestedSurface.background);
+	expect(dateRowStyle.borderColor).toBe(positiveBorder);
 	expect(dateRowStyle.borderTopStyle).not.toBe("none");
 	expect(dateRowStyle.borderTopWidth).toBe("1px");
 	expect(rowBox?.width ?? 0).toBeGreaterThan((editorBox?.width ?? 0) * 0.8);

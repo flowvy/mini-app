@@ -20,6 +20,11 @@
 	outline: none;
 }
 
+.operation:focus {
+	outline: 1.5px solid var(--v2-bg-positive-primary);
+	outline-offset: -2px;
+}
+
 .actions {
 	display: flex;
 	flex-wrap: wrap;

@@ -52,7 +52,7 @@
 
 .chevron {
 	flex-shrink: 0;
-	color: var(--v2-text-tertiary);
+	color: var(--v2-icon-tertiary);
 }
 
 /* Line 2: meta + expiry */

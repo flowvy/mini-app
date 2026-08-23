@@ -18,6 +18,8 @@
 }
 
 .success {
+	border: 1px solid var(--v2-border-positive-secondary);
+	background: var(--v2-bg-positive-quaternary);
 	color: var(--v2-text-positive);
 }
 

@@ -105,7 +105,7 @@
 	transform: translateY(-50%);
 	border: none;
 	background: var(--v2-bg-tertiary);
-	color: var(--v2-text-secondary);
+	color: var(--v2-icon-secondary);
 	width: 20px;
 	height: 20px;
 	border-radius: 50%;
@@ -139,7 +139,7 @@
 
 .emptyIcon {
 	opacity: 0.5;
-	color: var(--v2-text-tertiary);
+	color: var(--v2-icon-tertiary);
 }
 
 .emptyTitle {

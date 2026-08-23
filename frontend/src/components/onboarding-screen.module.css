@@ -55,9 +55,9 @@
 	width: 100%;
 	min-height: 48px;
 	padding: 0 14px;
-	border: 1px solid var(--v2-border-secondary);
+	border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);
 	border-radius: var(--radius-md);
-	background: var(--v2-bg-secondary);
+	background: var(--v2-bg-primary);
 	font-family: var(--font-mono);
 	font-size: var(--font-size-control);
 	text-align: center;
@@ -66,7 +66,7 @@
 }
 
 .input:focus {
-	border-color: var(--v2-border-positive-primary);
+	border-color: var(--v2-border-positive-secondary);
 }
 
 .submit {

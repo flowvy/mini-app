@@ -30,11 +30,11 @@ product decision, а не основание скрывать accessibility find
    переносится в Mini App.
 3. Mini App сохраняет Telegram theme synchronization и `prefers-color-scheme` до установки
    `data-theme`; desktop default-dark selector behavior не переносится.
-4. Header сохраняет существующую glass surface по прямому решению владельца. Только четыре
+4. Header и TabBar сохраняют общую faux-glass surface по прямому решению владельца. Только четыре
    `--v2-glass-*` token используются как явное Mini App exception и не могут применяться за
-   пределами `components/layout/header.module.css`.
-5. TabBar использует desktop Sidebar roles: `floor-1`, tertiary border, secondary neutral state,
-   positive-quaternary selected surface и positive text/icon.
+   пределами `components/layout/header.module.css` и `components/layout/tab-bar.module.css`.
+5. TabBar использует общие с Header glass background, border и shadow roles; secondary neutral state,
+   positive-quaternary selected surface и positive text/icon остаются desktop-authoritative.
 6. Pulse maintenance использует desktop warning roles. `UNKNOWN` subscription/user status
    использует тот же neutral disabled appearance, что desktop: secondary surface/text и solid
    tertiary border.
@@ -62,7 +62,17 @@ product decision, а не основание скрывать accessibility find
     warning surface; внешний duplicate wrapper и list наследуют фон без отдельной заливки.
 12. Perpetual/unlimited expiry в Home и Admin Hero повторяет Desktop HeroCard и использует
     `text-secondary`.
-13. Axe запускается без `color-contrast` suppression, allow-list или impact downgrade. Известные
+13. Standalone inputs, native `select`/date shells и onboarding invite field повторяют Desktop
+    input/CustomSelect: `bg-primary` и muted `border-secondary`. Control внутри уже обведённой
+    `FormInline` row остаётся contained surface `bg-secondary + border-tertiary`; native picker
+    behavior не заменяется. Individual Users items сохраняются отдельными ProfileCard-like
+    `bg-primary + border-tertiary` cards с positive-quaternary hover.
+14. Rich-text/Telegram HTML authoring использует Desktop ConfigEditor nesting: primary outer editor,
+    tertiary frame/dividers, primary toolbar/menu, positive focus и semantic icon roles. Persistent
+    `InlineFeedback` использует semantic notice-card surfaces с соответствующими secondary borders.
+    Focusable commerce rows получают явный Desktop positive outline. Text-only content сохраняет
+    text roles; standalone glyph owners используют icon roles.
+15. Axe запускается без `color-contrast` suppression, allow-list или impact downgrade. Известные
     strict-parity findings остаются видимыми и делают соответствующий accessibility gate красным;
     handoff перечисляет route, theme, rule, nodes и color pairs и не называет такой результат passed.
     Узкое completion exception действует только при полном совпадении свежих failures с ledger ниже
@@ -79,9 +89,13 @@ Playwright projects, но не образуют новый debt.
 | Route и состояние | Theme / project scope | Affected node | Foreground / background | Contrast |
 |---|---|---|---|---|
 | `/admin/settings/pulse`, active provider choice | light / all four | текст `Active` в active-choice pill | `#3AB176` / `#F1FAF5` | `2.55:1` |
+| `/admin/settings`, `/admin/settings/pulse` и `/admin/settings/tribute`, configured providers | light / all four | пять status-pill nodes: `Kuma`, `Key added` и три `Configured` | `#3AB176` / `#F1FAF5` | `2.55:1` |
 | `/admin/settings/content`, template variables | light / all four | `code` с `{{appName}}` | `#3AB176` / `#FFFFFF` | `2.71:1` |
 | `/`, active subscription | light / all four | status badge `Active` | `#3AB176` / `#E8F7F0` | `2.45:1` |
 | `/`, enabled invite/settings fact | light / all four | row value `On` | `#3AB176` / `#FFFFFF` | `2.71:1` |
+| `/devices`, connected-device capacity | light / all four | counter `1 / 5` | `#3AB176` / `#ECECEC` | `2.29:1` |
+| `/pulse`, healthy summary | light / all four | `All systems operational` | `#3AB176` / `#F1FAF5` | `2.55:1` |
+| `/admin/settings`, provider facts | light / all four | version fact `v2.7.4` | `#3AB176` / `#FFFFFF` | `2.71:1` |
 | `/devices`, remove confirmation | light, dark / desktop Chromium | filled danger button `Remove` | `#FFFFFF` / `#F84235` | `3.60:1` |
 | `/admin/settings/tribute/automation-rules`, delete confirmation | light, dark / three Chromium projects | filled danger button `Delete` | `#FFFFFF` / `#F84235` | `3.60:1` |
 | `/admin/settings/tribute/automation-rules`, delete confirmation | dark / iOS WebKit | underlying danger-outline button `Delete` (`._dangerOutline`) | `#F84235` / `#212121` | `4.46:1` |
@@ -99,7 +113,7 @@ Playwright projects, но не образуют новый debt.
 | Mini App sources under `frontend/src` | Desktop reference и color roles |
 |---|---|
 | `styles/tokens.css`, `styles/global.css` | Полный desktop token catalog, global floor/text/selection/focus/scrollbar roles; Telegram theme selection сохраняется |
-| `components/layout/{app-shell,edge-blur,header,tab-bar}.module.css` | Dashboard/Popup floors и Sidebar navigation; Header glass остаётся единственным exception |
+| `components/layout/{app-shell,edge-blur,header,tab-bar}.module.css` | Dashboard/Popup floors и Sidebar navigation; floating Header/TabBar разделяют единственное glass exception |
 | `components/ui/{action-btn,app-logo,confirm-dialog,editor-dialog,error-state,form-save-button,form-section,inline-feedback,page-loading,segmented-control,skeleton,spinner-icon,status-badge,toggle}.module.css` | ActionButton, LogoIcon, Modal, ErrorBoundary/Profiles error, Settings/Bypass fields, BusyToggle, ModeSelector, Profiles loading, StatusBadge и Toggle |
 | `components/content/{formatted-text-editor,formatted-text,telegram-html-editor,template-variables}.module.css` | Release Notes renderer, YAML/Config editor framing, CustomSelect/rule controls |
 | `components/home/{detail-section,hero-card,invite-card,sponsor-card}.module.css`, `components/commerce/subscription-billing-list.module.css` | ProfileDetail/HeroCard, AddSub preview, основная опубликованная Sponsor offer-card accent и provider-confirmed neutral billing facts |
@@ -120,8 +134,8 @@ adapters и provider-owned `logoUrl`. Первые используют desktop 
   parity `1:1`.
 - Перенести desktop default-dark theme resolution. Отклонено: Telegram и system preference остаются
   runtime authority Mini App.
-- Перекрасить Header как desktop TitleBar/StatusHeader. Отклонено: текущий glass Header сохраняется
-  как ограниченное исключение.
+- Перекрасить floating Header/TabBar как desktop TitleBar/Sidebar. Отклонено: их общая faux-glass
+  surface сохраняется как ограниченное исключение.
 
 ## Consequences
 
@@ -137,13 +151,17 @@ adapters и provider-owned `logoUrl`. Первые используют desktop 
 
 ## Verification and rollout
 
-- Vitest фиксирует frozen desktop token catalog во всех четырёх theme selectors, четыре Header glass
-  exceptions и разрешает только пять точных Telegram adapter fallback expressions среди raw UI
+- Vitest фиксирует frozen desktop token catalog во всех четырёх theme selectors, четыре shared
+  Header/TabBar glass exceptions и разрешает только пять точных Telegram adapter fallback expressions среди raw UI
   colors.
 - Full Playwright matrix проходит через 25 routes/states с console, network, overflow и Axe checks;
   focused parity test проверяет computed colors representative distinct owners в light/dark на
   четырёх проектах. Accepted-debt tests завершают анализ обеих тем до общего failing assert;
   branches, использующие один shared owner, не считаются отдельными color assertions.
+- Semantic-surface suites проверяют parent/child nesting, `background`, все четыре border sides,
+  `outline`, `box-shadow`, text color и SVG `color`/`fill`/`stroke` на четырёх проектах и в обеих
+  темах. Source regressions фиксируют отдельные text/icon owners и запрещают вернуть исправленные
+  glyphs к `text-*` roles.
 - Theme switches перед Axe подтверждаются конечными computed colors. Device dialog regression
   прошёл 20/20 после такого ожидания; transient смешение light text и dark surface не записывается
   как palette debt. Formatted editor явно задаёт desktop config-editor `text-primary`, включая

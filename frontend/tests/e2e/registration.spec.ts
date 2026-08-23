@@ -53,6 +53,24 @@ test("invite-only onboarding handles an invalid code and enters the app without 
 	await expect(page).toHaveTitle("Flowvy Test");
 
 	const code = page.getByLabel("Invite code");
+	const standaloneSurface = await page.evaluate(() => {
+		const probe = document.createElement("span");
+		probe.style.background = "var(--v2-bg-primary)";
+		probe.style.border =
+			"1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent)";
+		document.body.append(probe);
+		const style = getComputedStyle(probe);
+		const colors = {
+			background: style.backgroundColor,
+			border: style.borderColor,
+		};
+		probe.remove();
+		return colors;
+	});
+	await expect(code).toHaveCSS("background-color", standaloneSurface.background);
+	await expect(code).toHaveCSS("border-color", standaloneSurface.border);
+	await expect(code).toHaveCSS("box-shadow", "none");
+	await expect(code).toHaveCSS("outline-style", "none");
 	await code.fill("FVY-WRONG-CODE");
 	await page.getByRole("button", { name: "Continue" }).click();
 	await expect(page.getByRole("alert")).toContainText(

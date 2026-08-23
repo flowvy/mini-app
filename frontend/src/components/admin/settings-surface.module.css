@@ -181,7 +181,7 @@
 	display: flex;
 	flex: 0 0 auto;
 	margin-top: 1px;
-	color: var(--v2-text-warning);
+	color: var(--v2-icon-warning);
 }
 
 .navRow {
@@ -259,7 +259,7 @@
 
 .statusPill[data-tone="positive"] {
 	background: var(--v2-bg-positive-quaternary);
-	color: var(--v2-text-primary);
+	color: var(--v2-text-positive);
 }
 
 .statusPill[data-tone="warning"] {

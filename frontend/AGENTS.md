@@ -23,8 +23,8 @@ Applies to `frontend/`. Follow the repository root and `tests/e2e/AGENTS.md` whe
   translation keys grouped by feature and update the i18n catalog when it remains part of the repo.
 - Use existing CSS Modules and `--v2-*` tokens. `flowvy_desktop/src/styles/tokens.css` is authoritative
   for shared color values and semantic roles; do not add local contrast replacements, aliases that
-  change values, or one-off UI colors. Header glass tokens are the only approved Mini App exception
-  and stay scoped to `components/layout/header.module.css`. Check Telegram safe areas, small mobile
+  change values, or one-off UI colors. Floating Header/TabBar glass tokens are the only approved
+  Mini App exception and stay scoped to their layout CSS modules. Check Telegram safe areas, small mobile
   heights, long text, focus visibility, reduced motion, and light/dark contrast. Report strict-parity
   contrast findings honestly; never suppress or allow-list them.
 - Prefer semantic controls and accessible names. Dialogs need focus management, Escape/cancel,

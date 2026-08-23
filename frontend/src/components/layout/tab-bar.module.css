@@ -1,4 +1,4 @@
-/* Floating Mini App navigation using the desktop Sidebar color roles. */
+/* Floating Mini App navigation sharing the Header faux-glass surface. */
 
 .tabBar {
 	position: absolute;
@@ -15,11 +15,11 @@
 	border-radius: 40px;
 	z-index: 100;
 
-	background: var(--v2-floor-1);
+	background: var(--v2-glass-bg-bar);
 	backdrop-filter: none;
 	-webkit-backdrop-filter: none;
-	border: 0.5px solid var(--v2-border-tertiary);
-	box-shadow: none;
+	border: 0.5px solid var(--v2-glass-border);
+	box-shadow: var(--v2-glass-shadow-bar), var(--v2-glass-highlight);
 
 	--tab-selected-bg: var(--v2-bg-positive-quaternary);
 

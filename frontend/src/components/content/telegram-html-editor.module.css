@@ -3,7 +3,7 @@
 	overflow: hidden;
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-sm);
-	background: var(--v2-bg-secondary);
+	background: var(--v2-bg-primary);
 }
 
 .editor:focus-within {
@@ -41,7 +41,7 @@
 
 .toolbar button[aria-expanded="true"] {
 	background: var(--v2-bg-positive-quaternary);
-	color: var(--v2-text-positive);
+	color: var(--v2-icon-positive);
 }
 
 .toolbar button:focus-visible,
@@ -102,9 +102,9 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-	.toolbar button:hover,
+	.toolbar button:hover:not([aria-expanded="true"]),
 	.emojiEditor > button:hover:not(:disabled) {
 		background: var(--v2-bg-tertiary);
-		color: var(--v2-text-primary);
+		color: var(--v2-icon-primary);
 	}
 }

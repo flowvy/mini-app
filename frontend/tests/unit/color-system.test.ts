@@ -65,7 +65,7 @@ const desktopValues: Record<string, string[]> = {
 	"--v2-syntax-bool": ["#cf222e", "#ff6188"],
 };
 
-const headerGlassValues: Record<string, string[]> = {
+const chromeGlassValues: Record<string, string[]> = {
 	"--v2-glass-bg-bar": ["rgba(255, 255, 255, 0.92)", "rgba(33, 33, 33, 0.92)"],
 	"--v2-glass-border": ["rgba(0, 0, 0, 0.08)", "rgba(255, 255, 255, 0.08)"],
 	"--v2-glass-shadow-bar": ["0 1px 12px rgba(0, 0, 0, 0.08)", "0 1px 12px rgba(0, 0, 0, 0.3)"],
@@ -140,7 +140,7 @@ function lineNumber(source: string, index: number): number {
 describe("desktop color parity", () => {
 	it("keeps every shared color token on the frozen desktop catalog in all theme selectors", () => {
 		const tokens = readFileSync(tokensPath, "utf8");
-		const expected = { ...desktopValues, ...headerGlassValues };
+		const expected = { ...desktopValues, ...chromeGlassValues };
 		const expectedTokens = Object.keys(expected).sort();
 		const contexts = [
 			{
@@ -185,13 +185,17 @@ describe("desktop color parity", () => {
 		}
 	});
 
-	it("keeps the approved glass exception scoped to Header", () => {
+	it("keeps the approved glass exception scoped to floating Header and TabBar", () => {
 		const findings: string[] = [];
+		const approvedOwners = new Set([
+			"components/layout/header.module.css",
+			"components/layout/tab-bar.module.css",
+		]);
 		for (const path of sourceFiles(sourceRoot)) {
 			if (path === tokensPath) continue;
 			const source = readFileSync(path, "utf8");
 			for (const match of source.matchAll(/var\((--v2-glass-[\w-]+)\)/g)) {
-				if (relative(sourceRoot, path) !== "components/layout/header.module.css") {
+				if (!approvedOwners.has(relative(sourceRoot, path))) {
 					findings.push(
 						`${relative(sourceRoot, path)}:${lineNumber(source, match.index)} ${match[1]}`,
 					);
@@ -262,6 +266,27 @@ describe("desktop color parity", () => {
 				derivedKey(
 					"components/ui/form-section.module.css",
 					"background: color-mix(in srgb, var(--v2-bg-tertiary) 50%, transparent);",
+				),
+				1,
+			],
+			[
+				derivedKey(
+					"components/ui/form-section.module.css",
+					"border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);",
+				),
+				2,
+			],
+			[
+				derivedKey(
+					"components/content/formatted-text-editor.module.css",
+					"border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);",
+				),
+				1,
+			],
+			[
+				derivedKey(
+					"components/onboarding-screen.module.css",
+					"border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);",
 				),
 				1,
 			],

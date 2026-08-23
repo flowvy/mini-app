@@ -1,6 +1,6 @@
 /* Flowvy design tokens. System theme by default (prefers-color-scheme).
    Shared color values are an exact runtime copy of flowvy_desktop/src/styles/tokens.css.
-   Header-only glass effects are the owner-approved Mini App exception. */
+   Floating Header/TabBar glass effects are the owner-approved Mini App exception. */
 
 /* ── Typography ── */
 :root {

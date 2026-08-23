@@ -125,9 +125,9 @@
 	width: 100%;
 	min-height: 44px;
 	padding: 10px 12px;
-	border: 1px solid var(--v2-border-tertiary);
+	border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);
 	border-radius: var(--radius-sm);
-	background: var(--v2-bg-secondary);
+	background: var(--v2-bg-primary);
 	color: var(--v2-text-primary);
 	font-family: var(--font-sans);
 	font-size: var(--font-size-control);
@@ -186,9 +186,9 @@
 	min-height: 44px;
 	justify-content: space-between;
 	padding: 10px 12px;
-	border: 1px solid var(--v2-border-tertiary);
+	border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);
 	border-radius: var(--radius-sm);
-	background: var(--v2-bg-secondary);
+	background: var(--v2-bg-primary);
 }
 
 .inlineSelectShell {
@@ -212,7 +212,7 @@
 .selectShell svg,
 .dateShell svg {
 	flex: 0 0 auto;
-	color: var(--v2-icon-secondary);
+	color: var(--v2-icon-tertiary);
 	pointer-events: none;
 }
 
@@ -240,9 +240,14 @@
 	color-scheme: light;
 }
 
+.fieldSelectShell:has(.nativeSelect:focus),
+.inlineFieldGroup:has(.nativeSelect:focus, .nativeDate:focus) {
+	border-color: var(--v2-border-positive-secondary);
+	box-shadow: none;
+}
+
 @media (hover: hover) and (pointer: fine) {
-	.selectShell:has(.nativeSelect:focus-visible),
-	.dateShell:has(.nativeDate:focus-visible) {
+	.fieldSelectShell:not([data-disabled]):hover {
 		border-color: var(--v2-border-positive-secondary);
 		box-shadow: none;
 	}

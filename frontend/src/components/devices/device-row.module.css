@@ -15,7 +15,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	color: var(--v2-text-secondary);
+	color: var(--v2-icon-secondary);
 	flex-shrink: 0;
 	margin-top: 1px;
 }
@@ -93,7 +93,7 @@
 	border-radius: var(--radius-sm);
 	border: none;
 	background: transparent;
-	color: var(--v2-text-tertiary);
+	color: var(--v2-icon-tertiary);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -106,6 +106,6 @@
 @media (hover: hover) and (pointer: fine) {
 	.iconBtn:hover {
 		background: var(--v2-bg-secondary);
-		color: var(--v2-text-secondary);
+		color: var(--v2-icon-secondary);
 	}
 }

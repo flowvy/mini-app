@@ -197,6 +197,16 @@ route, theme, nodes и color pairs с точным ledger ADR 0004 и не вы�
 совпадение ledger при зелёных остальных checks допускает узкое completion exception; новый finding
 блокирует завершение. Источник решения — `docs/decisions/0004-desktop-color-parity.md`.
 
+Semantic-surface tests не должны ограничиваться сравнением token values. Общий helper
+`frontend/tests/e2e/helpers/surface-contract.ts` проверяет один computed contract целиком:
+`background`, width/style/color каждой из четырёх сторон border, `outline` и offset, `box-shadow`,
+text color, а для SVG — `color`/`fill`/`stroke`. Проверяйте отдельно родительскую поверхность и
+каждый визуально самостоятельный вложенный row/card/control; standalone и contained controls —
+разные contracts. Native `select`/date сохраняют browser/WebView behavior, поэтому assertions
+относятся к закрытому shell и его focus state. Source regression дополняет runtime matrix для
+редких branches и владельцев icon roles, но не заменяет light/dark проверку на всех четырёх
+Playwright projects.
+
 Публичная граница Tunnel проверяется без реальных secrets/providers:
 
 ```powershell

@@ -25,4 +25,11 @@
 	padding: 10px 14px;
 	height: 58px;
 	box-sizing: border-box;
+	transition: background var(--duration-base) ease, border-color var(--duration-base) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.card:hover {
+		background: var(--v2-bg-positive-quaternary);
+	}
 }

@@ -22,7 +22,7 @@ Completed: 2026-08-23
   расходились с desktop только для light `text-positive`, light `text-warning` и dark
   `text-negative`; дополнительно исходный source содержал отсутствующие в desktop семейства
   `info-*`, `glass-*` и неиспользуемые `edge-*`. После реализации `info-*`/`edge-*` удалены, а от
-  `glass-*` оставлены только четыре Header tokens.
+  `glass-*` оставлены только четыре shared floating Header/TabBar tokens.
 - Flowvy Desktop хранит source tokens в `src/styles/tokens.css`. Построчно проверены 52 CSS Modules,
   132 TSX и все прямые token consumers; source tree остался чистым.
 - Mini App inventory охватывает 25 routes, 86 TSX и 60 CSS-файлов, включая route branches,
@@ -87,12 +87,13 @@ push и обновление visual baselines без отдельного сог
   token families и все raw color declarations вне token source.
 - [x] 2026-08-23 — владелец согласовал все неоднозначные roles: maintenance использует desktop
   warning palette; unknown status — desktop disabled status; остальные предложенные neutral/error/
-  editor/icon/save mappings приняты; Header сохраняется без изменений как explicit exception.
+  editor/icon/save mappings приняты; floating Header/TabBar сохраняют общую faux-glass surface как
+  explicit exception.
 - [x] 2026-08-23 — владелец выбрал strict `1:1` desktop values даже при конфликте с текущими
   contrast assertions и сохранил Mini App runtime theme selection через Telegram /
   `prefers-color-scheme`.
 - [x] 2026-08-23 — реализован согласованный semantic token parity: 48 shared desktop tokens,
-  четыре Header glass exceptions, desktop roles для navigation/status/loading/error/editor/commerce,
+  четыре shared Header/TabBar glass exceptions, desktop roles для navigation/status/loading/error/editor/commerce,
   token-driven built-in logo и запрет необъяснённых raw UI colors.
 - [x] 2026-08-23 — выполнены fresh static/unit/build, focused runtime/visual и полный repository/UI
   gates. Functional checks зелёные; ожидаемые strict-parity Axe findings не фильтровались и оставили
@@ -120,8 +121,8 @@ push и обновление visual baselines без отдельного сог
   WCAG AA gate; проверки ослабляться не будут.
 - В исходном Mini App была semantic palette, которой нет в desktop: `info-*` обслуживала Pulse
   maintenance и `InlineFeedback.info`, `glass-*` — Header/TabBar, а `edge-*` была объявлена без
-  consumers. После реализации `info-*`/`edge-*` удалены, TabBar переведён на Sidebar roles, и только
-  Header продолжает использовать четыре согласованных `glass-*` exception.
+  consumers. После реализации `info-*`/`edge-*` удалены; последующая owner correction сохранила
+  четыре согласованных `glass-*` exception для обоих floating chrome surfaces.
 - Найдены component-level mismatches даже при совпадающих values: filled danger использует
   `text-negative` вместо desktop `bg-negative-primary/static-white`; SegmentedControl расходится с
   ModeSelector; Toggle имеет лишнюю raw shadow; default logo hard-codes colors; TabBar использует raw
@@ -132,7 +133,7 @@ push и обновление visual baselines без отдельного сог
 - Все неоднозначные группы получили явный reference владельца: maintenance — warning, unknown —
   neutral disabled, Skeleton — subscription-list loading, ErrorState — negative, stub/empty —
   neutral, Invite/Sponsor — subscription surfaces, rich text — Release Notes/config editor, glyphs —
-  token/currentColor, inactive Save — dimmed filled confirm, Header — unchanged glass exception.
+  token/currentColor, inactive Save — dimmed filled confirm, Header/TabBar — shared glass exception.
 - Sponsor `one_time_expired`/`recurring_trial`/`refunded`, custom provider logo и каждый hover branch
   не имеют отдельных color screenshots. Они не вводят собственных color owners: полный source audit
   проверяет их общие CSS roles, а runtime matrix берёт representative состояния. Если такой branch
