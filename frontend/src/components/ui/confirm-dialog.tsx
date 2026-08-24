@@ -32,7 +32,11 @@ interface ConfirmDialogProps {
 	confirmDisabled?: boolean;
 	initialFocus?: "title" | "cancel";
 	alert?: boolean;
-	telegramNativeMessage?: string;
+	/**
+	 * Plain-text Telegram Popup body. Pass null only when the confirmation contains an input that
+	 * the native Popup API cannot render.
+	 */
+	telegramNativeMessage: string | null;
 	onConfirm: () => void;
 	onCancel: () => void;
 	returnFocusRef?: RefObject<HTMLElement | null>;
@@ -94,7 +98,15 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 			setNativePopupFailed(false);
 			return;
 		}
-		if (!nativePopupAvailable || !telegramNativeMessage || nativeRequestRef.current) return;
+		if (
+			!nativePopupAvailable ||
+			!telegramNativeMessage ||
+			confirmLoading ||
+			confirmDisabled ||
+			nativeRequestRef.current
+		) {
+			return;
+		}
 
 		let request: ReturnType<typeof popup.show>;
 		try {
@@ -130,6 +142,8 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 	}, [
 		cancelLabel,
 		confirmLabel,
+		confirmDisabled,
+		confirmLoading,
 		confirmVariant,
 		nativePopupAvailable,
 		open,

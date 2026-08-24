@@ -1,4 +1,5 @@
 import { expect, mockData, test } from "./fixtures/mock-api.ts";
+import { closeTelegramPopup, telegramPopups } from "./fixtures/telegram-main-button.ts";
 import { installVisualViewportMock, setTestVisualViewport } from "./fixtures/visual-viewport.ts";
 
 async function expectRouteSettled(page: import("@playwright/test").Page): Promise<void> {
@@ -452,10 +453,10 @@ test("dedicated settings routes use one native save action with modal-safe clean
 
 	await page.evaluate(() => window.history.back());
 	const discardDialog = page.getByRole("dialog", { name: "Discard changes?" });
-	await expect(discardDialog).toBeVisible();
-	await expect.poll(latestMainButton).toEqual(expect.objectContaining({ is_visible: false }));
-	await discardDialog.getByRole("button", { name: "Keep editing" }).click();
 	await expect(discardDialog).toHaveCount(0);
+	await expect.poll(async () => (await telegramPopups(page)).length).toBe(1);
+	await expect.poll(latestMainButton).toEqual(expect.objectContaining({ is_visible: false }));
+	await closeTelegramPopup(page, "cancel");
 	await expect
 		.poll(latestMainButton)
 		.toEqual(expect.objectContaining({ is_active: true, is_visible: true }));
@@ -489,9 +490,9 @@ test("dedicated settings routes use one native save action with modal-safe clean
 		.toEqual(expect.objectContaining({ text: "Save", is_active: true, is_visible: true }));
 	await ruleEditor.getByRole("button", { name: "Delete", exact: true }).click();
 	const deleteDialog = page.getByRole("dialog", { name: "Delete automation rule?" });
-	await expect(deleteDialog).toBeVisible();
-	await expect.poll(latestMainButton).toEqual(expect.objectContaining({ is_visible: false }));
-	await deleteDialog.getByRole("button", { name: "Cancel", exact: true }).click();
 	await expect(deleteDialog).toHaveCount(0);
+	await expect.poll(async () => (await telegramPopups(page)).length).toBe(1);
+	await expect.poll(latestMainButton).toEqual(expect.objectContaining({ is_visible: false }));
+	await closeTelegramPopup(page, "cancel");
 	await expect.poll(latestMainButton).toEqual(expect.objectContaining({ is_visible: true }));
 });

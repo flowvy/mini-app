@@ -149,6 +149,7 @@ export const KumaConfig: FC<KumaConfigProps> = ({ settings }) => {
 				title={t("settings.kuma.discardTitle")}
 				confirmLabel={t("settings.kuma.discardConfirm")}
 				cancelLabel={t("settings.kuma.discardCancel")}
+				telegramNativeMessage={t("settings.kuma.discardBody")}
 				onConfirm={() => blocker.proceed?.()}
 				onCancel={() => blocker.reset?.()}
 			>

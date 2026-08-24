@@ -771,11 +771,10 @@ test("users are ordered by registration date with newest first", async ({ page, 
 	await assertNoHorizontalOverflow(page);
 });
 
-test("settings show failed saves and uploads and preserve keyboard focus in discard dialogs", async ({
+test("settings show failed saves and uploads and preserve keyboard focus in browser fallbacks", async ({
 	page,
 	mockApi,
 }) => {
-	await installTelegramMainButton(page);
 	mockApi.mock("PATCH", "/api/debug/admin/settings", {
 		status: 500,
 		body: { detail: "Save failed" },
@@ -785,7 +784,7 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 		body: { detail: "Test failed" },
 	});
 
-	await page.goto(withTelegramMainButton("/admin/settings"));
+	await page.goto("/admin/settings");
 	await page.getByRole("button", { name: /^Pulse monitoring/ }).click();
 	await page.getByRole("button", { name: /^Uptime Kuma Public status page/ }).click();
 	const urlInput = page.getByPlaceholder("https://status.example.com");
@@ -801,6 +800,9 @@ test("settings show failed saves and uploads and preserve keyboard focus in disc
 	await expect(dialog).toHaveCount(0);
 	await expect(urlInput).toBeFocused();
 
+	await installTelegramMainButton(page);
+	await page.goto(withTelegramMainButton("/admin/settings/kuma"));
+	await page.getByPlaceholder("https://status.example.com").fill("https://new-status.example.test");
 	await page.getByRole("button", { name: "Test" }).click();
 	const testError = page.getByRole("alert").filter({ hasText: "Connection test failed" });
 	await expect(testError).toBeFocused();

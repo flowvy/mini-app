@@ -1,5 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import { assertNoHorizontalOverflow, expect, mockData, test } from "./fixtures/mock-api.ts";
+import {
+	closeTelegramPopup,
+	installTelegramMainButton,
+	telegramPopups,
+	withTelegramMainButton,
+} from "./fixtures/telegram-main-button.ts";
 
 async function useUserRole(page: import("@playwright/test").Page): Promise<void> {
 	await page.addInitScript(() => localStorage.setItem("flowvy:mock-role", "user"));
@@ -64,7 +70,7 @@ test("administrator manages article order and opens the existing editor", async 
 	await expect(page).toHaveURL(/\/support\/manage\/answers$/);
 	await expect(page.locator("header").getByText("Quick Answers", { exact: true })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Articles" })).toBeVisible();
-	await expect(page.getByText("2 published · 1 drafts")).toBeVisible();
+	await expect(page.getByText(/published · .*drafts · .*archived/)).toHaveCount(0);
 	await expect(page.getByText("Refresh a subscription profile", { exact: true })).toBeVisible();
 	for (const theme of ["light", "dark"] as const) {
 		await page.evaluate(
@@ -104,14 +110,17 @@ test("administrator manages article order and opens the existing editor", async 
 	await assertNoHorizontalOverflow(page);
 });
 
-test("administrator creates, publishes, unpublishes, archives and restores an article", async ({
+test("administrator follows the explicit article lifecycle and deletes the article", async ({
 	page,
 	mockApi,
-}) => {
+}, testInfo) => {
 	await page.goto("/support/manage/answers");
 	await page.getByRole("button", { name: "Create article" }).click();
 	await expect(page.locator("header").getByText("New article", { exact: true })).toBeVisible();
-	await expect(page.getByRole("button", { name: "Publish" })).toBeDisabled();
+	const status = page.getByLabel("Status");
+	await expect(status).toHaveValue("draft");
+	await expect(status.locator('option[value="archived"]')).toHaveCount(0);
+	await expect(page.getByRole("button", { name: "Save draft" })).toBeDisabled();
 	await page.getByLabel("Title").fill("Fix DNS resolution");
 	await page.getByLabel("Short description").fill("Check DNS settings before opening a request.");
 	const body = page.getByRole("textbox", { name: "Article" });
@@ -119,10 +128,33 @@ test("administrator creates, publishes, unpublishes, archives and restores an ar
 	await body.pressSequentially(
 		"Restart Flowvy Desktop, then reconnect. Never share an access key.",
 	);
+	await expect(page.getByRole("button", { name: "Save draft" })).toBeEnabled();
+	await status.selectOption("published");
 	await expect(page.getByRole("button", { name: "Publish" })).toBeEnabled();
 	await page.getByRole("button", { name: "Publish" }).click();
 	await expect(page).toHaveURL(/\/support\/manage\/answers\/61000000-0000-4000-8000-000000000004$/);
-	await expect(page.getByText("Published", { exact: true })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Publish", exact: true })).toHaveCount(0);
+	await expect(page.getByRole("button", { name: "Save changes" })).toBeDisabled();
+	await expect(status).toHaveValue("published");
+	await expect(status.locator("option")).toHaveText(["Draft", "Published", "Archived"]);
+	const contentActions = page.locator('[data-ui="article-content-actions"]');
+	await expect(contentActions.getByRole("button")).toHaveCount(2);
+	await expect(contentActions.getByRole("button", { name: "Save changes" })).toBeVisible();
+	await expect(contentActions.getByRole("button", { name: "Delete article" })).toBeVisible();
+	await expect(page.getByText("Visible to users in Quick Answers", { exact: true })).toBeVisible();
+	for (const theme of ["light", "dark"] as const) {
+		await page.evaluate(
+			(value) => document.documentElement.setAttribute("data-theme", value),
+			theme,
+		);
+		await page.getByRole("button", { name: "Delete article" }).scrollIntoViewIfNeeded();
+		await page.screenshot({
+			path: testInfo.outputPath(`support-article-published-${theme}-${testInfo.project.name}.png`),
+			animations: "disabled",
+		});
+		const { violations } = await new AxeBuilder({ page }).include("main").analyze();
+		expect(violations).toEqual([]);
+	}
 	await expect
 		.poll(
 			() =>
@@ -130,12 +162,24 @@ test("administrator creates, publishes, unpublishes, archives and restores an ar
 		)
 		.toBe(1);
 
-	await page.getByRole("button", { name: "Unpublish" }).click();
-	await expect(page.getByText("Draft", { exact: true })).toBeVisible();
-	await page.getByRole("button", { name: "Archive" }).click();
-	await expect(page.getByText("Archived", { exact: true })).toBeVisible();
-	await page.getByRole("button", { name: "Restore as draft" }).click();
-	await expect(page.getByText("Draft", { exact: true })).toBeVisible();
+	await page.getByLabel("Short description").fill("Check DNS settings, then reconnect.");
+	await expect(page.getByRole("button", { name: "Save changes" })).toBeEnabled();
+	await page.getByRole("button", { name: "Save changes" }).click();
+	await expect(page.getByRole("button", { name: "Save changes" })).toBeDisabled();
+	await status.selectOption("draft");
+	await page.getByRole("button", { name: "Save changes" }).click();
+	await expect(status).toHaveValue("draft");
+	await expect(status.locator('option[value="archived"]')).toHaveCount(0);
+	await status.selectOption("published");
+	await page.getByRole("button", { name: "Save changes" }).click();
+	await expect(status).toHaveValue("published");
+	await status.selectOption("archived");
+	await page.getByRole("button", { name: "Save changes" }).click();
+	await expect(status).toHaveValue("archived");
+	await expect(status.locator('option[value="published"]')).toHaveCount(0);
+	await status.selectOption("draft");
+	await page.getByRole("button", { name: "Save changes" }).click();
+	await expect(status).toHaveValue("draft");
 	await expect
 		.poll(
 			() =>
@@ -144,8 +188,133 @@ test("administrator creates, publishes, unpublishes, archives and restores an ar
 						call === "PUT /api/debug/admin/support/articles/61000000-0000-4000-8000-000000000004",
 				).length,
 		)
-		.toBe(3);
+		.toBe(5);
+
+	await page.getByRole("button", { name: "Delete article", exact: true }).click();
+	let confirmation = page.getByRole("alertdialog", { name: "Delete article?" });
+	await expect(confirmation).toContainText(
+		"This article will be permanently deleted. This cannot be undone",
+	);
+	await page.screenshot({
+		path: testInfo.outputPath(`support-article-delete-dark-${testInfo.project.name}.png`),
+		animations: "disabled",
+	});
+	const { violations } = await new AxeBuilder({ page }).include("dialog").analyze();
+	expect(violations).toEqual([]);
+	await confirmation.getByRole("button", { name: "Cancel" }).click();
+	await expect(confirmation).toHaveCount(0);
+	await page.getByRole("button", { name: "Delete article", exact: true }).click();
+	confirmation = page.getByRole("alertdialog", { name: "Delete article?" });
+	await confirmation.getByRole("button", { name: "Delete", exact: true }).click();
+	await expect(page).toHaveURL(/\/support\/manage\/answers$/);
+	await expect(page.getByText("Fix DNS resolution", { exact: true })).toHaveCount(0);
+	await expect
+		.poll(
+			() =>
+				mockApi.calls.filter(
+					(call) =>
+						call ===
+						"DELETE /api/debug/admin/support/articles/61000000-0000-4000-8000-000000000004",
+				).length,
+		)
+		.toBe(1);
 	await assertNoHorizontalOverflow(page);
+});
+
+test("article deletion failure stays actionable and does not expose backend diagnostics", async ({
+	page,
+	mockApi,
+}) => {
+	const articleId = "61000000-0000-4000-8000-000000000003";
+	mockApi.mock("DELETE", `/api/debug/admin/support/articles/${articleId}`, {
+		status: 503,
+		body: { detail: "private database diagnostic" },
+		delayMs: 400,
+	});
+	await page.goto(`/support/manage/answers/${articleId}`);
+	await page.getByRole("button", { name: "Delete article", exact: true }).click();
+	const confirmation = page.getByRole("alertdialog", { name: "Delete article?" });
+	const deleteButton = confirmation.getByRole("button", { name: "Delete", exact: true });
+	await deleteButton.click();
+	await expect(deleteButton).toHaveAttribute("aria-busy", "true");
+	await expect(deleteButton).toBeDisabled();
+	await expect(confirmation.getByRole("alert")).toContainText(
+		"The article was not deleted. Try again",
+	);
+	await expect(confirmation.getByText("private database diagnostic")).toHaveCount(0);
+	await expect(page).toHaveURL(new RegExp(`/support/manage/answers/${articleId}$`));
+});
+
+test("Telegram article deletion uses a native popup and leaves no WebKit dialog layer", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	const articleId = "61000000-0000-4000-8000-000000000003";
+	await installTelegramMainButton(page);
+	await page.goto(withTelegramMainButton(`/support/manage/answers/${articleId}`));
+	await page.getByRole("button", { name: "Delete article", exact: true }).click();
+
+	await expect(page.getByRole("alertdialog", { name: "Delete article?" })).toHaveCount(0);
+	await expect
+		.poll(() => telegramPopups(page))
+		.toEqual([
+			{
+				title: "Delete article?",
+				message: "This article will be permanently deleted. This cannot be undone",
+				buttons: [
+					{ id: "confirm", text: "Delete", type: "destructive" },
+					{ id: "cancel", text: "Cancel" },
+				],
+			},
+		]);
+
+	await closeTelegramPopup(page, "confirm");
+	await expect(page).toHaveURL(/\/support\/manage\/answers(?:\?.*)?$/);
+	await expect
+		.poll(
+			() =>
+				mockApi.calls.filter(
+					(call) => call === `DELETE /api/debug/admin/support/articles/${articleId}`,
+				).length,
+		)
+		.toBe(1);
+	await expect(page.locator("dialog")).toHaveCount(0);
+	await assertNoHorizontalOverflow(page);
+	await page.screenshot({
+		path: testInfo.outputPath(`support-after-native-delete-${testInfo.project.name}.png`),
+		animations: "disabled",
+	});
+});
+
+test("Telegram article deletion reopens the native confirmation with a safe retry error", async ({
+	page,
+	mockApi,
+}) => {
+	const articleId = "61000000-0000-4000-8000-000000000003";
+	mockApi.mock("DELETE", `/api/debug/admin/support/articles/${articleId}`, {
+		status: 503,
+		body: { detail: "private database diagnostic" },
+	});
+	await installTelegramMainButton(page);
+	await page.goto(withTelegramMainButton(`/support/manage/answers/${articleId}`));
+	await page.getByRole("button", { name: "Delete article", exact: true }).click();
+	await expect.poll(async () => (await telegramPopups(page)).length).toBe(1);
+
+	await closeTelegramPopup(page, "confirm");
+	await expect.poll(async () => (await telegramPopups(page)).length).toBe(2);
+	const popups = await telegramPopups(page);
+	expect(popups[1]).toEqual({
+		title: "Delete article?",
+		message:
+			"The article was not deleted. Try again\n\nThis article will be permanently deleted. This cannot be undone",
+		buttons: [
+			{ id: "confirm", text: "Delete", type: "destructive" },
+			{ id: "cancel", text: "Cancel" },
+		],
+	});
+	expect(JSON.stringify(popups[1])).not.toContain("private database diagnostic");
+	await closeTelegramPopup(page, "cancel");
+	await expect(page).toHaveURL(new RegExp(`/support/manage/answers/${articleId}(?:\\?.*)?$`));
 });
 
 test("article editor protects unsaved changes and exposes persistent save failure", async ({

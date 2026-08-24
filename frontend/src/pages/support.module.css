@@ -746,10 +746,13 @@
 }
 .editorActions {
 	display: flex;
-	flex-wrap: wrap;
-	justify-content: flex-end;
+	align-items: center;
+	justify-content: space-between;
 	gap: 8px;
 	padding-top: 4px;
+}
+.editorActions > button:last-child {
+	margin-left: auto;
 }
 @media (hover: hover) and (pointer: fine) {
 	.answerRow:hover,
@@ -804,11 +807,5 @@
 	.managementActions {
 		grid-column: 1 / -1;
 		justify-content: flex-end;
-	}
-	.editorActions {
-		display: grid;
-	}
-	.editorActions > button {
-		width: 100%;
 	}
 }

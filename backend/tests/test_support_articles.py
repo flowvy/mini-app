@@ -21,6 +21,7 @@ from flowvy.repositories.support_article import SupportArticleRepository
 from flowvy.repositories.user import UserRepository
 from flowvy.schemas.support_articles import SupportArticleInput, SupportArticleLocale
 from flowvy.services.support_articles import (
+    SupportArticleNotFoundError,
     SupportArticleOrderError,
     SupportArticlePublicationError,
     SupportArticleService,
@@ -111,6 +112,11 @@ async def test_article_service_enforces_publication_and_published_only_projectio
     await service.update(draft.id, _payload(status="archived"))
     assert await service.list_public("en") == []
 
+    await service.delete(draft.id)
+    assert await service.list_admin() == []
+    with pytest.raises(SupportArticleNotFoundError, match="was not found"):
+        await service.delete(draft.id)
+
 
 @pytest.mark.asyncio
 async def test_article_service_reorders_only_the_complete_current_collection(
@@ -198,6 +204,22 @@ async def test_support_article_routes_require_roles_and_hide_non_published_artic
             f"/api/support/articles/{article_id}",
             headers=user_headers,
         )
+        delete_denied = await client.delete(
+            f"/api/admin/support/articles/{article_id}",
+            headers={"Authorization": f"tma {_init_data(user_id)}"},
+        )
+        deleted = await client.delete(
+            f"/api/admin/support/articles/{article_id}",
+            headers=admin_headers,
+        )
+        missing_admin = await client.get(
+            f"/api/admin/support/articles/{article_id}",
+            headers=admin_headers,
+        )
+        deleted_again = await client.delete(
+            f"/api/admin/support/articles/{article_id}",
+            headers=admin_headers,
+        )
 
     assert denied.status_code == 403
     assert created.status_code == 201
@@ -210,3 +232,8 @@ async def test_support_article_routes_require_roles_and_hide_non_published_artic
     assert [article["id"] for article in reordered.json()["articles"]] == [article_id]
     assert archived.status_code == 200
     assert hidden.status_code == 404
+    assert delete_denied.status_code == 403
+    assert deleted.status_code == 204
+    assert deleted.content == b""
+    assert missing_admin.status_code == 404
+    assert deleted_again.status_code == 404

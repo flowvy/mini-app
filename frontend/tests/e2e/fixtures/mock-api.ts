@@ -991,6 +991,11 @@ async function handleApi(
 			await reply(route, { body: updated });
 			return;
 		}
+		if (method === "DELETE") {
+			state.supportArticles.splice(index, 1);
+			await reply(route, { status: 204 });
+			return;
+		}
 	}
 	if (method === "GET" && path === "/api/support/requests") {
 		await reply(route, { body: { requests: state.supportRequests } });

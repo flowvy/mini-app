@@ -108,6 +108,7 @@ export const BrandingConfig: FC<BrandingConfigProps> = ({ settings }) => {
 				title={t("settings.branding.discardTitle")}
 				confirmLabel={t("settings.branding.discardConfirm")}
 				cancelLabel={t("settings.branding.discardCancel")}
+				telegramNativeMessage={t("settings.branding.discardBody")}
 				onConfirm={() => blocker.proceed?.()}
 				onCancel={() => blocker.reset?.()}
 			>

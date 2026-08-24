@@ -110,6 +110,12 @@ class SupportArticleService:
         )
         return self._admin_response(updated)
 
+    async def delete(self, article_id: uuid.UUID) -> None:
+        article = await self._articles.get_by_id(article_id)
+        if article is None:
+            raise SupportArticleNotFoundError("Support article was not found")
+        await self._articles.delete(article)
+
     async def reorder(self, article_ids: list[uuid.UUID]) -> list[SupportArticleAdminResponse]:
         articles = await self._articles.list_all()
         by_id = {article.id: article for article in articles}

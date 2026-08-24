@@ -962,6 +962,14 @@ function SponsorOfferEditor({
 				title={t("settings.tribute.offers.deleteConfirmTitle")}
 				confirmLabel={t("settings.tribute.offers.deleteAction")}
 				cancelLabel={t("access.cancel")}
+				telegramNativeMessage={
+					remove.isError
+						? `${getLocalizedError(remove.error, "settings.tribute.offers.deleteError")}\n\n${t(
+								"settings.tribute.offers.deleteConfirmBody",
+								{ name: offer?.title },
+							)}`
+						: t("settings.tribute.offers.deleteConfirmBody", { name: offer?.title })
+				}
 				confirmVariant="danger"
 				confirmLoading={remove.isPending}
 				returnFocusRef={deleteTriggerRef}

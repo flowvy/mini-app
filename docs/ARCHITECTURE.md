@@ -481,10 +481,14 @@ registration.
 
 Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Support Quick Answers читаются из
 отдельных PostgreSQL `support_articles`: authenticated user получает только published resolved locale
-по `/api/support/articles`, а active admin создаёт, редактирует, упорядочивает, публикует и архивирует
-typed localized articles через `/support/manage/answers`. Article UUID остаётся стабильным deep-link;
-topic и status являются структурными enum, title/summary/body — operator-owned CommonMark content без
-raw HTML и migration seeds.
+по `/api/support/articles`, а active admin создаёт, редактирует, упорядочивает и удаляет typed
+localized articles через `/support/manage/answers`. Редактор показывает явный lifecycle:
+`draft` публикуется, `published` можно снять с публикации или архивировать, `archived` сначала
+восстанавливается в `draft`; повторная публикация неизменённой published статьи не является
+действием. Удаление требует destructive confirmation, backend отвечает пустым `204`, после чего
+Article UUID окончательно перестаёт разрешаться. До удаления UUID остаётся стабильным deep-link;
+topic и status являются структурными enum, title/summary/body — operator-owned CommonMark content
+без raw HTML и migration seeds.
 
 Обращения, сообщения и attachment intents хранятся в `support_requests`, `support_messages` и
 `support_attachments`. Пользователь видит только собственные обращения; exact active admin из

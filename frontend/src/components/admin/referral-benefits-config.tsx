@@ -309,6 +309,7 @@ export const ReferralBenefitsConfig: FC<ReferralBenefitsConfigProps> = ({ settin
 				title={t("settings.tribute.referrals.discardTitle")}
 				confirmLabel={t("settings.tribute.referrals.discardConfirm")}
 				cancelLabel={t("settings.tribute.referrals.discardCancel")}
+				telegramNativeMessage={t("settings.tribute.referrals.discardBody")}
 				onConfirm={() => blocker.proceed?.()}
 				onCancel={() => blocker.reset?.()}
 			>

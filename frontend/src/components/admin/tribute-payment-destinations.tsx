@@ -226,6 +226,7 @@ export const TributePaymentDestinations: FC<TributePaymentDestinationsProps> = (
 				title={t("settings.tribute.destinations.discardTitle")}
 				confirmLabel={t("settings.tribute.destinations.discardConfirm")}
 				cancelLabel={t("settings.tribute.destinations.discardCancel")}
+				telegramNativeMessage={t("settings.tribute.destinations.discardBody")}
 				onConfirm={() => blocker.proceed?.()}
 				onCancel={() => blocker.reset?.()}
 			>

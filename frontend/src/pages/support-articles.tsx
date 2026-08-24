@@ -21,6 +21,7 @@ import {
 	useAdminSupportArticle,
 	useAdminSupportArticles,
 	useCreateSupportArticle,
+	useDeleteSupportArticle,
 	useReorderSupportArticles,
 	useUpdateSupportArticle,
 } from "../hooks/use-support.ts";
@@ -82,8 +83,6 @@ function SupportArticlesAdminContent() {
 		return <ErrorState onAction={() => void articles.refetch()} />;
 	}
 	const list = articles.data.articles;
-	const published = list.filter((article) => article.status === "published").length;
-	const drafts = list.filter((article) => article.status === "draft").length;
 	const move = (index: number, offset: -1 | 1) => {
 		const target = index + offset;
 		if (target < 0 || target >= list.length) return;
@@ -93,7 +92,6 @@ function SupportArticlesAdminContent() {
 	};
 	return (
 		<div className={`${styles.page} ${styles.detailPage}`} data-support-manage="list">
-			<p className={styles.managementIntro}>{t("support.manage.summary", { published, drafts })}</p>
 			<FormSection
 				title={t("support.manage.articles")}
 				action={
@@ -221,10 +219,13 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 	const navigate = useNavigate();
 	const create = useCreateSupportArticle();
 	const update = useUpdateSupportArticle();
+	const remove = useDeleteSupportArticle();
 	const [draft, setDraft] = useState(() => draftFromArticle(article));
 	const [baseline, setBaseline] = useState(() => draftFromArticle(article));
 	const [locale, setLocale] = useState(SUPPORTED_LOCALES[0] ?? "en");
+	const [deleteConfirmation, setDeleteConfirmation] = useState(false);
 	const allowNavigationRef = useRef(false);
+	const deleteTriggerRef = useRef<HTMLButtonElement>(null);
 	const dirty = JSON.stringify(draft) !== JSON.stringify(baseline);
 	const blocker = useBlocker({
 		shouldBlockFn: () => dirty && !allowNavigationRef.current,
@@ -236,6 +237,19 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 	const defaultLocale = SUPPORTED_LOCALES[0] ?? "en";
 	const defaultContent = draft.contentLocales[defaultLocale] ?? EMPTY_CONTENT;
 	const canPublish = Boolean(defaultContent.title && defaultContent.summary && defaultContent.body);
+	const statusDescription = {
+		draft: t("support.manage.editor.statusDescription.draft"),
+		published: t("support.manage.editor.statusDescription.published"),
+		archived: t("support.manage.editor.statusDescription.archived"),
+	}[draft.status];
+	const statusOptions = {
+		draft: ["draft", "published"],
+		published: ["draft", "published", "archived"],
+		archived: ["draft", "archived"],
+	}[baseline.status].map((value) => ({
+		value,
+		label: t(`support.manage.status.${value}`),
+	}));
 	const updateDraft = (next: EditorDraft) => {
 		allowNavigationRef.current = false;
 		setDraft(next);
@@ -274,6 +288,17 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 			// The localized persistent action error below owns the failure state.
 		}
 	};
+	const deleteArticle = async () => {
+		if (!article) return;
+		try {
+			await remove.mutateAsync(article.id);
+			setDeleteConfirmation(false);
+			allowNavigationRef.current = true;
+			void navigate({ to: "/support/manage/answers", replace: true });
+		} catch {
+			// The localized persistent action error in the confirmation owns the failure state.
+		}
+	};
 	const topicOptions: Array<{ value: SupportArticleTopic; label: string }> = [
 		"connection",
 		"subscription",
@@ -288,10 +313,7 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 	return (
 		<div className={`${styles.page} ${styles.detailPage}`} data-support-manage="editor">
 			<p className={styles.managementIntro}>{t("support.manage.editor.description")}</p>
-			<FormSection
-				title={t("support.manage.editor.details")}
-				action={article ? <ArticleStatus status={draft.status} /> : undefined}
-			>
+			<FormSection title={t("support.manage.editor.details")}>
 				<FormSectionCard>
 					<FormSurfaceBody dataUi="support-article-fields">
 						<FormField label={t("support.manage.editor.topic")} htmlFor="support-article-topic">
@@ -301,6 +323,20 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 								options={topicOptions}
 								onChange={(event) =>
 									updateDraft({ ...draft, topic: event.target.value as SupportArticleTopic })
+								}
+							/>
+						</FormField>
+						<FormField
+							label={t("support.manage.editor.statusLabel")}
+							htmlFor="support-article-status"
+							hint={statusDescription}
+						>
+							<FormFieldSelect
+								id="support-article-status"
+								value={draft.status}
+								options={statusOptions}
+								onChange={(event) =>
+									updateDraft({ ...draft, status: event.target.value as SupportArticleStatus })
 								}
 							/>
 						</FormField>
@@ -347,7 +383,7 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 								onChange={(value) => updateContent("body", value)}
 							/>
 						</FormField>
-						{!canPublish && (
+						{draft.status === "published" && !canPublish && (
 							<InlineFeedback>{t("support.manage.editor.publishRequirements")}</InlineFeedback>
 						)}
 						{mutation.error && (
@@ -355,55 +391,71 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 								{t("support.manage.editor.saveError")}
 							</InlineFeedback>
 						)}
-						<div className={styles.editorActions}>
-							{draft.status === "published" ? (
+						<div className={styles.editorActions} data-ui="article-content-actions">
+							{article && (
 								<ActionBtn
+									ref={deleteTriggerRef}
 									variant="ghost"
-									size="md"
-									loading={mutation.isPending}
-									onClick={() => void save("draft")}
+									size="sm"
+									disabled={mutation.isPending}
+									onClick={() => {
+										remove.reset();
+										setDeleteConfirmation(true);
+									}}
 								>
-									{t("support.manage.editor.unpublish")}
-								</ActionBtn>
-							) : (
-								<ActionBtn
-									variant="action"
-									size="md"
-									loading={mutation.isPending}
-									onClick={() => void save("draft")}
-								>
-									{draft.status === "archived"
-										? t("support.manage.editor.restoreDraft")
-										: t("support.manage.editor.saveDraft")}
+									{t("support.manage.editor.deleteArticle")}
 								</ActionBtn>
 							)}
 							<ActionBtn
 								size="md"
 								loading={mutation.isPending}
-								disabled={!canPublish}
-								onClick={() => void save("published")}
+								disabled={!dirty || (draft.status === "published" && !canPublish)}
+								onClick={() => void save(draft.status)}
 							>
-								{t("support.manage.editor.publish")}
+								{article
+									? t("support.manage.editor.saveChanges")
+									: draft.status === "published"
+										? t("support.manage.editor.publish")
+										: t("support.manage.editor.saveDraft")}
 							</ActionBtn>
-							{article && draft.status !== "archived" && (
-								<ActionBtn
-									variant="danger"
-									size="md"
-									loading={mutation.isPending}
-									onClick={() => void save("archived")}
-								>
-									{t("support.manage.editor.archive")}
-								</ActionBtn>
-							)}
 						</div>
 					</FormSurfaceBody>
 				</FormSectionCard>
 			</FormSection>
 			<ConfirmDialog
+				open={deleteConfirmation}
+				title={t("support.manage.editor.deleteTitle")}
+				confirmLabel={t("support.manage.editor.delete")}
+				cancelLabel={t("common.cancel")}
+				telegramNativeMessage={
+					remove.error
+						? `${t("support.manage.editor.deleteError")}\n\n${t("support.manage.editor.deleteDescription")}`
+						: t("support.manage.editor.deleteDescription")
+				}
+				confirmVariant="danger"
+				confirmLoading={remove.isPending}
+				initialFocus="cancel"
+				returnFocusRef={deleteTriggerRef}
+				alert
+				onConfirm={() => void deleteArticle()}
+				onCancel={() => {
+					remove.reset();
+					setDeleteConfirmation(false);
+				}}
+			>
+				<p>{t("support.manage.editor.deleteDescription")}</p>
+				{remove.error && (
+					<InlineFeedback attention="action">
+						{t("support.manage.editor.deleteError")}
+					</InlineFeedback>
+				)}
+			</ConfirmDialog>
+			<ConfirmDialog
 				open={blocker.status === "blocked"}
 				title={t("support.manage.editor.discardTitle")}
 				confirmLabel={t("support.manage.editor.discard")}
 				cancelLabel={t("common.cancel")}
+				telegramNativeMessage={t("support.manage.editor.discardDescription")}
 				confirmVariant="danger"
 				initialFocus="cancel"
 				onConfirm={() => blocker.proceed?.()}

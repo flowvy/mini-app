@@ -262,6 +262,25 @@ export const Devices: FC = () => {
 						: t("devices.row.removeConfirm")
 				}
 				cancelLabel={t("devices.cancel")}
+				telegramNativeMessage={
+					mutationError
+						? `${t("devices.removeError")}\n\n${
+								confirmation?.kind === "all"
+									? t("devices.confirmAllBody", { n: renderedDevices.length })
+									: t("devices.confirmDeviceBody", {
+											name: confirmedDevice
+												? getDeviceName(confirmedDevice, t)
+												: t("devices.fallback.unknown"),
+										})
+							}`
+						: confirmation?.kind === "all"
+							? t("devices.confirmAllBody", { n: renderedDevices.length })
+							: t("devices.confirmDeviceBody", {
+									name: confirmedDevice
+										? getDeviceName(confirmedDevice, t)
+										: t("devices.fallback.unknown"),
+								})
+				}
 				confirmVariant="danger"
 				confirmLoading={deleteDevice.isPending || deleteAll.isPending}
 				alert

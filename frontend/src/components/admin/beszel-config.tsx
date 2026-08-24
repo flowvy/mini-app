@@ -133,6 +133,7 @@ export const BeszelConfig: FC<BeszelConfigProps> = ({ settings }) => {
 				title={t("settings.beszel.discardTitle")}
 				confirmLabel={t("settings.beszel.discardConfirm")}
 				cancelLabel={t("settings.beszel.discardCancel")}
+				telegramNativeMessage={t("settings.beszel.discardBody")}
 				onConfirm={() => blocker.proceed?.()}
 				onCancel={() => blocker.reset?.()}
 			>

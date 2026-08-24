@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiGet, apiPost, apiPut, apiPutExternal } from "../lib/api.ts";
+import { apiDelete, apiGet, apiPost, apiPut, apiPutExternal } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";
 import { isMockAuth } from "../lib/runtime.ts";
 import { getTelegramPlatform } from "../lib/telegram.ts";
@@ -133,6 +133,28 @@ export function useUpdateSupportArticle() {
 				queryClient.invalidateQueries({ queryKey: queryKeys.adminSupportArticles }),
 				queryClient.invalidateQueries({ queryKey: queryKeys.supportArticles }),
 				queryClient.invalidateQueries({ queryKey: queryKeys.supportArticle(article.id) }),
+			]);
+		},
+	});
+}
+
+export function useDeleteSupportArticle() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (articleId: string) =>
+			apiDelete<void>(`${adminArticlesPrefix}/${encodeURIComponent(articleId)}`),
+		onSuccess: async (_data, articleId) => {
+			queryClient.removeQueries({
+				queryKey: queryKeys.adminSupportArticle(articleId),
+				exact: true,
+			});
+			queryClient.removeQueries({
+				queryKey: queryKeys.supportArticle(articleId),
+				exact: true,
+			});
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: queryKeys.adminSupportArticles }),
+				queryClient.invalidateQueries({ queryKey: queryKeys.supportArticles }),
 			]);
 		},
 	});

@@ -210,6 +210,7 @@ export function AdminAccessSettings() {
 				title={t("access.deactivateTitle")}
 				confirmLabel={t("access.deactivate")}
 				cancelLabel={t("access.cancel")}
+				telegramNativeMessage={t("access.deactivateBody", { name: confirmation?.label })}
 				confirmVariant="danger"
 				onCancel={() => setConfirmation(null)}
 				onConfirm={() => {

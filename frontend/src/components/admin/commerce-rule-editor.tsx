@@ -734,6 +734,14 @@ export function CommerceRuleEditor({
 				title={t("settings.tribute.rules.deleteConfirmTitle")}
 				confirmLabel={t("settings.tribute.rules.deleteAction")}
 				cancelLabel={t("access.cancel")}
+				telegramNativeMessage={
+					remove.isError
+						? `${getLocalizedError(remove.error, "settings.tribute.rules.deleteError")}\n\n${t(
+								"settings.tribute.rules.deleteConfirmBody",
+								{ name: rule?.name },
+							)}`
+						: t("settings.tribute.rules.deleteConfirmBody", { name: rule?.name })
+				}
 				confirmVariant="danger"
 				confirmLoading={remove.isPending}
 				returnFocusRef={deleteTriggerRef}

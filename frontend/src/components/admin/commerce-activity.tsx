@@ -291,6 +291,15 @@ export function CommerceActivity() {
 						: "settings.tribute.activity.action.retryConfirm",
 				)}
 				cancelLabel={t("common.cancel")}
+				telegramNativeMessage={
+					decisionIsResolve
+						? null
+						: actionMutation.isError
+							? `${t("settings.tribute.activity.action.error")}\n\n${t(
+									"settings.tribute.activity.action.retryBody",
+								)}`
+							: t("settings.tribute.activity.action.retryBody")
+				}
 				confirmLoading={actionMutation.isPending}
 				confirmDisabled={confirmDisabled}
 				returnFocusRef={returnFocusRef}

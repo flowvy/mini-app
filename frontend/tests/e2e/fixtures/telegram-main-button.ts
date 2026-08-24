@@ -9,6 +9,12 @@ export interface TelegramMainButtonState {
 	text_color?: string;
 }
 
+export interface TelegramPopupState {
+	title: string;
+	message: string;
+	buttons: Array<{ id: string; text?: string; type?: string }>;
+}
+
 const launchParams = new URLSearchParams({
 	tgWebAppPlatform: "ios",
 	tgWebAppVersion: "9.6",
@@ -65,4 +71,34 @@ export async function pressTelegramMainButton(page: Page): Promise<void> {
 		};
 		telegramWindow.Telegram?.WebView?.receiveEvent?.("main_button_pressed");
 	});
+}
+
+export async function telegramPopups(page: Page): Promise<TelegramPopupState[]> {
+	return page.evaluate(() => {
+		const telegramWindow = window as typeof window & {
+			__telegramEvents?: Array<{ eventType: string; eventData?: string }>;
+		};
+		return (telegramWindow.__telegramEvents ?? [])
+			.filter((event) => event.eventType === "web_app_open_popup" && event.eventData)
+			.map((event) => JSON.parse(event.eventData as string) as TelegramPopupState);
+	});
+}
+
+export async function closeTelegramPopup(
+	page: Page,
+	buttonId: "confirm" | "cancel" | null,
+): Promise<void> {
+	await page.evaluate((selectedButtonId) => {
+		const telegramWindow = window as typeof window & {
+			Telegram?: {
+				WebView?: {
+					receiveEvent?: (event: string, data?: { button_id?: string }) => void;
+				};
+			};
+		};
+		telegramWindow.Telegram?.WebView?.receiveEvent?.(
+			"popup_closed",
+			selectedButtonId ? { button_id: selectedButtonId } : {},
+		);
+	}, buttonId);
 }

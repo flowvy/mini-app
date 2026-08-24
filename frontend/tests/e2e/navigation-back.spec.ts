@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures/mock-api.ts";
+import { closeTelegramPopup, telegramPopups } from "./fixtures/telegram-main-button.ts";
 
 const launchParams = new URLSearchParams({
 	tgWebAppPlatform: "ios",
@@ -63,35 +64,31 @@ test("native Back keeps Beszel discard navigation scoped to Settings", async ({
 	await emitTelegramBack(page);
 
 	const discardDialog = page.getByRole("dialog", { name: "Discard changes?" });
-	await expect(discardDialog).toBeVisible();
-	await discardDialog.evaluate((dialog) => dialog.click());
 	await expect(discardDialog).toHaveCount(0);
+	await expect.poll(async () => (await telegramPopups(page)).length).toBe(1);
+	await closeTelegramPopup(page, "cancel");
 	await expect(page).toHaveURL(/\/admin\/settings\/beszel$/);
 
 	await emitTelegramBack(page);
-	await expect(discardDialog).toBeVisible();
-	await discardDialog.getByRole("button", { name: "Discard", exact: true }).click();
+	await expect.poll(async () => (await telegramPopups(page)).length).toBe(2);
+	await closeTelegramPopup(page, "confirm");
 
 	await expect(page).toHaveURL(/\/admin\/settings\/pulse$/);
 	await expect(page).not.toHaveURL(/\/admin\/dashboard$/);
 });
 
-test("native Back dismisses the topmost confirmation before its owning route", async ({
-	page,
-	mockApi: _mock,
-}) => {
+test("native popup dismissal keeps its owning route", async ({ page, mockApi: _mock }) => {
 	await page.goto(`/admin/users/1?${launchParams.toString()}`);
 	await page.getByRole("button", { name: "Disable", exact: true }).click();
 
 	const confirmation = page.getByRole("dialog", { name: "Disable user?" });
-	await expect(confirmation).toBeVisible();
-	await emitTelegramBack(page);
-
 	await expect(confirmation).toHaveCount(0);
+	await expect.poll(async () => (await telegramPopups(page)).length).toBe(1);
+	await closeTelegramPopup(page, null);
 	await expect(page).toHaveURL(/\/admin\/users\/1(?:\?.*)?$/);
 });
 
-test("a confirmation temporarily owns native Back on a primary tab", async ({
+test("a native confirmation leaves primary-tab Back ownership with Telegram", async ({
 	page,
 	mockApi: _mock,
 }) => {
@@ -99,13 +96,11 @@ test("a confirmation temporarily owns native Back on a primary tab", async ({
 
 	await page.getByRole("button", { name: "Delete device" }).click();
 	const confirmation = page.getByRole("alertdialog", { name: "Remove device?" });
-	await expect(confirmation).toBeVisible();
-	await expect.poll(() => latestTelegramBackButton(page)).toEqual({ is_visible: true });
-
-	await emitTelegramBack(page);
 	await expect(confirmation).toHaveCount(0);
+	await expect.poll(async () => (await telegramPopups(page)).length).toBe(1);
+	await expect.poll(() => latestTelegramBackButton(page)).not.toEqual({ is_visible: true });
+	await closeTelegramPopup(page, "cancel");
 	await expect(page).toHaveURL(/\/devices(?:\?.*)?$/);
-	await expect.poll(() => latestTelegramBackButton(page)).toEqual({ is_visible: false });
 	await emitTelegramBack(page);
 	await expect(page).toHaveURL(/\/devices(?:\?.*)?$/);
 });

@@ -205,6 +205,7 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 				title={confirm?.title ?? ""}
 				confirmLabel={confirm?.confirmLabel ?? ""}
 				cancelLabel={t("admin.userHero.cancelLabel")}
+				telegramNativeMessage={confirm?.desc ?? ""}
 				confirmVariant={confirm?.danger ? "danger" : "confirm"}
 				onConfirm={handleConfirm}
 				onCancel={() => setConfirm(null)}

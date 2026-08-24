@@ -94,4 +94,16 @@ async def update_support_article(
         raise _article_error(exc) from exc
 
 
+@router.delete("/{article_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_support_article(
+    article_id: uuid.UUID,
+    _admin: CurrentAdmin,
+    service: FromDishka[SupportArticleService],
+) -> None:
+    try:
+        await service.delete(article_id)
+    except SupportArticleError as exc:
+        raise _article_error(exc) from exc
+
+
 __all__ = ["router"]
