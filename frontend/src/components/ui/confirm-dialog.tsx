@@ -2,8 +2,18 @@
  * Confirm dialog — matches Desktop Modal + ConfirmDialog pattern.
  * Header with title + close button, body, footer with action buttons.
  */
+import { popup } from "@telegram-apps/sdk-react";
 import { X } from "lucide-react";
-import { type FC, type ReactNode, type RefObject, useId, useLayoutEffect, useRef } from "react";
+import {
+	type FC,
+	type ReactNode,
+	type RefObject,
+	useEffect,
+	useId,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useBackNavigationHandler } from "../../contexts/back-navigation-context.tsx";
@@ -22,6 +32,7 @@ interface ConfirmDialogProps {
 	confirmDisabled?: boolean;
 	initialFocus?: "title" | "cancel";
 	alert?: boolean;
+	telegramNativeMessage?: string;
 	onConfirm: () => void;
 	onCancel: () => void;
 	returnFocusRef?: RefObject<HTMLElement | null>;
@@ -38,6 +49,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 	confirmDisabled = false,
 	initialFocus = "title",
 	alert = false,
+	telegramNativeMessage,
 	onConfirm,
 	onCancel,
 	returnFocusRef,
@@ -50,9 +62,83 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 	const cancelButtonRef = useRef<HTMLButtonElement>(null);
 	const fallbackFocusRef = useRef<HTMLElement | null>(null);
 	const restoreFocusFrameRef = useRef<number | null>(null);
+	const nativeRequestRef = useRef<ReturnType<typeof popup.show> | null>(null);
+	const mountedRef = useRef(false);
+	const onConfirmRef = useRef(onConfirm);
+	const onCancelRef = useRef(onCancel);
+	const [nativePopupFailed, setNativePopupFailed] = useState(false);
 
 	useLayoutEffect(() => {
-		if (!open) return;
+		onConfirmRef.current = onConfirm;
+		onCancelRef.current = onCancel;
+	});
+
+	useEffect(() => {
+		mountedRef.current = true;
+		return () => {
+			mountedRef.current = false;
+		};
+	}, []);
+
+	let nativePopupAvailable = false;
+	try {
+		nativePopupAvailable = Boolean(
+			telegramNativeMessage && popup.show.isAvailable() && !nativePopupFailed,
+		);
+	} catch {
+		nativePopupAvailable = false;
+	}
+
+	useEffect(() => {
+		if (!open) {
+			setNativePopupFailed(false);
+			return;
+		}
+		if (!nativePopupAvailable || !telegramNativeMessage || nativeRequestRef.current) return;
+
+		let request: ReturnType<typeof popup.show>;
+		try {
+			request = popup.show({
+				title,
+				message: telegramNativeMessage,
+				buttons: [
+					{
+						id: "confirm",
+						text: confirmLabel,
+						type: confirmVariant === "danger" ? "destructive" : "default",
+					},
+					{ id: "cancel", text: cancelLabel },
+				],
+			});
+		} catch {
+			setNativePopupFailed(true);
+			return;
+		}
+		nativeRequestRef.current = request;
+		void request
+			.then((buttonId) => {
+				if (!mountedRef.current) return;
+				if (buttonId === "confirm") onConfirmRef.current();
+				else onCancelRef.current();
+			})
+			.catch(() => {
+				if (mountedRef.current) setNativePopupFailed(true);
+			})
+			.finally(() => {
+				if (nativeRequestRef.current === request) nativeRequestRef.current = null;
+			});
+	}, [
+		cancelLabel,
+		confirmLabel,
+		confirmVariant,
+		nativePopupAvailable,
+		open,
+		telegramNativeMessage,
+		title,
+	]);
+
+	useLayoutEffect(() => {
+		if (!open || nativePopupAvailable) return;
 		if (restoreFocusFrameRef.current !== null) {
 			window.cancelAnimationFrame(restoreFocusFrameRef.current);
 			restoreFocusFrameRef.current = null;
@@ -72,7 +158,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 				if (liveTarget?.isConnected) liveTarget.focus({ preventScroll: true });
 			});
 		};
-	}, [initialFocus, open, returnFocusRef]);
+	}, [initialFocus, nativePopupAvailable, open, returnFocusRef]);
 
 	const cancel = () => {
 		if (confirmLoading) return;
@@ -83,9 +169,9 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 		if (confirmLoading || confirmDisabled) return;
 		onConfirm();
 	};
-	useBackNavigationHandler(cancel, open);
+	useBackNavigationHandler(cancel, open && !nativePopupAvailable);
 
-	if (!open) return null;
+	if (!open || nativePopupAvailable) return null;
 
 	return createPortal(
 		<dialog

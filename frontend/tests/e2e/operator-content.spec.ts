@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import { assertNoHorizontalOverflow, expect, test } from "./fixtures/mock-api.ts";
 import {
 	installTelegramMainButton,
+	latestTelegramMainButton,
 	pressTelegramMainButton,
 	withTelegramMainButton,
 } from "./fixtures/telegram-main-button.ts";
@@ -90,6 +91,101 @@ test("admin saves allow-listed provider content as a locale map", async ({
 	expect(payload.contentLocales.en.inviteTitle).toBe("Bring your crew");
 	expect(payload.contentLocales.en).not.toHaveProperty("botInviteRequired");
 	expect(payload).not.toHaveProperty("supportUrl");
+});
+
+test("saved Communication content stays clean", async ({ page, mockApi: _mock }) => {
+	await installTelegramMainButton(page);
+	await page.goto(withTelegramMainButton("/admin/settings/communication"));
+	await page.getByRole("button", { name: /^Sponsor · shared action/ }).click();
+	const action = page.getByLabel("Choose-offer button");
+	await action.fill("Browse plans");
+	await pressTelegramMainButton(page);
+	await expect
+		.poll(() => latestTelegramMainButton(page))
+		.toEqual(expect.objectContaining({ is_active: false, is_visible: true }));
+
+	await page.waitForTimeout(2_100);
+	await expect
+		.poll(() => latestTelegramMainButton(page))
+		.toEqual(expect.objectContaining({ is_active: false, is_visible: true }));
+	await page.evaluate(() => window.history.back());
+	await expect(page.getByRole("dialog", { name: "Discard content changes?" })).toHaveCount(0);
+	await expect(page).toHaveURL(/\/admin\/settings\/communication(?:\?.*)?$/);
+});
+
+test("saved Welcome content stays clean", async ({ page, mockApi: _mock }) => {
+	await installTelegramMainButton(page);
+	await page.goto(withTelegramMainButton("/admin/settings/communication"));
+	await page.getByRole("button", { name: /^Welcome Message/ }).click();
+	await page.getByLabel("Greeting text").fill("Welcome back to Flowvy");
+	await pressTelegramMainButton(page);
+	await expect
+		.poll(() => latestTelegramMainButton(page))
+		.toEqual(expect.objectContaining({ is_active: false, is_visible: true }));
+
+	await page.waitForTimeout(2_100);
+	await expect
+		.poll(() => latestTelegramMainButton(page))
+		.toEqual(expect.objectContaining({ is_active: false, is_visible: true }));
+	await page.evaluate(() => window.history.back());
+	await expect(page.getByRole("dialog", { name: "Discard changes?" })).toHaveCount(0);
+	await expect(page).toHaveURL(/\/admin\/settings\/communication(?:\?.*)?$/);
+});
+
+test("Communication discard uses Telegram's native popup without a WebKit dialog layer", async ({
+	page,
+	mockApi: _mock,
+}, testInfo) => {
+	await installTelegramMainButton(page);
+	await page.goto(withTelegramMainButton("/admin/settings/communication"));
+	await page.getByRole("button", { name: /^Sponsor · shared action/ }).click();
+	const action = page.getByLabel("Choose-offer button");
+	await action.fill("Unsaved action");
+	await page.evaluate(() => window.history.back());
+	await expect(page.getByRole("dialog", { name: "Discard content changes?" })).toHaveCount(0);
+	await expect
+		.poll(() =>
+			page.evaluate(() => {
+				const telegramWindow = window as typeof window & {
+					__telegramEvents?: Array<{ eventType: string; eventData?: string }>;
+				};
+				const eventData = telegramWindow.__telegramEvents
+					?.filter((event) => event.eventType === "web_app_open_popup")
+					.at(-1)?.eventData;
+				return eventData ? JSON.parse(eventData) : null;
+			}),
+		)
+		.toEqual({
+			title: "Discard content changes?",
+			message: "The unsaved provider content will be lost",
+			buttons: [
+				{ id: "confirm", text: "Discard", type: "default" },
+				{ id: "cancel", text: "Keep editing" },
+			],
+		});
+	await page.evaluate(() => {
+		const telegramWindow = window as typeof window & {
+			Telegram?: {
+				WebView?: {
+					receiveEvent?: (event: string, data?: { button_id?: string }) => void;
+				};
+			};
+		};
+		telegramWindow.Telegram?.WebView?.receiveEvent?.("popup_closed", {
+			button_id: "confirm",
+		});
+	});
+	await expect(page).toHaveURL(/\/admin\/settings\/communication(?:\?.*)?$/);
+	for (const theme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+		await page.evaluate((value) => {
+			document.documentElement.setAttribute("data-theme", value);
+		}, theme);
+		await page.screenshot({
+			path: testInfo.outputPath(`communication-after-discard-${theme}.png`),
+			animations: "disabled",
+		});
+	}
 });
 
 test("Communication groups all message contexts and opens the selected editor", async ({

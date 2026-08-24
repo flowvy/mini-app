@@ -1,7 +1,7 @@
 import { useBlocker } from "@tanstack/react-router";
 /** Welcome Message sub-screen — text, media file upload, button text, save. */
 import { BadgeInfo } from "lucide-react";
-import { type FC, useEffect, useState } from "react";
+import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
 import { SUPPORTED_LOCALES, localeLabel } from "../../i18n";
@@ -25,18 +25,22 @@ interface WelcomeConfigProps {
 	settings: AdminSettings;
 }
 
+function welcomeContentLocalesFrom(settings: AdminSettings) {
+	const locales = structuredClone(settings.contentLocales);
+	const defaultContent = locales[settings.contentDefaultLocale] ?? {};
+	locales[settings.contentDefaultLocale] = {
+		...defaultContent,
+		welcomeText: defaultContent.welcomeText ?? settings.welcomeText,
+		welcomeButtonText: defaultContent.welcomeButtonText ?? settings.welcomeButtonText,
+	};
+	return locales;
+}
+
 export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 	const { t, i18n } = useTranslation();
-	const [initialContentLocales] = useState(() => {
-		const locales = structuredClone(settings.contentLocales);
-		const defaultContent = locales[settings.contentDefaultLocale] ?? {};
-		locales[settings.contentDefaultLocale] = {
-			...defaultContent,
-			welcomeText: defaultContent.welcomeText ?? settings.welcomeText,
-			welcomeButtonText: defaultContent.welcomeButtonText ?? settings.welcomeButtonText,
-		};
-		return locales;
-	});
+	const [initialContentLocales, setInitialContentLocales] = useState(() =>
+		welcomeContentLocalesFrom(settings),
+	);
 	const [contentLocales, setContentLocales] = useState(() =>
 		structuredClone(initialContentLocales),
 	);
@@ -48,7 +52,6 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 	const [mediaFileId, setMediaFileId] = useState(settings.welcomeMediaFileId);
 	const [mediaFileName, setMediaFileName] = useState(settings.welcomeMediaFileName);
 	const [mediaType, setMediaType] = useState(settings.welcomeMediaType);
-	const [saved, setSaved] = useState(false);
 	const [uploading, setUploading] = useState(false);
 	const [feedbackError, setFeedbackError] = useState<string | null>(null);
 	const updateMutation = useUpdateSettings();
@@ -67,12 +70,11 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 			...current,
 			[locale]: { ...current[locale], [field]: value || null },
 		}));
-		setSaved(false);
 	};
 
 	const blocker = useBlocker({
-		shouldBlockFn: () => dirty && !saved,
-		enableBeforeUnload: dirty && !saved,
+		shouldBlockFn: () => dirty,
+		enableBeforeUnload: dirty,
 		withResolver: true,
 	});
 
@@ -88,24 +90,34 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 				? t("settings.welcome.mediaType.photo")
 				: t("settings.welcome.mediaType.animation");
 
-	useEffect(() => {
-		if (saved) {
-			const timer = setTimeout(() => setSaved(false), 2000);
-			return () => clearTimeout(timer);
-		}
-	}, [saved]);
-
 	const handleSave = async () => {
 		setFeedbackError(null);
+		const submittedContentLocales = contentLocales;
+		const submittedMediaFileId = mediaFileId;
+		const submittedMediaFileName = mediaFileName;
+		const submittedMediaType = mediaType;
 		try {
-			await updateMutation.mutateAsync({
-				contentLocales,
-				welcomeMediaFileId: mediaFileId,
-				welcomeMediaFileName: mediaFileName,
-				welcomeMediaType: mediaType,
-				welcomeMediaUrl: mediaFileId ? null : undefined,
+			const updated = await updateMutation.mutateAsync({
+				contentLocales: submittedContentLocales,
+				welcomeMediaFileId: submittedMediaFileId,
+				welcomeMediaFileName: submittedMediaFileName,
+				welcomeMediaType: submittedMediaType,
+				welcomeMediaUrl: submittedMediaFileId ? null : undefined,
 			});
-			setSaved(true);
+			const savedContentLocales = welcomeContentLocalesFrom(updated);
+			setInitialContentLocales(savedContentLocales);
+			setContentLocales((current) =>
+				current === submittedContentLocales ? structuredClone(savedContentLocales) : current,
+			);
+			setMediaFileId((current) =>
+				current === submittedMediaFileId ? updated.welcomeMediaFileId : current,
+			);
+			setMediaFileName((current) =>
+				current === submittedMediaFileName ? updated.welcomeMediaFileName : current,
+			);
+			setMediaType((current) =>
+				current === submittedMediaType ? updated.welcomeMediaType : current,
+			);
 		} catch {
 			setFeedbackError(t("settings.saveError"));
 		}
@@ -119,7 +131,6 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 			setMediaFileId(result.fileId);
 			setMediaFileName(result.fileName);
 			setMediaType(result.mediaType);
-			setSaved(false);
 		} catch {
 			setFeedbackError(t("settings.welcome.mediaUploadError"));
 		} finally {
@@ -132,7 +143,6 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 		setMediaFileId(null);
 		setMediaFileName(null);
 		setMediaType(null);
-		setSaved(false);
 	};
 
 	return (
@@ -211,7 +221,7 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 			</SettingsPanel>
 
 			<FormSaveButton
-				dirty={dirty && !saved}
+				dirty={dirty}
 				loading={updateMutation.isPending}
 				onSave={handleSave}
 				telegramMainButton
@@ -223,6 +233,7 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 				title={t("settings.welcome.discardTitle")}
 				confirmLabel={t("settings.welcome.discardConfirm")}
 				cancelLabel={t("settings.welcome.discardCancel")}
+				telegramNativeMessage={t("settings.welcome.discardBody")}
 				onConfirm={() => blocker.proceed?.()}
 				onCancel={() => blocker.reset?.()}
 			>

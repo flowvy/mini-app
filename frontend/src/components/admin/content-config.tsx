@@ -11,7 +11,7 @@ import type {
 	InviteSharePreviewMode,
 	WelcomeMediaUpload,
 } from "../../types/admin-settings.ts";
-import type { OperatorContent } from "../../types/operator-content.ts";
+import type { OperatorContent, OperatorContentLocales } from "../../types/operator-content.ts";
 import { TelegramHtmlEditor } from "../content/telegram-html-editor.tsx";
 import { TemplateVariables } from "../content/template-variables.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
@@ -228,9 +228,35 @@ interface ContentConfigProps {
 	initialMessageKey?: string;
 }
 
+interface InviteShareSettings {
+	mediaFileId: AdminSettings["inviteShareMediaFileId"];
+	mediaFileName: AdminSettings["inviteShareMediaFileName"];
+	mediaType: AdminSettings["inviteShareMediaType"];
+	previewMode: AdminSettings["inviteSharePreviewMode"];
+	allowUserChats: AdminSettings["inviteShareAllowUserChats"];
+	allowBotChats: AdminSettings["inviteShareAllowBotChats"];
+	allowGroupChats: AdminSettings["inviteShareAllowGroupChats"];
+	allowChannelChats: AdminSettings["inviteShareAllowChannelChats"];
+}
+
+function inviteShareSettingsFrom(settings: AdminSettings): InviteShareSettings {
+	return {
+		mediaFileId: settings.inviteShareMediaFileId,
+		mediaFileName: settings.inviteShareMediaFileName,
+		mediaType: settings.inviteShareMediaType,
+		previewMode: settings.inviteSharePreviewMode,
+		allowUserChats: settings.inviteShareAllowUserChats,
+		allowBotChats: settings.inviteShareAllowBotChats,
+		allowGroupChats: settings.inviteShareAllowGroupChats,
+		allowChannelChats: settings.inviteShareAllowChannelChats,
+	};
+}
+
 export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessageKey }) => {
 	const { t, i18n } = useTranslation();
-	const [initialLocales] = useState(() => structuredClone(settings.contentLocales));
+	const [initialLocales, setInitialLocales] = useState(() =>
+		structuredClone(settings.contentLocales),
+	);
 	const [contentLocales, setContentLocales] = useState(() =>
 		structuredClone(settings.contentLocales),
 	);
@@ -242,18 +268,10 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 	const [messageKey, setMessageKey] = useState<MessageKey>(() =>
 		initialMessageKey && isMessageKey(initialMessageKey) ? initialMessageKey : "inviteRegistration",
 	);
-	const [initialShareSettings] = useState(() => ({
-		mediaFileId: settings.inviteShareMediaFileId,
-		mediaFileName: settings.inviteShareMediaFileName,
-		mediaType: settings.inviteShareMediaType,
-		previewMode: settings.inviteSharePreviewMode,
-		allowUserChats: settings.inviteShareAllowUserChats,
-		allowBotChats: settings.inviteShareAllowBotChats,
-		allowGroupChats: settings.inviteShareAllowGroupChats,
-		allowChannelChats: settings.inviteShareAllowChannelChats,
-	}));
+	const [initialShareSettings, setInitialShareSettings] = useState(() =>
+		inviteShareSettingsFrom(settings),
+	);
 	const [shareSettings, setShareSettings] = useState(() => ({ ...initialShareSettings }));
-	const [saved, setSaved] = useState(false);
 	const [saveFailed, setSaveFailed] = useState(false);
 	const [uploading, setUploading] = useState(false);
 	const updateMutation = useUpdateSettings();
@@ -273,40 +291,44 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 		JSON.stringify(contentLocales) !== JSON.stringify(initialLocales) ||
 		JSON.stringify(shareSettings) !== JSON.stringify(initialShareSettings);
 	const blocker = useBlocker({
-		shouldBlockFn: () => dirty && !saved,
-		enableBeforeUnload: dirty && !saved,
+		shouldBlockFn: () => dirty,
+		enableBeforeUnload: dirty,
 		withResolver: true,
 	});
-
-	useEffect(() => {
-		if (!saved) return;
-		const timer = window.setTimeout(() => setSaved(false), 2_000);
-		return () => window.clearTimeout(timer);
-	}, [saved]);
 
 	const updateField = (field: ContentField, value: string) => {
 		setContentLocales((current) => ({
 			...current,
 			[locale]: { ...current[locale], [field]: value || null },
 		}));
-		setSaved(false);
 	};
 
 	const handleSave = async () => {
 		setSaveFailed(false);
+		const submittedLocales = contentLocales;
+		const submittedShareSettings = shareSettings;
 		try {
-			await updateMutation.mutateAsync({
-				contentLocales,
-				inviteShareMediaFileId: shareSettings.mediaFileId,
-				inviteShareMediaFileName: shareSettings.mediaFileName,
-				inviteShareMediaType: shareSettings.mediaType,
-				inviteSharePreviewMode: shareSettings.previewMode,
-				inviteShareAllowUserChats: shareSettings.allowUserChats,
-				inviteShareAllowBotChats: shareSettings.allowBotChats,
-				inviteShareAllowGroupChats: shareSettings.allowGroupChats,
-				inviteShareAllowChannelChats: shareSettings.allowChannelChats,
+			const updated = await updateMutation.mutateAsync({
+				contentLocales: submittedLocales,
+				inviteShareMediaFileId: submittedShareSettings.mediaFileId,
+				inviteShareMediaFileName: submittedShareSettings.mediaFileName,
+				inviteShareMediaType: submittedShareSettings.mediaType,
+				inviteSharePreviewMode: submittedShareSettings.previewMode,
+				inviteShareAllowUserChats: submittedShareSettings.allowUserChats,
+				inviteShareAllowBotChats: submittedShareSettings.allowBotChats,
+				inviteShareAllowGroupChats: submittedShareSettings.allowGroupChats,
+				inviteShareAllowChannelChats: submittedShareSettings.allowChannelChats,
 			});
-			setSaved(true);
+			const savedLocales: OperatorContentLocales = structuredClone(updated.contentLocales);
+			const savedShareSettings = inviteShareSettingsFrom(updated);
+			setInitialLocales(savedLocales);
+			setInitialShareSettings(savedShareSettings);
+			setContentLocales((current) =>
+				current === submittedLocales ? structuredClone(savedLocales) : current,
+			);
+			setShareSettings((current) =>
+				current === submittedShareSettings ? { ...savedShareSettings } : current,
+			);
 		} catch {
 			setSaveFailed(true);
 		}
@@ -326,7 +348,6 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 				mediaFileName: result.fileName,
 				mediaType: result.mediaType as AdminSettings["inviteShareMediaType"],
 			}));
-			setSaved(false);
 		} catch {
 			setSaveFailed(true);
 		} finally {
@@ -339,7 +360,6 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 		value: boolean,
 	) => {
 		setShareSettings((current) => ({ ...current, [field]: value }));
-		setSaved(false);
 	};
 	const audience = [
 		[
@@ -492,7 +512,6 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 											mediaFileName: null,
 											mediaType: null,
 										}));
-										setSaved(false);
 									}}
 								/>
 							</FormField>
@@ -518,7 +537,6 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 											...current,
 											previewMode: event.target.value as InviteSharePreviewMode,
 										}));
-										setSaved(false);
 									}}
 								/>
 							</FormField>
@@ -557,7 +575,7 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 			</SettingsPanel>
 
 			<FormSaveButton
-				dirty={dirty && !saved}
+				dirty={dirty}
 				loading={updateMutation.isPending}
 				onSave={handleSave}
 				telegramMainButton
@@ -569,6 +587,7 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 				title={t("settings.content.discardTitle")}
 				confirmLabel={t("settings.content.discardConfirm")}
 				cancelLabel={t("settings.content.discardCancel")}
+				telegramNativeMessage={t("settings.content.discardBody")}
 				onConfirm={() => blocker.proceed?.()}
 				onCancel={() => blocker.reset?.()}
 			>
