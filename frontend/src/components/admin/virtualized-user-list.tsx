@@ -61,25 +61,24 @@ export const VirtualizedUserList: FC<VirtualizedUserListProps> = ({ users, onUse
 		<ul
 			ref={listRef}
 			className={styles.list}
-			aria-rowcount={users.length}
 			aria-label={t("admin.users.listLabel")}
+			style={{ height: `${totalSize}px` }}
 		>
-			<div className={styles.inner} style={{ height: `${totalSize}px` }}>
-				{virtualItems.map((virtualRow) => (
-					<li
-						key={virtualRow.key}
-						data-index={virtualRow.index}
-						aria-rowindex={virtualRow.index + 1}
-						className={styles.item}
-						style={{
-							height: `${virtualRow.size}px`,
-							transform: `translateY(${virtualRow.start - scrollMargin}px)`,
-						}}
-					>
-						<Row user={users[virtualRow.index]} onUserClick={onUserClick} />
-					</li>
-				))}
-			</div>
+			{virtualItems.map((virtualRow) => (
+				<li
+					key={virtualRow.key}
+					data-index={virtualRow.index}
+					aria-posinset={virtualRow.index + 1}
+					aria-setsize={users.length}
+					className={styles.item}
+					style={{
+						height: `${virtualRow.size}px`,
+						transform: `translateY(${virtualRow.start - scrollMargin}px)`,
+					}}
+				>
+					<Row user={users[virtualRow.index]} onUserClick={onUserClick} />
+				</li>
+			))}
 		</ul>
 	);
 };

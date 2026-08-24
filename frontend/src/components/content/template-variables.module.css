@@ -2,7 +2,7 @@
 	min-width: 0;
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: 8px;
-	background: var(--v2-bg-primary);
+	background: var(--v2-bg-secondary);
 }
 
 .static {
@@ -73,6 +73,10 @@
 	cursor: pointer;
 }
 
+.static .variable {
+	background: var(--v2-bg-secondary);
+}
+
 .variable code {
 	font: var(--font-size-caption) / 1.2 var(--font-mono);
 	color: var(--v2-text-positive);
@@ -108,5 +112,13 @@
 	.disclosure summary:hover,
 	.variable:hover {
 		background: var(--v2-bg-tertiary);
+	}
+
+	.disclosure summary:hover,
+	.variable:hover,
+	.variable:hover code,
+	.variable:hover .variableDescription > span,
+	.variable:hover .variableDescription small {
+		color: var(--v2-text-primary);
 	}
 }

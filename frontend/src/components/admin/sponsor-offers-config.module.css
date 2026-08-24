@@ -20,7 +20,7 @@
 	padding: 12px;
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-md);
-	background: var(--v2-bg-primary);
+	background: var(--v2-bg-secondary);
 }
 
 .offerCard[data-published="true"] {
@@ -60,6 +60,7 @@
 .cardTitle span {
 	flex: 0 0 auto;
 	padding: 3px 6px;
+	border: 1px solid var(--v2-border-tertiary);
 	border-radius: 999px;
 	background: var(--v2-bg-secondary);
 	font-size: var(--font-size-overline);
@@ -68,6 +69,7 @@
 }
 
 .cardTitle span[data-availability="ready"] {
+	border-color: var(--v2-border-positive-secondary);
 	background: var(--v2-bg-positive-quaternary);
 	color: var(--v2-text-positive);
 }
@@ -75,6 +77,7 @@
 .cardTitle span[data-availability="rule_disabled"],
 .cardTitle span[data-availability="profile_unavailable"],
 .cardTitle span[data-availability="configuration_changed"] {
+	border-color: var(--v2-border-warning-secondary);
 	background: var(--v2-bg-warning);
 	color: var(--v2-text-warning);
 }
@@ -128,7 +131,7 @@
 	padding: 9px 10px;
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-sm);
-	background: var(--v2-bg-secondary);
+	background: var(--v2-bg-primary);
 }
 
 .donationFact strong {
@@ -168,7 +171,7 @@
 	overflow: clip;
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-md);
-	background: var(--v2-bg-primary);
+	background: var(--v2-bg-secondary);
 }
 
 .legacyOffer summary {
@@ -201,6 +204,7 @@
 
 .legacyMeta > span {
 	padding: 3px 6px;
+	border: 1px solid var(--v2-border-tertiary);
 	border-radius: 999px;
 	background: var(--v2-bg-secondary);
 }

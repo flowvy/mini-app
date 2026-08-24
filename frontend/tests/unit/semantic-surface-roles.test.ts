@@ -47,7 +47,12 @@ describe("semantic surface roles", () => {
 		const userRow = readSource("components/admin/user-row.module.css");
 		const platformIcon = readSource("components/devices/platform-icon.tsx");
 
-		expect(declarations(settings, ".inlineNoticeIcon")).toContain("color: var(--v2-icon-warning)");
+		expect(declarations(settings, ".inlineNoticeIcon")).toContain(
+			"color: var(--v2-icon-secondary)",
+		);
+		expect(
+			declarations(settings, '.inlineNotice[data-tone="warning"] .inlineNoticeIcon'),
+		).toContain("color: var(--v2-icon-warning)");
 		expect(declarations(userRow, ".chevron")).toContain("color: var(--v2-icon-tertiary)");
 		expect(platformIcon).toContain('fill="var(--v2-icon-warning)"');
 		expect(platformIcon).not.toContain('fill="var(--v2-text-warning)"');

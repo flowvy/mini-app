@@ -22,6 +22,7 @@ import {
 	FormFieldTextarea,
 	FormInlineDate,
 	FormInlineField,
+	FormSurfaceBody,
 } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { SegmentedControl } from "../ui/segmented-control.tsx";
@@ -199,7 +200,7 @@ export function AccessProfileEditor({
 					<h3 id="profile-details-title" className={styles.editorSectionTitle}>
 						{t("access.profileDetails")}
 					</h3>
-					<div className={styles.fields}>
+					<FormSurfaceBody dataUi="access-profile-fields">
 						<FormField label={t("access.name")} htmlFor="access-profile-name">
 							<FormFieldInput
 								id="access-profile-name"
@@ -322,7 +323,7 @@ export function AccessProfileEditor({
 								/>
 							</FormField>
 						</div>
-					</div>
+					</FormSurfaceBody>
 				</div>
 			</section>
 
@@ -331,7 +332,7 @@ export function AccessProfileEditor({
 					{t("access.advanced")}
 					<ChevronDown size={15} />
 				</summary>
-				<div className={styles.advancedFields}>
+				<FormSurfaceBody className={styles.advancedFields} dataUi="access-profile-advanced-fields">
 					<FormField label={t("access.status")} htmlFor="access-profile-status">
 						<FormFieldSelect
 							id="access-profile-status"
@@ -434,7 +435,7 @@ export function AccessProfileEditor({
 							disabled={optionsState !== "ready"}
 						/>
 					</FormField>
-				</div>
+				</FormSurfaceBody>
 			</details>
 		</EditorDialog>
 	);

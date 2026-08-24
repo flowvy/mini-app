@@ -155,7 +155,10 @@ export const WelcomeConfig: FC<WelcomeConfigProps> = ({ settings }) => {
 						label={t("settings.welcome.messageLabel")}
 						htmlFor="welcome-message"
 						notice={
-							<SettingsInlineNotice icon={<BadgeInfo size={13} aria-hidden="true" />}>
+							<SettingsInlineNotice
+								icon={<BadgeInfo size={13} aria-hidden="true" />}
+								tone="warning"
+							>
 								{t("settings.welcome.premiumWarning")}
 							</SettingsInlineNotice>
 						}

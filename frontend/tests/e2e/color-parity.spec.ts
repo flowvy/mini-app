@@ -333,8 +333,8 @@ test("desktop color roles cover navigation, status, editors, and destructive act
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
 		const notice = page.getByRole("note").filter({ hasText: "The two benefits are independent" });
-		await expect(notice).toHaveCSS("background-color", colors.warningSurface);
-		await expect(notice).toHaveCSS("border-color", colors.warningBorder);
+		await expect(notice).toHaveCSS("background-color", colors.floor1);
+		await expect(notice).toHaveCSS("border-color", colors.borderTertiary);
 		const toggle = page.getByRole("switch", { name: "Enable inviter reward days" });
 		await expect(toggle).toHaveCSS("background-color", colors.secondarySurface);
 		await expect(toggle).toHaveCSS("border-color", colors.borderSecondary);
@@ -352,6 +352,26 @@ test("desktop color roles cover navigation, status, editors, and destructive act
 		await toggle.click();
 		await expect(toggle).toHaveCSS("background-color", colors.positive);
 		await expect(toggle.locator("span")).toHaveCSS("background-color", colors.staticWhite);
+
+		await page.goto("/admin/settings/tribute/payment-links");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		const paymentLinksNotice = page
+			.getByRole("note")
+			.filter({ hasText: "Subscription links are shared provider destinations" });
+		await expect(paymentLinksNotice).toHaveCSS("background-color", colors.floor1);
+		await expect(paymentLinksNotice).toHaveCSS("border-color", colors.borderTertiary);
+
+		await page.goto("/admin/settings/support");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		const securityNotice = page
+			.getByRole("note")
+			.filter({ hasText: "Set these values only in the Flowvy server environment" });
+		await expect(securityNotice).toHaveCSS("background-color", colors.warningSurface);
+		await expect(securityNotice).toHaveCSS("border-color", colors.warningBorder);
 
 		await page.goto("/admin/settings/tribute/automation-rules");
 		await page.evaluate((theme) => {
@@ -373,6 +393,7 @@ test("desktop color roles cover navigation, status, editors, and destructive act
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
 		const publishedSponsorOffer = page.getByRole("article", { name: sponsorOffer.title });
+		await expect(publishedSponsorOffer).toHaveCSS("background-color", colors.secondarySurface);
 		await expect(publishedSponsorOffer).toHaveCSS("border-color", colors.positiveBorder);
 		await expect(publishedSponsorOffer).toHaveCSS(
 			"box-shadow",
@@ -386,7 +407,7 @@ test("desktop color roles cover navigation, status, editors, and destructive act
 		await publishedSponsorOffer.getByRole("button", { name: "Edit" }).click();
 		const offerEditor = page.getByRole("dialog", { name: "Edit sponsor offer" });
 		const templates = offerEditor.locator("details").filter({ hasText: "Templates" });
-		await expect(templates).toHaveCSS("background-color", colors.floor1);
+		await expect(templates).toHaveCSS("background-color", colors.secondarySurface);
 		const formattedDescription = offerEditor.getByRole("textbox", { name: "Description" });
 		await formattedDescription.focus();
 		await expect(formattedDescription).toHaveCSS("color", colors.primaryText);

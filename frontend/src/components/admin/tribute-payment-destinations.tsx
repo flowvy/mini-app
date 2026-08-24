@@ -109,7 +109,7 @@ export const TributePaymentDestinations: FC<TributePaymentDestinationsProps> = (
 			)}
 			<SettingsPanel title={t("settings.tribute.destinations.section")}>
 				<div className={styles.intro}>
-					<SettingsInlineNotice icon={<BadgeInfo size={13} aria-hidden="true" />}>
+					<SettingsInlineNotice icon={<BadgeInfo size={13} aria-hidden="true" />} tone="neutral">
 						{t("settings.tribute.destinations.intro")}
 					</SettingsInlineNotice>
 				</div>

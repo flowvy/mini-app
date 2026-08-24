@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 import { assertNoHorizontalOverflow, expect, mockData, test } from "./fixtures/mock-api.ts";
-import { expectSurfaceContract, noEdge, noOutline } from "./helpers/surface-contract.ts";
+import { expectSurfaceContract, noOutline } from "./helpers/surface-contract.ts";
 
 const edge = (color: string) => ({ width: "1px", style: "solid", color });
 
@@ -30,7 +30,7 @@ const offer = {
 	title: "Sponsor access",
 	description: "Support keeps the service available.",
 	commerceRuleId: "10000000-0000-4000-8000-000000000012",
-	isPublished: false,
+	isPublished: true,
 	sortOrder: 10,
 	provider: "tribute",
 	commerceType: "subscription",
@@ -134,8 +134,28 @@ test("renders every unavailable Sponsor offer reason with warning hierarchy", as
 		externalItemId: String(index + 20),
 		availability: value,
 	}));
+	const rules = availability.map(([value], index) => ({
+		id: offers[index].commerceRuleId,
+		provider: "tribute",
+		name: `Warning state rule ${index + 1}`,
+		commerceType: "subscription",
+		paymentMode: "recurring",
+		externalItemId: offers[index].externalItemId,
+		currency: "RUB",
+		calculationType: "provider_expiry",
+		fixedDurationDays: null,
+		amountBands: [],
+		accessProfileId:
+			value === "profile_unavailable"
+				? "00000000-0000-4000-8000-000000000099"
+				: "00000000-0000-4000-8000-000000000001",
+		grantMode: "replace",
+		priority: 100 + index,
+		isEnabled: value !== "rule_disabled",
+	}));
 
 	for (const theme of ["light", "dark"] as const) {
+		mockApi.seedCommerceRules(rules);
 		mockApi.seedSponsorOffers(offers);
 		await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
 		await page.goto("/admin/settings/tribute/sponsor-offers");
@@ -147,13 +167,19 @@ test("renders every unavailable Sponsor offer reason with warning hierarchy", as
 			const badge = page.locator(`[data-availability="${value}"]`, { hasText: label });
 			await expectSurfaceContract(badge, {
 				background: "var(--v2-bg-warning)",
-				border: noEdge(),
+				border: edge("var(--v2-border-warning-secondary)"),
 				outline: noOutline(),
 				boxShadow: "none",
 				color: "var(--v2-text-warning)",
 			});
 			const card = badge.locator("xpath=ancestor::article[1]");
-			await expectUniformCard(card, "--v2-bg-primary", "--v2-border-tertiary");
+			await expectSurfaceContract(card, {
+				background: "var(--v2-bg-secondary)",
+				border: edge("var(--v2-border-positive-secondary)"),
+				outline: noOutline(),
+				boxShadow: "inset 3px 0 0 var(--v2-border-positive-primary)",
+				color: "var(--v2-text-primary)",
+			});
 		}
 		await assertNoHorizontalOverflow(page);
 	}

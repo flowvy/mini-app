@@ -7,6 +7,7 @@ import { FormattedText } from "./content/formatted-text.tsx";
 import styles from "./onboarding-screen.module.css";
 import { AppLogo } from "./ui/app-logo.tsx";
 import { ErrorState } from "./ui/error-state.tsx";
+import { FormSurfaceBody } from "./ui/form-section.tsx";
 import { InlineFeedback } from "./ui/inline-feedback.tsx";
 import { LaunchSkeleton } from "./ui/page-skeleton.tsx";
 import { SpinnerIcon } from "./ui/spinner-icon.tsx";
@@ -66,7 +67,7 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 
 	return (
 		<main className={styles.screen}>
-			<section className={styles.card} aria-labelledby="onboarding-title">
+			<section className={styles.card} aria-labelledby="onboarding-title" data-ui="onboarding-card">
 				<AppLogo logoUrl={statusQuery.data?.logoUrl ?? null} size={44} />
 				<div className={styles.copy}>
 					<p className={styles.eyebrow}>{appName}</p>
@@ -99,37 +100,39 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 						submit();
 					}}
 				>
-					{effectiveState === "invite_required" && (
-						<input
-							value={code}
-							onChange={(event) => setCode(event.target.value)}
-							aria-label={t("onboarding.codeLabel")}
-							placeholder={t("onboarding.codePlaceholder")}
-							autoCapitalize="characters"
-							autoCorrect="off"
-							spellCheck={false}
-							enterKeyHint="done"
-							className={styles.input}
-						/>
-					)}
-					{error && (
-						<InlineFeedback attention="action">
-							{getLocalizedError(error, "onboarding.error.generic")}
-						</InlineFeedback>
-					)}
-					<button
-						type="submit"
-						className={styles.submit}
-						disabled={isPending || (effectiveState === "invite_required" && !code.trim())}
-					>
-						{isPending ? (
-							<SpinnerIcon size={16} />
-						) : effectiveState === "invite_required" ? (
-							operatorText(content, "onboardingRedeemAction", t("onboarding.redeem"), context)
-						) : (
-							operatorText(content, "onboardingRegisterAction", t("onboarding.register"), context)
+					<FormSurfaceBody className={styles.formBody} dataUi="onboarding-form-body">
+						{effectiveState === "invite_required" && (
+							<input
+								value={code}
+								onChange={(event) => setCode(event.target.value)}
+								aria-label={t("onboarding.codeLabel")}
+								placeholder={t("onboarding.codePlaceholder")}
+								autoCapitalize="characters"
+								autoCorrect="off"
+								spellCheck={false}
+								enterKeyHint="done"
+								className={styles.input}
+							/>
 						)}
-					</button>
+						{error && (
+							<InlineFeedback attention="action">
+								{getLocalizedError(error, "onboarding.error.generic")}
+							</InlineFeedback>
+						)}
+						<button
+							type="submit"
+							className={styles.submit}
+							disabled={isPending || (effectiveState === "invite_required" && !code.trim())}
+						>
+							{isPending ? (
+								<SpinnerIcon size={16} />
+							) : effectiveState === "invite_required" ? (
+								operatorText(content, "onboardingRedeemAction", t("onboarding.redeem"), context)
+							) : (
+								operatorText(content, "onboardingRegisterAction", t("onboarding.register"), context)
+							)}
+						</button>
+					</FormSurfaceBody>
 				</form>
 			</section>
 		</main>

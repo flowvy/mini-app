@@ -12,6 +12,28 @@ const screens = [
 	{ name: "devices", path: "/devices", marker: "Pixel 8" },
 	{ name: "pulse", path: "/pulse", marker: "All systems operational" },
 	{ name: "support", path: "/support", marker: "Needs reply" },
+	{ name: "support-new", path: "/support/new", marker: "New request" },
+	{
+		name: "support-answer",
+		path: "/support/answers/61000000-0000-4000-8000-000000000002",
+		marker: "Set up Flowvy on a new device",
+	},
+	{ name: "support-manage", path: "/support/manage/answers", marker: "Articles" },
+	{
+		name: "support-manage-new",
+		path: "/support/manage/answers/new",
+		marker: "Article details",
+	},
+	{
+		name: "support-manage-edit",
+		path: "/support/manage/answers/61000000-0000-4000-8000-000000000003",
+		marker: "Article details",
+	},
+	{
+		name: "support-request",
+		path: "/support/requests/request-31",
+		marker: "Request details",
+	},
 	{ name: "admin-dashboard", path: "/admin/dashboard", marker: "Remnawave unavailable" },
 	{ name: "admin-users", path: "/admin/users", marker: "alice" },
 	{ name: "admin-users-search", path: "/admin/users/search", marker: "alice" },
@@ -19,6 +41,11 @@ const screens = [
 	{ name: "admin-broadcast", path: "/admin/broadcast", marker: "Broadcast is coming soon" },
 	{ name: "admin-settings", path: "/admin/settings", marker: "Integrations" },
 	{ name: "admin-settings-pulse", path: "/admin/settings/pulse", marker: "Active source" },
+	{
+		name: "admin-settings-support",
+		path: "/admin/settings/support",
+		marker: "Attachment storage",
+	},
 	{ name: "admin-access", path: "/admin/settings/access", marker: "Service mode" },
 	{ name: "admin-settings-kuma", path: "/admin/settings/kuma", marker: "URL" },
 	{ name: "admin-settings-beszel", path: "/admin/settings/beszel", marker: "Hub URL" },
@@ -83,13 +110,20 @@ test("capture invite-only onboarding", async ({ page, mockApi }, testInfo) => {
 		},
 	});
 
-	await page.goto("/");
-	await expect(page.getByRole("heading", { name: "Invitation required" })).toBeVisible();
-	await assertNoHorizontalOverflow(page);
-	await page.screenshot({
-		path: testInfo.outputPath("invite-onboarding.png"),
-		animations: "disabled",
-	});
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		await expect(page.getByRole("heading", { name: "Invitation required" })).toBeVisible();
+		await assertNoHorizontalOverflow(page);
+		expect((await new AxeBuilder({ page }).include("main").analyze()).violations).toEqual([]);
+		await page.screenshot({
+			path: testInfo.outputPath(`invite-onboarding-${colorScheme}.png`),
+			animations: "disabled",
+		});
+	}
 });
 
 test("capture unavailable Telegram referral in light and dark themes", async ({
@@ -165,7 +199,7 @@ test("capture deterministic visual evidence for key screens", async ({
 	page,
 	mockApi: _mock,
 }, testInfo) => {
-	test.setTimeout(120_000);
+	test.setTimeout(300_000);
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
 		for (const screen of screens) {
@@ -174,12 +208,14 @@ test("capture deterministic visual evidence for key screens", async ({
 				document.documentElement.setAttribute("data-theme", theme);
 			}, colorScheme);
 			await expect(page.getByText(screen.marker, { exact: true }).first()).toBeVisible();
+			await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
 			if (screen.path === "/admin/settings/content") {
 				await expect(
 					page.getByRole("textbox", { name: "Invite registration description" }),
 				).toBeVisible();
 			}
 			await assertNoHorizontalOverflow(page);
+			expect((await new AxeBuilder({ page }).include("main").analyze()).violations).toEqual([]);
 			await page.screenshot({
 				path: testInfo.outputPath(`${screen.name}-${colorScheme}.png`),
 				animations: "disabled",

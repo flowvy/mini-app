@@ -62,6 +62,16 @@
 	border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
+/* ── Shared task-form body ── */
+
+.surfaceBody {
+	display: grid;
+	gap: 14px;
+	min-width: 0;
+	padding: 14px;
+	background: transparent;
+}
+
 /* ── Row ── */
 
 .row {

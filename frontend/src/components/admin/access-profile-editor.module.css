@@ -22,12 +22,6 @@
 	background: var(--v2-bg-primary);
 }
 
-.fields {
-	display: grid;
-	gap: 14px;
-	padding: 14px;
-}
-
 .validityPanel {
 	min-width: 0;
 }
@@ -85,7 +79,6 @@
 }
 
 .advancedFields {
-	display: grid;
 	gap: 12px;
 	padding: 4px 14px 14px;
 	border-top: 1px solid var(--v2-border-tertiary);
@@ -120,7 +113,7 @@
 }
 
 @media (max-width: 350px) {
-	.fields {
+	:global([data-ui="access-profile-fields"]) {
 		padding: 12px;
 	}
 

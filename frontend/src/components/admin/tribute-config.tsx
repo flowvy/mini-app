@@ -55,7 +55,10 @@ export const TributeConnectionConfig: FC<TributeConnectionConfigProps> = ({ sett
 					<>
 						<SettingsDivider />
 						<div className={ss.panelInset}>
-							<SettingsInlineNotice icon={<BadgeInfo size={13} aria-hidden="true" />}>
+							<SettingsInlineNotice
+								icon={<BadgeInfo size={13} aria-hidden="true" />}
+								tone="warning"
+							>
 								{t("settings.tribute.credentialsNotice")}
 							</SettingsInlineNotice>
 						</div>

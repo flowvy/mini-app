@@ -45,7 +45,7 @@
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: 16px;
 	background: var(--v2-bg-primary);
-	color: var(--v2-text-tertiary);
+	color: var(--v2-text-secondary);
 	font: inherit;
 	font-size: var(--font-size-control);
 	text-align: left;
@@ -95,7 +95,7 @@
 }
 
 .searchInput::placeholder {
-	color: var(--v2-text-tertiary);
+	color: var(--v2-text-secondary);
 }
 
 .clearBtn {
@@ -151,6 +151,6 @@
 
 .emptyDesc {
 	font-size: var(--font-size-caption);
-	color: var(--v2-text-tertiary);
+	color: var(--v2-text-secondary);
 	text-align: center;
 }

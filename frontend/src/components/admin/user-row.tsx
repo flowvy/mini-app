@@ -71,7 +71,7 @@ export const UserRow: FC<UserRowProps> = ({ user, onClick }) => {
 					{!unlimitedExpiry && (
 						<span
 							className={styles.expiry}
-							style={{ color: expiryColor ?? "var(--v2-text-tertiary)" }}
+							style={{ color: expiryColor ?? "var(--v2-text-secondary)" }}
 						>
 							{expiryText}
 						</span>

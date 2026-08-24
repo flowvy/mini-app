@@ -35,6 +35,7 @@ import {
 	FormFieldSelect,
 	FormRow,
 	FormRowSeparator,
+	FormSurfaceBody,
 } from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { SegmentedControl } from "../ui/segmented-control.tsx";
@@ -326,7 +327,7 @@ export function CommerceRuleEditor({
 					<h3 id="commerce-match-title" className={styles.cardTitle}>
 						{t("settings.tribute.rules.matchSection")}
 					</h3>
-					<div className={styles.fields}>
+					<FormSurfaceBody dataUi="commerce-rule-fields">
 						<FormField label={t("settings.tribute.rules.name")} htmlFor="commerce-rule-name">
 							<FormFieldInput
 								id="commerce-rule-name"
@@ -449,14 +450,14 @@ export function CommerceRuleEditor({
 								/>
 							</FormField>
 						</div>
-					</div>
+					</FormSurfaceBody>
 				</section>
 
 				<section className={styles.card} aria-labelledby="commerce-access-title">
 					<h3 id="commerce-access-title" className={styles.cardTitle}>
 						{t("settings.tribute.rules.accessSection")}
 					</h3>
-					<div className={styles.fields}>
+					<FormSurfaceBody dataUi="commerce-rule-fields">
 						{activeProfiles.length === 0 && (
 							<InlineFeedback>{t("settings.tribute.rules.noActiveProfiles")}</InlineFeedback>
 						)}
@@ -645,7 +646,7 @@ export function CommerceRuleEditor({
 								)}
 							</>
 						)}
-					</div>
+					</FormSurfaceBody>
 				</section>
 
 				{draft.commerceType !== "subscription" && (
@@ -653,7 +654,7 @@ export function CommerceRuleEditor({
 						<h3 id="commerce-preview-title" className={styles.cardTitle}>
 							{t("settings.tribute.rules.previewSection")}
 						</h3>
-						<div className={styles.fields}>
+						<FormSurfaceBody dataUi="commerce-rule-fields">
 							<p className={styles.help}>{t("settings.tribute.rules.previewHint")}</p>
 							<div className={styles.previewControls}>
 								<FormField
@@ -703,7 +704,7 @@ export function CommerceRuleEditor({
 							{previewError && (
 								<InlineFeedback attention="action">{previewErrorCopy()}</InlineFeedback>
 							)}
-						</div>
+						</FormSurfaceBody>
 					</section>
 				)}
 

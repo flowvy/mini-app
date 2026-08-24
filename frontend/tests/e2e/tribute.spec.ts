@@ -1792,7 +1792,7 @@ test("admin groups legacy subscription cards around one readable plan preview", 
 		const warningSurface = colorScheme === "light" ? "rgb(255, 239, 204)" : "rgb(52, 45, 25)";
 		const warningBorder = colorScheme === "light" ? "rgb(252, 218, 146)" : "rgb(99, 82, 29)";
 		const warningText = colorScheme === "light" ? "rgb(138, 91, 0)" : "rgb(255, 203, 47)";
-		const primarySurface = colorScheme === "light" ? "rgb(255, 255, 255)" : "rgb(33, 33, 33)";
+		const secondarySurface = colorScheme === "light" ? "rgb(242, 242, 242)" : "rgb(41, 41, 41)";
 		const firstLegacyOffer = offersSection.locator('[data-ui="legacy-sponsor-offer"]').first();
 		const duplicateNote = offersSection.getByRole("note");
 		const duplicateWarning = offersSection.locator('[data-ui="duplicate-sponsor-warning"]').first();
@@ -1808,7 +1808,7 @@ test("admin groups legacy subscription cards around one readable plan preview", 
 			"background-color",
 			"rgba(0, 0, 0, 0)",
 		);
-		await expect(firstLegacyOffer).toHaveCSS("background-color", primarySurface);
+		await expect(firstLegacyOffer).toHaveCSS("background-color", secondarySurface);
 		await expect(duplicateWarning).toHaveCSS("background-color", warningSurface);
 		await expect(duplicateWarning).toHaveCSS("border-color", warningBorder);
 		await expect(duplicateWarning).toHaveCSS("color", warningText);

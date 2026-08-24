@@ -24,7 +24,7 @@
 	line-height: 1.2;
 	letter-spacing: 0.05em;
 	text-transform: uppercase;
-	color: var(--v2-text-primary);
+	color: var(--v2-text-secondary);
 }
 
 .sectionAction {
@@ -68,6 +68,10 @@
 }
 
 .fields {
+	min-width: 0;
+}
+
+.inset {
 	display: grid;
 	gap: 14px;
 	min-width: 0;
@@ -76,7 +80,6 @@
 
 .divider {
 	height: 1px;
-	margin-left: 14px;
 	background: var(--v2-border-tertiary);
 }
 
@@ -168,19 +171,28 @@
 	align-items: flex-start;
 	gap: 8px;
 	padding: 8px 10px;
-	border: 1px solid var(--v2-border-warning-secondary);
+	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-sm);
-	background: var(--v2-bg-warning);
+	background: var(--v2-bg-primary);
 	font-size: var(--font-size-caption);
 	font-weight: 400;
 	line-height: 1.45;
 	color: var(--v2-text-secondary);
 }
 
+.inlineNotice[data-tone="warning"] {
+	border-color: var(--v2-border-warning-secondary);
+	background: var(--v2-bg-warning);
+}
+
 .inlineNoticeIcon {
 	display: flex;
 	flex: 0 0 auto;
 	margin-top: 1px;
+	color: var(--v2-icon-secondary);
+}
+
+.inlineNotice[data-tone="warning"] .inlineNoticeIcon {
 	color: var(--v2-icon-warning);
 }
 
@@ -231,7 +243,7 @@
 	font-size: var(--font-size-caption);
 	font-weight: 400;
 	line-height: 1.4;
-	color: var(--v2-text-primary);
+	color: var(--v2-text-secondary);
 }
 
 .navTrailing {

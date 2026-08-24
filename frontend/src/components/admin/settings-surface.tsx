@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { type FC, type MouseEvent, type ReactNode, useId } from "react";
+import { FormSurfaceBody } from "../ui/form-section.tsx";
 import styles from "./settings-surface.module.css";
 
 type SettingsTone = "default" | "positive" | "warning" | "negative";
@@ -15,7 +16,7 @@ export const SettingsSection: FC<SettingsSectionProps> = ({ title, action, child
 
 	return (
 		<section className={styles.section} aria-labelledby={headingId}>
-			<div className={styles.surface}>
+			<div className={styles.surface} data-ui="settings-surface">
 				<div className={styles.sectionHeading}>
 					<h2 id={headingId}>{title}</h2>
 					{action && <div className={styles.sectionAction}>{action}</div>}
@@ -38,7 +39,7 @@ export const SettingsPanel: FC<SettingsPanelProps> = ({ title, action, children 
 
 	return (
 		<section className={styles.panel} aria-labelledby={headingId}>
-			<div className={styles.surface}>
+			<div className={styles.surface} data-ui="settings-surface">
 				<div className={styles.panelHeading}>
 					<h2 id={headingId}>{title}</h2>
 					{action && <div className={styles.panelAction}>{action}</div>}
@@ -50,10 +51,21 @@ export const SettingsPanel: FC<SettingsPanelProps> = ({ title, action, children 
 };
 
 export const SettingsFields: FC<{ children: ReactNode }> = ({ children }) => (
-	<div className={styles.fields}>{children}</div>
+	<FormSurfaceBody className={styles.fields} dataUi="settings-fields">
+		{children}
+	</FormSurfaceBody>
 );
 
-export const SettingsDivider: FC = () => <div className={styles.divider} />;
+/** Padded non-form content inside a Settings panel. */
+export const SettingsInset: FC<{ children: ReactNode }> = ({ children }) => (
+	<div className={styles.inset} data-ui="settings-inset">
+		{children}
+	</div>
+);
+
+export const SettingsDivider: FC = () => (
+	<div className={styles.divider} data-ui="settings-divider" />
+);
 
 interface SettingsChoiceRowProps {
 	name: string;
@@ -119,11 +131,12 @@ export const SettingsActionRow: FC<SettingsActionRowProps> = ({
 	</button>
 );
 
-export const SettingsInlineNotice: FC<{ icon: ReactNode; children: ReactNode }> = ({
-	icon,
-	children,
-}) => (
-	<div className={styles.inlineNotice} role="note">
+export const SettingsInlineNotice: FC<{
+	icon: ReactNode;
+	tone: "neutral" | "warning";
+	children: ReactNode;
+}> = ({ icon, tone, children }) => (
+	<div className={styles.inlineNotice} data-tone={tone} role="note">
 		<span className={styles.inlineNoticeIcon}>{icon}</span>
 		<span>{children}</span>
 	</div>

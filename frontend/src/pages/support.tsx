@@ -37,6 +37,7 @@ import {
 	FormFieldSelect,
 	FormSection,
 	FormSectionCard,
+	FormSurfaceBody,
 } from "../components/ui/form-section.tsx";
 import { InlineFeedback } from "../components/ui/inline-feedback.tsx";
 import { PageLoading } from "../components/ui/page-loading.tsx";
@@ -612,59 +613,61 @@ export function SupportNewRequest() {
 				<p>{t("support.new.description")}</p>
 			</div>
 			<form className={styles.formCard} onSubmit={submit}>
-				<FormField label={t("support.new.topic")} htmlFor="support-topic">
-					<FormFieldSelect
-						id="support-topic"
-						value={topic}
-						onChange={(event) => setTopic(event.target.value as SupportArticleTopic)}
-						options={topicOptions}
-					/>
-				</FormField>
-				<FormField label={t("support.new.subject")} htmlFor="support-subject">
-					<FormFieldInput
-						id="support-subject"
-						value={subject}
-						onChange={(event) => setSubject(event.target.value)}
-						enterKeyHint="next"
-						required
-						maxLength={120}
-					/>
-				</FormField>
-				<FormField label={t("support.new.message")} hint={t("support.new.safetyHint")}>
-					<FormattedTextEditor
-						id="support-message"
-						ariaLabel={t("support.new.message")}
-						value={message}
-						onChange={setMessage}
-						placeholder={t("support.new.messagePlaceholder")}
-						maxLength={4000}
-					/>
-				</FormField>
-				{messageTooLong && (
-					<InlineFeedback attention="action">{t("support.formatLimitError")}</InlineFeedback>
-				)}
-				<FormField label={t("support.attachments.title")}>
-					<FilePicker
-						files={files}
-						onFilesChange={setFiles}
-						error={fileError}
-						setError={setFileError}
-						capabilities={capabilities.data}
-						capabilitiesPending={capabilities.isPending}
-					/>
-				</FormField>
-				{createRequest.error && (
-					<InlineFeedback attention="action">{t("support.actions.createError")}</InlineFeedback>
-				)}
-				<ActionBtn
-					type="submit"
-					size="md"
-					loading={createRequest.isPending}
-					disabled={!subject.trim() || !message.trim() || messageTooLong}
-				>
-					<Send size={16} aria-hidden="true" />
-					{t("support.new.send")}
-				</ActionBtn>
+				<FormSurfaceBody dataUi="support-new-fields">
+					<FormField label={t("support.new.topic")} htmlFor="support-topic">
+						<FormFieldSelect
+							id="support-topic"
+							value={topic}
+							onChange={(event) => setTopic(event.target.value as SupportArticleTopic)}
+							options={topicOptions}
+						/>
+					</FormField>
+					<FormField label={t("support.new.subject")} htmlFor="support-subject">
+						<FormFieldInput
+							id="support-subject"
+							value={subject}
+							onChange={(event) => setSubject(event.target.value)}
+							enterKeyHint="next"
+							required
+							maxLength={120}
+						/>
+					</FormField>
+					<FormField label={t("support.new.message")} hint={t("support.new.safetyHint")}>
+						<FormattedTextEditor
+							id="support-message"
+							ariaLabel={t("support.new.message")}
+							value={message}
+							onChange={setMessage}
+							placeholder={t("support.new.messagePlaceholder")}
+							maxLength={4000}
+						/>
+					</FormField>
+					{messageTooLong && (
+						<InlineFeedback attention="action">{t("support.formatLimitError")}</InlineFeedback>
+					)}
+					<FormField label={t("support.attachments.title")}>
+						<FilePicker
+							files={files}
+							onFilesChange={setFiles}
+							error={fileError}
+							setError={setFileError}
+							capabilities={capabilities.data}
+							capabilitiesPending={capabilities.isPending}
+						/>
+					</FormField>
+					{createRequest.error && (
+						<InlineFeedback attention="action">{t("support.actions.createError")}</InlineFeedback>
+					)}
+					<ActionBtn
+						type="submit"
+						size="md"
+						loading={createRequest.isPending}
+						disabled={!subject.trim() || !message.trim() || messageTooLong}
+					>
+						<Send size={16} aria-hidden="true" />
+						{t("support.new.send")}
+					</ActionBtn>
+				</FormSurfaceBody>
 			</form>
 			<aside className={styles.contextNotice}>
 				<ShieldCheck size={20} aria-hidden="true" />
@@ -841,7 +844,11 @@ export function SupportRequestPage() {
 			)}
 			<FormSection title={t("support.request.conversation")}>
 				<FormSectionCard>
-					<div className={styles.thread} aria-label={t("support.request.conversation")}>
+					<div
+						className={styles.thread}
+						aria-label={t("support.request.conversation")}
+						data-ui="support-conversation"
+					>
 						{request.messages.map((item) => (
 							<article
 								key={item.id}
@@ -853,7 +860,11 @@ export function SupportRequestPage() {
 							>
 								<header>
 									<span className={styles.messageAuthor}>
-										<span className={styles.messageAvatar} aria-hidden="true">
+										<span
+											className={styles.messageAvatar}
+											aria-hidden="true"
+											data-ui="support-message-avatar"
+										>
 											{item.author === "support" ? <LifeBuoy size={15} /> : <User size={15} />}
 										</span>
 										<strong>{item.authorName}</strong>
@@ -864,8 +875,12 @@ export function SupportRequestPage() {
 								{item.attachments.length > 0 && (
 									<div className={styles.messageFiles}>
 										{item.attachments.map((attachment) => (
-											<div key={attachment.id} className={styles.messageFile}>
-												<span className={styles.fileKind}>
+											<div
+												key={attachment.id}
+												className={styles.messageFile}
+												data-ui="support-message-file"
+											>
+												<span className={styles.fileKind} data-ui="support-file-kind">
 													<AttachmentIcon attachment={attachment} />
 												</span>
 												<span>
@@ -896,49 +911,51 @@ export function SupportRequestPage() {
 			</FormSection>
 			<FormSection title={t("support.reply.label")}>
 				<FormSectionCard>
-					<form className={styles.composer} onSubmit={sendReply}>
-						<FormField label={isAdmin ? t("support.reply.adminLabel") : t("support.reply.label")}>
-							<FormattedTextEditor
-								id="support-reply"
-								ariaLabel={isAdmin ? t("support.reply.adminLabel") : t("support.reply.label")}
-								value={message}
-								onChange={setMessage}
-								placeholder={
-									isAdmin ? t("support.reply.adminPlaceholder") : t("support.reply.placeholder")
-								}
-								maxLength={4000}
+					<form onSubmit={sendReply}>
+						<FormSurfaceBody className={styles.composer} dataUi="support-reply-composer">
+							<FormField label={isAdmin ? t("support.reply.adminLabel") : t("support.reply.label")}>
+								<FormattedTextEditor
+									id="support-reply"
+									ariaLabel={isAdmin ? t("support.reply.adminLabel") : t("support.reply.label")}
+									value={message}
+									onChange={setMessage}
+									placeholder={
+										isAdmin ? t("support.reply.adminPlaceholder") : t("support.reply.placeholder")
+									}
+									maxLength={4000}
+								/>
+							</FormField>
+							{messageTooLong && (
+								<InlineFeedback attention="action">{t("support.formatLimitError")}</InlineFeedback>
+							)}
+							<FilePicker
+								files={files}
+								onFilesChange={setFiles}
+								error={fileError}
+								setError={setFileError}
+								capabilities={capabilities.data}
+								capabilitiesPending={capabilities.isPending}
 							/>
-						</FormField>
-						{messageTooLong && (
-							<InlineFeedback attention="action">{t("support.formatLimitError")}</InlineFeedback>
-						)}
-						<FilePicker
-							files={files}
-							onFilesChange={setFiles}
-							error={fileError}
-							setError={setFileError}
-							capabilities={capabilities.data}
-							capabilitiesPending={capabilities.isPending}
-						/>
-						{resolved && <p className={styles.reopenHint}>{t("support.reply.reopenHint")}</p>}
-						{(reply.error || setResolved.error || downloadError) && (
-							<InlineFeedback attention="action">
-								{downloadError
-									? t("support.actions.downloadError")
-									: t("support.actions.updateError")}
-							</InlineFeedback>
-						)}
-						<div className={styles.composerFooter}>
-							<ActionBtn
-								type="submit"
-								size="md"
-								loading={reply.isPending}
-								disabled={!message.trim() || messageTooLong}
-							>
-								<Send size={16} />
-								{t("support.reply.send")}
-							</ActionBtn>
-						</div>
+							{resolved && <p className={styles.reopenHint}>{t("support.reply.reopenHint")}</p>}
+							{(reply.error || setResolved.error || downloadError) && (
+								<InlineFeedback attention="action">
+									{downloadError
+										? t("support.actions.downloadError")
+										: t("support.actions.updateError")}
+								</InlineFeedback>
+							)}
+							<div className={styles.composerFooter}>
+								<ActionBtn
+									type="submit"
+									size="md"
+									loading={reply.isPending}
+									disabled={!message.trim() || messageTooLong}
+								>
+									<Send size={16} />
+									{t("support.reply.send")}
+								</ActionBtn>
+							</div>
+						</FormSurfaceBody>
 					</form>
 				</FormSectionCard>
 			</FormSection>

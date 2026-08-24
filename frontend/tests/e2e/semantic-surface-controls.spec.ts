@@ -196,6 +196,32 @@ for (const theme of themes) {
 
 		await page.goto("/");
 		await expectTheme(page, theme);
+		await expectSurfaceContract(page.locator('[data-ui="onboarding-card"]'), {
+			background: primary,
+			border: edge(borderTertiary),
+			outline: noOutline(),
+			boxShadow: "var(--v2-shadow)",
+			color: primaryText,
+		});
+		const onboardingBody = page.locator('[data-ui="onboarding-form-body"]');
+		await expectSurfaceContract(onboardingBody, {
+			background: transparent,
+			border: noEdge(),
+			outline: noOutline(),
+			boxShadow: "none",
+			color: primaryText,
+		});
+		await expect
+			.poll(() =>
+				onboardingBody.evaluate((element) => {
+					const style = getComputedStyle(element);
+					return {
+						inlineStart: style.paddingInlineStart,
+						inlineEnd: style.paddingInlineEnd,
+					};
+				}),
+			)
+			.toEqual({ inlineStart: "0px", inlineEnd: "0px" });
 		const invite = page.getByLabel("Invite code");
 		await expectStandaloneControl(invite);
 		await invite.focus();

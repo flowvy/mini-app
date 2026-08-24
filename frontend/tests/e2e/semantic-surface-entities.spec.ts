@@ -90,7 +90,6 @@ test("Admin Users keeps individual cards and every row role in both themes", asy
 			negativeSurface: await tokenColor(page, "--v2-bg-negative-secondary"),
 			negative: await tokenColor(page, "--v2-text-negative"),
 			secondaryText: await tokenColor(page, "--v2-text-secondary"),
-			tertiaryText: await tokenColor(page, "--v2-text-tertiary"),
 			tertiaryIcon: await tokenColor(page, "--v2-icon-tertiary"),
 			tertiaryBorder: await tokenColor(page, "--v2-border-tertiary"),
 			positiveBorder: await tokenColor(page, "--v2-border-positive-secondary"),
@@ -221,7 +220,7 @@ test("Admin Users keeps individual cards and every row role in both themes", asy
 			.getByRole("button")
 			.filter({ has: page.getByText("surface-disabled", { exact: true }) })
 			.locator('[class*="expiry_"]');
-		await expect(normalExpiry).toHaveCSS("color", colors.tertiaryText);
+		await expect(normalExpiry).toHaveCSS("color", colors.secondaryText);
 		await expect(warningExpiry).toHaveCSS("color", colors.warning);
 		await expect(negativeExpiry).toHaveCSS("color", colors.negative);
 

@@ -269,14 +269,19 @@
 }
 .formCard,
 .article {
-	display: grid;
-	gap: 14px;
-	padding: 14px;
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-md);
 	background: var(--v2-bg-primary);
 }
-.formCard > button {
+.formCard {
+	overflow: hidden;
+}
+.article {
+	display: grid;
+	gap: 14px;
+	padding: 14px;
+}
+.formCard [data-ui="support-new-fields"] > button {
 	justify-self: end;
 }
 .contextNotice {
@@ -508,6 +513,7 @@
 .thread {
 	gap: 8px;
 	padding: 12px;
+	background: var(--v2-floor-0);
 }
 .message {
 	display: grid;
@@ -522,6 +528,15 @@
 .message[data-owned="true"] {
 	justify-self: end;
 	background: var(--v2-bg-secondary);
+}
+.message[data-owned="true"] .messageFile {
+	background: var(--v2-bg-primary);
+}
+.message[data-owned="true"] .fileKind {
+	background: var(--v2-bg-secondary);
+}
+.message[data-owned="true"] .messageAvatar {
+	background: var(--v2-bg-primary);
 }
 .message[data-author="support"] {
 	box-shadow: inset 3px 0 0 var(--v2-border-positive-primary);
@@ -586,9 +601,7 @@
 	color: var(--v2-icon-secondary);
 }
 .composer {
-	display: grid;
 	gap: 10px;
-	padding: 14px;
 }
 .composerFooter {
 	display: flex;
@@ -737,11 +750,6 @@
 	justify-content: flex-end;
 	gap: 8px;
 	padding-top: 4px;
-}
-.editorFields {
-	display: grid;
-	gap: 14px;
-	padding: 14px;
 }
 @media (hover: hover) and (pointer: fine) {
 	.answerRow:hover,

@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import {
 	SettingsDivider,
 	SettingsFactRow,
-	SettingsFields,
 	SettingsInlineNotice,
+	SettingsInset,
 	SettingsPanel,
 	SettingsStatusRow,
 } from "../../components/admin/settings-surface.tsx";
@@ -110,8 +110,8 @@ export const AdminSupportSettings: FC = () => {
 			</SettingsPanel>
 
 			<SettingsPanel title={t("settings.supportStorage.setupSection")}>
-				<SettingsFields>
-					<SettingsInlineNotice icon={<BadgeInfo size={13} aria-hidden="true" />}>
+				<SettingsInset>
+					<SettingsInlineNotice icon={<BadgeInfo size={13} aria-hidden="true" />} tone="warning">
 						{t("settings.supportStorage.secretNotice")}
 					</SettingsInlineNotice>
 					<div className={supportStyles.environment}>
@@ -125,7 +125,7 @@ export const AdminSupportSettings: FC = () => {
 							))}
 						</div>
 					</div>
-				</SettingsFields>
+				</SettingsInset>
 			</SettingsPanel>
 		</div>
 	);

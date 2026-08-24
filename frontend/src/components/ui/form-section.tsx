@@ -1,6 +1,7 @@
 import { CalendarDays, ChevronDown } from "lucide-react";
 import {
 	type FC,
+	type HTMLAttributes,
 	type InputHTMLAttributes,
 	type ReactNode,
 	type SelectHTMLAttributes,
@@ -42,7 +43,25 @@ export const FormSectionFooter: FC<FormSectionFooterProps> = ({ children, warnin
 );
 
 export const FormSectionCard: FC<{ children: ReactNode }> = ({ children }) => (
-	<div className={styles.card}>{children}</div>
+	<div className={styles.card} data-ui="form-section-card">
+		{children}
+	</div>
+);
+
+interface FormSurfaceBodyProps extends HTMLAttributes<HTMLDivElement> {
+	dataUi?: string;
+}
+
+/** Shared body layout for framed forms; the owning card supplies the surface. */
+export const FormSurfaceBody: FC<FormSurfaceBodyProps> = ({
+	children,
+	className,
+	dataUi = "form-surface-body",
+	...props
+}) => (
+	<div {...props} className={`${styles.surfaceBody} ${className ?? ""}`} data-ui={dataUi}>
+		{children}
+	</div>
 );
 
 interface FormRowProps {

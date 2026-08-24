@@ -13,7 +13,7 @@ semantic roles и computed colors.
 
 Построчный аудит актуальных source trees зафиксировал desktop commit `dedd324a9a9baac4da660b8a9a760a2afacef168`
 как design reference и Mini App commit `9334014279817e21034674b8c2d63644e291299d` как исходный target.
-Проверены все 25 Mini App routes, 58 актуальных CSS-файлов, 87 TSX-файлов и color-bearing TS/SVG surfaces.
+Проверены все 32 Mini App routes, 58 актуальных CSS-файлов, 89 TSX-файлов и color-bearing TS/SVG surfaces.
 
 Desktop light `text-positive` и `text-warning`, а также `static-white` на общем
 `bg-negative-primary` не проходили некоторые Mini App contrast contexts. Возвращённый к прежнему
@@ -57,14 +57,21 @@ negative background в обеих темах — `#C6352A`, dark negative foregr
    CSS variables; provider-owned images не перекрашиваются.
 10. DOM Save повторяет filled confirm action и становится полупрозрачной при disabled. Telegram
     MainButton сохраняет native bridge, но получает те же desktop color values.
-11. Для Mini-only derived surfaces владелец выбрал конкретные desktop roles: Home welcome discount —
-    neutral `bg-secondary` как `Basic access`, с `border-positive-secondary` и
+11. Для Mini-only derived Home surfaces владелец ранее выбрал конкретные desktop roles: Home welcome
+    discount — neutral `bg-secondary` как `Basic access`, с `border-positive-secondary` и
     `icon-positive`; `TicketPercent` используется без декоративной круглой tile по desktop pattern
     bare leading icon. `Basic access`, Tribute price shell и отдельная donation-price row используют
     `bg-secondary` с `border-secondary`; separators между строками цены остаются
-    `border-tertiary` на primary offer surface. Templates disclosure, commerce intro и
-    legacy offer — neutral `bg-primary`; admin informational notice и внутренний duplicate warning —
-    warning surface; внешний duplicate wrapper и list наследуют фон без отдельной заливки.
+    `border-tertiary` на primary Home offer surface. Для отсутствующих в Desktop один-в-один Admin
+    Settings entities закреплена derived role mapping по ближайшим ручным structural compositions,
+    а не literal component parity: вложенные offer/legacy entity cards используют
+    `bg-secondary + border-tertiary` внутри primary section; sibling subscription и donation facts
+    используют следующий `bg-primary + border-tertiary` уровень. Neutral availability badge
+    сохраняет Desktop StatusBadge roles `bg-secondary + text-secondary + border-tertiary`;
+    positive/warning badge меняет все три roles семантически. Templates disclosure использует
+    secondary shell с primary variable rows, а static Content variables — secondary rows; commerce
+    intro остаётся neutral `bg-primary`. Admin informational notice и внутренний duplicate warning
+    используют warning surface; внешний duplicate wrapper и list наследуют фон без отдельной заливки.
 12. Perpetual/unlimited expiry в Home и Admin Hero повторяет Desktop HeroCard и использует
     `text-secondary`.
 13. Standalone inputs, native `select`/date shells и onboarding invite field повторяют Desktop
@@ -72,12 +79,18 @@ negative background в обеих темах — `#C6352A`, dark negative foregr
     `FormInline` row остаётся contained surface `bg-secondary + border-tertiary`; native picker
     behavior не заменяется. Individual Users items сохраняются отдельными ProfileCard-like
     `bg-primary + border-tertiary` cards с positive-quaternary hover.
-14. Rich-text/Telegram HTML authoring использует Desktop ConfigEditor nesting: primary outer editor,
+14. Одинаковые framed form bodies во всех route families используют один shared contract:
+    `bg-primary + border-tertiary` frame владеет поверхностью, transparent body — layout, а
+    standalone controls остаются `bg-primary`. Он применяется к Support create/reply/article,
+    Settings field groups, Access profile, Commerce rule, Sponsor offer и onboarding forms и
+    повторяет Desktop Settings/Modal composition без придуманного nested `floor-0`. Dialog/page
+    canvas может быть `floor-0`, но этот token не вкладывается повторно внутрь primary card.
+15. Rich-text/Telegram HTML authoring использует Desktop ConfigEditor nesting: primary outer editor,
     tertiary frame/dividers, primary toolbar/menu, positive focus и semantic icon roles. Persistent
     `InlineFeedback` использует semantic notice-card surfaces с соответствующими secondary borders.
     Focusable commerce rows получают явный Desktop positive outline. Text-only content сохраняет
     text roles; standalone glyph owners используют icon roles.
-15. Axe запускается после стабилизации route/theme/animation без `color-contrast` suppression,
+16. Axe запускается после стабилизации route/theme/animation без `color-contrast` suppression,
     allow-list или impact downgrade. Strict parity не даёт completion exception: любой finding
     блокирует завершение и исправляется в общем Desktop source либо в неверном semantic role.
 
@@ -157,7 +170,7 @@ adapters и provider-owned `logoUrl`. Первые используют desktop 
 - Vitest фиксирует frozen desktop token catalog во всех четырёх theme selectors, четыре shared
   Header/TabBar glass exceptions и разрешает только пять точных Telegram adapter fallback expressions среди raw UI
   colors.
-- Full Playwright matrix проходит через 25 routes/states с console, network, overflow и Axe checks;
+- Full Playwright matrix проходит через 32 routes/states с console, network, overflow и Axe checks;
   focused parity test проверяет computed colors representative distinct owners в light/dark на
   четырёх проектах. Axe запускается только после stable route/theme/animation state и должен быть
   зелёным; branches, использующие один shared owner, не считаются отдельными color assertions.

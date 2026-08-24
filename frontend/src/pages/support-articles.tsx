@@ -13,6 +13,7 @@ import {
 	FormFieldSelect,
 	FormSection,
 	FormSectionCard,
+	FormSurfaceBody,
 } from "../components/ui/form-section.tsx";
 import { InlineFeedback } from "../components/ui/inline-feedback.tsx";
 import { PageLoading } from "../components/ui/page-loading.tsx";
@@ -292,7 +293,7 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 				action={article ? <ArticleStatus status={draft.status} /> : undefined}
 			>
 				<FormSectionCard>
-					<div className={styles.editorFields}>
+					<FormSurfaceBody dataUi="support-article-fields">
 						<FormField label={t("support.manage.editor.topic")} htmlFor="support-article-topic">
 							<FormFieldSelect
 								id="support-article-topic"
@@ -395,7 +396,7 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 								</ActionBtn>
 							)}
 						</div>
-					</div>
+					</FormSurfaceBody>
 				</FormSectionCard>
 			</FormSection>
 			<ConfirmDialog

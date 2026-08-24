@@ -204,6 +204,28 @@ test("Home opens setup instructions as the primary action and keeps copy seconda
 					requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
 				}),
 		);
+		await expect
+			.poll(() =>
+				page.evaluate(() => {
+					const open = Array.from(document.querySelectorAll("button")).find((button) =>
+						button.textContent?.includes("Open setup instructions"),
+					);
+					if (!open) return false;
+					const probe = document.createElement("span");
+					probe.style.background = "var(--v2-bg-primary-inverted)";
+					probe.style.color = "var(--v2-text-primary-inverted)";
+					document.body.append(probe);
+					const probeStyles = getComputedStyle(probe);
+					const expectedBackground = probeStyles.backgroundColor;
+					const expectedText = probeStyles.color;
+					probe.remove();
+					const openStyles = getComputedStyle(open);
+					return (
+						openStyles.backgroundColor === expectedBackground && openStyles.color === expectedText
+					);
+				}),
+			)
+			.toBe(true);
 
 		const hierarchy = await page.evaluate(() => {
 			const buttons = Array.from(document.querySelectorAll("button"));

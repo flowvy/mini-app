@@ -32,7 +32,12 @@ import { TemplateVariables } from "../content/template-variables.tsx";
 import { ActionBtn } from "../ui/action-btn.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { EditorDialog } from "../ui/editor-dialog.tsx";
-import { FormField, FormFieldInput, FormFieldSelect } from "../ui/form-section.tsx";
+import {
+	FormField,
+	FormFieldInput,
+	FormFieldSelect,
+	FormSurfaceBody,
+} from "../ui/form-section.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { EditorSkeleton, SectionSkeleton } from "../ui/page-skeleton.tsx";
 import { SegmentedControl } from "../ui/segmented-control.tsx";
@@ -442,7 +447,7 @@ export function SponsorOffersConfig({
 											</>
 										)
 									) : periodOptions[0] ? (
-										<div className={offerStyles.donationFact}>
+										<div className={offerStyles.donationFact} data-ui="sponsor-donation-fact">
 											<strong>
 												{formatPlanMoney(
 													periodOptions[0].priceMajor,
@@ -660,7 +665,7 @@ function SponsorOfferEditor({
 					<h3 id="sponsor-offer-copy-title" className={editorStyles.cardTitle}>
 						{t("settings.tribute.offers.presentationSection")}
 					</h3>
-					<div className={editorStyles.fields}>
+					<FormSurfaceBody dataUi="sponsor-offer-fields">
 						<FormField label={t("settings.content.languageLabel")}>
 							<SegmentedControl
 								options={SUPPORTED_LOCALES.map((key) => ({
@@ -732,14 +737,14 @@ function SponsorOfferEditor({
 								}}
 							/>
 						</FormField>
-					</div>
+					</FormSurfaceBody>
 				</section>
 
 				<section className={editorStyles.card} aria-labelledby="sponsor-offer-delivery-title">
 					<h3 id="sponsor-offer-delivery-title" className={editorStyles.cardTitle}>
 						{t("settings.tribute.offers.deliverySection")}
 					</h3>
-					<div className={editorStyles.fields}>
+					<FormSurfaceBody dataUi="sponsor-offer-fields">
 						<FormField
 							label={t("settings.tribute.offers.ruleLabel")}
 							htmlFor="sponsor-offer-rule"
@@ -928,7 +933,7 @@ function SponsorOfferEditor({
 								onChange={(isPublished) => setDraft({ ...draft, isPublished })}
 							/>
 						</div>
-					</div>
+					</FormSurfaceBody>
 				</section>
 
 				{offer && (

@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import type { Locator } from "@playwright/test";
 import { expect, test } from "./fixtures/mock-api.ts";
 
@@ -43,6 +44,48 @@ test("selection motion follows the system Reduce Motion preference", async ({
 	await page.goto("/admin/dashboard");
 	const dashboardView = page.getByRole("tablist", { name: "Dashboard view" });
 	expect(await selectedLayerDurationMs(dashboardView)).toBeLessThan(1);
+});
+
+test("route changes preserve full color opacity without reveal animation", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.emulateMedia({ colorScheme: "dark", reducedMotion: "no-preference" });
+	await page.goto("/admin/dashboard");
+	await page.evaluate(() => {
+		const eventLog: string[] = [];
+		const recordRouteMotion = (event: Event) => {
+			if (event.target instanceof Element && event.target.parentElement?.tagName === "MAIN") {
+				eventLog.push(event.type);
+			}
+		};
+		document.addEventListener("animationstart", recordRouteMotion, true);
+		document.addEventListener("transitionrun", recordRouteMotion, true);
+		(
+			window as Window & {
+				__flowvyRouteMotionEvents?: string[];
+			}
+		).__flowvyRouteMotionEvents = eventLog;
+	});
+	await page.getByRole("link", { name: "Broadcast" }).click();
+	await expect(page.getByRole("heading", { name: "Broadcast" })).toBeVisible();
+	const routeView = page.getByRole("main").locator(":scope > div");
+	await expect(routeView).toHaveCSS("opacity", "1");
+	await expect(routeView).toHaveCSS("transform", "none");
+	await expect(routeView).toHaveCSS("animation-name", "none");
+	await expect(routeView).toHaveCSS("animation-duration", "0s");
+	await expect(routeView).toHaveCSS("transition-duration", "0s");
+	expect(
+		await page.evaluate(
+			() =>
+				(
+					window as Window & {
+						__flowvyRouteMotionEvents?: string[];
+					}
+				).__flowvyRouteMotionEvents ?? [],
+		),
+	).toEqual([]);
+	expect((await new AxeBuilder({ page }).include("main").analyze()).violations).toEqual([]);
 });
 
 test("form controls use the global type scale with focus zoom constrained", async ({

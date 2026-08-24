@@ -47,8 +47,12 @@
 
 .form {
 	width: 100%;
-	display: grid;
+}
+
+.form .formBody {
 	gap: 12px;
+	padding: 0;
+	border-radius: var(--radius-md);
 }
 
 .input {

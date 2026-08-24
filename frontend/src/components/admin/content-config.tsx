@@ -26,7 +26,12 @@ import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { EditorSkeleton } from "../ui/page-skeleton.tsx";
 import { SegmentedControl } from "../ui/segmented-control.tsx";
 import { Toggle } from "../ui/toggle.tsx";
-import { SettingsFields, SettingsPanel, SettingsStatusRow } from "./settings-surface.tsx";
+import {
+	SettingsFields,
+	SettingsInset,
+	SettingsPanel,
+	SettingsStatusRow,
+} from "./settings-surface.tsx";
 import { WelcomeMediaRow } from "./welcome-media-row.tsx";
 
 const settingsPrefix = isMockAuth ? "/debug/admin/settings" : "/admin/settings";
@@ -546,9 +551,9 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 			)}
 
 			<SettingsPanel title={t("settings.content.variablesSection")}>
-				<SettingsFields>
+				<SettingsInset>
 					<TemplateVariables variables={variables} disclosure={false} />
-				</SettingsFields>
+				</SettingsInset>
 			</SettingsPanel>
 
 			<FormSaveButton

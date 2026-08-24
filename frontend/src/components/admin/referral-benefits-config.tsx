@@ -131,7 +131,7 @@ export const ReferralBenefitsConfig: FC<ReferralBenefitsConfigProps> = ({ settin
 			)}
 			<SettingsPanel title={t("settings.tribute.referrals.section")}>
 				<div className={styles.intro}>
-					<SettingsInlineNotice icon={<BadgeInfo size={13} aria-hidden="true" />}>
+					<SettingsInlineNotice icon={<BadgeInfo size={13} aria-hidden="true" />} tone="neutral">
 						{t("settings.tribute.referrals.intro")}
 					</SettingsInlineNotice>
 				</div>

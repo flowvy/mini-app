@@ -43,14 +43,4 @@
 
 .routeView {
 	min-height: 100%;
-	animation: routeReveal 140ms ease-out;
-}
-
-@keyframes routeReveal {
-	from {
-		opacity: 0.65;
-	}
-	to {
-		opacity: 1;
-	}
 }
