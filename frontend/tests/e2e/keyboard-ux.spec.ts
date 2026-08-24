@@ -1,5 +1,12 @@
-import { expect, mockData, test } from "./fixtures/mock-api.ts";
-import { closeTelegramPopup, telegramPopups } from "./fixtures/telegram-main-button.ts";
+import AxeBuilder from "@axe-core/playwright";
+import { assertNoHorizontalOverflow, expect, mockData, test } from "./fixtures/mock-api.ts";
+import {
+	closeTelegramPopup,
+	emitTelegramViewport,
+	installTelegramMainButton,
+	telegramPopups,
+	withTelegramMainButton,
+} from "./fixtures/telegram-main-button.ts";
 import { installVisualViewportMock, setTestVisualViewport } from "./fixtures/visual-viewport.ts";
 
 async function expectRouteSettled(page: import("@playwright/test").Page): Promise<void> {
@@ -59,6 +66,105 @@ test("direct focused search waits for its user list before focusing the input", 
 	await expect(page.getByRole("navigation")).toHaveCount(0);
 	await expect(page.getByRole("textbox", { name: "Search users" })).toBeFocused();
 	await expect(page.getByText("alice", { exact: true })).toBeInViewport();
+});
+
+test("text entry focus suppresses primary tab navigation before the mobile viewport changes", async ({
+	page,
+	mockApi: _mock,
+}, testInfo) => {
+	await installTelegramMainButton(page);
+	await installVisualViewportMock(page);
+	const hasPrimaryTouchInteraction = await page.evaluate(
+		() => window.matchMedia("(hover: none) and (pointer: coarse)").matches,
+	);
+
+	for (const role of ["user", "admin"] as const) {
+		await page.addInitScript((nextRole) => {
+			localStorage.setItem("flowvy:mock-role", nextRole);
+		}, role);
+		await page.goto(withTelegramMainButton("/support"));
+		const restoredViewportHeight = await page.evaluate(() => window.innerHeight);
+		const navigation = page.getByRole("navigation");
+		const search = page.getByRole("searchbox", {
+			name: role === "user" ? "Search help" : "Search requests",
+		});
+		await expect(navigation).toBeVisible();
+		await expect
+			.poll(() =>
+				page.evaluate(() =>
+					getComputedStyle(document.documentElement)
+						.getPropertyValue("--tg-viewport-stable-height")
+						.trim(),
+				),
+			)
+			.toBe(`${restoredViewportHeight}px`);
+
+		await search.focus();
+		await expect(search).toBeFocused();
+		const keyboardViewportHeight = Math.max(240, restoredViewportHeight - 300);
+		await emitTelegramViewport(page, keyboardViewportHeight, true);
+		await expect
+			.poll(() =>
+				page.evaluate(() =>
+					getComputedStyle(document.documentElement)
+						.getPropertyValue("--tg-viewport-stable-height")
+						.trim(),
+				),
+			)
+			.toBe(`${keyboardViewportHeight}px`);
+		if (hasPrimaryTouchInteraction) {
+			await expect(navigation).toHaveCount(0);
+		} else {
+			await expect(navigation).toBeVisible();
+		}
+
+		await setTestVisualViewport(page, Math.max(240, restoredViewportHeight - 300), 24);
+		await page.evaluate(
+			() =>
+				new Promise<void>((resolve) =>
+					requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+				),
+		);
+		if (hasPrimaryTouchInteraction) {
+			await expect(navigation).toHaveCount(0);
+		}
+		await expect(search).toBeFocused();
+		for (const theme of ["light", "dark"] as const) {
+			await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+			await page.evaluate(
+				(nextTheme) => document.documentElement.setAttribute("data-theme", nextTheme),
+				theme,
+			);
+			await page.evaluate(
+				() =>
+					new Promise<void>((resolve) =>
+						requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+					),
+			);
+			await assertNoHorizontalOverflow(page);
+			const { violations } = await new AxeBuilder({ page }).include("main").analyze();
+			expect(violations).toEqual([]);
+			await page.screenshot({
+				path: testInfo.outputPath(
+					`support-${role}-focused-search-${theme}-${testInfo.project.name}.png`,
+				),
+				animations: "disabled",
+			});
+		}
+
+		await search.press("Enter");
+		await expect(search).not.toBeFocused();
+		if (hasPrimaryTouchInteraction) {
+			await expect(navigation).toHaveCount(0);
+		}
+		await emitTelegramViewport(page, restoredViewportHeight - 120, false);
+		if (hasPrimaryTouchInteraction) {
+			await expect(navigation).toHaveCount(0);
+		}
+		await emitTelegramViewport(page, restoredViewportHeight, true);
+		await setTestVisualViewport(page, restoredViewportHeight);
+		await expect(navigation).toBeVisible();
+	}
 });
 
 test("IME actions search, advance, finish, and preserve multiline editing", async ({

@@ -454,7 +454,14 @@ Custom emoji хранит обязательный fallback emoji и numeric `em
   [`decisions/0004-desktop-color-parity.md`](decisions/0004-desktop-color-parity.md).
 - App shell не вычисляет состояние клавиатуры и не переписывает геометрию из `VisualViewport`.
   Web-owned tab navigation монтируется только на точных top-level tab routes; detail/settings task
-  routes используют Telegram BackButton и не вводят нижнее меню в lifecycle экранной клавиатуры.
+  routes используют Telegram BackButton. На primary route стандартный CSS focus contract скрывает
+  TabBar и нижний blur, пока `:read-write` control сфокусирован на primary touch interaction
+  `(hover: none) and (pointer: coarse)`. После blur Telegram-режим сохраняет hidden state, только
+  если SDK `viewportStableHeight` уменьшился относительно focus baseline, и снимает его на следующем
+  изменившем высоту stable viewport state. Поэтому открытие не ждёт позднего `viewportChanged`,
+  закрытие не показывает navigation в keyboard-sized viewport, desktop fine-pointer не затронут,
+  а browser/hardware-keyboard path без уменьшения viewport завершается сразу. Таймеры и
+  `VisualViewport` geometry не используются.
 - Telegram BackButton сначала передаёт событие верхнему confirmation/editor слою. Если overlay не
   открыт, detail route заменяется явным semantic parent route (`settings/*` → `settings`,
   `users/*` → `users`), поэтому dirty confirmation открывается до изменения browser history.

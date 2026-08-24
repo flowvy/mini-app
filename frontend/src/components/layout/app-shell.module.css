@@ -15,6 +15,24 @@
 	--shell-bottom: max(16px, var(--tg-viewport-safe-area-inset-bottom, 0px));
 }
 
+.bottomNavigation {
+	display: contents;
+}
+
+@media (hover: none) and (pointer: coarse) {
+	.shell:has(:is(input, textarea, [contenteditable]):read-write:focus) {
+		--shell-bottom: max(16px, var(--tg-viewport-safe-area-inset-bottom, 0px));
+	}
+	.keyboardSettling {
+		--shell-bottom: max(16px, var(--tg-viewport-safe-area-inset-bottom, 0px));
+	}
+
+	.shell:has(:is(input, textarea, [contenteditable]):read-write:focus) .bottomNavigation,
+	.keyboardSettling .bottomNavigation {
+		display: none;
+	}
+}
+
 .content {
 	height: 100%;
 	overflow-y: auto;
