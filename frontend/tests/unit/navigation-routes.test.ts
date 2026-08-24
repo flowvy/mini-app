@@ -22,6 +22,7 @@ describe("isPrimaryTabRoute", () => {
 		"/admin/settings/kuma",
 		"/admin/settings/beszel",
 		"/admin/settings/tribute",
+		"/admin/settings/support",
 		"/admin/settings/branding",
 		"/admin/settings/welcome",
 		"/admin/settings/access",

@@ -33,7 +33,13 @@ function AppShellContent() {
 		<div className={`${styles.shell} ${showTabBar ? "" : styles.withoutTabBar}`}>
 			<EdgeBlur side="top" />
 			<Header />
-			<main ref={scrollRef} className={styles.content} data-scroll-restoration-id="main-content">
+			<main
+				ref={scrollRef}
+				className={styles.content}
+				data-scroll-restoration-id="main-content"
+				// biome-ignore lint/a11y/noNoninteractiveTabindex: this overflow region must be keyboard-scrollable in Safari.
+				tabIndex={0}
+			>
 				{adminDenied ? (
 					<ErrorState variant="forbidden" onAction={() => navigate({ to: "/" })} />
 				) : (

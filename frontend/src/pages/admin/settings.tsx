@@ -1,6 +1,6 @@
 /** Admin Settings page — main list, sub-screens are separate routes. */
 import { useNavigate } from "@tanstack/react-router";
-import { Activity, MessageSquareText, Palette, ShieldCheck } from "lucide-react";
+import { Activity, Cloud, MessageSquareText, Palette, ShieldCheck } from "lucide-react";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -16,6 +16,7 @@ import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { FlowvyIcon, RemnawaveIcon, TributeIcon } from "../../components/ui/service-brand-icon.tsx";
 import { useAdminSettings } from "../../hooks/use-admin-settings.ts";
 import { useRegistrationSettings } from "../../hooks/use-registration-admin.ts";
+import { useAdminSupportStorage } from "../../hooks/use-support.ts";
 import { formatMissing, formatVersion } from "../../lib/format.ts";
 import styles from "./settings.module.css";
 
@@ -24,6 +25,7 @@ export const AdminSettings: FC = () => {
 	const navigate = useNavigate();
 	const { settings, isPending, error, refetch } = useAdminSettings();
 	const registration = useRegistrationSettings();
+	const supportStorage = useAdminSupportStorage();
 
 	if (isPending || (!settings && !error)) {
 		return <PageLoading />;
@@ -50,6 +52,21 @@ export const AdminSettings: FC = () => {
 					value={pulseValue}
 					tone={settings.pulseProvider === "disabled" ? "default" : "positive"}
 					onClick={() => navigate({ to: "/admin/settings/pulse" })}
+				/>
+				<SettingsDivider />
+				<SettingsNavRow
+					icon={<Cloud size={17} strokeWidth={1.8} aria-hidden="true" />}
+					label={t("settings.supportStorage.title")}
+					description={t("settings.supportStorage.description")}
+					value={
+						supportStorage.data
+							? supportStorage.data.configured
+								? t("settings.supportStorage.configured")
+								: t("settings.supportStorage.notConfigured")
+							: undefined
+					}
+					tone="default"
+					onClick={() => navigate({ to: "/admin/settings/support" })}
 				/>
 			</SettingsSection>
 

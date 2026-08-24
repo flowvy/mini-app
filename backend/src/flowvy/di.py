@@ -28,14 +28,26 @@ from flowvy.repositories.referral_conversion import ReferralConversionRepository
 from flowvy.repositories.sponsor_checkout import SponsorCheckoutRepository
 from flowvy.repositories.sponsor_offer import SponsorOfferRepository
 from flowvy.repositories.subscription import SubscriptionRepository
+from flowvy.repositories.support_article import SupportArticleRepository
+from flowvy.repositories.support_request import (
+    SupportAttachmentRepository,
+    SupportMessageRepository,
+    SupportRequestRepository,
+)
 from flowvy.repositories.tribute_webhook_event import TributeWebhookEventRepository
 from flowvy.repositories.user import UserRepository
 from flowvy.services.commerce import CommerceRuleService
 from flowvy.services.commerce_catalog import CommerceCatalogService
 from flowvy.services.entitlements import EntitlementJournalService
+from flowvy.services.message_sender import MessageSender
+from flowvy.services.r2_storage import R2Storage
 from flowvy.services.registration import RegistrationAdminService, RegistrationService
 from flowvy.services.remnawave import RemnawaveClient
 from flowvy.services.sponsor import SponsorOfferService, SponsorStateService
+from flowvy.services.support_articles import SupportArticleService
+from flowvy.services.support_notifications import SupportNotificationService
+from flowvy.services.support_requests import SupportRequestService
+from flowvy.services.support_retention import SupportRetentionWorker
 from flowvy.services.tribute import TributeClient
 from flowvy.services.user import UserService
 
@@ -160,6 +172,22 @@ class RepositoryProvider(Provider):
         """Create referral-conversion repository bound to current session."""
         return ReferralConversionRepository(session)
 
+    @provide(scope=Scope.REQUEST)
+    def get_support_article_repo(self, session: AsyncSession) -> SupportArticleRepository:
+        return SupportArticleRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_support_request_repo(self, session: AsyncSession) -> SupportRequestRepository:
+        return SupportRequestRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_support_message_repo(self, session: AsyncSession) -> SupportMessageRepository:
+        return SupportMessageRepository(session)
+
+    @provide(scope=Scope.REQUEST)
+    def get_support_attachment_repo(self, session: AsyncSession) -> SupportAttachmentRepository:
+        return SupportAttachmentRepository(session)
+
 
 class ServiceProvider(Provider):
     """Provides business-logic services."""
@@ -172,6 +200,57 @@ class ServiceProvider(Provider):
     ) -> UserService:
         """Create user service with injected repository and settings."""
         return UserService(repo, settings)
+
+    @provide(scope=Scope.REQUEST)
+    def get_support_article_service(
+        self,
+        articles: SupportArticleRepository,
+        settings: ProviderSettingsRepository,
+    ) -> SupportArticleService:
+        return SupportArticleService(articles, settings)
+
+    @provide(scope=Scope.APP)
+    def get_r2_storage(self, settings: Settings, http: httpx.AsyncClient) -> R2Storage:
+        return R2Storage(settings, http)
+
+    @provide(scope=Scope.APP)
+    def get_support_retention_worker(
+        self,
+        sessionmaker: async_sessionmaker[AsyncSession],
+        storage: R2Storage,
+        settings: Settings,
+    ) -> SupportRetentionWorker:
+        return SupportRetentionWorker(sessionmaker, storage, settings)
+
+    @provide(scope=Scope.REQUEST)
+    def get_support_request_service(
+        self,
+        requests: SupportRequestRepository,
+        messages: SupportMessageRepository,
+        attachments: SupportAttachmentRepository,
+        users: UserRepository,
+        subscriptions: SubscriptionRepository,
+        storage: R2Storage,
+        settings: Settings,
+    ) -> SupportRequestService:
+        return SupportRequestService(
+            requests,
+            messages,
+            attachments,
+            users,
+            subscriptions,
+            storage,
+            settings,
+        )
+
+    @provide(scope=Scope.REQUEST)
+    def get_support_notification_service(
+        self,
+        sender: MessageSender,
+        users: UserRepository,
+        settings: Settings,
+    ) -> SupportNotificationService:
+        return SupportNotificationService(sender, users, settings)
 
     @provide(scope=Scope.REQUEST)
     def get_commerce_rule_service(

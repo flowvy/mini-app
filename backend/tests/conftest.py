@@ -38,6 +38,10 @@ def _env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("REMNAWAVE_URL", "")
     monkeypatch.setenv("REMNAWAVE_API_TOKEN", "")
     monkeypatch.setenv("REMNAWAVE_WEBHOOK_SECRET", "")
+    monkeypatch.setenv("R2_ACCOUNT_ID", "")
+    monkeypatch.setenv("R2_BUCKET_NAME", "")
+    monkeypatch.setenv("R2_ACCESS_KEY_ID", "")
+    monkeypatch.setenv("R2_SECRET_ACCESS_KEY", "")
 
 
 @pytest.fixture

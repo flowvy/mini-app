@@ -33,21 +33,29 @@ const COPY_KEYS: Record<ErrorStateVariant, { title: string; description: string;
 interface ErrorStateProps {
 	variant?: ErrorStateVariant;
 	onAction?: () => unknown;
+	title?: string;
 	description?: string;
+	actionLabel?: string;
 }
 
-export const ErrorState: FC<ErrorStateProps> = ({ variant = "load", onAction, description }) => {
+export const ErrorState: FC<ErrorStateProps> = ({
+	variant = "load",
+	onAction,
+	title,
+	description,
+	actionLabel,
+}) => {
 	const { t } = useTranslation();
 	const copy = COPY_KEYS[variant];
 
 	return (
 		<section className={styles.root} role="alert" aria-live="polite">
 			<AlertTriangle size={32} className={styles.icon} aria-hidden="true" />
-			<h1 className={styles.title}>{t(copy.title)}</h1>
+			<h1 className={styles.title}>{title ?? t(copy.title)}</h1>
 			<p className={styles.description}>{description ?? t(copy.description)}</p>
 			{onAction && (
 				<ActionBtn variant="action" size="md" onClick={() => onAction()}>
-					{t(copy.action)}
+					{actionLabel ?? t(copy.action)}
 				</ActionBtn>
 			)}
 		</section>

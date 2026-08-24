@@ -893,20 +893,21 @@ test("provider identity updates the user experience without a reload", async ({
 	await assertNoHorizontalOverflow(page);
 });
 
-test("Support and Broadcast stay in-app placeholders without external actions", async ({
+test("Support stays in-app and Broadcast remains a placeholder without external actions", async ({
 	page,
 	mockApi: _mock,
 }) => {
-	for (const screen of [
-		{ path: "/support", title: "Support", description: "In-app support is coming soon" },
-		{ path: "/admin/broadcast", title: "Broadcast", description: "Broadcast is coming soon" },
-	]) {
-		await page.goto(screen.path);
-		const placeholder = page.getByRole("region", { name: screen.title });
-		await expect(placeholder.getByText(screen.description)).toBeVisible();
-		await expect(placeholder.getByRole("link")).toHaveCount(0);
-		await assertNoHorizontalOverflow(page);
-	}
+	await page.goto("/support");
+	await expect(page.locator('[data-support-view="admin"]')).toBeVisible();
+	await expect(page.getByRole("link")).toHaveCount(4);
+	await expect(page.locator('a[href^="https://t.me/"]')).toHaveCount(0);
+	await assertNoHorizontalOverflow(page);
+
+	await page.goto("/admin/broadcast");
+	const placeholder = page.getByRole("region", { name: "Broadcast" });
+	await expect(placeholder.getByText("Broadcast is coming soon")).toBeVisible();
+	await expect(placeholder.getByRole("link")).toHaveCount(0);
+	await assertNoHorizontalOverflow(page);
 });
 
 test("settings select Beszel and verify its server-side read-only connection", async ({

@@ -26,6 +26,11 @@
 	scroll-padding-block: var(--shell-top) var(--shell-bottom);
 }
 
+.content:focus-visible {
+	outline: 2px solid var(--v2-text-primary);
+	outline-offset: -2px;
+}
+
 /* Ensure scroll container is always scrollable (Telegram Sticky App pattern).
    Without this, WKWebView treats short pages as non-scrollable and
    interprets swipe-down as a system "close/minimize" gesture. */

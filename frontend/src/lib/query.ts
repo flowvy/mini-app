@@ -34,4 +34,12 @@ export const queryKeys = {
 	sponsorOffers: ["admin", "commerce", "offers"] as const,
 	sponsorState: ["commerce", "sponsor", "me"] as const,
 	myInvite: ["registration", "my-invite"] as const,
+	supportRequests: ["support", "requests"] as const,
+	supportCapabilities: ["support", "capabilities"] as const,
+	supportRequest: (id: string) => ["support", "requests", id] as const,
+	supportArticles: ["support", "articles", "published"] as const,
+	supportArticle: (id: string) => ["support", "articles", "published", id] as const,
+	adminSupportArticles: ["admin", "support", "articles"] as const,
+	adminSupportArticle: (id: string) => ["admin", "support", "articles", id] as const,
+	adminSupportStorage: ["admin", "support", "storage"] as const,
 };

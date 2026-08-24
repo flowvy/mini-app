@@ -46,6 +46,33 @@ async def test_get_admins(session: AsyncSession) -> None:
     assert all(u.role == UserRole.ADMIN for u in admins)
 
 
+async def test_get_active_admins_intersects_role_state_and_environment(
+    session: AsyncSession,
+) -> None:
+    repo = UserRepository(session)
+    await repo.create(id=100_010, full_name="Allowed", role=UserRole.ADMIN)
+    await repo.create(
+        id=100_011,
+        full_name="Inactive",
+        role=UserRole.ADMIN,
+        is_active=False,
+    )
+    await repo.create(id=100_012, full_name="Not in env", role=UserRole.ADMIN)
+    await repo.create(id=100_013, full_name="Regular", role=UserRole.USER)
+
+    admins = await repo.get_active_admins(
+        [100_010, 100_011, 100_013],
+        exclude_telegram_id=100_099,
+    )
+    excluded = await repo.get_active_admins(
+        [100_010],
+        exclude_telegram_id=100_010,
+    )
+
+    assert [item.id for item in admins] == [100_010]
+    assert excluded == []
+
+
 async def test_update_user(session: AsyncSession) -> None:
     """Update user fields."""
     repo = UserRepository(session)

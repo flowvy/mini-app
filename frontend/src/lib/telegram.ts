@@ -19,7 +19,7 @@ import {
 let initialized = false;
 let retainedRawInitData: string | undefined;
 
-function getPlatform(): string | undefined {
+export function getTelegramPlatform(): string | undefined {
 	try {
 		return retrieveLaunchParams().tgWebAppPlatform;
 	} catch {
@@ -102,7 +102,7 @@ export function initTelegramApp(): void {
 					if (viewport.bindCssVars.isAvailable()) {
 						viewport.bindCssVars();
 					}
-					const platform = getPlatform();
+					const platform = getTelegramPlatform();
 					const startup = resolveTelegramViewportStartup(platform);
 					restoreWindowedTelegramDesktopViewport({
 						platform,

@@ -65,9 +65,10 @@ test("user routes render deterministic success states", async ({ page, mockApi: 
 	await expect(page.getByText("Proxy API")).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 
+	await page.evaluate(() => localStorage.setItem("flowvy:mock-role", "user"));
 	await page.goto("/support");
-	await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
-	await expect(page.getByText("In-app support is coming soon")).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Quick Answers" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Active Requests" })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -378,14 +379,11 @@ test("settings hubs stay accessible without mobile overflow", async ({ page, moc
 	expect(accessibilityByContext.filter(({ serious }) => serious.length > 0)).toEqual([]);
 });
 
-test("stable Coming Soon screens have no serious automated accessibility violations", async ({
+test("stable Broadcast Coming Soon screen has no serious automated accessibility violations", async ({
 	page,
 	mockApi: _mock,
 }) => {
-	for (const screen of [
-		{ path: "/support", title: "Support" },
-		{ path: "/admin/broadcast", title: "Broadcast" },
-	]) {
+	for (const screen of [{ path: "/admin/broadcast", title: "Broadcast" }]) {
 		await page.goto(screen.path);
 		await expect(page.getByRole("heading", { name: screen.title })).toBeVisible();
 		await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");

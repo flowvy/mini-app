@@ -38,6 +38,52 @@ const supportRoute = createRoute({
 	component: lazyRouteComponent(() => import("./pages/support.tsx"), "Support"),
 });
 
+const supportNewRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/support/new",
+	validateSearch: (search: Record<string, unknown>) => ({
+		topic:
+			typeof search.topic === "string" &&
+			["connection", "subscription", "devices", "payment", "other"].includes(search.topic)
+				? (search.topic as "connection" | "subscription" | "devices" | "payment" | "other")
+				: undefined,
+	}),
+	component: lazyRouteComponent(() => import("./pages/support.tsx"), "SupportNewRequest"),
+});
+
+const supportAnswerRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/support/answers/$articleId",
+	component: lazyRouteComponent(() => import("./pages/support.tsx"), "SupportAnswerPage"),
+});
+
+const supportArticlesAdminRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/support/manage/answers",
+	component: lazyRouteComponent(
+		() => import("./pages/support-articles.tsx"),
+		"SupportArticlesAdmin",
+	),
+});
+
+const supportArticleNewRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/support/manage/answers/new",
+	component: lazyRouteComponent(() => import("./pages/support-articles.tsx"), "SupportArticleNew"),
+});
+
+const supportArticleEditRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/support/manage/answers/$articleId",
+	component: lazyRouteComponent(() => import("./pages/support-articles.tsx"), "SupportArticleEdit"),
+});
+
+const supportRequestRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/support/requests/$requestId",
+	component: lazyRouteComponent(() => import("./pages/support.tsx"), "SupportRequestPage"),
+});
+
 const adminDashboardRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: "/admin/dashboard",
@@ -83,6 +129,15 @@ const adminSettingsPulseRoute = createRoute({
 	component: lazyRouteComponent(
 		() => import("./pages/admin/settings-pulse.tsx"),
 		"AdminPulseSettings",
+	),
+});
+
+const adminSettingsSupportRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/admin/settings/support",
+	component: lazyRouteComponent(
+		() => import("./pages/admin/settings-support.tsx"),
+		"AdminSupportSettings",
 	),
 });
 
@@ -217,6 +272,12 @@ const routeTree = rootRoute.addChildren([
 	pulseRoute,
 	devicesRoute,
 	supportRoute,
+	supportNewRoute,
+	supportAnswerRoute,
+	supportArticlesAdminRoute,
+	supportArticleNewRoute,
+	supportArticleEditRoute,
+	supportRequestRoute,
 	adminDashboardRoute,
 	adminUsersRoute,
 	adminUsersSearchRoute,
@@ -224,6 +285,7 @@ const routeTree = rootRoute.addChildren([
 	adminBroadcastRoute,
 	adminSettingsRoute,
 	adminSettingsPulseRoute,
+	adminSettingsSupportRoute,
 	adminSettingsKumaRoute,
 	adminSettingsBeszelRoute,
 	adminSettingsTributeRoute,

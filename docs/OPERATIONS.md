@@ -129,6 +129,59 @@ worker на production-like target требует отдельной прове�
 backup/rollback, одного контролируемого donation/subscription сценария и наблюдения журнала;
 текущий MVP не имеет готового production rollout runbook.
 
+## Cloudflare R2 для Support attachments
+
+R2 optional: без него Support сохраняет text requests/replies, а attachment picker показывает
+`Not configured`. Credentials не вводятся в Mini App и не хранятся в PostgreSQL. Admin route
+`/admin/settings/support` служит инструкцией/status surface и выполняет только read-only access
+check.
+
+Первичная настройка выполняется оператором вне Flowvy:
+
+1. В Cloudflare Dashboard открыть **R2 Object Storage** и создать private Standard bucket. Не
+   включать `r2.dev` и public custom domain. Имя: 3–63 lowercase letters/numbers/hyphens, без hyphen
+   в начале/конце.
+2. Создать S3 API credential с **Object Read & Write**, ограниченный только этим bucket. Account-wide
+   token не нужен.
+3. В bucket settings добавить CORS только для exact Mini App origin. Для текущего dev origin:
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://dev-app.flowvy.io"],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["Content-Type", "x-amz-checksum-sha256"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
+Для другого deployment заменяется только origin; wildcard запрещён. `GET` не нужен для текущего
+browser contract: Mini App получает authenticated one-minute download URL и открывает его как file
+navigation. `HEAD`/`DELETE` выполняет backend через S3 endpoint.
+
+4. Сохранить credentials только в server secret environment и перезапустить Flowvy:
+
+```dotenv
+R2_ACCOUNT_ID=<32-character-account-id>
+R2_BUCKET_NAME=<private-bucket-name>
+R2_ACCESS_KEY_ID=<bucket-scoped-access-key-id>
+R2_SECRET_ACCESS_KEY=<bucket-scoped-secret-access-key>
+```
+
+Все четыре значения должны появиться или исчезнуть атомарно: partial configuration останавливает
+startup. Limits и retention описаны в `backend/.env.example`; default — 5 files, 50 MiB каждый,
+100 MiB combined, pending intent 1 час, attachments 3 дня после текущего Resolve, conversation 90
+дней после activity.
+
+После restart открыть Admin → Settings → Support attachments: status должен быть `Configured`,
+bucket name — точным, `Check access` — successful. Затем controlled test user загружает небольшой
+TXT, создаёт request, owner/admin скачивают его, Resolve/Reopen проверяет сохранение до cleanup.
+Этот smoke создаёт реальный billable R2 object и требует отдельного разрешения. Signed URLs и
+credentials нельзя копировать в logs/screenshots. При provider outage cleanup оставляет DB reference
+и повторяется позже; вручную удалять DB rows раньше objects запрещено. R2 lifecycle не заменяет
+resolved-at worker, потому что считает возраст object.
+
 ## Cloudflare Tunnel
 
 `scripts/tunnel-up.ps1 -ConfirmPublic` принимает только backend с недоступными debug routes,

@@ -21,10 +21,11 @@ Flowvy распространяется как open-source Mini App. У разн
    экранов, пояснения, кнопки, placeholders, accessible names, статусы, единицы/разделители,
    validation copy и безопасные error messages. Видимые литералы в JSX запрещены.
 2. Оператор управляет только контентом, который действительно описывает его сервис и tone of voice:
-   identity, универсальный Telegram welcome, open/invite onboarding, referral card/share text и
-   входом в sponsor storefront. Поля имеют versioned typed contract и
+   identity, универсальный Telegram welcome, open/invite onboarding, referral card/share text,
+   входом в sponsor storefront и статьями Support Quick Answers. Поля имеют versioned typed contract и
    хранятся как `locale -> semantic fields`, а не как произвольные locale keys или generic CMS.
-   Отсутствие значения включает product fallback текущей locale.
+   Контентные slots с определённым product fallback используют fallback текущей locale; исключение
+   для статей Support описано ниже.
 3. Public API не отдаёт весь словарь: `/api/me`, `/api/onboarding` и sponsor state разрешают одну
    locale из `Accept-Language`; Telegram bot использует `User.language_code`. Fallback идёт по
    exact tag → base language → locale оператора → English. Сейчас поставляется только English,
@@ -33,7 +34,7 @@ Flowvy распространяется как open-source Mini App. У разн
    subscription facts, monitor/group/incident names, traffic/expiry/device limits и versions
    остаются typed runtime data. Enum/status от provider нормализуется кодом, а его видимая подпись
    берётся из locale.
-5. Product-owned UX остаётся в locale и не переносится в PostgreSQL: навигация, структура экранов,
+5. Product-owned UX остаётся в locale и не переносится в operator content: навигация, структура экранов,
    payment/auth/security semantics, admin actions, validation, статусы, accessibility copy, единый
    layout ошибок и технические пояснения. Другой дистрибутив может заменить locale resource при
    сборке, не меняя data contract.
@@ -43,10 +44,12 @@ Flowvy распространяется как open-source Mini App. У разн
 7. Page-level ошибки используют один `ErrorState` с вариантами load/auth/forbidden/not-found.
    Ошибка локальной mutation остаётся inline, но также использует locale. Текст `message` от backend
    или внешнего provider пользователю не показывается; stable API code переводится в locale key.
-8. Support и Broadcast используют общий product-owned `ComingSoon`: routes и navigation стабильны, но страницы
-   не читают provider settings, operator content или внешнюю destination. Mini App descriptions в
-   перечисленных operator-owned slots поддерживают только allow-listed CommonMark и никогда не
-   рендерят raw HTML.
+8. Broadcast использует product-owned `ComingSoon` без provider settings, operator content или
+   внешней destination. Support Quick Answers хранятся как отдельные typed localized articles с
+   UUID, topic, order и lifecycle `draft/published/archived`; пользователь получает только
+   published resolved locale, а администратор управляет статьями в Mini App. Article title, summary
+   и body не имеют product fallback или migration seed. CommonMark в operator-owned slots
+   allow-listed и никогда не принимает или не рендерит raw HTML.
 9. Автоматические тесты проверяют locale catalog, placeholder allow-list, fallback, public
    projection, отсутствие прямого user-visible bot hardcode и UI/runtime states.
 10. Единственный Telegram welcome использует отдельный allow-listed HTML contract с explicit parse
@@ -61,5 +64,7 @@ Flowvy распространяется как open-source Mini App. У разн
 - Добавление UI-текста требует locale key; удаление использования требует удалить и key.
 - Operator content не переводится автоматически Flowvy; для каждой поддерживаемой locale оператор
   вводит собственный вариант, а незаполненные semantic slots получают product fallback.
+- Статья Support публикуется только с полным default-locale вариантом; отсутствующие статьи и
+  неполные locale не подменяются зашитым FAQ.
 - Новая locale требует полного key parity, выбора языка и проверки длинных строк; одна только копия
   JSON не считается завершённой локализацией.

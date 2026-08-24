@@ -13,6 +13,8 @@ from flowvy.models.referral_conversion import ReferralConversion
 from flowvy.models.sponsor_checkout import SponsorCheckout
 from flowvy.models.sponsor_offer import SponsorOffer
 from flowvy.models.subscription import Subscription, SubscriptionStatus
+from flowvy.models.support_article import SupportArticle
+from flowvy.models.support_request import SupportAttachment, SupportMessage, SupportRequest
 from flowvy.models.tribute_webhook_event import TributeWebhookEvent
 from flowvy.models.user import User, UserRole
 from flowvy.models.webhook_event import WebhookEvent
@@ -33,6 +35,10 @@ __all__ = [
     "SponsorOffer",
     "Subscription",
     "SubscriptionStatus",
+    "SupportArticle",
+    "SupportAttachment",
+    "SupportMessage",
+    "SupportRequest",
     "TributeWebhookEvent",
     "User",
     "UserRole",

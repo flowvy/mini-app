@@ -338,6 +338,7 @@ export function FormattedTextEditor({
 	if (!editor) {
 		return <div className={styles.editorPlaceholder} aria-hidden="true" />;
 	}
+	const characterCount = editor.storage.characterCount.characters();
 
 	return (
 		<div
@@ -355,7 +356,7 @@ export function FormattedTextEditor({
 				<span>{t("common.formattedText.formatHint")}</span>
 				<span aria-live="polite">
 					{t("common.formattedText.characterCount", {
-						count: viewState.characters,
+						count: characterCount,
 						max: maxLength,
 					})}
 				</span>

@@ -11,7 +11,7 @@ const screens = [
 	{ name: "home", path: "/", marker: "Account Info" },
 	{ name: "devices", path: "/devices", marker: "Pixel 8" },
 	{ name: "pulse", path: "/pulse", marker: "All systems operational" },
-	{ name: "support", path: "/support", marker: "In-app support is coming soon" },
+	{ name: "support", path: "/support", marker: "Needs reply" },
 	{ name: "admin-dashboard", path: "/admin/dashboard", marker: "Remnawave unavailable" },
 	{ name: "admin-users", path: "/admin/users", marker: "alice" },
 	{ name: "admin-users-search", path: "/admin/users/search", marker: "alice" },
@@ -740,16 +740,13 @@ test("capture the shared load error state in light and dark themes", async ({
 	}
 });
 
-test("capture shared Coming Soon placeholders in light and dark themes", async ({
+test("capture Broadcast Coming Soon placeholder in light and dark themes", async ({
 	page,
 	mockApi: _mock,
 }, testInfo) => {
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		for (const screen of [
-			{ name: "support", path: "/support", title: "Support" },
-			{ name: "broadcast", path: "/admin/broadcast", title: "Broadcast" },
-		]) {
+		for (const screen of [{ name: "broadcast", path: "/admin/broadcast", title: "Broadcast" }]) {
 			await page.goto(screen.path);
 			await page.evaluate((theme) => {
 				document.documentElement.setAttribute("data-theme", theme);

@@ -7,9 +7,9 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
 
 ## Чувствительные данные
 
-- Telegram bot token, raw `initData`, webhook secrets и provider API tokens;
+- Telegram bot token, raw `initData`, webhook secrets, R2 S3 credentials и provider API tokens;
 - Telegram IDs/usernames, Remnawave UUID, email, connection/subscription URLs и invite codes;
-- HWID, webhook payloads, admin actions, media `file_id` и runtime logs.
+- HWID, Support attachments/messages, webhook payloads, admin actions, media `file_id` и runtime logs.
 
 Не выводите их в terminal/tool output, Git, планы, screenshots, test artifacts или публичные ошибки.
 В examples используйте только явно фиктивные `.example.test`, `000000:TEST` и synthetic IDs.
@@ -86,7 +86,23 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
   provider access. Append-only audit хранит actor Telegram ID отдельно от nullable user FK и
   previous state, но frontend видит только action/note/time. Request UUID нельзя переиспользовать
   для другой operation, actor, action или note.
-- Upload ограничивается при streaming, до полного чтения в память; type/size проверяются server-side.
+- BFF multipart upload ограничивается при streaming, до полного чтения в память; type/size
+  проверяются server-side.
+- Support attachments являются недоверенными opaque objects. R2 configuration атомарна: все четыре
+  server-env значения заданы либо attachments выключены, при этом text Support продолжает работать.
+  Bucket private; credentials, object keys и signed URL не логируются и не сохраняются во frontend.
+  Owner/admin auth проверяется до каждого intent/read. Upload URL ограничен одним generated key,
+  `PUT`, десятью минутами, content type и SHA-256; finalize через signed `HEAD` повторно сверяет
+  checksum/size/type. ZIP никогда не извлекается, не preview-ится и не исполняется. Presigned URL —
+  bearer credential, поэтому download живёт одну минуту, а provider failures не удаляют последнюю DB
+  reference до подтверждённого object deletion.
+- Support Telegram notifications отправляются только после commit. User reply fan-out заново
+  пересекает current `ADMIN_TELEGRAM_IDS`, локальную admin role и active state; support reply идёт
+  только Telegram ID владельца request. Все dynamic fields HTML-escaped, message preview bounded;
+  filenames, signed URL, object keys, account/device/subscription context и provider body не
+  отправляются и не логируются. Inline `web_app` URL содержит только exact request UUID, а доступ
+  после открытия повторно проверяется BFF. Telegram failure изолирован от persisted mutation и
+  остальных recipients.
 - Unknown provider status/enum обрабатывается безопасно, а не считается активным.
 - Все внешние calls имеют finite timeout, bounded concurrency и безопасное error mapping.
 - Invite code создаётся CSPRNG и принадлежит зарегистрированному пользователю. Это публичный

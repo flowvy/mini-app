@@ -22,16 +22,22 @@ from flowvy.api.routes.admin.commerce import router as admin_commerce_router
 from flowvy.api.routes.admin.dashboard import router as admin_dashboard_router
 from flowvy.api.routes.admin.registration import router as admin_registration_router
 from flowvy.api.routes.admin.settings import router as admin_settings_router
+from flowvy.api.routes.admin.support_articles import router as admin_support_articles_router
+from flowvy.api.routes.admin.support_storage import router as admin_support_storage_router
 from flowvy.api.routes.admin.users import router as admin_users_router
 from flowvy.api.routes.debug import router as debug_router
 from flowvy.api.routes.debug_admin import router as debug_admin_router
 from flowvy.api.routes.debug_commerce import router as debug_commerce_router
+from flowvy.api.routes.debug_support_articles import router as debug_support_articles_router
+from flowvy.api.routes.debug_support_storage import router as debug_support_storage_router
 from flowvy.api.routes.devices import router as devices_router
 from flowvy.api.routes.health import router as health_router
 from flowvy.api.routes.pulse import router as pulse_router
 from flowvy.api.routes.registration import router as registration_router
 from flowvy.api.routes.sponsor import router as sponsor_router
 from flowvy.api.routes.subscription import router as subscription_router
+from flowvy.api.routes.support_articles import router as support_articles_router
+from flowvy.api.routes.support_requests import router as support_requests_router
 from flowvy.api.routes.tribute_webhooks import router as tribute_webhooks_router
 from flowvy.api.routes.users import router as users_router
 from flowvy.api.routes.webhooks import router as webhooks_router
@@ -53,6 +59,7 @@ from flowvy.di_webhooks import WebhooksProvider
 from flowvy.services.entitlement_executor import EntitlementExecutor, run_entitlement_executor
 from flowvy.services.metrics_collector import run_metrics_collector
 from flowvy.services.remnawave import RemnawaveClient
+from flowvy.services.support_retention import SupportRetentionWorker, run_support_retention
 from flowvy.services.webhook_retention import run_webhook_retention
 from flowvy.telegram_main_app import TelegramMainApp, discover_main_app
 
@@ -125,11 +132,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             settings.tribute_entitlement_worker_interval_seconds,
         ),
     )
+    support_retention_worker = await container.get(SupportRetentionWorker)
+    support_retention_task = asyncio.create_task(
+        run_support_retention(
+            support_retention_worker,
+            settings.support_retention_cleanup_interval_seconds,
+        ),
+    )
 
     try:
         yield
     finally:
-        background_tasks = [metrics_task, webhook_retention_task, entitlement_task]
+        background_tasks = [
+            metrics_task,
+            webhook_retention_task,
+            entitlement_task,
+            support_retention_task,
+        ]
         for task in background_tasks:
             task.cancel()
         for task in background_tasks:
@@ -183,10 +202,14 @@ def create_app() -> FastAPI:
     app.include_router(sponsor_router)
     app.include_router(devices_router)
     app.include_router(pulse_router)
+    app.include_router(support_articles_router)
+    app.include_router(support_requests_router)
     app.include_router(admin_dashboard_router)
     app.include_router(admin_commerce_router)
     app.include_router(admin_registration_router)
     app.include_router(admin_settings_router)
+    app.include_router(admin_support_articles_router)
+    app.include_router(admin_support_storage_router)
     app.include_router(admin_users_router)
     app.include_router(webhooks_router)
     app.include_router(tribute_webhooks_router)
@@ -194,6 +217,8 @@ def create_app() -> FastAPI:
         app.include_router(debug_router)
         app.include_router(debug_admin_router)
         app.include_router(debug_commerce_router)
+        app.include_router(debug_support_articles_router)
+        app.include_router(debug_support_storage_router)
 
     if settings.webhook_url:
 

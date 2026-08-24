@@ -164,6 +164,71 @@ Primary evidence, проверено 2026-08-04, 2026-08-08, 2026-08-21 и 2026-
   проверено 2026-08-04: `NX` атомарно запрещает второй claim, TTL обеспечивает recovery, а
   случайный token с compare-and-delete Lua не позволяет старому обработчику снять чужой lease.
 
+### Support notifications в private bot chat
+
+Locked aiogram 3.26.0 отправляет fixed product-owned Support copy через существующий
+`MessageSender`: новый request и user reply — каждому текущему active admin, support reply —
+request owner. Notification запускается только после явного успешного PostgreSQL commit и остаётся
+best effort: timeout или Bot API failure не меняет HTTP response и не откатывает Support mutation.
+Fan-out ограничен пятью параллельными deliveries с десятисекундным timeout на recipient. Retry queue
+и delivery analytics в MVP отсутствуют, поэтому process crash между commit и send может потерять
+notification.
+
+HTML dynamic values экранируются, message preview ограничен 1200 visible characters. Subject
+остаётся bold heading, request/reply body помещается в обычный HTML `<blockquote>`, а requester и
+request/topic facts отделены в компактный metadata block. Это всё ещё обычный `sendMessage`, а не
+Bot API Rich Message, поэтому sender и fallback contract не расширяются. Telegram не получает
+attachment filenames/bytes, signed R2 URL, device/subscription context или provider error. Кнопки
+являются inline `web_app`: `Open` для admin и `Reply` для user. Их HTTPS URL указывает на
+существующий exact route `/support/requests/<uuid>`; Mini App/BFF выполняют обычную fresh
+authentication и owner/admin authorization. Без `WEBAPP_URL` текст отправляется без кнопки. Этот
+же fail-safe применяется к non-HTTPS URL, URL с credentials, query или fragment. Service flow не
+настраивается через operator Content/Settings.
+
+Primary evidence, проверено 2026-08-24:
+
+- [Telegram Bot API `sendMessage`](https://core.telegram.org/bots/api#sendmessage): текст сообщения
+  ограничен 1–4096 characters after entities parsing и поддерживает HTML parse mode.
+- [Telegram Bot API formatting options](https://core.telegram.org/bots/api#formatting-options):
+  обычный HTML parse mode поддерживает `<blockquote>`; динамические `<`, `>` и `&` должны быть
+  заменены соответствующими HTML entities.
+- [Telegram Bot API `InlineKeyboardButton`](https://core.telegram.org/bots/api#inlinekeyboardbutton):
+  `web_app` принимает `WebAppInfo` и доступен в private chat между user и bot.
+
+## Cloudflare R2 для Support attachments
+
+Настройки backend: `R2_ACCOUNT_ID`, `R2_BUCKET_NAME`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY` и validated `SUPPORT_*` limits/retention. Все четыре R2 значения обязательны
+вместе; при полном отсутствии text requests/replies остаются доступны, а upload intents получают
+safe `503`. Mini App не принимает и не сохраняет credentials: `/admin/settings/support` показывает
+только status, bucket, non-secret limits и read-only `HeadBucket` check.
+
+Flowvy использует private Standard bucket без `r2.dev`/public custom domain и bucket-scoped Object
+Read & Write token. BFF локально создаёт SigV4 presigned URL на fixed account S3 endpoint; direct
+browser `PUT` включает подписанные `Content-Type` и `x-amz-checksum-sha256`. Перед присоединением к
+сообщению BFF делает signed `HEAD` и требует exact SHA-256, byte size и content type. Имена object
+генерируются сервером; original filename используется только в очищенной metadata и download
+disposition. Download URL выдаётся owner или exact active admin на 60 секунд. Backend не загружает,
+не читает и не распаковывает object bytes.
+
+Browser PUT требует exact CORS origin Mini App и разрешённые `Content-Type` плюс
+`x-amz-checksum-sha256`. R2 lifecycle нельзя использовать для точного правила «три дня после
+Resolve»: provider expiry считает object age. Это правило и request expiry выполняет bounded Flowvy
+worker; удаление PostgreSQL conversation происходит только после подтверждённого удаления R2
+objects. Automated contract использует Boto3 signer, `httpx.MockTransport` и fake storage. Отдельно
+авторизованный live dev smoke 2026-08-24 подтвердил private bucket, exact-origin CORS, presigned
+PUT/HEAD/GET/DELETE и отсутствие test object после cleanup.
+
+Primary evidence, проверено 2026-08-24:
+
+- [R2 user-generated content architecture](https://developers.cloudflare.com/reference-architecture/diagrams/storage/storing-user-generated-content/): direct presigned upload отделяет file bytes от application server.
+- [R2 presigned URLs](https://developers.cloudflare.com/r2/api/s3/presigned-urls/): GET/HEAD/PUT/DELETE, short expiry, signed content type, bearer-token и browser CORS semantics.
+- [R2 S3 checksums](https://developers.cloudflare.com/r2/api/s3/api/): SHA-256 поддерживается S3-compatible API.
+- [R2 API tokens](https://developers.cloudflare.com/r2/api/tokens/): credentials можно ограничить одним bucket и Object Read & Write.
+- [R2 bucket CORS](https://developers.cloudflare.com/r2/buckets/cors/): browser origin, methods и sent headers должны быть явно allow-listed.
+- [R2 bucket creation](https://developers.cloudflare.com/r2/buckets/create-buckets/): private default и bucket-name contract `a-z`, `0-9`, `-`, 3–63 characters.
+- [R2 object lifecycle](https://developers.cloudflare.com/r2/buckets/object-lifecycles/): deletion считается от object age и завершается асинхронно, поэтому это не resolved-at timer.
+
 ## Remnawave
 
 Настройки: `REMNAWAVE_URL`, `REMNAWAVE_API_TOKEN`, `REMNAWAVE_WEBHOOK_SECRET`. Shared async httpx

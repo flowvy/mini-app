@@ -225,7 +225,6 @@ for (const theme of themes) {
 
 	test(`${theme}: success and info feedback preserve their semantic surface contracts`, async ({
 		page,
-		mockApi,
 	}) => {
 		await useTheme(page, theme);
 		await page.goto("/admin/settings/tribute/payment-links");
@@ -241,29 +240,10 @@ for (const theme of themes) {
 			color: "var(--v2-text-positive)",
 		});
 
-		mockApi.seedSponsorState({
-			status: "checkout_pending",
-			accessLevel: "base",
-			primaryAction: "continue_checkout",
-			paidExpiresAt: null,
-			baseExpiresAt: "2027-01-01T00:00:00Z",
-			currentOfferId: null,
-			managementUrl: null,
-			pendingCheckout: {
-				id: "40000000-0000-4000-8000-000000000001",
-				offerId: "30000000-0000-4000-8000-000000000001",
-				status: "pending",
-				checkoutUrl: "https://t.me/tribute/app?startapp=checkout_test",
-				expiresAt: "2026-08-14T12:30:00Z",
-			},
-			offers: [],
-		});
-		await page.goto("/");
+		await page.goto("/admin/settings/support");
 		await expectTheme(page, theme);
-		await page.getByRole("button", { name: "Check payment status" }).click();
-		const info = page.getByText("Checked just now. Tribute has not confirmed a payment yet", {
-			exact: true,
-		});
+		await page.getByRole("button", { name: "Check access" }).click();
+		const info = page.getByText("R2 access is working", { exact: true });
 		await expectSurfaceContract(info, {
 			background: primary,
 			border: edge(borderTertiary),

@@ -100,6 +100,22 @@ export function apiDelete<T = void>(path: string): Promise<T> {
 	return request<T>("DELETE", path);
 }
 
+export async function apiPutExternal(
+	url: string,
+	headers: Record<string, string>,
+	body: Blob,
+): Promise<void> {
+	const response = await fetch(url, {
+		method: "PUT",
+		headers,
+		body,
+		redirect: "error",
+	});
+	if (!response.ok) {
+		throw new ApiError(response.status, "Attachment upload failed", "support_upload_failed");
+	}
+}
+
 export async function apiUploadFile<T>(path: string, file: File): Promise<T> {
 	const formData = new FormData();
 	formData.append("file", file);

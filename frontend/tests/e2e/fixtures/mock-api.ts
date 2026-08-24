@@ -159,6 +159,248 @@ export const mockData = {
 		total: 1,
 		limit: 5,
 	},
+	supportRequests: [
+		{
+			id: "request-31",
+			number: 31,
+			topic: "connection",
+			subject: "Connection stopped working",
+			status: "needs_reply",
+			updatedAt: "2026-08-24T09:41:00Z",
+			lastMessagePreview: "The client still shows a timeout after refresh.",
+			unreadCount: 1,
+			requester: { id: 11, fullName: "Maria Petrova", username: "maria" },
+		},
+		{
+			id: "request-29",
+			number: 29,
+			topic: "devices",
+			subject: "New phone setup",
+			status: "waiting_user",
+			updatedAt: "2026-08-23T14:20:00Z",
+			lastMessagePreview: "Flowvy Support: Please remove the old phone and try again.",
+			unreadCount: 0,
+			requester: { id: 12, fullName: "Alex Kim", username: "alex" },
+		},
+		{
+			id: "request-24",
+			number: 24,
+			topic: "subscription",
+			subject: "Subscription renewal",
+			status: "resolved",
+			updatedAt: "2026-08-18T10:10:00Z",
+			lastMessagePreview: "Flowvy Support: Your access has been updated successfully.",
+			unreadCount: 0,
+			requester: { id: 13, fullName: "Oleg Sidorov", username: null },
+		},
+	],
+	supportCapabilities: {
+		attachmentsEnabled: true,
+		maxFiles: 5,
+		maxFileBytes: 50 * 1024 ** 2,
+		maxTotalBytes: 100 * 1024 ** 2,
+		allowedExtensions: [
+			".jpg",
+			".jpeg",
+			".png",
+			".webp",
+			".heic",
+			".heif",
+			".mp4",
+			".mov",
+			".webm",
+			".m4v",
+			".txt",
+			".zip",
+		],
+		attachmentRetentionDays: 3,
+		requestRetentionDays: 90,
+	},
+	supportStorage: {
+		configured: true,
+		attachmentsEnabled: true,
+		bucketName: "flowvy-support",
+		endpoint: "https://example.r2.cloudflarestorage.com",
+		maxFiles: 5,
+		maxFileBytes: 50 * 1024 ** 2,
+		maxTotalBytes: 100 * 1024 ** 2,
+		allowedExtensions: [".jpg", ".png", ".mp4", ".mov", ".txt", ".zip"],
+		attachmentRetentionDays: 3,
+		requestRetentionDays: 90,
+		requiredEnvironment: [
+			"R2_ACCOUNT_ID",
+			"R2_BUCKET_NAME",
+			"R2_ACCESS_KEY_ID",
+			"R2_SECRET_ACCESS_KEY",
+		],
+	},
+	supportDetails: {
+		"request-31": {
+			id: "request-31",
+			number: 31,
+			topic: "connection",
+			subject: "Connection stopped working",
+			status: "needs_reply",
+			updatedAt: "2026-08-24T09:41:00Z",
+			lastMessagePreview: "The client still shows a timeout after refresh.",
+			unreadCount: 1,
+			requester: { id: 11, fullName: "Maria Petrova", username: "maria" },
+			context: { subscriptionStatus: "Active", device: "iPhone 16 · iOS 20", appVersion: "0.1.0" },
+			messages: [
+				{
+					id: "message-1",
+					author: "user",
+					authorName: "Maria",
+					body: "The connection stopped working this morning on my iPhone. I refreshed the app, but it still cannot connect.",
+					createdAt: "2026-08-24T07:18:00Z",
+					attachments: [
+						{
+							id: "attachment-image",
+							name: "connection-error.png",
+							kind: "image",
+							sizeBytes: 862208,
+							passwordProtected: false,
+						},
+						{
+							id: "attachment-video",
+							name: "screen-recording.mov",
+							kind: "video",
+							sizeBytes: 40265318,
+							passwordProtected: false,
+						},
+						{
+							id: "attachment-text",
+							name: "client-log.txt",
+							kind: "text",
+							sizeBytes: 18432,
+							passwordProtected: false,
+						},
+						{
+							id: "attachment-zip",
+							name: "client-report.zip",
+							kind: "zip",
+							sizeBytes: 5033165,
+							passwordProtected: true,
+						},
+					],
+				},
+				{
+					id: "message-2",
+					author: "support",
+					authorName: "Nikita · Flowvy Support",
+					body: "I checked the subscription — it is active. Please refresh the subscription profile in your client, then try connecting again.",
+					createdAt: "2026-08-24T09:10:00Z",
+					attachments: [],
+				},
+				{
+					id: "message-3",
+					author: "user",
+					authorName: "Maria",
+					body: "The client still shows a timeout after refresh.",
+					createdAt: "2026-08-24T09:41:00Z",
+					attachments: [],
+				},
+			],
+		},
+		"request-29": {
+			id: "request-29",
+			number: 29,
+			topic: "devices",
+			subject: "New phone setup",
+			status: "waiting_user",
+			updatedAt: "2026-08-23T14:20:00Z",
+			lastMessagePreview: "Flowvy Support: Please remove the old phone and try again.",
+			unreadCount: 0,
+			requester: { id: 12, fullName: "Alex Kim", username: "alex" },
+			context: {
+				subscriptionStatus: "Active",
+				device: "Pixel 10 · Android 17",
+				appVersion: "0.1.0",
+			},
+			messages: [
+				{
+					id: "message-29",
+					author: "support",
+					authorName: "Flowvy Support",
+					body: "Please remove the old phone and try again.",
+					createdAt: "2026-08-23T14:20:00Z",
+					attachments: [],
+				},
+			],
+		},
+		"request-24": {
+			id: "request-24",
+			number: 24,
+			topic: "subscription",
+			subject: "Subscription renewal",
+			status: "resolved",
+			updatedAt: "2026-08-18T10:10:00Z",
+			lastMessagePreview: "Flowvy Support: Your access has been updated successfully.",
+			unreadCount: 0,
+			requester: { id: 13, fullName: "Oleg Sidorov", username: null },
+			context: { subscriptionStatus: "Active", device: "Windows 11", appVersion: "0.1.0" },
+			messages: [
+				{
+					id: "message-24",
+					author: "support",
+					authorName: "Flowvy Support",
+					body: "Your access has been updated successfully.",
+					createdAt: "2026-08-18T10:10:00Z",
+					attachments: [],
+				},
+			],
+		},
+	},
+	supportArticles: [
+		{
+			id: "61000000-0000-4000-8000-000000000001",
+			topic: "connection",
+			status: "published",
+			sortOrder: 1,
+			contentLocales: {
+				en: {
+					title: "Connection does not work",
+					summary: "Check the client, profile, and connection basics.",
+					body: "Start with these checks:\n\n1. Confirm your subscription is active.\n2. Refresh the subscription profile in Flowvy Desktop.\n3. Try another network.\n\nIf the connection still times out, create a request and attach a screenshot or screen recording.",
+				},
+			},
+			publishedAt: "2026-08-20T10:00:00Z",
+			createdAt: "2026-08-19T10:00:00Z",
+			updatedAt: "2026-08-20T10:00:00Z",
+		},
+		{
+			id: "61000000-0000-4000-8000-000000000002",
+			topic: "devices",
+			status: "published",
+			sortOrder: 2,
+			contentLocales: {
+				en: {
+					title: "Set up Flowvy on a new device",
+					summary: "Move access to a phone or computer without losing the profile.",
+					body: "Add the new device by opening Flowvy and importing your current subscription link. If the device limit is reached, remove the old device first.",
+				},
+			},
+			publishedAt: "2026-08-21T11:00:00Z",
+			createdAt: "2026-08-21T09:00:00Z",
+			updatedAt: "2026-08-21T11:00:00Z",
+		},
+		{
+			id: "61000000-0000-4000-8000-000000000003",
+			topic: "subscription",
+			status: "draft",
+			sortOrder: 3,
+			contentLocales: {
+				en: {
+					title: "Refresh a subscription profile",
+					summary: "Update servers and access settings in Flowvy Desktop.",
+					body: "Open the subscription menu and select **Refresh**.",
+				},
+			},
+			publishedAt: null,
+			createdAt: "2026-08-22T12:00:00Z",
+			updatedAt: "2026-08-22T12:00:00Z",
+		},
+	],
 	pulse: {
 		overallStatus: "operational",
 		groups: [
@@ -305,6 +547,7 @@ export interface MockApi {
 	seedCommerceRules: (rules: Array<Record<string, unknown>>) => void;
 	seedSponsorOffers: (offers: Array<Record<string, unknown>>) => void;
 	seedSponsorState: (state: Record<string, unknown>) => void;
+	seedSupportArticles: (articles: Array<Record<string, unknown>>) => void;
 }
 
 interface MockState {
@@ -315,6 +558,9 @@ interface MockState {
 	commerceRules: Array<Record<string, unknown>>;
 	sponsorOffers: Array<Record<string, unknown>>;
 	sponsorState: Record<string, unknown>;
+	supportRequests: Array<Record<string, unknown>>;
+	supportDetails: Record<string, Record<string, unknown>>;
+	supportArticles: Array<Record<string, unknown>>;
 }
 
 function clone<T>(value: T): T {
@@ -338,6 +584,19 @@ async function reply(route: Route, response: MockReply): Promise<void> {
 
 function matchesPath(actual: string, expected: string | RegExp): boolean {
 	return typeof expected === "string" ? actual === expected : expected.test(actual);
+}
+
+function supportPublicArticle(article: Record<string, unknown>): Record<string, unknown> {
+	const locales = article.contentLocales as Record<string, Record<string, unknown>>;
+	const content = locales.en ?? Object.values(locales)[0] ?? {};
+	return {
+		id: article.id,
+		topic: article.topic,
+		title: content.title,
+		summary: content.summary,
+		body: content.body,
+		updatedAt: article.updatedAt,
+	};
 }
 
 async function handleApi(
@@ -645,6 +904,194 @@ async function handleApi(
 		await reply(route, { body: state.devices });
 		return;
 	}
+	if (method === "GET" && path === "/api/support/articles") {
+		await reply(route, {
+			body: {
+				articles: state.supportArticles
+					.filter((article) => article.status === "published")
+					.map(supportPublicArticle),
+			},
+		});
+		return;
+	}
+	const publicSupportArticleMatch = path.match(/^\/api\/support\/articles\/([^/]+)$/);
+	if (method === "GET" && publicSupportArticleMatch) {
+		const id = decodeURIComponent(publicSupportArticleMatch[1]);
+		const article = state.supportArticles.find(
+			(item) => item.id === id && item.status === "published",
+		);
+		await reply(
+			route,
+			article
+				? { body: supportPublicArticle(article) }
+				: { status: 404, body: { detail: "Article not found" } },
+		);
+		return;
+	}
+	const isAdminSupportArticles =
+		path === "/api/admin/support/articles" || path === "/api/debug/admin/support/articles";
+	if (method === "GET" && isAdminSupportArticles) {
+		await reply(route, { body: { articles: state.supportArticles } });
+		return;
+	}
+	if (method === "POST" && isAdminSupportArticles) {
+		const input = request.postDataJSON() as Record<string, unknown>;
+		const created = {
+			...input,
+			id: `61000000-0000-4000-8000-${String(state.supportArticles.length + 1).padStart(12, "0")}`,
+			sortOrder: state.supportArticles.length + 1,
+			publishedAt: input.status === "published" ? "2026-08-24T12:00:00Z" : null,
+			createdAt: "2026-08-24T12:00:00Z",
+			updatedAt: "2026-08-24T12:00:00Z",
+		};
+		state.supportArticles.push(created);
+		await reply(route, { status: 201, body: created });
+		return;
+	}
+	if (
+		method === "PUT" &&
+		(path === "/api/admin/support/articles/order/all" ||
+			path === "/api/debug/admin/support/articles/order/all")
+	) {
+		const { articleIds } = request.postDataJSON() as { articleIds: string[] };
+		const byId = new Map(state.supportArticles.map((article) => [article.id, article]));
+		state.supportArticles = articleIds.map((id, index) => ({
+			...byId.get(id),
+			sortOrder: index + 1,
+			updatedAt: "2026-08-24T12:05:00Z",
+		}));
+		await reply(route, { body: { articles: state.supportArticles } });
+		return;
+	}
+	const adminSupportArticleMatch = path.match(
+		/^\/api\/(?:debug\/)?admin\/support\/articles\/([^/]+)$/,
+	);
+	if (adminSupportArticleMatch) {
+		const id = decodeURIComponent(adminSupportArticleMatch[1]);
+		const index = state.supportArticles.findIndex((article) => article.id === id);
+		if (index < 0) {
+			await reply(route, { status: 404, body: { detail: "Article not found" } });
+			return;
+		}
+		if (method === "GET") {
+			await reply(route, { body: state.supportArticles[index] });
+			return;
+		}
+		if (method === "PUT") {
+			const input = request.postDataJSON() as Record<string, unknown>;
+			const current = state.supportArticles[index];
+			const updated = {
+				...current,
+				...input,
+				publishedAt:
+					input.status === "published" ? (current.publishedAt ?? "2026-08-24T12:10:00Z") : null,
+				updatedAt: "2026-08-24T12:10:00Z",
+			};
+			state.supportArticles[index] = updated;
+			await reply(route, { body: updated });
+			return;
+		}
+	}
+	if (method === "GET" && path === "/api/support/requests") {
+		await reply(route, { body: { requests: state.supportRequests } });
+		return;
+	}
+	if (method === "GET" && path === "/api/support/capabilities") {
+		await reply(route, { body: mockData.supportCapabilities });
+		return;
+	}
+	if (method === "POST" && path === "/api/support/uploads") {
+		const input = request.postDataJSON() as { files: Array<Record<string, unknown>> };
+		await reply(route, {
+			body: {
+				uploads: input.files.map((file, index) => ({
+					id: `attachment-upload-${index + 1}`,
+					uploadUrl: `${url.origin}/__r2-upload/${index + 1}`,
+					headers: {
+						"Content-Type": file.contentType,
+						"x-amz-checksum-sha256": file.checksumSha256,
+					},
+					expiresAt: "2026-08-24T12:10:00Z",
+				})),
+			},
+		});
+		return;
+	}
+	const supportRequestMatch = path.match(/^\/api\/support\/requests\/([^/]+)$/);
+	if (method === "GET" && supportRequestMatch) {
+		const detail = state.supportDetails[decodeURIComponent(supportRequestMatch[1])];
+		await reply(
+			route,
+			detail ? { body: detail } : { status: 404, body: { detail: "Request not found" } },
+		);
+		return;
+	}
+	if (method === "POST" && path === "/api/support/requests") {
+		const created = clone(state.supportDetails["request-31"]);
+		created.id = "request-32";
+		created.number = 32;
+		state.supportDetails["request-32"] = created;
+		state.supportRequests.unshift(created);
+		await reply(route, { body: created });
+		return;
+	}
+	const supportActionMatch = path.match(
+		/^\/api\/support\/requests\/([^/]+)\/(messages|resolve|reopen)$/,
+	);
+	if (method === "POST" && supportActionMatch) {
+		const id = decodeURIComponent(supportActionMatch[1]);
+		const action = supportActionMatch[2];
+		const detail = state.supportDetails[id];
+		if (!detail) {
+			await reply(route, { status: 404, body: { detail: "Request not found" } });
+			return;
+		}
+		detail.status = action === "resolve" ? "resolved" : "waiting_user";
+		if (action === "messages") {
+			(detail.messages as Array<Record<string, unknown>>).push({
+				id: "message-new",
+				author: "support",
+				authorName: "Flowvy Support",
+				body: "Please try the refreshed profile once more.",
+				createdAt: "2026-08-24T10:05:00Z",
+				attachments: [],
+			});
+		}
+		const summary = state.supportRequests.find((item) => item.id === id);
+		if (summary) summary.status = detail.status;
+		await reply(route, { body: detail });
+		return;
+	}
+	if (
+		method === "GET" &&
+		path.endsWith("/download") &&
+		path.startsWith("/api/support/attachments/")
+	) {
+		await reply(route, {
+			body: {
+				url: "data:application/octet-stream;base64,Zml4dHVyZQ==",
+				expiresAt: "2026-08-24T12:01:00Z",
+				fileName: "fixture.txt",
+			},
+		});
+		return;
+	}
+	if (
+		method === "GET" &&
+		(path === "/api/admin/settings/support-storage" ||
+			path === "/api/debug/admin/settings/support-storage")
+	) {
+		await reply(route, { body: mockData.supportStorage });
+		return;
+	}
+	if (
+		method === "POST" &&
+		(path === "/api/admin/settings/support-storage/test" ||
+			path === "/api/debug/admin/settings/support-storage/test")
+	) {
+		await reply(route, { body: { ok: true, errorCode: null } });
+		return;
+	}
 	if (method === "DELETE" && path === "/api/me/devices") {
 		state.devices = { ...state.devices, devices: [], total: 0 };
 		await reply(route, { status: 204 });
@@ -697,6 +1144,9 @@ export const test = base.extend<{ mockApi: MockApi }>({
 			commerceRules: clone(mockData.commerceRules),
 			sponsorOffers: clone(mockData.sponsorOffers),
 			sponsorState: clone(mockData.sponsorState),
+			supportRequests: clone(mockData.supportRequests),
+			supportDetails: clone(mockData.supportDetails),
+			supportArticles: clone(mockData.supportArticles),
 		};
 		const tracker: MockApi = {
 			unhandled: [],
@@ -726,6 +1176,9 @@ export const test = base.extend<{ mockApi: MockApi }>({
 			seedSponsorState(sponsorState) {
 				state.sponsorState = clone(sponsorState);
 			},
+			seedSupportArticles(articles) {
+				state.supportArticles = clone(articles);
+			},
 		};
 
 		page.on("console", (message) => {
@@ -750,6 +1203,10 @@ export const test = base.extend<{ mockApi: MockApi }>({
 		await page.route("https://telegram.org/js/telegram-web-app.js", (route) =>
 			route.fulfill({ status: 200, contentType: "application/javascript", body: "" }),
 		);
+		await page.route("**/__r2-upload/**", async (route) => {
+			tracker.calls.push(`${route.request().method()} /__r2-upload`);
+			await route.fulfill({ status: 200, body: "" });
+		});
 		await page.route("**/api/**", (route) => handleApi(route, tracker, overrides, state));
 
 		await use(tracker);

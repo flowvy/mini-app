@@ -86,6 +86,26 @@ class Settings(BaseSettings):
     tribute_entitlement_lease_seconds: int = Field(default=120, ge=30, le=3600)
     tribute_entitlement_max_attempts: int = Field(default=5, ge=1, le=20)
     sponsor_checkout_pending_minutes: int = Field(default=30, ge=5, le=180)
+    r2_account_id: str = ""
+    r2_bucket_name: str = ""
+    r2_access_key_id: SecretStr = SecretStr("")
+    r2_secret_access_key: SecretStr = SecretStr("")
+    support_attachment_max_file_bytes: int = Field(
+        default=52_428_800,
+        ge=1_048_576,
+        le=536_870_912,
+    )
+    support_attachment_max_total_bytes: int = Field(
+        default=104_857_600,
+        ge=1_048_576,
+        le=1_073_741_824,
+    )
+    support_upload_url_ttl_seconds: int = Field(default=600, ge=60, le=3600)
+    support_pending_upload_ttl_seconds: int = Field(default=3600, ge=600, le=86_400)
+    support_attachment_retention_days: int = Field(default=3, ge=1, le=30)
+    support_request_retention_days: int = Field(default=90, ge=30, le=365)
+    support_retention_cleanup_interval_seconds: int = Field(default=3600, ge=60, le=86_400)
+    support_retention_cleanup_batch_size: int = Field(default=100, ge=1, le=1000)
     debug: bool = False
     admin_telegram_ids: Annotated[list[int], NoDecode] = []
 
@@ -175,3 +195,42 @@ class Settings(BaseSettings):
             msg = "TELEGRAM_WEBHOOK_SECRET is required when WEBHOOK_URL is configured"
             raise ValueError(msg)
         return self
+
+    @model_validator(mode="after")
+    def validate_r2_configuration(self) -> Settings:
+        """Accept either no R2 configuration or one complete, fixed-origin setup."""
+        if self.support_attachment_max_total_bytes < self.support_attachment_max_file_bytes:
+            raise ValueError(
+                "SUPPORT_ATTACHMENT_MAX_TOTAL_BYTES must be at least "
+                "SUPPORT_ATTACHMENT_MAX_FILE_BYTES"
+            )
+        values = (
+            self.r2_account_id.strip(),
+            self.r2_bucket_name.strip(),
+            self.r2_access_key_id.get_secret_value().strip(),
+            self.r2_secret_access_key.get_secret_value().strip(),
+        )
+        if not any(values):
+            return self
+        if not all(values):
+            raise ValueError(
+                "R2_ACCOUNT_ID, R2_BUCKET_NAME, R2_ACCESS_KEY_ID and "
+                "R2_SECRET_ACCESS_KEY must be configured together"
+            )
+        if re.fullmatch(r"[0-9a-f]{32}", values[0]) is None:
+            raise ValueError("R2_ACCOUNT_ID must be a 32-character lowercase hexadecimal ID")
+        if re.fullmatch(r"[a-z0-9][a-z0-9-]{1,61}[a-z0-9]", values[1]) is None:
+            raise ValueError("R2_BUCKET_NAME must be a valid 3-63 character bucket name")
+        self.r2_account_id = values[0]
+        self.r2_bucket_name = values[1]
+        return self
+
+    @property
+    def r2_configured(self) -> bool:
+        return bool(self.r2_account_id and self.r2_bucket_name)
+
+    @property
+    def r2_endpoint(self) -> str | None:
+        if not self.r2_configured:
+            return None
+        return f"https://{self.r2_account_id}.r2.cloudflarestorage.com"

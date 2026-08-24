@@ -21,6 +21,7 @@ from flowvy.config import Settings
 from flowvy.models.user import UserRole
 from flowvy.repositories.user import UserRepository
 from flowvy.services.remnawave import RemnawaveClient
+from flowvy.services.support_retention import SupportRetentionWorker
 from flowvy.services.user import InactiveUserError, UserService
 
 from .test_auth import _build_init_data
@@ -185,8 +186,11 @@ async def test_lifespan_registers_same_webhook_secret(
     redis = AsyncMock()
     session_factory = AsyncMock(spec=async_sessionmaker)
     remnawave = AsyncMock()
+    support_retention = AsyncMock()
     container = AsyncMock()
-    container.get = AsyncMock(side_effect=[bot, redis, session_factory, remnawave])
+    container.get = AsyncMock(
+        side_effect=[bot, redis, session_factory, remnawave, support_retention]
+    )
     app = FastAPI()
     app.state.settings = settings
     app.state.dishka_container = container
@@ -199,6 +203,7 @@ async def test_lifespan_registers_same_webhook_secret(
     monkeypatch.setattr("flowvy.api.factory.run_metrics_collector", collector)
     monkeypatch.setattr("flowvy.api.factory.run_webhook_retention", collector)
     monkeypatch.setattr("flowvy.api.factory.run_entitlement_executor", collector)
+    monkeypatch.setattr("flowvy.api.factory.run_support_retention", collector)
 
     async with lifespan(app):
         bot.set_webhook.assert_awaited_once_with(
@@ -211,6 +216,7 @@ async def test_lifespan_registers_same_webhook_secret(
     assert requested_types[1] is Redis
     assert requested_types[2] == async_sessionmaker[AsyncSession]
     assert requested_types[3] is RemnawaveClient
+    assert requested_types[4] is SupportRetentionWorker
 
 
 @pytest.mark.asyncio
@@ -236,8 +242,11 @@ async def test_lifespan_polls_locally_when_webhook_is_not_configured(
     redis = AsyncMock()
     session_factory = AsyncMock(spec=async_sessionmaker)
     remnawave = AsyncMock()
+    support_retention = AsyncMock()
     container = AsyncMock()
-    container.get = AsyncMock(side_effect=[bot, redis, session_factory, remnawave])
+    container.get = AsyncMock(
+        side_effect=[bot, redis, session_factory, remnawave, support_retention]
+    )
     app = FastAPI()
     app.state.settings = settings
     app.state.dishka_container = container
@@ -250,6 +259,7 @@ async def test_lifespan_polls_locally_when_webhook_is_not_configured(
     monkeypatch.setattr("flowvy.api.factory.run_metrics_collector", collector)
     monkeypatch.setattr("flowvy.api.factory.run_webhook_retention", collector)
     monkeypatch.setattr("flowvy.api.factory.run_entitlement_executor", collector)
+    monkeypatch.setattr("flowvy.api.factory.run_support_retention", collector)
 
     async with lifespan(app):
         await asyncio.wait_for(polling_started.wait(), timeout=1)

@@ -387,10 +387,7 @@ test("provider copy reaches invite and onboarding surfaces", async ({ page, mock
 	await assertNoHorizontalOverflow(page);
 });
 
-test("Support ignores stale provider data and stays a Coming Soon stub", async ({
-	page,
-	mockApi,
-}) => {
+test("Support ignores stale provider data and stays product-owned", async ({ page, mockApi }) => {
 	mockApi.seedSettings({
 		contentLocales: {
 			en: {
@@ -403,8 +400,8 @@ test("Support ignores stale provider data and stays a Coming Soon stub", async (
 	});
 
 	await page.goto("/support");
-	await expect(page.getByRole("heading", { name: "Support" })).toBeVisible();
-	await expect(page.getByText("In-app support is coming soon", { exact: true })).toBeVisible();
+	await expect(page.locator('[data-support-view="admin"]')).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Needs reply" })).toBeVisible();
 	await expect(page.getByText(/Stale operator/)).toHaveCount(0);
 	await expect(page.getByRole("button", { name: "Stale action" })).toHaveCount(0);
 });
@@ -536,14 +533,14 @@ for (const sponsorState of ["no_access", "base_access"] as const) {
 	});
 }
 
-test("capture dark Support Coming Soon stub", async ({ page, mockApi: _mock }, testInfo) => {
+test("capture dark administrator Support queue", async ({ page, mockApi: _mock }, testInfo) => {
 	await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
 	await page.goto("/support");
 	await setDarkTheme(page);
-	await expect(page.getByText("In-app support is coming soon", { exact: true })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Needs reply" })).toBeVisible();
 	await assertStableDarkPage(page);
 	await page.screenshot({
-		path: testInfo.outputPath("support-coming-soon-dark.png"),
+		path: testInfo.outputPath("support-admin-dark.png"),
 		fullPage: true,
 		animations: "disabled",
 	});

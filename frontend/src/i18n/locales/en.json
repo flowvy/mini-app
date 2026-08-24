@@ -98,6 +98,7 @@
 			"settingsPulse": "Pulse monitoring",
 			"settingsKuma": "Uptime Kuma",
 			"settingsBeszel": "Beszel",
+			"settingsSupport": "Support attachments",
 			"settingsTribute": "Tribute",
 			"settingsAccess": "Access",
 			"settingsIdentity": "Identity",
@@ -435,8 +436,158 @@
 		}
 	},
 	"support": {
-		"title": "Support",
-		"comingSoon": "In-app support is coming soon"
+		"quickAnswers": {
+			"title": "Quick Answers",
+			"search": "Search help",
+			"empty": "No published answers yet",
+			"loading": "Loading answers…",
+			"loadError": "Quick Answers are unavailable right now",
+			"notFoundTitle": "Answer not found",
+			"notFoundDescription": "This answer may have been unpublished or archived",
+			"notFoundAction": "Back to Support"
+		},
+		"active": {
+			"title": "Active Requests",
+			"empty": "No active requests"
+		},
+		"resolved": {
+			"title": "Resolved",
+			"empty": "No resolved requests"
+		},
+		"requests": {
+			"loading": "Loading requests…",
+			"loadError": "Requests are unavailable right now",
+			"unread": "{{count}} unread"
+		},
+		"needHelp": {
+			"title": "Need a hand?",
+			"description": "Send a request and keep the whole conversation here",
+			"action": "Create request"
+		},
+		"status": {
+			"replyReceived": "Reply received",
+			"withSupport": "With support",
+			"needsReply": "Needs reply",
+			"waitingUser": "Waiting for user",
+			"resolved": "Resolved"
+		},
+		"admin": {
+			"filterLabel": "Request status",
+			"active": "Active · {{count}}",
+			"resolved": "Resolved · {{count}}",
+			"search": "Search requests or users",
+			"needsReply": "Needs reply",
+			"waitingUser": "Waiting for user",
+			"recentlyResolved": "Recently resolved",
+			"empty": "No requests match this view"
+		},
+		"topics": {
+			"connection": "Connection",
+			"subscription": "Subscription",
+			"devices": "Devices",
+			"payment": "Payment",
+			"other": "Other"
+		},
+		"new": {
+			"title": "New request",
+			"description": "Tell us what happened. One request should cover one problem",
+			"topic": "Topic",
+			"subject": "Subject",
+			"message": "What happened?",
+			"messagePlaceholder": "What did you expect, and what happened instead?",
+			"safetyHint": "Don't include passwords, access keys or payment details",
+			"send": "Send request",
+			"contextTitle": "Useful context is attached automatically",
+			"contextDescription": "Your Flowvy account, app version and current device type — never message history or payment data"
+		},
+		"attachments": {
+			"title": "Attachments",
+			"inputLabel": "Choose support attachments",
+			"add": "Add photos, videos or files",
+			"hint": "Up to {{count}} files · {{size}} each · screenshots, screen recordings, TXT or ZIP",
+			"loading": "Checking attachment availability…",
+			"unavailable": "Attachments are unavailable on this server. You can still send a text request",
+			"typeError": "Use a screenshot, screen recording, TXT or ZIP file",
+			"countError": "You can attach up to {{count}} files",
+			"sizeError": "One of these files exceeds the per-file limit",
+			"totalError": "These files exceed the total attachment limit",
+			"remove": "Remove {{name}}",
+			"download": "Download {{name}}",
+			"zip": "ZIP",
+			"passwordProtected": "Password protected"
+		},
+		"request": {
+			"number": "Request #{{number}}",
+			"updated": "Updated {{value}}",
+			"conversation": "Conversation",
+			"userContext": "User context",
+			"user": "User",
+			"subscription": "Subscription",
+			"device": "Device",
+			"appVersion": "App version"
+		},
+		"reply": {
+			"label": "Reply",
+			"adminLabel": "Reply as Flowvy Support",
+			"placeholder": "Write a reply…",
+			"adminPlaceholder": "Reply as Flowvy Support…",
+			"send": "Send",
+			"reopenHint": "Sending a reply will reopen this request"
+		},
+		"actions": {
+			"resolve": "Resolve",
+			"reopen": "Reopen",
+			"createError": "The request was not sent. Nothing was created; try again",
+			"updateError": "The request was not updated. Try again",
+			"downloadError": "The attachment could not be downloaded. Try again"
+		},
+		"answerCta": {
+			"title": "Still need help?",
+			"description": "Create a request with the relevant topic already selected",
+			"action": "Create request"
+		},
+		"manage": {
+			"open": "Manage Quick Answers",
+			"description": "Create, publish and reorder Support articles",
+			"title": "Quick Answers",
+			"summary": "{{published}} published · {{drafts}} drafts",
+			"articles": "Articles",
+			"create": "Create article",
+			"empty": "No articles yet",
+			"emptyDescription": "Create the first answer, review it, then publish it",
+			"untitled": "Untitled article",
+			"moveUp": "Move {{title}} up",
+			"moveDown": "Move {{title}} down",
+			"edit": "Edit {{title}}",
+			"reorderError": "The article order was not saved. Reload and try again",
+			"status": {
+				"draft": "Draft",
+				"published": "Published",
+				"archived": "Archived"
+			},
+			"editor": {
+				"newTitle": "New article",
+				"editTitle": "Edit article",
+				"description": "Article content is stored by Flowvy and appears in Support after publication",
+				"topic": "Topic",
+				"language": "Language",
+				"articleTitle": "Title",
+				"summary": "Short description",
+				"summaryHint": "Shown in the Quick Answers list and search results",
+				"body": "Article",
+				"bodyPlaceholder": "Write the answer…",
+				"publishRequirements": "Add a title, short description and article text before publishing",
+				"saveDraft": "Save draft",
+				"restoreDraft": "Restore as draft",
+				"publish": "Publish",
+				"unpublish": "Unpublish",
+				"archive": "Archive",
+				"saveError": "The article was not saved. Check the required fields and try again",
+				"discardTitle": "Discard article changes?",
+				"discardDescription": "Your unsaved article changes will be lost",
+				"discard": "Discard changes"
+			}
+		}
 	},
 	"pulse": {
 		"noIncidents": "No active incidents",
@@ -473,6 +624,33 @@
 			"offDescription": "Hide Pulse monitoring",
 			"connections": "Provider connections",
 			"setUp": "Set up"
+		},
+		"supportStorage": {
+			"title": "Support attachments",
+			"description": "Private Cloudflare R2 storage",
+			"intro": "Support messages are always stored by Flowvy. R2 is optional and used only for screenshots, recordings, TXT and opaque ZIP files",
+			"configured": "Configured",
+			"notConfigured": "Not configured",
+			"connectionSection": "Attachment storage",
+			"status": "Cloudflare R2",
+			"privateDescription": "Private bucket; users receive short-lived upload and download URLs",
+			"missingDescription": "Attachments are disabled. Text requests and replies continue to work",
+			"bucket": "Bucket",
+			"test": "Check access",
+			"testPassed": "R2 access is working",
+			"testFailed": "R2 could not be reached with the current server configuration",
+			"setupSection": "Server setup",
+			"secretNotice": "Credentials are accepted only through the server environment. They are never entered, stored or returned by the Mini App",
+			"stepBucket": "Create a private Standard R2 bucket; do not enable r2.dev or a public custom domain",
+			"stepToken": "Create a bucket-scoped Object Read & Write token",
+			"stepCors": "Allow PUT from the Mini App origin in the bucket CORS policy, including Content-Type and x-amz-checksum-sha256",
+			"stepRestart": "Set all four environment variables and restart Flowvy",
+			"environment": "Required environment variables",
+			"policySection": "Limits and retention",
+			"uploadLimit": "Per message",
+			"messageLimit": "Combined size",
+			"retention": "Files / requests retention",
+			"retentionValue": "{{attachments}}d / {{requests}}d"
 		},
 		"system": "System",
 		"remnawave": "Remnawave",

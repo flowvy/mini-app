@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from sqlalchemy import func, select
 
 from flowvy.models.user import User, UserRole
@@ -27,6 +29,25 @@ class UserRepository(BaseRepository[User]):
         stmt = select(User).where(User.role == UserRole.ADMIN)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_active_admins(
+        self,
+        allowed_telegram_ids: Sequence[int],
+        *,
+        exclude_telegram_id: int | None = None,
+    ) -> list[User]:
+        """Return active DB admins still authorized by current environment policy."""
+        if not allowed_telegram_ids:
+            return []
+        conditions = [
+            User.id.in_(allowed_telegram_ids),
+            User.role == UserRole.ADMIN,
+            User.is_active.is_(True),
+        ]
+        if exclude_telegram_id is not None:
+            conditions.append(User.id != exclude_telegram_id)
+        stmt = select(User).where(*conditions).order_by(User.id)
+        return list((await self._session.scalars(stmt)).all())
 
     async def count_invited_by(self, user_id: int) -> int:
         """Count direct registrations attributed to one inviter."""

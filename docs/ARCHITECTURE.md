@@ -479,8 +479,39 @@ mutation сразу кладёт полученного user в общий TanSt
 читает и не пересылает. Валидный launch invite сохраняет referral attribution до обычной open
 registration.
 
-Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Support и admin Broadcast используют
-один product-owned `ComingSoon` без provider settings, operator content или external action. Admin URL:
+Пользовательские URL: `/`, `/devices`, `/pulse`, `/support`. Support Quick Answers читаются из
+отдельных PostgreSQL `support_articles`: authenticated user получает только published resolved locale
+по `/api/support/articles`, а active admin создаёт, редактирует, упорядочивает, публикует и архивирует
+typed localized articles через `/support/manage/answers`. Article UUID остаётся стабильным deep-link;
+topic и status являются структурными enum, title/summary/body — operator-owned CommonMark content без
+raw HTML и migration seeds.
+
+Обращения, сообщения и attachment intents хранятся в `support_requests`, `support_messages` и
+`support_attachments`. Пользователь видит только собственные обращения; exact active admin из
+локальной роли и `ADMIN_TELEGRAM_IDS` видит общую очередь. Обе роли могут Resolve/Reopen, а новый
+reply снимает `resolved` и продлевает request expiry на 90 дней от последней активности. Text-only
+flow не зависит от object storage. При полной env-конфигурации Cloudflare R2 BFF выдаёт
+checksum-bound presigned `PUT` на server-generated opaque key; после upload BFF через signed `HEAD`
+сверяет SHA-256, byte size и content type до привязки к сообщению. Bucket остаётся private, download
+требует fresh owner/admin authorization и возвращает минутный presigned `GET`. ZIP не извлекается и
+не читается. Bounded worker удаляет pending objects, вложения через три дня после текущего Resolve и
+все objects до удаления 90-дневной переписки; provider failure сохраняет DB reference для retry.
+R2 credentials существуют только в server env, а `/admin/settings/support` показывает read-only
+status, limits и connectivity check.
+
+Создание обращения и ответ пользователя после успешного PostgreSQL commit отправляют fixed
+product-owned Telegram notification каждому текущему active admin из пересечения локальной роли и
+`ADMIN_TELEGRAM_IDS`. Ответ support после commit уведомляет только владельца обращения. Тексты не
+настраиваются в Mini App: в Telegram попадают HTML-escaped subject, ограниченный preview последнего
+message, request number/topic и только количество attachments; filenames, signed URL и Support
+context не отправляются. Inline `web_app` кнопки `Open` и `Reply` ведут прямо на
+`/support/requests/:id`, где BFF заново проверяет owner/admin authorization. Delivery выполняется
+best effort с per-recipient timeout и isolation: сбой Telegram не откатывает уже сохранённый reply и
+не мешает другим admins. Manual Resolve/Reopen остаётся silent; reply-driven Reopen использует
+обычное reply notification.
+
+Admin Broadcast
+сохраняет product-owned `ComingSoon` без provider settings, operator content или external action. Admin URL:
 `/admin/dashboard`, `/admin/users`, `/admin/users/search`, `/admin/users/$userId`, `/admin/broadcast`, `/admin/settings` и
 отдельные Kuma, Beszel, Tribute, branding, welcome, localized Content и registration/access subroutes.
 

@@ -11,6 +11,8 @@ import { useBackNavigationController } from "../contexts/back-navigation-context
 import { isPrimaryTabRoute } from "../lib/navigation-routes.ts";
 
 export function getBackFallback(pathname: string): string {
+	if (pathname.startsWith("/support/manage/answers/")) return "/support/manage/answers";
+	if (pathname.startsWith("/support/")) return "/support";
 	if (pathname.startsWith("/admin/settings/tribute/")) return "/admin/settings/tribute";
 	if (pathname === "/admin/settings/kuma" || pathname === "/admin/settings/beszel") {
 		return "/admin/settings/pulse";

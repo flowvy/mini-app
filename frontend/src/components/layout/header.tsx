@@ -4,6 +4,7 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
 	Activity,
+	Cloud,
 	HelpCircle,
 	Languages,
 	Megaphone,
@@ -48,6 +49,10 @@ const PAGE_META: Record<string, PageMeta> = {
 	"/admin/settings/beszel": {
 		title: "common.header.settingsBeszel",
 		icon: <BeszelIcon size={16} />,
+	},
+	"/admin/settings/support": {
+		title: "common.header.settingsSupport",
+		icon: <Cloud size={16} />,
 	},
 	"/admin/settings/tribute": {
 		title: "common.header.settingsTribute",
@@ -111,25 +116,27 @@ export function Header() {
 						<span className={styles.title}>{user.branding.appName || t("common.appName")}</span>
 					</div>
 				)}
-				{isAdmin && (
-					<button
-						type="button"
-						role="switch"
-						aria-checked={mode === "admin"}
-						aria-label={t("common.header.adminModeLabel")}
-						className={`${styles.modeSwitch} ${mode === "admin" ? styles.adminMode : ""}`}
-						onClick={() => handleToggle(mode === "admin" ? "user" : "admin")}
-					>
-						<span className={styles.modeThumb} aria-hidden="true">
-							<span className={`${styles.modeIcon} ${styles.userIcon}`}>
-								<User size={14} strokeWidth={2.25} />
+				<div className={styles.headerControls}>
+					{isAdmin && (
+						<button
+							type="button"
+							role="switch"
+							aria-checked={mode === "admin"}
+							aria-label={t("common.header.adminModeLabel")}
+							className={`${styles.modeSwitch} ${mode === "admin" ? styles.adminMode : ""}`}
+							onClick={() => handleToggle(mode === "admin" ? "user" : "admin")}
+						>
+							<span className={styles.modeThumb} aria-hidden="true">
+								<span className={`${styles.modeIcon} ${styles.userIcon}`}>
+									<User size={14} strokeWidth={2.25} />
+								</span>
+								<span className={`${styles.modeIcon} ${styles.adminIcon}`}>
+									<UserStar size={14} strokeWidth={2.25} />
+								</span>
 							</span>
-							<span className={`${styles.modeIcon} ${styles.adminIcon}`}>
-								<UserStar size={14} strokeWidth={2.25} />
-							</span>
-						</span>
-					</button>
-				)}
+						</button>
+					)}
+				</div>
 			</header>
 		</div>
 	);

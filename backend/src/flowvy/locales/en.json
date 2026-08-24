@@ -9,5 +9,21 @@
   "inviteShare": {
     "text": "Join me on {{appName}}. If Telegram asks, use invite code <code>{{code}}</code>.",
     "button": "Open {{appName}}"
+  },
+  "supportNotifications": {
+    "userReply": "💬 <b>Flowvy Support replied</b>\n\n<b>{{subject}}</b>\n<blockquote>{{message}}</blockquote>\n\n🎫 <b>Request #{{requestNumber}}</b> · {{topic}}{{attachments}}",
+    "adminNewRequest": "🆕 <b>New support request</b>\n\n<b>{{subject}}</b>\n<blockquote>{{message}}</blockquote>\n\n👤 <b>{{requester}}</b>\n🎫 <b>Request #{{requestNumber}}</b> · {{topic}}{{attachments}}",
+    "adminUserReply": "💬 <b>New user reply</b>\n\n<b>{{subject}}</b>\n<blockquote>{{message}}</blockquote>\n\n👤 <b>{{requester}}</b>\n🎫 <b>Request #{{requestNumber}}</b> · {{topic}}{{attachments}}",
+    "replyButton": "Reply",
+    "openButton": "Open",
+    "oneAttachment": "📎 1 attachment",
+    "manyAttachments": "📎 {{count}} attachments",
+    "topics": {
+      "connection": "Connection",
+      "subscription": "Subscription",
+      "devices": "Devices",
+      "payment": "Payment",
+      "other": "Other"
+    }
   }
 }

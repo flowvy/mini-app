@@ -1,0 +1,34 @@
+.setupSteps {
+	display: grid;
+	gap: 8px;
+	margin: 0;
+	padding-left: 22px;
+	color: var(--v2-text-primary);
+	font-size: var(--font-size-caption);
+	line-height: 1.45;
+}
+
+.variables {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: start;
+	gap: 9px;
+	padding: 10px;
+	border: 1px solid var(--v2-border-tertiary);
+	border-radius: var(--radius-sm);
+	background: var(--v2-bg-secondary);
+	color: var(--v2-icon-secondary);
+}
+
+.variables > div {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	min-width: 0;
+}
+
+.variables code {
+	overflow-wrap: anywhere;
+	color: var(--v2-text-primary);
+	font-size: var(--font-size-overline);
+}
