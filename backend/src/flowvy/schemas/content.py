@@ -16,15 +16,25 @@ def normalize_formatted_text(value: str) -> str:
     return value.replace("\r\n", "\n").replace("\r", "\n").strip()
 
 
-def formatted_text_visible_length(value: str) -> int:
-    """Count visible text for Flowvy's small editor-generated CommonMark subset."""
+def formatted_text_visible_text(value: str) -> str:
+    """Project Flowvy's small editor-generated CommonMark subset to visible text."""
 
     normalized = normalize_formatted_text(value)
     visible = _LINK_RE.sub(r"\1", normalized)
     visible = _LIST_PREFIX_RE.sub("", visible)
     visible = _BLOCKQUOTE_PREFIX_RE.sub("", visible)
     visible = _MARK_RE.sub("", visible)
-    return len(visible)
+    return visible
 
 
-__all__ = ["formatted_text_visible_length", "normalize_formatted_text"]
+def formatted_text_visible_length(value: str) -> int:
+    """Count visible text for Flowvy's small editor-generated CommonMark subset."""
+
+    return len(formatted_text_visible_text(value))
+
+
+__all__ = [
+    "formatted_text_visible_length",
+    "formatted_text_visible_text",
+    "normalize_formatted_text",
+]

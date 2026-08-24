@@ -288,7 +288,7 @@ export const mockData = {
 					id: "message-2",
 					author: "support",
 					authorName: "Nikita · Flowvy Support",
-					body: "I checked the subscription — it is active. Please refresh the subscription profile in your client, then try connecting again.",
+					body: "I checked the subscription — it is **active**. Please refresh the subscription profile in your client, then try connecting again.",
 					createdAt: "2026-08-24T09:10:00Z",
 					attachments: [],
 				},

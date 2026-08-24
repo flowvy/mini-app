@@ -25,8 +25,8 @@ Applies to `frontend/`. Follow the repository root and `tests/e2e/AGENTS.md` whe
   for shared color values and semantic roles; do not add local contrast replacements, aliases that
   change values, or one-off UI colors. Floating Header/TabBar glass tokens are the only approved
   Mini App exception and stay scoped to their layout CSS modules. Check Telegram safe areas, small mobile
-  heights, long text, focus visibility, reduced motion, and light/dark contrast. Report strict-parity
-  contrast findings honestly; never suppress or allow-list them.
+  heights, long text, focus visibility, reduced motion, and light/dark contrast. Strict-parity
+  contrast scans must pass; never suppress or allow-list findings.
 - Prefer semantic controls and accessible names. Dialogs need focus management, Escape/cancel,
   destructive-action clarity, and disabled/loading behavior.
 - Route and mode changes must work through direct navigation and browser Back/Forward, not only

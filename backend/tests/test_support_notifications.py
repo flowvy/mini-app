@@ -113,14 +113,12 @@ async def test_new_request_notifies_every_active_admin_except_requester() -> Non
         800_002,
     }
     sent = sender.send.await_args_list[0].kwargs
-    assert "🆕 <b>New support request</b>" in sent["text"]
-    assert "<b>Cannot use &lt;Flowvy&gt;</b>" in sent["text"]
+    assert "💬 <b>Cannot use &lt;Flowvy&gt; • @alex_owner</b>" in sent["text"]
     assert (
         "<blockquote>My &lt;b&gt;profile&lt;/b&gt; stopped &amp; will not reconnect.</blockquote>"
         in sent["text"]
     )
-    assert "👤 <b>Alex &lt;Owner&gt; (@alex_owner)</b>" in sent["text"]
-    assert "🎫 <b>Request #1042</b> · Connection" in sent["text"]
+    assert "Request #1042 • Connection" in sent["text"]
     assert "📎 2 attachments" in sent["text"]
     assert "private-0.zip" not in sent["text"]
     assert sent["buttons"][0].text == "Open"
@@ -134,20 +132,22 @@ async def test_support_reply_notifies_only_requester_with_bounded_escaped_copy()
     notifications, sender, users = _notifications()
     request = _request(
         author="support",
-        body=("Use <Settings> & reconnect. " * 100),
+        body=("**Use <Settings>** & _reconnect_. " * 100),
         attachment_count=1,
     )
 
-    await notifications.notify_reply(request, actor_telegram_id=800_001)
+    await notifications.notify_reply(request, actor_telegram_id=request.requester.id)
 
     users.get_active_admins.assert_not_awaited()
     sender.send.assert_awaited_once()
     sent = sender.send.await_args.kwargs
     assert sent["chat_id"] == request.requester.id
-    assert "💬 <b>Flowvy Support replied</b>" in sent["text"]
+    assert "💬 <b>Connection drops</b>" in sent["text"]
     assert "<blockquote>Use &lt;Settings&gt; &amp; reconnect." in sent["text"]
     assert "</blockquote>" in sent["text"]
-    assert "🎫 <b>Request #1042</b> · Connection" in sent["text"]
+    assert "**" not in sent["text"]
+    assert "_reconnect_" not in sent["text"]
+    assert "Request #1042 • Connection" in sent["text"]
     assert "📎 1 attachment" in sent["text"]
     assert "private-0.zip" not in sent["text"]
     assert "…" in sent["text"]
@@ -160,7 +160,7 @@ async def test_support_reply_notifies_only_requester_with_bounded_escaped_copy()
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("webapp_url", ["", "http://localhost:5173"])
-async def test_user_reply_uses_reply_heading_and_provider_failure_is_isolated(
+async def test_user_reply_uses_admin_template_and_provider_failure_is_isolated(
     webapp_url: str,
 ) -> None:
     notifications, sender, users = _notifications(webapp_url=webapp_url)
@@ -175,7 +175,8 @@ async def test_user_reply_uses_reply_heading_and_provider_failure_is_isolated(
     assert sender.send.await_count == 2
     assert all(item.kwargs["buttons"] is None for item in sender.send.await_args_list)
     assert all(
-        "💬 <b>New user reply</b>" in item.kwargs["text"] for item in sender.send.await_args_list
+        "💬 <b>Connection drops • @alex_owner</b>" in item.kwargs["text"]
+        for item in sender.send.await_args_list
     )
 
 

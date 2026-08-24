@@ -11,9 +11,9 @@
     "button": "Open {{appName}}"
   },
   "supportNotifications": {
-    "userReply": "💬 <b>Flowvy Support replied</b>\n\n<b>{{subject}}</b>\n<blockquote>{{message}}</blockquote>\n\n🎫 <b>Request #{{requestNumber}}</b> · {{topic}}{{attachments}}",
-    "adminNewRequest": "🆕 <b>New support request</b>\n\n<b>{{subject}}</b>\n<blockquote>{{message}}</blockquote>\n\n👤 <b>{{requester}}</b>\n🎫 <b>Request #{{requestNumber}}</b> · {{topic}}{{attachments}}",
-    "adminUserReply": "💬 <b>New user reply</b>\n\n<b>{{subject}}</b>\n<blockquote>{{message}}</blockquote>\n\n👤 <b>{{requester}}</b>\n🎫 <b>Request #{{requestNumber}}</b> · {{topic}}{{attachments}}",
+    "userReply": "💬 <b>{{subject}}</b>\n\n<blockquote>{{message}}</blockquote>\n\nRequest #{{requestNumber}} • {{topic}}{{attachments}}",
+    "adminNewRequest": "💬 <b>{{subject}} • {{requester}}</b>\n\n<blockquote>{{message}}</blockquote>\n\nRequest #{{requestNumber}} • {{topic}}{{attachments}}",
+    "adminUserReply": "💬 <b>{{subject}} • {{requester}}</b>\n\n<blockquote>{{message}}</blockquote>\n\nRequest #{{requestNumber}} • {{topic}}{{attachments}}",
     "replyButton": "Reply",
     "openButton": "Open",
     "oneAttachment": "📎 1 attachment",

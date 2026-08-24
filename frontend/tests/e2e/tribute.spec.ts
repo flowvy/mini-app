@@ -1303,6 +1303,7 @@ test("Tribute settings pass serious accessibility and overflow checks", async ({
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
+		await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
 		const result = await new AxeBuilder({ page }).analyze();
 		const serious = result.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),
@@ -1396,7 +1397,7 @@ test("rule deletion consequence is accessible in light and dark themes", async (
 			page
 				.getByRole("dialog", { name: "Edit automation rule" })
 				.getByRole("button", { name: "Delete", exact: true }),
-		).toHaveCSS("color", colorScheme === "dark" ? "rgb(248, 66, 53)" : "rgb(198, 53, 42)");
+		).toHaveCSS("color", colorScheme === "dark" ? "rgb(255, 85, 74)" : "rgb(198, 53, 42)");
 		const result = await new AxeBuilder({ page }).analyze();
 		const serious = result.violations.filter((violation) =>
 			["serious", "critical"].includes(violation.impact ?? ""),
@@ -1790,7 +1791,7 @@ test("admin groups legacy subscription cards around one readable plan preview", 
 		await expect(page.locator("html")).toHaveAttribute("data-theme", colorScheme);
 		const warningSurface = colorScheme === "light" ? "rgb(255, 239, 204)" : "rgb(52, 45, 25)";
 		const warningBorder = colorScheme === "light" ? "rgb(252, 218, 146)" : "rgb(99, 82, 29)";
-		const warningText = colorScheme === "light" ? "rgb(243, 171, 17)" : "rgb(255, 203, 47)";
+		const warningText = colorScheme === "light" ? "rgb(138, 91, 0)" : "rgb(255, 203, 47)";
 		const primarySurface = colorScheme === "light" ? "rgb(255, 255, 255)" : "rgb(33, 33, 33)";
 		const firstLegacyOffer = offersSection.locator('[data-ui="legacy-sponsor-offer"]').first();
 		const duplicateNote = offersSection.getByRole("note");
@@ -2015,7 +2016,7 @@ test("Home labels the eligible subscription as a welcome discount", async ({
 						secondary: "rgb(242, 242, 242)",
 						secondaryText: "rgb(69, 69, 69)",
 						secondaryBorder: "rgb(199, 199, 199)",
-						positive: "rgb(58, 177, 118)",
+						positive: "rgb(36, 120, 79)",
 						positiveBorder: "rgb(198, 237, 217)",
 					}
 				: {
@@ -2688,7 +2689,7 @@ test("sponsor checkout card produces reviewable light and dark evidence", async 
 		await expect(accessFact).toHaveCSS("border-style", "solid");
 		const availableOffer = card.getByRole("article", { name: "Sponsor access" });
 		const accentBorder = colorScheme === "light" ? "rgb(198, 237, 217)" : "rgb(37, 96, 66)";
-		const accentInset = colorScheme === "light" ? "rgb(58, 177, 118)" : "rgb(73, 221, 147)";
+		const accentInset = colorScheme === "light" ? "rgb(36, 120, 79)" : "rgb(73, 221, 147)";
 		await expect(availableOffer).toHaveCSS("border-color", accentBorder);
 		await expect(availableOffer).toHaveCSS("box-shadow", `${accentInset} 3px 0px 0px 0px inset`);
 		const paymentOptions = card.getByRole("list", { name: "Payment options from Tribute" });

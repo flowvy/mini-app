@@ -502,9 +502,11 @@ status, limits и connectivity check.
 Создание обращения и ответ пользователя после успешного PostgreSQL commit отправляют fixed
 product-owned Telegram notification каждому текущему active admin из пересечения локальной роли и
 `ADMIN_TELEGRAM_IDS`. Ответ support после commit уведомляет только владельца обращения. Тексты не
-настраиваются в Mini App: в Telegram попадают HTML-escaped subject, ограниченный preview последнего
-message, request number/topic и только количество attachments; filenames, signed URL и Support
-context не отправляются. Inline `web_app` кнопки `Open` и `Reply` ведут прямо на
+настраиваются в Mini App: общий formatted-text contract проецирует CommonMark последнего message в
+видимый текст без source-маркеров, после чего Telegram получает HTML-escaped subject, ограниченный
+`<blockquote>` preview, request number/topic и только количество attachments. Admin, отвечающий на
+собственное обращение через Admin mode, не исключается из owner notification. Filenames, signed URL
+и Support context не отправляются. Inline `web_app` кнопки `Open` и `Reply` ведут прямо на
 `/support/requests/:id`, где BFF заново проверяет owner/admin authorization. Delivery выполняется
 best effort с per-recipient timeout и isolation: сбой Telegram не откатывает уже сохранённый reply и
 не мешает другим admins. Manual Resolve/Reopen остаётся silent; reply-driven Reopen использует

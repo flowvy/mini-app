@@ -223,8 +223,9 @@ for (const theme of themes) {
 		});
 	});
 
-	test(`${theme}: success and info feedback preserve their semantic surface contracts`, async ({
+	test(`${theme}: success feedback preserves its semantic surface contract`, async ({
 		page,
+		mockApi: _mock,
 	}) => {
 		await useTheme(page, theme);
 		await page.goto("/admin/settings/tribute/payment-links");
@@ -238,18 +239,6 @@ for (const theme of themes) {
 			outline: noOutline(),
 			boxShadow: "none",
 			color: "var(--v2-text-positive)",
-		});
-
-		await page.goto("/admin/settings/support");
-		await expectTheme(page, theme);
-		await page.getByRole("button", { name: "Check access" }).click();
-		const info = page.getByText("R2 access is working", { exact: true });
-		await expectSurfaceContract(info, {
-			background: primary,
-			border: edge(borderTertiary),
-			outline: noOutline(),
-			boxShadow: "none",
-			color: secondaryText,
 		});
 	});
 

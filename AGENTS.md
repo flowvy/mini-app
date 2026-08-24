@@ -158,9 +158,6 @@ checks, and visual inspection in light and dark themes. Update `docs/PROJECT_STA
 runbooks, or the active plan when their facts or decisions changed. State anything that could not be
 run and why; never silently substitute a weaker check.
 
-The only current exception is the owner-accepted strict Flowvy Desktop color-parity debt documented
-in ADR 0004. Its Axe `color-contrast` scans remain failing and must never be suppressed, allow-listed,
-downgraded, or described as passed. They do not block completion only when a fresh run shows no
-failure outside the exact current ADR ledger and every functional, console, network, overflow, lint,
-type, unit, build, and other accessibility check passes. Any new node, color pair, rule, or non-color
-failure blocks completion and requires investigation.
+Strict Flowvy Desktop color parity does not exempt accessibility failures. Axe `color-contrast`
+scans must pass without suppression, allow-lists, or impact downgrade. Any failing node, color pair,
+rule, or non-color check blocks completion and requires investigation.

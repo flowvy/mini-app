@@ -9,7 +9,7 @@ const expected = {
 		borderPrimary: "rgb(69, 69, 69)",
 		borderSecondary: "rgb(199, 199, 199)",
 		borderTertiary: "rgb(230, 230, 230)",
-		positive: "rgb(58, 177, 118)",
+		positive: "rgb(36, 120, 79)",
 		positiveSurface: "rgb(241, 250, 245)",
 		positiveActiveSurface: "rgb(232, 247, 240)",
 		positiveBorder: "rgb(198, 237, 217)",
@@ -18,8 +18,8 @@ const expected = {
 		secondaryText: "rgb(69, 69, 69)",
 		warningSurface: "rgb(255, 239, 204)",
 		warningBorder: "rgb(252, 218, 146)",
-		warningText: "rgb(243, 171, 17)",
-		negativePrimary: "rgb(248, 66, 53)",
+		warningText: "rgb(138, 91, 0)",
+		negativePrimary: "rgb(198, 53, 42)",
 		negativeText: "rgb(198, 53, 42)",
 		staticWhite: "rgb(255, 255, 255)",
 		glass: "rgba(255, 255, 255, 0.92)",
@@ -41,8 +41,8 @@ const expected = {
 		warningSurface: "rgb(52, 45, 25)",
 		warningBorder: "rgb(99, 82, 29)",
 		warningText: "rgb(255, 203, 47)",
-		negativePrimary: "rgb(248, 66, 53)",
-		negativeText: "rgb(248, 66, 53)",
+		negativePrimary: "rgb(198, 53, 42)",
+		negativeText: "rgb(255, 85, 74)",
 		staticWhite: "rgb(255, 255, 255)",
 		glass: "rgba(33, 33, 33, 0.92)",
 	},
@@ -437,11 +437,16 @@ test("desktop color roles cover navigation, status, editors, and destructive act
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
-		await page.getByRole("button", { name: "Check payment status" }).click();
-		const checkedStatus = page.getByRole("status").filter({ hasText: "Checked just now" });
-		await expect(checkedStatus).toHaveCSS("background-color", colors.floor1);
-		await expect(checkedStatus).toHaveCSS("border-color", colors.borderTertiary);
-		await expect(checkedStatus).toHaveCSS("color", colors.secondaryText);
+		const checkPaymentStatus = page.getByRole("button", { name: "Check payment status" });
+		const sponsorRequestsBeforeCheck = mockApi.calls.filter(
+			(call) => call === "GET /api/me/sponsor",
+		).length;
+		await checkPaymentStatus.click();
+		await expect
+			.poll(() => mockApi.calls.filter((call) => call === "GET /api/me/sponsor").length)
+			.toBeGreaterThan(sponsorRequestsBeforeCheck);
+		await expect(checkPaymentStatus).not.toHaveAttribute("aria-busy", "true");
+		await expect(page.getByRole("status")).toHaveCount(0);
 	}
 });
 
@@ -464,7 +469,7 @@ test("prefers-color-scheme selects the desktop token values before data-theme", 
 		});
 		expect(values).toEqual(
 			colorScheme === "light"
-				? { floor1: "#ffffff", positive: "#3ab176", warning: "#ffefcc" }
+				? { floor1: "#ffffff", positive: "#24784f", warning: "#ffefcc" }
 				: { floor1: "#212121", positive: "#49dd93", warning: "#342d19" },
 		);
 	}

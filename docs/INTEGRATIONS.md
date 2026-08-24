@@ -175,15 +175,18 @@ Fan-out ограничен пятью параллельными deliveries с �
 notification.
 
 HTML dynamic values экранируются, message preview ограничен 1200 visible characters. Subject
-остаётся bold heading, request/reply body помещается в обычный HTML `<blockquote>`, а requester и
-request/topic facts отделены в компактный metadata block. Это всё ещё обычный `sendMessage`, а не
-Bot API Rich Message, поэтому sender и fallback contract не расширяются. Telegram не получает
+и admin requester образуют одну bold heading строку с обычным Unicode `💬`; request/reply body
+сначала проходит общую CommonMark → visible-text projection и помещается в обычный HTML
+`<blockquote>`, а request/topic facts остаются в компактном metadata block. Поэтому editor source
+маркеры вроде `**` не попадают в Telegram preview. Это всё ещё обычный `sendMessage`, а не Bot API
+Rich Message, поэтому sender и fallback contract не расширяются. Telegram не получает
 attachment filenames/bytes, signed R2 URL, device/subscription context или provider error. Кнопки
 являются inline `web_app`: `Open` для admin и `Reply` для user. Их HTTPS URL указывает на
 существующий exact route `/support/requests/<uuid>`; Mini App/BFF выполняют обычную fresh
 authentication и owner/admin authorization. Без `WEBAPP_URL` текст отправляется без кнопки. Этот
 же fail-safe применяется к non-HTTPS URL, URL с credentials, query или fragment. Service flow не
-настраивается через operator Content/Settings.
+настраивается через operator Content/Settings. Совпадение Telegram ID support actor и request owner
+не подавляет owner notification: это поддерживает проверяемый User/Admin mode одного администратора.
 
 Primary evidence, проверено 2026-08-24:
 

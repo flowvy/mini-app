@@ -16,10 +16,15 @@ semantic roles и computed colors.
 Проверены все 25 Mini App routes, 58 актуальных CSS-файлов, 87 TSX-файлов и color-bearing TS/SVG surfaces.
 
 Desktop light `text-positive` и `text-warning`, а также `static-white` на общем
-`bg-negative-primary` не проходят некоторые текущие Mini App contrast contexts. Возвращённый к
-desktop value dark `text-negative` даёт отдельный iOS WebKit finding на underlying danger-outline
-action. Владелец явно выбрал буквальный desktop parity вместо локальных contrast replacements. Это
-product decision, а не основание скрывать accessibility findings.
+`bg-negative-primary` не проходили некоторые Mini App contrast contexts. Возвращённый к прежнему
+desktop value dark `text-negative` давал отдельный iOS WebKit finding на underlying danger-outline
+action. Изначально владелец выбрал буквальный desktop parity с открытым debt вместо локальных
+contrast replacements.
+
+24 августа 2026 года владелец изменил это решение: accessibility debt закрывается в общем Desktop
+source, а Mini App сохраняет буквальный паритет уже с доступной shared palette. Light positive
+foreground/background-primary использует `#24784F`, light warning foreground — `#8A5B00`, filled
+negative background в обеих темах — `#C6352A`, dark negative foreground — `#FF554A`.
 
 ## Decision
 
@@ -72,19 +77,16 @@ product decision, а не основание скрывать accessibility find
     `InlineFeedback` использует semantic notice-card surfaces с соответствующими secondary borders.
     Focusable commerce rows получают явный Desktop positive outline. Text-only content сохраняет
     text roles; standalone glyph owners используют icon roles.
-15. Axe запускается без `color-contrast` suppression, allow-list или impact downgrade. Известные
-    strict-parity findings остаются видимыми и делают соответствующий accessibility gate красным;
-    handoff перечисляет route, theme, rule, nodes и color pairs и не называет такой результат passed.
-    Узкое completion exception действует только при полном совпадении свежих failures с ledger ниже
-    и зелёных остальных checks; новый finding блокирует завершение.
+15. Axe запускается после стабилизации route/theme/animation без `color-contrast` suppression,
+    allow-list или impact downgrade. Strict parity не даёт completion exception: любой finding
+    блокирует завершение и исправляется в общем Desktop source либо в неверном semantic role.
 
-## Accepted contrast-debt ledger
+## Исторический contrast-debt ledger — закрыт 2026-08-24
 
-Все строки имеют Axe rule `color-contrast` и impact `serious`. Accepted-debt tests накапливают Axe
-результаты и завершают обе темы до общего assert. Большинство findings существуют только в light;
-filled danger `Remove` и Chromium `Delete` воспроизводятся в light и dark с одной exact pair, а iOS
-WebKit видит underlying dark danger-outline `Delete`. Одинаковые nodes повторяются в нескольких
-Playwright projects, но не образуют новый debt.
+Строки ниже сохраняют точный исторический inventory Axe rule `color-contrast` с impact `serious`.
+Они больше не являются accepted debt или completion exception. Shared token correction закрывает
+positive пары минимумом `4.59:1` на актуальных light surfaces, warning — минимумом `5.16:1`,
+`static-white` на filled negative — `5.32:1`, а dark negative outline — `5.10:1`.
 
 | Route и состояние | Theme / project scope | Affected node | Foreground / background | Contrast |
 |---|---|---|---|---|
@@ -130,8 +132,10 @@ adapters и provider-owned `logoUrl`. Первые используют desktop 
 
 ## Alternatives
 
-- Сохранить три Mini App contrast overrides. Отклонено владельцем: требование — буквальный desktop
-  parity `1:1`.
+- Исправить значения только в Mini App. Отклонено: shared palette меняется сначала в Desktop source,
+  затем синхронно переносится в Mini App.
+- Сохранить буквальный старый Desktop catalog и красный accessibility gate. Отклонено владельцем
+  2026-08-24: доступность стала обязательной частью shared parity.
 - Перенести desktop default-dark theme resolution. Отклонено: Telegram и system preference остаются
   runtime authority Mini App.
 - Перекрасить floating Header/TabBar как desktop TitleBar/Sidebar. Отклонено: их общая faux-glass
@@ -141,9 +145,8 @@ adapters и provider-owned `logoUrl`. Первые используют desktop 
 
 - Shared token catalog и semantic roles можно проверять статически; raw color drift вне точных
   документированных Telegram adapter fallbacks становится test failure.
-- Некоторые light positive/warning тексты, filled danger CTA в обеих темах и iOS WebKit dark
-  danger-outline создают известный accessibility debt. Он документируется и измеряется, но не
-  исправляется локальным отклонением от desktop palette.
+- Прежние light positive/warning тексты, filled danger CTA и iOS WebKit dark danger-outline больше
+  не создают accepted accessibility debt; regressions блокируют gate.
 - Исторические записи о прежних WCAG color fixes остаются доказательством своих запусков, но
   помечаются superseded этим решением.
 - Provider artwork и Telegram native integration fallbacks остаются отдельными bounded color
@@ -156,8 +159,8 @@ adapters и provider-owned `logoUrl`. Первые используют desktop 
   colors.
 - Full Playwright matrix проходит через 25 routes/states с console, network, overflow и Axe checks;
   focused parity test проверяет computed colors representative distinct owners в light/dark на
-  четырёх проектах. Accepted-debt tests завершают анализ обеих тем до общего failing assert;
-  branches, использующие один shared owner, не считаются отдельными color assertions.
+  четырёх проектах. Axe запускается только после stable route/theme/animation state и должен быть
+  зелёным; branches, использующие один shared owner, не считаются отдельными color assertions.
 - Semantic-surface suites проверяют parent/child nesting, `background`, все четыре border sides,
   `outline`, `box-shadow`, text color и SVG `color`/`fill`/`stroke` на четырёх проектах и в обеих
   темах. Source regressions фиксируют отдельные text/icon owners и запрещают вернуть исправленные
@@ -167,5 +170,5 @@ adapters и provider-owned `logoUrl`. Первые используют desktop 
   как palette debt. Formatted editor явно задаёт desktop config-editor `text-primary`, включая
   WebKit после runtime theme switch.
 - Source audit повторно сопоставляет каждый color-bearing Mini App file с desktop component role.
-- Любое accessibility failure и невозможность зелёного Full gate записываются как actual result,
-  а не удаляются или маскируются.
+- Любое accessibility failure блокирует зелёный Full gate и исправляется, а не удаляется или
+  маскируется.

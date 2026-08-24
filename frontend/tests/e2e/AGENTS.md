@@ -34,11 +34,10 @@ Maintain a small smoke path for every user-visible route and focused cases for c
   important states; inspect diffs before accepting a baseline.
 - Check viewport overflow, safe-area controls, touch target access, focus visibility, and automated
   accessibility results. Automation supplements rather than replaces keyboard and visual review.
-- Run Axe only after route/theme/animation state is stable. Strict desktop color parity findings
-  must remain visible: never suppress or allow-list `color-contrast`, downgrade its impact, or call a
-  scan passed when violations remain. Compare and report exact routes, themes, rules, affected nodes,
-  and color pairs against ADR 0004. Only exact matches to its current ledger may use the documented
-  completion exception; a new finding still fails the task.
+- Run Axe only after route/theme/animation state is stable. Strict desktop color parity is not an
+  exception: never suppress or allow-list `color-contrast`, downgrade its impact, or call a scan
+  passed when violations remain. Report exact routes, themes, rules, affected nodes, and color pairs;
+  every finding fails the task.
 - Keep traces, screenshots, and videos only as failure artifacts unless a reviewed baseline is part
   of the test. Never commit artifacts containing real user/provider data.
 

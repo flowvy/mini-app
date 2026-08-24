@@ -4,10 +4,14 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
 	Activity,
+	BookOpenText,
 	Cloud,
+	FilePenLine,
+	FilePlus2,
 	HelpCircle,
 	Languages,
 	Megaphone,
+	MessageSquarePlus,
 	MessageSquareText,
 	Palette,
 	Settings,
@@ -35,6 +39,18 @@ const PAGE_META: Record<string, PageMeta> = {
 	"/pulse": { title: "common.header.pulse", icon: <Activity size={16} /> },
 	"/devices": { title: "common.header.devices", icon: <Smartphone size={16} /> },
 	"/support": { title: "common.header.support", icon: <HelpCircle size={16} /> },
+	"/support/new": {
+		title: "support.new.title",
+		icon: <MessageSquarePlus size={16} />,
+	},
+	"/support/manage/answers": {
+		title: "support.manage.title",
+		icon: <BookOpenText size={16} />,
+	},
+	"/support/manage/answers/new": {
+		title: "support.manage.editor.newTitle",
+		icon: <FilePlus2 size={16} />,
+	},
 	"/admin/users": { title: "common.header.users", icon: <Users size={16} /> },
 	"/admin/broadcast": { title: "common.header.broadcast", icon: <Megaphone size={16} /> },
 	"/admin/settings": { title: "common.header.settings", icon: <Settings size={16} /> },
@@ -88,8 +104,16 @@ export function Header() {
 	const location = useLocation();
 	const isAdmin = user.role === "admin";
 
+	const dynamicMeta = location.pathname.startsWith("/support/requests/")
+		? { title: "common.header.supportRequest", icon: <MessageSquareText size={16} /> }
+		: location.pathname.startsWith("/support/answers/")
+			? { title: "common.header.supportAnswer", icon: <BookOpenText size={16} /> }
+			: /^\/support\/manage\/answers\/[^/]+$/.test(location.pathname)
+				? { title: "support.manage.editor.editTitle", icon: <FilePenLine size={16} /> }
+				: undefined;
 	const meta =
 		PAGE_META[location.pathname] ??
+		dynamicMeta ??
 		Object.entries(PAGE_META)
 			.sort(([left], [right]) => right.length - left.length)
 			.find(([path]) => location.pathname.startsWith(`${path}/`))?.[1];

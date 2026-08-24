@@ -92,17 +92,20 @@ function SupportArticlesAdminContent() {
 	};
 	return (
 		<div className={`${styles.page} ${styles.detailPage}`} data-support-manage="list">
-			<div className={styles.managementHeading}>
-				<div>
-					<h1>{t("support.manage.title")}</h1>
-					<p>{t("support.manage.summary", { published, drafts })}</p>
-				</div>
-				<ActionBtn size="md" onClick={() => void navigate({ to: "/support/manage/answers/new" })}>
-					<Plus size={16} aria-hidden="true" />
-					{t("support.manage.create")}
-				</ActionBtn>
-			</div>
-			<FormSection title={t("support.manage.articles")}>
+			<p className={styles.managementIntro}>{t("support.manage.summary", { published, drafts })}</p>
+			<FormSection
+				title={t("support.manage.articles")}
+				action={
+					<ActionBtn
+						variant="action"
+						size="sm"
+						onClick={() => void navigate({ to: "/support/manage/answers/new" })}
+					>
+						<Plus size={15} aria-hidden="true" />
+						{t("support.manage.create")}
+					</ActionBtn>
+				}
+			>
 				<FormSectionCard>
 					{list.map((article, index) => (
 						<div key={article.id} className={styles.managementRow}>
@@ -283,114 +286,118 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 	}));
 	return (
 		<div className={`${styles.page} ${styles.detailPage}`} data-support-manage="editor">
-			<div className={styles.managementHeading}>
-				<div>
-					<h1>
-						{article ? t("support.manage.editor.editTitle") : t("support.manage.editor.newTitle")}
-					</h1>
-					<p>{t("support.manage.editor.description")}</p>
-				</div>
-				{article && <ArticleStatus status={draft.status} />}
-			</div>
-			<div className={styles.formCard}>
-				<FormField label={t("support.manage.editor.topic")} htmlFor="support-article-topic">
-					<FormFieldSelect
-						id="support-article-topic"
-						value={draft.topic}
-						options={topicOptions}
-						onChange={(event) =>
-							updateDraft({ ...draft, topic: event.target.value as SupportArticleTopic })
-						}
-					/>
-				</FormField>
-				<FormField label={t("support.manage.editor.language")} htmlFor="support-article-locale">
-					<FormFieldSelect
-						id="support-article-locale"
-						value={locale}
-						options={localeOptions}
-						onChange={(event) => setLocale(event.target.value)}
-					/>
-				</FormField>
-				<FormField label={t("support.manage.editor.articleTitle")} htmlFor="support-article-title">
-					<FormFieldInput
-						id="support-article-title"
-						enterKeyHint="next"
-						value={current.title}
-						maxLength={120}
-						onChange={(event) => updateContent("title", event.target.value)}
-					/>
-				</FormField>
-				<FormField
-					label={t("support.manage.editor.summary")}
-					htmlFor="support-article-summary"
-					hint={t("support.manage.editor.summaryHint")}
-				>
-					<FormFieldInput
-						id="support-article-summary"
-						enterKeyHint="next"
-						value={current.summary}
-						maxLength={240}
-						onChange={(event) => updateContent("summary", event.target.value)}
-					/>
-				</FormField>
-				<FormField label={t("support.manage.editor.body")}>
-					<FormattedTextEditor
-						id="support-article-body"
-						ariaLabel={t("support.manage.editor.body")}
-						value={current.body}
-						maxLength={10_000}
-						placeholder={t("support.manage.editor.bodyPlaceholder")}
-						onChange={(value) => updateContent("body", value)}
-					/>
-				</FormField>
-				{!canPublish && (
-					<InlineFeedback>{t("support.manage.editor.publishRequirements")}</InlineFeedback>
-				)}
-				{mutation.error && (
-					<InlineFeedback attention="action">{t("support.manage.editor.saveError")}</InlineFeedback>
-				)}
-				<div className={styles.editorActions}>
-					{draft.status === "published" ? (
-						<ActionBtn
-							variant="ghost"
-							size="md"
-							loading={mutation.isPending}
-							onClick={() => void save("draft")}
+			<p className={styles.managementIntro}>{t("support.manage.editor.description")}</p>
+			<FormSection
+				title={t("support.manage.editor.details")}
+				action={article ? <ArticleStatus status={draft.status} /> : undefined}
+			>
+				<FormSectionCard>
+					<div className={styles.editorFields}>
+						<FormField label={t("support.manage.editor.topic")} htmlFor="support-article-topic">
+							<FormFieldSelect
+								id="support-article-topic"
+								value={draft.topic}
+								options={topicOptions}
+								onChange={(event) =>
+									updateDraft({ ...draft, topic: event.target.value as SupportArticleTopic })
+								}
+							/>
+						</FormField>
+						<FormField label={t("support.manage.editor.language")} htmlFor="support-article-locale">
+							<FormFieldSelect
+								id="support-article-locale"
+								value={locale}
+								options={localeOptions}
+								onChange={(event) => setLocale(event.target.value)}
+							/>
+						</FormField>
+						<FormField
+							label={t("support.manage.editor.articleTitle")}
+							htmlFor="support-article-title"
 						>
-							{t("support.manage.editor.unpublish")}
-						</ActionBtn>
-					) : (
-						<ActionBtn
-							variant="action"
-							size="md"
-							loading={mutation.isPending}
-							onClick={() => void save("draft")}
+							<FormFieldInput
+								id="support-article-title"
+								enterKeyHint="next"
+								value={current.title}
+								maxLength={120}
+								onChange={(event) => updateContent("title", event.target.value)}
+							/>
+						</FormField>
+						<FormField
+							label={t("support.manage.editor.summary")}
+							htmlFor="support-article-summary"
+							hint={t("support.manage.editor.summaryHint")}
 						>
-							{draft.status === "archived"
-								? t("support.manage.editor.restoreDraft")
-								: t("support.manage.editor.saveDraft")}
-						</ActionBtn>
-					)}
-					<ActionBtn
-						size="md"
-						loading={mutation.isPending}
-						disabled={!canPublish}
-						onClick={() => void save("published")}
-					>
-						{t("support.manage.editor.publish")}
-					</ActionBtn>
-					{article && draft.status !== "archived" && (
-						<ActionBtn
-							variant="danger"
-							size="md"
-							loading={mutation.isPending}
-							onClick={() => void save("archived")}
-						>
-							{t("support.manage.editor.archive")}
-						</ActionBtn>
-					)}
-				</div>
-			</div>
+							<FormFieldInput
+								id="support-article-summary"
+								enterKeyHint="next"
+								value={current.summary}
+								maxLength={240}
+								onChange={(event) => updateContent("summary", event.target.value)}
+							/>
+						</FormField>
+						<FormField label={t("support.manage.editor.body")}>
+							<FormattedTextEditor
+								id="support-article-body"
+								ariaLabel={t("support.manage.editor.body")}
+								value={current.body}
+								maxLength={10_000}
+								placeholder={t("support.manage.editor.bodyPlaceholder")}
+								onChange={(value) => updateContent("body", value)}
+							/>
+						</FormField>
+						{!canPublish && (
+							<InlineFeedback>{t("support.manage.editor.publishRequirements")}</InlineFeedback>
+						)}
+						{mutation.error && (
+							<InlineFeedback attention="action">
+								{t("support.manage.editor.saveError")}
+							</InlineFeedback>
+						)}
+						<div className={styles.editorActions}>
+							{draft.status === "published" ? (
+								<ActionBtn
+									variant="ghost"
+									size="md"
+									loading={mutation.isPending}
+									onClick={() => void save("draft")}
+								>
+									{t("support.manage.editor.unpublish")}
+								</ActionBtn>
+							) : (
+								<ActionBtn
+									variant="action"
+									size="md"
+									loading={mutation.isPending}
+									onClick={() => void save("draft")}
+								>
+									{draft.status === "archived"
+										? t("support.manage.editor.restoreDraft")
+										: t("support.manage.editor.saveDraft")}
+								</ActionBtn>
+							)}
+							<ActionBtn
+								size="md"
+								loading={mutation.isPending}
+								disabled={!canPublish}
+								onClick={() => void save("published")}
+							>
+								{t("support.manage.editor.publish")}
+							</ActionBtn>
+							{article && draft.status !== "archived" && (
+								<ActionBtn
+									variant="danger"
+									size="md"
+									loading={mutation.isPending}
+									onClick={() => void save("archived")}
+								>
+									{t("support.manage.editor.archive")}
+								</ActionBtn>
+							)}
+						</div>
+					</div>
+				</FormSectionCard>
+			</FormSection>
 			<ConfirmDialog
 				open={blocker.status === "blocked"}
 				title={t("support.manage.editor.discardTitle")}

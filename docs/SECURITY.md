@@ -98,7 +98,8 @@ debug/auth/device/Telegram-webhook контур закрыт 2026-08-01 и по�
   reference до подтверждённого object deletion.
 - Support Telegram notifications отправляются только после commit. User reply fan-out заново
   пересекает current `ADMIN_TELEGRAM_IDS`, локальную admin role и active state; support reply идёт
-  только Telegram ID владельца request. Все dynamic fields HTML-escaped, message preview bounded;
+  только Telegram ID владельца request, включая случай, когда владелец отвечает через собственный
+  Admin mode. Все dynamic fields HTML-escaped, CommonMark preview проецируется в bounded visible text;
   filenames, signed URL, object keys, account/device/subscription context и provider body не
   отправляются и не логируются. Inline `web_app` URL содержит только exact request UUID, а доступ
   после открытия повторно проверяется BFF. Telegram failure изолирован от persisted mutation и

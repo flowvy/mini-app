@@ -167,10 +167,14 @@ async def test_text_requests_work_without_r2_and_enforce_owner_or_exact_admin(
     answered = await service.reply(
         created.id,
         admin_id,
-        ReplySupportRequestInput(message="Please refresh the profile."),
+        ReplySupportRequestInput(message="**Please refresh** the _profile_."),
     )
     assert answered.status == "waiting_user"
     assert [item.author for item in answered.messages] == ["user", "support"]
+    assert answered.messages[-1].body == "**Please refresh** the _profile_."
+    assert (await service.list_requests(user_id))[0].last_message_preview == (
+        "Please refresh the profile."
+    )
 
     resolved = await service.resolve(created.id, user_id)
     assert resolved.status == "resolved"

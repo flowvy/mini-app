@@ -190,12 +190,11 @@ screenshot baseline нельзя обновлять автоматически. 
 `frontend/tests/e2e/AGENTS.md` и `.agents/skills/flowvy-ui-verify/references/state-matrix.md`.
 
 Цветовой contract отдельно проверяет точную runtime-копию shared desktop tokens, semantic usage и
-отсутствие raw component colors, включая hex, CSS color functions и named colors. Strict desktop
-parity может давать известные `color-contrast` findings: Axe всё равно запускается без
-`disableRules`, allow-list или impact downgrade. Такой scan остаётся красным; handoff сверяет rule,
-route, theme, nodes и color pairs с точным ledger ADR 0004 и не выдаёт его за passed. Только полное
-совпадение ledger при зелёных остальных checks допускает узкое completion exception; новый finding
-блокирует завершение. Источник решения — `docs/decisions/0004-desktop-color-parity.md`.
+отсутствие raw component colors, включая hex, CSS color functions и named colors. Axe запускается
+без `disableRules`, allow-list или impact downgrade только после стабилизации route, theme и
+animation state. Strict desktop parity не даёт completion exception: любой `color-contrast` finding
+блокирует завершение и должен быть исправлен в desktop-authoritative semantic tokens либо в неверном
+role assignment. Источник решения — `docs/decisions/0004-desktop-color-parity.md`.
 
 Semantic-surface tests не должны ограничиваться сравнением token values. Общий helper
 `frontend/tests/e2e/helpers/surface-contract.ts` проверяет один computed contract целиком:

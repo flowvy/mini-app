@@ -3,7 +3,10 @@ import {
 	Archive,
 	BookOpenText,
 	ChevronRight,
+	CircleAlert,
+	CircleCheck,
 	CircleHelp,
+	Clock3,
 	CreditCard,
 	Download,
 	FileText,
@@ -24,6 +27,7 @@ import {
 import { type ChangeEvent, type FormEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCurrentUser } from "../components/auth-guard.tsx";
+import { FormattedTextEditor } from "../components/content/formatted-text-editor.tsx";
 import { FormattedText } from "../components/content/formatted-text.tsx";
 import { ActionBtn } from "../components/ui/action-btn.tsx";
 import { ErrorState } from "../components/ui/error-state.tsx";
@@ -31,7 +35,6 @@ import {
 	FormField,
 	FormFieldInput,
 	FormFieldSelect,
-	FormFieldTextarea,
 	FormSection,
 	FormSectionCard,
 } from "../components/ui/form-section.tsx";
@@ -49,6 +52,7 @@ import {
 	useSupportRequest,
 	useSupportRequests,
 } from "../hooks/use-support.ts";
+import { handleImeKeyDown } from "../lib/ime.ts";
 import type {
 	SupportArticle,
 	SupportArticleTopic,
@@ -93,10 +97,46 @@ function StatusPill({ status, admin }: { status: SupportRequestStatus; admin: bo
 				waiting_user: t("support.status.replyReceived"),
 				resolved: t("support.status.resolved"),
 			};
+	const tone =
+		status === "resolved"
+			? "resolved"
+			: (admin && status === "needs_reply") || (!admin && status === "waiting_user")
+				? "attention"
+				: "neutral";
 	return (
-		<span className={styles.status} data-status={status}>
+		<span className={styles.status} data-status={status} data-tone={tone}>
 			<span aria-hidden="true" />
 			{labels[status]}
+		</span>
+	);
+}
+
+function RequestStatusIcon({
+	status,
+	admin,
+}: {
+	status: SupportRequestStatus;
+	admin: boolean;
+}) {
+	const Icon = {
+		needs_reply: CircleAlert,
+		waiting_user: Clock3,
+		resolved: CircleCheck,
+	}[status];
+	const tone =
+		status === "resolved"
+			? "resolved"
+			: (admin && status === "needs_reply") || (!admin && status === "waiting_user")
+				? "attention"
+				: "neutral";
+	return (
+		<span
+			className={styles.requestStatusIcon}
+			data-request-status-icon={status}
+			data-tone={tone}
+			aria-hidden="true"
+		>
+			<Icon size={18} />
 		</span>
 	);
 }
@@ -127,6 +167,36 @@ function EmptySection({ children }: { children: string }) {
 	return <p className={styles.emptySection}>{children}</p>;
 }
 
+function SupportSearch({
+	value,
+	onChange,
+	label,
+}: {
+	value: string;
+	onChange: (value: string) => void;
+	label: string;
+}) {
+	return (
+		<label className={styles.search}>
+			<Search size={16} aria-hidden="true" />
+			<span className={styles.srOnly}>{label}</span>
+			<input
+				type="search"
+				value={value}
+				onChange={(event) => onChange(event.target.value)}
+				placeholder={label}
+				inputMode="search"
+				enterKeyHint="search"
+				autoCapitalize="none"
+				autoCorrect="off"
+				autoComplete="off"
+				spellCheck={false}
+				onKeyDown={(event) => handleImeKeyDown(event, "search", () => undefined)}
+			/>
+		</label>
+	);
+}
+
 function RequestRow({
 	request,
 	admin = false,
@@ -144,11 +214,7 @@ function RequestRow({
 				})
 			}
 		>
-			{admin && (
-				<span className={styles.avatar} aria-hidden="true">
-					{request.requester.fullName.slice(0, 1).toUpperCase()}
-				</span>
-			)}
+			<RequestStatusIcon status={request.status} admin={admin} />
 			<span className={styles.requestCopy}>
 				{admin && <small>{request.requester.fullName}</small>}
 				<strong>{request.subject}</strong>
@@ -218,16 +284,11 @@ function UserOverview({
 		<div className={styles.page} data-support-view="user">
 			<FormSection title={t("support.quickAnswers.title")}>
 				<FormSectionCard>
-					<label className={styles.search}>
-						<Search size={16} aria-hidden="true" />
-						<span className={styles.srOnly}>{t("support.quickAnswers.search")}</span>
-						<input
-							type="search"
-							value={search}
-							onChange={(event) => setSearch(event.target.value)}
-							placeholder={t("support.quickAnswers.search")}
-						/>
-					</label>
+					<SupportSearch
+						value={search}
+						onChange={setSearch}
+						label={t("support.quickAnswers.search")}
+					/>
 					<div className={styles.answerList}>
 						{answers.map((answer) => {
 							return (
@@ -337,16 +398,7 @@ function AdminOverview({ requests }: { requests: SupportRequestSummary[] }) {
 				onChange={(value) => setSegment(value as "active" | "resolved")}
 				ariaLabel={t("support.admin.filterLabel")}
 			/>
-			<label className={styles.search}>
-				<Search size={16} aria-hidden="true" />
-				<span className={styles.srOnly}>{t("support.admin.search")}</span>
-				<input
-					type="search"
-					value={search}
-					onChange={(event) => setSearch(event.target.value)}
-					placeholder={t("support.admin.search")}
-				/>
-			</label>
+			<SupportSearch value={search} onChange={setSearch} label={t("support.admin.search")} />
 			{segment === "active" ? (
 				<>
 					<AdminGroup title={t("support.admin.needsReply")} requests={needsReply} />
@@ -534,11 +586,13 @@ export function SupportNewRequest() {
 	const [message, setMessage] = useState("");
 	const [files, setFiles] = useState<File[]>([]);
 	const [fileError, setFileError] = useState<string | null>(null);
+	const messageTooLong = message.length > 4000;
 	const topicOptions = ["connection", "subscription", "devices", "payment", "other"].map(
 		(value) => ({ value, label: topicLabel(t, value) }),
 	);
 	const submit = (event: FormEvent) => {
 		event.preventDefault();
+		if (messageTooLong) return;
 		createRequest.mutate(
 			{ topic, subject: subject.trim(), message: message.trim(), files },
 			{
@@ -576,20 +630,19 @@ export function SupportNewRequest() {
 						maxLength={120}
 					/>
 				</FormField>
-				<FormField
-					label={t("support.new.message")}
-					htmlFor="support-message"
-					hint={t("support.new.safetyHint")}
-				>
-					<FormFieldTextarea
+				<FormField label={t("support.new.message")} hint={t("support.new.safetyHint")}>
+					<FormattedTextEditor
 						id="support-message"
+						ariaLabel={t("support.new.message")}
 						value={message}
-						onChange={(event) => setMessage(event.target.value)}
+						onChange={setMessage}
 						placeholder={t("support.new.messagePlaceholder")}
-						required
 						maxLength={4000}
 					/>
 				</FormField>
+				{messageTooLong && (
+					<InlineFeedback attention="action">{t("support.formatLimitError")}</InlineFeedback>
+				)}
 				<FormField label={t("support.attachments.title")}>
 					<FilePicker
 						files={files}
@@ -607,7 +660,7 @@ export function SupportNewRequest() {
 					type="submit"
 					size="md"
 					loading={createRequest.isPending}
-					disabled={!subject.trim() || !message.trim()}
+					disabled={!subject.trim() || !message.trim() || messageTooLong}
 				>
 					<Send size={16} aria-hidden="true" />
 					{t("support.new.send")}
@@ -690,8 +743,10 @@ export function SupportRequestPage() {
 		return <ErrorState onAction={() => void requestQuery.refetch()} />;
 	const request = requestQuery.data;
 	const resolved = request.status === "resolved";
+	const messageTooLong = message.length > 4000;
 	const sendReply = (event: FormEvent) => {
 		event.preventDefault();
+		if (messageTooLong) return;
 		reply.mutate(
 			{ requestId, message: message.trim(), files },
 			{
@@ -722,147 +777,171 @@ export function SupportRequestPage() {
 			className={`${styles.page} ${styles.detailPage}`}
 			data-support-detail={isAdmin ? "admin" : "user"}
 		>
-			<section className={styles.ticketCard} aria-labelledby="support-request-title">
-				<div className={styles.ticketTop}>
-					<div>
+			<FormSection
+				title={t("support.request.details")}
+				action={<StatusPill status={request.status} admin={isAdmin} />}
+			>
+				<FormSectionCard>
+					<div className={styles.ticketSummary}>
 						<span className={styles.eyebrow}>
 							{t("support.request.number", { number: request.number })}
 						</span>
 						<h1 id="support-request-title">{request.subject}</h1>
-					</div>
-					<StatusPill status={request.status} admin={isAdmin} />
-				</div>
-				<div className={styles.ticketMeta}>
-					<span>{topicLabel(t, request.topic)}</span>
-					<span className={styles.metaSeparator} aria-hidden="true" />
-					<span>{t("support.request.updated", { value: formatUpdatedAt(request.updatedAt) })}</span>
-				</div>
-				<div className={styles.ticketActions}>
-					<ActionBtn
-						variant={resolved ? "action" : "ghost"}
-						size="sm"
-						loading={setResolved.isPending}
-						onClick={() => setResolved.mutate({ requestId, resolved: !resolved })}
-					>
-						{resolved ? t("support.actions.reopen") : t("support.actions.resolve")}
-					</ActionBtn>
-				</div>
-			</section>
-			{isAdmin && (
-				<details className={styles.userContext}>
-					<summary>
-						<User size={16} />
-						{t("support.request.userContext")}
-					</summary>
-					<dl>
-						<div>
-							<dt>{t("support.request.user")}</dt>
-							<dd>{request.requester.fullName}</dd>
-						</div>
-						<div>
-							<dt>{t("support.request.subscription")}</dt>
-							<dd>{request.context.subscriptionStatus ?? "—"}</dd>
-						</div>
-						<div>
-							<dt>{t("support.request.device")}</dt>
-							<dd>{request.context.device ?? "—"}</dd>
-						</div>
-						<div>
-							<dt>{t("support.request.appVersion")}</dt>
-							<dd>{request.context.appVersion ?? "—"}</dd>
-						</div>
-					</dl>
-				</details>
-			)}
-			<div className={styles.thread} aria-label={t("support.request.conversation")}>
-				{request.messages.map((item) => (
-					<article
-						key={item.id}
-						className={styles.message}
-						data-author={item.author}
-						data-owned={
-							(isAdmin && item.author === "support") || (!isAdmin && item.author === "user")
-						}
-					>
-						<header>
-							<span className={styles.messageAuthor}>
-								<span className={styles.messageAvatar} aria-hidden="true">
-									{item.author === "support" ? <LifeBuoy size={15} /> : <User size={15} />}
-								</span>
-								<strong>{item.authorName}</strong>
+						<div className={styles.ticketMeta}>
+							<span>{topicLabel(t, request.topic)}</span>
+							<span className={styles.metaSeparator} aria-hidden="true" />
+							<span>
+								{t("support.request.updated", { value: formatUpdatedAt(request.updatedAt) })}
 							</span>
-							<time dateTime={item.createdAt}>{formatUpdatedAt(item.createdAt)}</time>
-						</header>
-						<p>{item.body}</p>
-						{item.attachments.length > 0 && (
-							<div className={styles.messageFiles}>
-								{item.attachments.map((attachment) => (
-									<div key={attachment.id} className={styles.messageFile}>
-										<span className={styles.fileKind}>
-											<AttachmentIcon attachment={attachment} />
-										</span>
-										<span>
-											<strong>{attachment.name}</strong>
-											<small>
-												{attachment.kind === "zip" ? `${t("support.attachments.zip")} · ` : ""}
-												{formatBytes(attachment.sizeBytes)}
-												{attachment.passwordProtected
-													? ` · ${t("support.attachments.passwordProtected")}`
-													: ""}
-											</small>
-										</span>
-										<button
-											type="button"
-											onClick={() => void download(attachment)}
-											aria-label={t("support.attachments.download", { name: attachment.name })}
-										>
-											<Download size={16} />
-										</button>
-									</div>
-								))}
+						</div>
+					</div>
+					<div className={styles.requestActionRow}>
+						<span>
+							<strong>{t("support.request.statusAction")}</strong>
+							<small>
+								{resolved
+									? t("support.request.reopenDescription")
+									: t("support.request.resolveDescription")}
+							</small>
+						</span>
+						<ActionBtn
+							variant="action"
+							size="sm"
+							loading={setResolved.isPending}
+							onClick={() => setResolved.mutate({ requestId, resolved: !resolved })}
+						>
+							{resolved ? t("support.actions.reopen") : t("support.actions.resolve")}
+						</ActionBtn>
+					</div>
+				</FormSectionCard>
+			</FormSection>
+			{isAdmin && (
+				<FormSection title={t("support.request.userContext")}>
+					<FormSectionCard>
+						<dl className={styles.userContext}>
+							<div>
+								<dt>{t("support.request.user")}</dt>
+								<dd>{request.requester.fullName}</dd>
 							</div>
+							<div>
+								<dt>{t("support.request.subscription")}</dt>
+								<dd>{request.context.subscriptionStatus ?? "—"}</dd>
+							</div>
+							<div>
+								<dt>{t("support.request.device")}</dt>
+								<dd>{request.context.device ?? "—"}</dd>
+							</div>
+							<div>
+								<dt>{t("support.request.appVersion")}</dt>
+								<dd>{request.context.appVersion ?? "—"}</dd>
+							</div>
+						</dl>
+					</FormSectionCard>
+				</FormSection>
+			)}
+			<FormSection title={t("support.request.conversation")}>
+				<FormSectionCard>
+					<div className={styles.thread} aria-label={t("support.request.conversation")}>
+						{request.messages.map((item) => (
+							<article
+								key={item.id}
+								className={styles.message}
+								data-author={item.author}
+								data-owned={
+									(isAdmin && item.author === "support") || (!isAdmin && item.author === "user")
+								}
+							>
+								<header>
+									<span className={styles.messageAuthor}>
+										<span className={styles.messageAvatar} aria-hidden="true">
+											{item.author === "support" ? <LifeBuoy size={15} /> : <User size={15} />}
+										</span>
+										<strong>{item.authorName}</strong>
+									</span>
+									<time dateTime={item.createdAt}>{formatUpdatedAt(item.createdAt)}</time>
+								</header>
+								<FormattedText className={styles.messageBody}>{item.body}</FormattedText>
+								{item.attachments.length > 0 && (
+									<div className={styles.messageFiles}>
+										{item.attachments.map((attachment) => (
+											<div key={attachment.id} className={styles.messageFile}>
+												<span className={styles.fileKind}>
+													<AttachmentIcon attachment={attachment} />
+												</span>
+												<span>
+													<strong>{attachment.name}</strong>
+													<small>
+														{attachment.kind === "zip" ? `${t("support.attachments.zip")} · ` : ""}
+														{formatBytes(attachment.sizeBytes)}
+														{attachment.passwordProtected
+															? ` · ${t("support.attachments.passwordProtected")}`
+															: ""}
+													</small>
+												</span>
+												<button
+													type="button"
+													onClick={() => void download(attachment)}
+													aria-label={t("support.attachments.download", { name: attachment.name })}
+												>
+													<Download size={16} />
+												</button>
+											</div>
+										))}
+									</div>
+								)}
+							</article>
+						))}
+					</div>
+				</FormSectionCard>
+			</FormSection>
+			<FormSection title={t("support.reply.label")}>
+				<FormSectionCard>
+					<form className={styles.composer} onSubmit={sendReply}>
+						<FormField label={isAdmin ? t("support.reply.adminLabel") : t("support.reply.label")}>
+							<FormattedTextEditor
+								id="support-reply"
+								ariaLabel={isAdmin ? t("support.reply.adminLabel") : t("support.reply.label")}
+								value={message}
+								onChange={setMessage}
+								placeholder={
+									isAdmin ? t("support.reply.adminPlaceholder") : t("support.reply.placeholder")
+								}
+								maxLength={4000}
+							/>
+						</FormField>
+						{messageTooLong && (
+							<InlineFeedback attention="action">{t("support.formatLimitError")}</InlineFeedback>
 						)}
-					</article>
-				))}
-			</div>
-			<form className={styles.composer} onSubmit={sendReply}>
-				<FormField
-					label={isAdmin ? t("support.reply.adminLabel") : t("support.reply.label")}
-					htmlFor="support-reply"
-				>
-					<FormFieldTextarea
-						id="support-reply"
-						value={message}
-						onChange={(event) => setMessage(event.target.value)}
-						placeholder={
-							isAdmin ? t("support.reply.adminPlaceholder") : t("support.reply.placeholder")
-						}
-						required
-						maxLength={4000}
-					/>
-				</FormField>
-				<FilePicker
-					files={files}
-					onFilesChange={setFiles}
-					error={fileError}
-					setError={setFileError}
-					capabilities={capabilities.data}
-					capabilitiesPending={capabilities.isPending}
-				/>
-				{resolved && <p className={styles.reopenHint}>{t("support.reply.reopenHint")}</p>}
-				{(reply.error || setResolved.error || downloadError) && (
-					<InlineFeedback attention="action">
-						{downloadError ? t("support.actions.downloadError") : t("support.actions.updateError")}
-					</InlineFeedback>
-				)}
-				<div className={styles.composerFooter}>
-					<span>{t("support.request.number", { number: request.number })}</span>
-					<ActionBtn type="submit" size="md" loading={reply.isPending} disabled={!message.trim()}>
-						<Send size={16} />
-						{t("support.reply.send")}
-					</ActionBtn>
-				</div>
-			</form>
+						<FilePicker
+							files={files}
+							onFilesChange={setFiles}
+							error={fileError}
+							setError={setFileError}
+							capabilities={capabilities.data}
+							capabilitiesPending={capabilities.isPending}
+						/>
+						{resolved && <p className={styles.reopenHint}>{t("support.reply.reopenHint")}</p>}
+						{(reply.error || setResolved.error || downloadError) && (
+							<InlineFeedback attention="action">
+								{downloadError
+									? t("support.actions.downloadError")
+									: t("support.actions.updateError")}
+							</InlineFeedback>
+						)}
+						<div className={styles.composerFooter}>
+							<ActionBtn
+								type="submit"
+								size="md"
+								loading={reply.isPending}
+								disabled={!message.trim() || messageTooLong}
+							>
+								<Send size={16} />
+								{t("support.reply.send")}
+							</ActionBtn>
+						</div>
+					</form>
+				</FormSectionCard>
+			</FormSection>
 		</div>
 	);
 }

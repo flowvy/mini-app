@@ -1,4 +1,4 @@
-import { Cloud, HardDrive, KeyRound, ShieldCheck, Timer } from "lucide-react";
+import { BadgeInfo, Cloud, HardDrive, KeyRound, Timer } from "lucide-react";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,7 +11,6 @@ import {
 } from "../../components/admin/settings-surface.tsx";
 import { ActionBtn } from "../../components/ui/action-btn.tsx";
 import { ErrorState } from "../../components/ui/error-state.tsx";
-import { InlineFeedback } from "../../components/ui/inline-feedback.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { useAdminSupportStorage, useTestAdminSupportStorage } from "../../hooks/use-support.ts";
 import supportStyles from "./settings-support.module.css";
@@ -33,13 +32,16 @@ export const AdminSupportSettings: FC = () => {
 
 	const config = storage.data;
 	const checkFailed = testStorage.data?.ok === false || Boolean(testStorage.error);
+	const accessStatus = testStorage.data?.ok
+		? t("settings.supportStorage.accessReady")
+		: checkFailed
+			? t("settings.supportStorage.accessUnavailable")
+			: t("settings.supportStorage.notTested");
 	return (
 		<div
 			className={styles.formPage}
 			data-support-storage={config.configured ? "configured" : "missing"}
 		>
-			<p className={styles.screenIntro}>{t("settings.supportStorage.intro")}</p>
-
 			<SettingsPanel title={t("settings.supportStorage.connectionSection")}>
 				<SettingsStatusRow
 					label={t("settings.supportStorage.status")}
@@ -54,32 +56,7 @@ export const AdminSupportSettings: FC = () => {
 							? t("settings.supportStorage.privateDescription")
 							: t("settings.supportStorage.missingDescription")
 					}
-					action={
-						config.configured ? (
-							<ActionBtn
-								variant="action"
-								size="sm"
-								loading={testStorage.isPending}
-								onClick={() => testStorage.mutate()}
-							>
-								{t("settings.supportStorage.test")}
-							</ActionBtn>
-						) : undefined
-					}
 				/>
-				{(testStorage.data?.ok || checkFailed) && <SettingsDivider />}
-				{testStorage.data?.ok && (
-					<div className={styles.panelInset}>
-						<InlineFeedback tone="info">{t("settings.supportStorage.testPassed")}</InlineFeedback>
-					</div>
-				)}
-				{checkFailed && (
-					<div className={styles.panelInset}>
-						<InlineFeedback attention="action">
-							{t("settings.supportStorage.testFailed")}
-						</InlineFeedback>
-					</div>
-				)}
 				{config.configured && (
 					<>
 						<SettingsDivider />
@@ -88,33 +65,25 @@ export const AdminSupportSettings: FC = () => {
 							label={t("settings.supportStorage.bucket")}
 							value={config.bucketName ?? "—"}
 						/>
+						<SettingsDivider />
+						<SettingsStatusRow
+							label={t("settings.supportStorage.access")}
+							status={accessStatus}
+							tone={testStorage.data?.ok ? "positive" : checkFailed ? "negative" : "default"}
+							description={t("settings.supportStorage.accessDescription")}
+							action={
+								<ActionBtn
+									variant="action"
+									size="sm"
+									loading={testStorage.isPending}
+									onClick={() => testStorage.mutate()}
+								>
+									{t("settings.supportStorage.test")}
+								</ActionBtn>
+							}
+						/>
 					</>
 				)}
-			</SettingsPanel>
-
-			<SettingsPanel title={t("settings.supportStorage.setupSection")}>
-				<SettingsFields>
-					<SettingsInlineNotice icon={<ShieldCheck size={16} aria-hidden="true" />}>
-						{t("settings.supportStorage.secretNotice")}
-					</SettingsInlineNotice>
-					<ol className={supportStyles.setupSteps}>
-						<li>{t("settings.supportStorage.stepBucket")}</li>
-						<li>{t("settings.supportStorage.stepToken")}</li>
-						<li>{t("settings.supportStorage.stepCors")}</li>
-						<li>{t("settings.supportStorage.stepRestart")}</li>
-					</ol>
-					<div
-						className={supportStyles.variables}
-						aria-label={t("settings.supportStorage.environment")}
-					>
-						<KeyRound size={16} aria-hidden="true" />
-						<div>
-							{config.requiredEnvironment.map((name) => (
-								<code key={name}>{name}</code>
-							))}
-						</div>
-					</div>
-				</SettingsFields>
 			</SettingsPanel>
 
 			<SettingsPanel title={t("settings.supportStorage.policySection")}>
@@ -138,6 +107,25 @@ export const AdminSupportSettings: FC = () => {
 						requests: config.requestRetentionDays,
 					})}
 				/>
+			</SettingsPanel>
+
+			<SettingsPanel title={t("settings.supportStorage.setupSection")}>
+				<SettingsFields>
+					<SettingsInlineNotice icon={<BadgeInfo size={13} aria-hidden="true" />}>
+						{t("settings.supportStorage.secretNotice")}
+					</SettingsInlineNotice>
+					<div className={supportStyles.environment}>
+						<strong>
+							<KeyRound size={15} aria-hidden="true" />
+							{t("settings.supportStorage.environment")}
+						</strong>
+						<div className={supportStyles.variables}>
+							{config.requiredEnvironment.map((name) => (
+								<code key={name}>{name}</code>
+							))}
+						</div>
+					</div>
+				</SettingsFields>
 			</SettingsPanel>
 		</div>
 	);

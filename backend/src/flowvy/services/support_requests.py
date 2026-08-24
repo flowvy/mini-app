@@ -24,6 +24,7 @@ from flowvy.repositories.support_request import (
     SupportRequestRepository,
 )
 from flowvy.repositories.user import UserRepository
+from flowvy.schemas.content import formatted_text_visible_text
 from flowvy.schemas.support_requests import (
     CreateSupportRequestInput,
     ReplySupportRequestInput,
@@ -483,7 +484,7 @@ class SupportRequestService:
     @classmethod
     def _summary_response(cls, request: SupportRequest) -> SupportRequestSummaryResponse:
         last_message = request.messages[-1].body if request.messages else ""
-        preview = " ".join(last_message.split())
+        preview = " ".join(formatted_text_visible_text(last_message).split())
         if len(preview) > 160:
             preview = f"{preview[:157].rstrip()}…"
         return SupportRequestSummaryResponse(

@@ -122,14 +122,11 @@
 }
 .requestRow {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
+	grid-template-columns: 36px minmax(0, 1fr) auto;
 	align-items: center;
 	gap: 12px;
 	min-height: 68px;
 	padding: 10px 12px;
-}
-.requestRow:has(.avatar) {
-	grid-template-columns: 34px minmax(0, 1fr) auto;
 }
 .requestCopy {
 	display: grid;
@@ -166,17 +163,23 @@
 	color: var(--v2-text-primary-inverted);
 	font-size: var(--font-size-overline);
 }
-.avatar {
+.requestStatusIcon {
 	display: grid;
-	width: 34px;
-	height: 34px;
+	width: 36px;
+	height: 36px;
 	place-items: center;
-	border-radius: 50%;
+	border-radius: var(--radius-sm);
 	border: 1px solid var(--v2-border-tertiary);
 	background: var(--v2-bg-secondary);
 	color: var(--v2-icon-secondary);
-	font-size: var(--font-size-label);
-	font-weight: 700;
+}
+.requestStatusIcon[data-tone="attention"] {
+	border-color: var(--v2-border-warning-secondary);
+	background: var(--v2-bg-warning);
+	color: var(--v2-icon-warning);
+}
+.requestStatusIcon[data-tone="resolved"] {
+	color: var(--v2-icon-tertiary);
 }
 .status {
 	display: inline-flex;
@@ -193,15 +196,13 @@
 	border-radius: 50%;
 	background: var(--v2-icon-secondary);
 }
-.status[data-status="needs_reply"],
-.status[data-status="waiting_user"] {
-	color: var(--v2-text-secondary);
+.status[data-tone="attention"] {
+	color: var(--v2-text-primary);
 }
-.status[data-status="needs_reply"] > span,
-.status[data-status="waiting_user"] > span {
-	background: var(--v2-icon-positive);
+.status[data-tone="attention"] > span {
+	background: var(--v2-icon-warning);
 }
-.status[data-status="resolved"] > span {
+.status[data-tone="resolved"] > span {
 	background: var(--v2-icon-tertiary);
 }
 .emptySection,
@@ -244,9 +245,8 @@
 }
 .needHelp h1,
 .pageHeading h1,
-.managementHeading h1,
 .article h1,
-.ticketCard h1 {
+.ticketSummary h1 {
 	margin: 0;
 	color: var(--v2-text-primary);
 	font-size: var(--font-size-title);
@@ -254,7 +254,6 @@
 }
 .needHelp p,
 .pageHeading p,
-.managementHeading p,
 .articleCta p {
 	margin: 4px 0 0;
 	color: var(--v2-text-secondary);
@@ -269,10 +268,7 @@
 	padding: 2px 2px 4px;
 }
 .formCard,
-.composer,
-.ticketCard,
-.article,
-.userContext {
+.article {
 	display: grid;
 	gap: 14px;
 	padding: 14px;
@@ -437,17 +433,13 @@
 	color: var(--v2-text-primary);
 	font-size: var(--font-size-body);
 }
-.ticketTop {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 12px;
+.ticketSummary {
+	display: grid;
+	gap: 7px;
+	padding: 14px;
 }
-.ticketTop > div {
-	min-width: 0;
-}
-.ticketCard h1 {
-	margin-top: 4px;
+.ticketSummary h1 {
+	margin: 0;
 	overflow-wrap: anywhere;
 }
 .ticketMeta {
@@ -460,40 +452,45 @@
 .metaSeparator::before {
 	content: "\2022";
 }
-.ticketActions {
-	display: flex;
-	justify-content: flex-end;
-	border-top: 1px solid var(--v2-border-tertiary);
-	padding-top: 9px;
-}
-.userContext {
-	padding: 0;
-	overflow: hidden;
-}
-.userContext summary {
+.requestActionRow {
 	display: flex;
 	align-items: center;
-	gap: 7px;
-	padding: 12px 14px;
-	color: var(--v2-text-primary);
-	font-size: var(--font-size-body);
-	font-weight: 650;
-	cursor: pointer;
+	justify-content: space-between;
+	gap: 12px;
+	border-top: 1px solid var(--v2-border-tertiary);
+	padding: 10px 14px;
 }
-.userContext dl {
+.requestActionRow > span {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+.requestActionRow strong {
+	color: var(--v2-text-primary);
+	font-size: var(--font-size-label);
+	font-weight: 600;
+}
+.requestActionRow small {
+	color: var(--v2-text-secondary);
+	font-size: var(--font-size-caption);
+	line-height: 1.4;
+}
+.requestActionRow > button {
+	flex: 0 0 auto;
+}
+.userContext {
 	display: grid;
 	gap: 0;
 	margin: 0;
-	border-top: 1px solid var(--v2-border-tertiary);
 }
-.userContext dl div {
+.userContext div {
 	display: flex;
 	justify-content: space-between;
 	gap: 12px;
 	padding: 9px 14px;
 	border-top: 1px solid var(--v2-border-tertiary);
 }
-.userContext dl div:first-child {
+.userContext div:first-child {
 	border-top: 0;
 }
 .userContext dt,
@@ -510,6 +507,7 @@
 }
 .thread {
 	gap: 8px;
+	padding: 12px;
 }
 .message {
 	display: grid;
@@ -569,12 +567,11 @@
 	color: var(--v2-text-secondary);
 	font-size: var(--font-size-caption);
 }
-.message > p {
+.messageBody {
 	margin: 0;
 	color: var(--v2-text-primary);
 	font-size: var(--font-size-body);
 	line-height: 1.55;
-	white-space: pre-wrap;
 }
 .messageFiles {
 	gap: 6px;
@@ -589,15 +586,16 @@
 	color: var(--v2-icon-secondary);
 }
 .composer {
+	display: grid;
 	gap: 10px;
+	padding: 14px;
 }
 .composerFooter {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	justify-content: flex-end;
 	gap: 12px;
 }
-.composerFooter > span,
 .reopenHint {
 	color: var(--v2-text-secondary);
 	font-size: var(--font-size-caption);
@@ -605,12 +603,11 @@
 .reopenHint {
 	margin: 0;
 }
-.managementHeading {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 14px;
-	padding: 2px;
+.managementIntro {
+	margin: 0 2px;
+	color: var(--v2-text-secondary);
+	font-size: var(--font-size-body);
+	line-height: 1.45;
 }
 .managementEntry {
 	display: grid;
@@ -645,9 +642,6 @@
 	color: var(--v2-text-secondary);
 	font-size: var(--font-size-caption);
 	line-height: 1.4;
-}
-.managementHeading > div {
-	min-width: 0;
 }
 .managementRow {
 	display: grid;
@@ -744,6 +738,11 @@
 	gap: 8px;
 	padding-top: 4px;
 }
+.editorFields {
+	display: grid;
+	gap: 14px;
+	padding: 14px;
+}
 @media (hover: hover) and (pointer: fine) {
 	.answerRow:hover,
 	.requestRow:hover,
@@ -759,34 +758,37 @@
 	}
 }
 @media (max-width: 380px) {
-	.requestRow,
-	.requestRow:has(.avatar) {
-		grid-template-columns: minmax(0, 1fr);
+	.requestRow {
+		grid-template-columns: 34px minmax(0, 1fr);
+		align-items: start;
+		gap: 8px 10px;
 	}
-	.requestRow:has(.avatar) .avatar {
-		display: none;
+	.requestStatusIcon {
+		width: 34px;
+		height: 34px;
 	}
 	.requestSide {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		grid-column: 2;
+		width: 100%;
 	}
 	.needHelp,
-	.articleCta,
-	.managementHeading {
+	.articleCta {
 		align-items: stretch;
 		flex-direction: column;
 	}
 	.needHelp button,
-	.articleCta button,
-	.managementHeading > button {
+	.articleCta button {
 		width: 100%;
 	}
-	.ticketTop {
+	.requestActionRow {
+		align-items: stretch;
 		flex-direction: column;
 	}
-	.ticketTop .status {
-		align-self: flex-start;
+	.requestActionRow > button {
+		width: 100%;
 	}
 	.managementRow {
 		grid-template-columns: 32px minmax(0, 1fr);

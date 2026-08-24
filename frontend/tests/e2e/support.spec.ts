@@ -24,12 +24,26 @@ test("user Support keeps the accepted section order and opens Quick Answers", as
 	]);
 	await expect(page.getByText("Connection stopped working", { exact: true })).toBeVisible();
 	await expect(page.getByText("Subscription renewal", { exact: true })).toBeVisible();
+	await expect(page.locator('[data-request-status-icon="needs_reply"]')).toHaveAttribute(
+		"data-tone",
+		"neutral",
+	);
+	await expect(page.locator('[data-request-status-icon="waiting_user"]')).toHaveAttribute(
+		"data-tone",
+		"attention",
+	);
 
-	await page.getByPlaceholder("Search help").fill("new device");
+	const helpSearch = page.getByRole("searchbox", { name: "Search help" });
+	await expect(helpSearch).toHaveAttribute("inputmode", "search");
+	await expect(helpSearch).toHaveAttribute("enterkeyhint", "search");
+	await helpSearch.fill("new device");
+	await helpSearch.press("Enter");
+	await expect(helpSearch).not.toBeFocused();
 	await expect(page.getByRole("button", { name: /Set up Flowvy on a new device/ })).toBeVisible();
 	await expect(page.getByRole("button", { name: /Connection does not work/ })).toHaveCount(0);
 	await page.getByRole("button", { name: /Set up Flowvy on a new device/ }).click();
 	await expect(page).toHaveURL(/\/support\/answers\/61000000-0000-4000-8000-000000000002$/);
+	await expect(page.locator("header").getByText("Quick Answer", { exact: true })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Set up Flowvy on a new device" })).toBeVisible();
 	await expect(page.getByRole("button", { name: "Create request" })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
@@ -48,9 +62,23 @@ test("administrator manages article order and opens the existing editor", async 
 		.getByRole("button", { name: /Manage Quick Answers/ })
 		.click();
 	await expect(page).toHaveURL(/\/support\/manage\/answers$/);
-	await expect(page.getByRole("heading", { name: "Quick Answers" })).toBeVisible();
+	await expect(page.locator("header").getByText("Quick Answers", { exact: true })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Articles" })).toBeVisible();
 	await expect(page.getByText("2 published · 1 drafts")).toBeVisible();
 	await expect(page.getByText("Refresh a subscription profile", { exact: true })).toBeVisible();
+	for (const theme of ["light", "dark"] as const) {
+		await page.evaluate(
+			(value) => document.documentElement.setAttribute("data-theme", value),
+			theme,
+		);
+		await page.screenshot({
+			path: testInfo.outputPath(`support-answers-manage-${theme}-${testInfo.project.name}.png`),
+			fullPage: true,
+			animations: "disabled",
+		});
+		const { violations } = await new AxeBuilder({ page }).include("main").analyze();
+		expect(violations).toEqual([]);
+	}
 
 	await page.getByRole("button", { name: "Move Connection does not work down" }).click();
 	await expect
@@ -62,6 +90,7 @@ test("administrator manages article order and opens the existing editor", async 
 
 	await page.getByRole("button", { name: "Edit Refresh a subscription profile" }).click();
 	await expect(page).toHaveURL(/\/support\/manage\/answers\/61000000-0000-4000-8000-000000000003$/);
+	await expect(page.locator("header").getByText("Edit article", { exact: true })).toBeVisible();
 	await expect(page.getByLabel("Title")).toHaveValue("Refresh a subscription profile");
 	await expect(page.getByRole("textbox", { name: "Article" })).toContainText(
 		"Open the subscription menu",
@@ -81,6 +110,7 @@ test("administrator creates, publishes, unpublishes, archives and restores an ar
 }) => {
 	await page.goto("/support/manage/answers");
 	await page.getByRole("button", { name: "Create article" }).click();
+	await expect(page.locator("header").getByText("New article", { exact: true })).toBeVisible();
 	await expect(page.getByRole("button", { name: "Publish" })).toBeDisabled();
 	await page.getByLabel("Title").fill("Fix DNS resolution");
 	await page.getByLabel("Short description").fill("Check DNS settings before opening a request.");
@@ -179,6 +209,7 @@ test("new request accepts only screenshots, recordings, TXT and ZIP with a five-
 }, testInfo) => {
 	await useUserRole(page);
 	await page.goto("/support/new");
+	await expect(page.locator("header").getByText("New request", { exact: true })).toBeVisible();
 	await page.evaluate(() => document.documentElement.setAttribute("data-theme", "light"));
 	const fileInput = page.locator('input[type="file"]');
 	await expect(fileInput).toHaveAttribute("accept", /\.zip/);
@@ -196,13 +227,28 @@ test("new request accepts only screenshots, recordings, TXT and ZIP with a five-
 	await expect(page.locator('button[aria-label^="Remove "]')).toHaveCount(5);
 
 	await page.getByLabel("Subject").fill("Connection stopped working");
-	await page.getByLabel("What happened?").fill("The client times out after refreshing the profile");
+	const message = page.getByRole("textbox", { name: "What happened?" });
+	const formattingToolbar = page.getByRole("toolbar", { name: "Text formatting" });
+	await expect(formattingToolbar).toBeVisible();
+	await message.fill("The client times out after refreshing the profile");
+	await message.press("ControlOrMeta+A");
+	await formattingToolbar.getByRole("button", { name: "Bold" }).click();
+	await expect(message.locator("strong")).toHaveText(
+		"The client times out after refreshing the profile",
+	);
 	await page.screenshot({
 		path: testInfo.outputPath(`support-new-light-${testInfo.project.name}.png`),
 		fullPage: true,
 		animations: "disabled",
 	});
+	const createRequest = page.waitForRequest(
+		(request) =>
+			request.method() === "POST" && new URL(request.url()).pathname === "/api/support/requests",
+	);
 	await page.getByRole("button", { name: "Send request" }).click();
+	expect((await createRequest).postDataJSON().message).toBe(
+		"**The client times out after refreshing the profile**",
+	);
 	await expect(page).toHaveURL(/\/support\/requests\/request-32$/);
 	await expect(page.getByRole("heading", { name: "Connection stopped working" })).toBeVisible();
 	expect(mockApi.calls).toContain("POST /api/support/requests");
@@ -248,13 +294,20 @@ test("administrator sees server-owned R2 setup and can check configured access",
 	await expect(page.locator('[data-support-storage="configured"]')).toBeVisible();
 	await expect(page.getByText("flowvy-support", { exact: true })).toBeVisible();
 	await expect(page.getByText("R2_ACCESS_KEY_ID", { exact: true })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Attachment storage" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Limits and retention" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Server configuration" })).toBeVisible();
 	await expect(
-		page.getByText("Credentials are accepted only through the server environment.", {
-			exact: false,
-		}),
+		page.getByText("Set these values only in the Flowvy server environment", { exact: false }),
 	).toBeVisible();
+	await expect(page.getByText("Create a private Standard R2 bucket", { exact: false })).toHaveCount(
+		0,
+	);
 	await page.getByRole("button", { name: "Check access" }).click();
-	await expect(page.getByText("R2 access is working")).toBeVisible();
+	await expect(page.getByText("Available", { exact: true })).toHaveAttribute(
+		"data-tone",
+		"positive",
+	);
 	await page.mouse.move(0, 0);
 	for (const theme of ["light", "dark"] as const) {
 		await page.evaluate(
@@ -271,6 +324,20 @@ test("administrator sees server-owned R2 setup and can check configured access",
 	}
 	expect(mockApi.calls).toContain("POST /api/debug/admin/settings/support-storage/test");
 	await assertNoHorizontalOverflow(page);
+});
+
+test("Support storage keeps a failed access check in its connection row", async ({
+	page,
+	mockApi,
+}) => {
+	mockApi.mock("POST", "/api/debug/admin/settings/support-storage/test", {
+		status: 503,
+		body: { detail: "Unavailable" },
+	});
+	await page.goto("/admin/settings/support");
+	await page.getByRole("button", { name: "Check access" }).click();
+	await expect(page.getByText("Unavailable", { exact: true })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Check access" })).toBeEnabled();
 });
 
 test("Support storage settings explain the non-configured fallback without exposing inputs", async ({
@@ -318,14 +385,39 @@ test("administrator sees the queue, opaque ZIP metadata, reply and resolve contr
 	await expect(page.locator('[data-support-view="admin"]')).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Needs reply" })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Waiting for user" })).toBeVisible();
+	await expect(page.locator('[data-request-status-icon="needs_reply"]')).toHaveAttribute(
+		"data-tone",
+		"attention",
+	);
+	await expect(page.locator('[data-status="needs_reply"]')).toHaveAttribute(
+		"data-tone",
+		"attention",
+	);
+	await expect(page.locator('[data-request-status-icon="waiting_user"]')).toHaveAttribute(
+		"data-tone",
+		"neutral",
+	);
+	const queueSearch = page.getByRole("searchbox", { name: "Search requests or users" });
+	await expect(queueSearch).toHaveAttribute("inputmode", "search");
+	await expect(queueSearch).toHaveAttribute("enterkeyhint", "search");
+	await queueSearch.fill("Maria");
+	await queueSearch.press("Enter");
+	await expect(queueSearch).not.toBeFocused();
 
 	await page.getByRole("button", { name: /Maria Petrova Connection stopped working/ }).click();
 	await expect(page.locator('[data-support-detail="admin"]')).toBeVisible();
+	await expect(page.locator("header").getByText("Request", { exact: true })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Request details" })).toBeVisible();
+	await expect(page.getByText("Request status", { exact: true })).toBeVisible();
+	await expect(page.getByText("Request #31", { exact: true })).toHaveCount(1);
 	await expect(page.getByText("client-report.zip", { exact: true })).toBeVisible();
 	await expect(page.getByText("ZIP · 4.8 MB · Password protected", { exact: true })).toBeVisible();
 	await expect(page.getByRole("button", { name: "Download client-report.zip" })).toBeVisible();
 	await expect(page.locator('[data-author="support"][data-owned="true"]')).toHaveCount(1);
 	await expect(page.locator('[data-author="user"][data-owned="false"]')).toHaveCount(2);
+	await expect(
+		page.locator('[data-author="support"] strong').filter({ hasText: "active" }),
+	).toHaveText("active");
 	for (const theme of ["light", "dark"] as const) {
 		await page.evaluate(
 			(value) => document.documentElement.setAttribute("data-theme", value),
@@ -340,10 +432,26 @@ test("administrator sees the queue, opaque ZIP metadata, reply and resolve contr
 		expect(violations).toEqual([]);
 	}
 
-	await page
-		.getByLabel("Reply as Flowvy Support")
-		.fill("Please try the refreshed profile once more");
+	const replyEditor = page.getByRole("textbox", { name: "Reply as Flowvy Support" });
+	await replyEditor.scrollIntoViewIfNeeded();
+	await page.screenshot({
+		path: testInfo.outputPath(`support-detail-composer-dark-${testInfo.project.name}.png`),
+		animations: "disabled",
+	});
+	const replyToolbar = page.getByRole("toolbar", { name: "Text formatting" });
+	await expect(replyToolbar).toBeVisible();
+	await replyEditor.fill("Please try the refreshed profile once more");
+	await replyEditor.press("ControlOrMeta+A");
+	await replyToolbar.getByRole("button", { name: "Bold" }).click();
+	const replyRequest = page.waitForRequest(
+		(request) =>
+			request.method() === "POST" &&
+			new URL(request.url()).pathname === "/api/support/requests/request-31/messages",
+	);
 	await page.getByRole("button", { name: "Send", exact: true }).click();
+	expect((await replyRequest).postDataJSON().message).toBe(
+		"**Please try the refreshed profile once more**",
+	);
 	await expect(
 		page.getByText("Please try the refreshed profile once more.", { exact: true }),
 	).toBeVisible();

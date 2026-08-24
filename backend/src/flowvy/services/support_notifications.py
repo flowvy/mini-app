@@ -11,6 +11,7 @@ from urllib.parse import quote, urlsplit
 from flowvy.config import Settings
 from flowvy.localization import product_text, render_placeholders
 from flowvy.repositories.user import UserRepository
+from flowvy.schemas.content import formatted_text_visible_text
 from flowvy.schemas.support_requests import SupportRequestResponse
 from flowvy.services.message_sender import InlineButton, MessageSender
 
@@ -71,8 +72,6 @@ class SupportNotificationService:
                 return
             message = request.messages[-1]
             if message.author == "support":
-                if request.requester.id == actor_telegram_id:
-                    return
                 await self._deliver(
                     request.requester.id,
                     text=self._user_text(request),
@@ -144,10 +143,11 @@ class SupportNotificationService:
 
     def _admin_text(self, request: SupportRequestResponse, template_key: str) -> str:
         message = request.messages[-1]
-        requester = html.escape(request.requester.full_name)
         if request.requester.username:
             username = html.escape(request.requester.username.lstrip("@"))
-            requester = f"{requester} (@{username})"
+            requester = f"@{username}"
+        else:
+            requester = html.escape(request.requester.full_name)
         return self._render(
             template_key,
             request,
@@ -158,7 +158,7 @@ class SupportNotificationService:
 
     @staticmethod
     def _preview(value: str) -> str:
-        text = value.strip()
+        text = formatted_text_visible_text(value).strip()
         if len(text) <= _MAX_PREVIEW_CHARS:
             return text
         candidate = text[: _MAX_PREVIEW_CHARS - 1].rstrip()
