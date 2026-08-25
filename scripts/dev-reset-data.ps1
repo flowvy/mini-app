@@ -54,10 +54,17 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $databaseUrlName = "DATABASE_URL"
+$pythonPathName = "PYTHONPATH"
 $savedDatabaseUrl = [Environment]::GetEnvironmentVariable($databaseUrlName, "Process")
+$savedPythonPath = [Environment]::GetEnvironmentVariable($pythonPathName, "Process")
 [Environment]::SetEnvironmentVariable(
     $databaseUrlName,
     "postgresql+asyncpg://flowvy:flowvy_dev@127.0.0.1:5432/flowvy",
+    "Process"
+)
+[Environment]::SetEnvironmentVariable(
+    $pythonPathName,
+    (Join-Path $backendDir "src"),
     "Process"
 )
 try {
@@ -74,6 +81,7 @@ try {
 }
 finally {
     [Environment]::SetEnvironmentVariable($databaseUrlName, $savedDatabaseUrl, "Process")
+    [Environment]::SetEnvironmentVariable($pythonPathName, $savedPythonPath, "Process")
 }
 
 $rowCountSql = @"
