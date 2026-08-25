@@ -48,6 +48,9 @@ export function HeroCard({ subscription }: HeroCardProps) {
 function ActiveHeroCard({ subscription }: { subscription: SubscriptionData }) {
 	const { t } = useTranslation();
 	const { usedBytes, totalBytes, deviceLimit, connectionLink } = subscription;
+	const displayName = subscription.telegramUsername
+		? `@${subscription.telegramUsername}`
+		: subscription.name;
 	const unlimitedTraffic = isUnlimitedTraffic(totalBytes);
 	const unlimitedExpiry = isUnlimitedExpiry(subscription.expiresAt);
 	const pct = unlimitedTraffic ? 0 : getTrafficPercent(usedBytes, totalBytes);
@@ -88,7 +91,7 @@ function ActiveHeroCard({ subscription }: { subscription: SubscriptionData }) {
 			{/* Row 1: name + badge | KPIs */}
 			<div className={styles.topRow}>
 				<div className={styles.topLeft}>
-					<span className={styles.name}>{subscription.name}</span>
+					<span className={styles.name}>{displayName}</span>
 					<StatusBadge status={subscription.status} context="subscription" />
 				</div>
 				<div className={styles.topRight}>
@@ -100,7 +103,9 @@ function ActiveHeroCard({ subscription }: { subscription: SubscriptionData }) {
 						>
 							{unlimitedExpiry ? <InfinityIcon size={18} /> : formatExpiry(daysLeft)}
 						</div>
-						<div className={styles.kpiLabel}>{t("home.heroCard.expiresLabel")}</div>
+						<div className={styles.kpiLabel} data-ui="home-expiry-label">
+							{t("home.heroCard.expiresLabel")}
+						</div>
 					</div>
 					<div className={styles.kpiDivider} />
 					<div className={styles.kpi}>
@@ -111,7 +116,9 @@ function ActiveHeroCard({ subscription }: { subscription: SubscriptionData }) {
 								String(deviceLimit)
 							)}
 						</div>
-						<div className={styles.kpiLabel}>{t("home.heroCard.devicesLabel")}</div>
+						<div className={styles.kpiLabel} data-ui="home-devices-label">
+							{t("home.heroCard.devicesLabel")}
+						</div>
 					</div>
 				</div>
 			</div>

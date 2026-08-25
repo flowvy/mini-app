@@ -363,6 +363,11 @@ Flowvy создаёт provider user только когда оператор н�
 Без профиля создаётся только локальный Telegram user. Для каждого нового provider user используется
 детерминированный уникальный username `tg_<telegram_id>`, а protocol credentials, short UUID и
 subscription identity генерирует сама Remnawave; Flowvy их не переиспользует между пользователями.
+Flowvy BFF не подменяет этот provider identifier: Admin list/detail и user subscription response
+отдельно добавляют nullable локальный `telegramUsername`, чтобы UI мог показывать изменяемое
+`@username` основным именем. Admin оставляет `tg_<telegram_id>` вторично, а Home использует его
+только как fallback. Batch lookup в Admin избегает N+1; user subscription читает одну уже
+существующую local identity.
 Registration default принимает только `duration`, `fixed` или `lifetime`, потому что Remnawave
 create-user требует конкретный `expireAt`. Профиль с `automation` не хранит дни/дату, исключён из
 default selector и отклоняется backend при прямом API-запросе. Если текущий default редактируется,

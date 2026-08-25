@@ -19,6 +19,7 @@ class SubscriptionResponse(BaseModel):
 
     id: str
     name: str
+    telegram_username: str | None = None
     status: UserStatus
     used_bytes: int
     total_bytes: int

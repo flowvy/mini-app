@@ -19,12 +19,28 @@
 	border-bottom: 1px solid var(--v2-border-tertiary);
 }
 
-.identity strong {
+.identityNames {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	gap: 2px;
+}
+
+.identityNames strong {
 	min-width: 0;
 	overflow: hidden;
 	color: var(--v2-text-primary);
 	font-size: var(--font-size-heading);
 	font-weight: 700;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.identityNames span {
+	overflow: hidden;
+	color: var(--v2-text-secondary);
+	font-family: var(--font-mono);
+	font-size: var(--font-size-caption);
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
@@ -58,19 +74,30 @@
 
 .heroRight {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	gap: 12px;
 }
 
 .heroKpi {
+	display: grid;
+	grid-template-rows: 20px 13px;
+	align-items: center;
 	text-align: right;
 }
 
 .heroKpiValue {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
 	font-size: var(--font-size-heading);
 	font-weight: 700;
 	font-family: var(--font-mono);
-	line-height: 1.1;
+	line-height: 1;
+}
+
+.heroKpiValue > svg {
+	display: block;
+	flex: none;
 }
 
 .heroKpiLabel {
@@ -78,11 +105,14 @@
 	color: var(--v2-text-secondary);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
+	line-height: 13px;
+	white-space: nowrap;
 }
 
 .heroDivider {
 	width: 1px;
 	height: 28px;
+	margin-top: 2px;
 	background: var(--v2-border-secondary);
 	opacity: 0.6;
 }

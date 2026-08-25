@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
@@ -57,6 +58,7 @@ async def test_get_for_user_maps_fields() -> None:
     assert result is not None
     assert result.id == "abc123"
     assert result.name == "testuser"
+    assert result.telegram_username is None
     assert result.status == "ACTIVE"
     assert result.used_bytes == 4_200_000_000
     assert result.total_bytes == 50_000_000_000
@@ -67,6 +69,20 @@ async def test_get_for_user_maps_fields() -> None:
     assert result.email == "test@example.com"
     assert result.telegram_id == "123456789"
     assert result.auto_update is True
+
+
+@pytest.mark.asyncio
+async def test_get_for_user_adds_local_telegram_username() -> None:
+    """The Home response should prefer recognizable Telegram identity in the UI."""
+    service = _make_service()
+    service._user_repo.get_by_telegram_id.return_value = SimpleNamespace(username="alice")
+
+    result = await service.get_for_user(123456789)
+
+    assert result is not None
+    assert result.name == "testuser"
+    assert result.telegram_username == "alice"
+    service._user_repo.ensure_exists.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -183,3 +199,4 @@ async def test_camel_case_serialization() -> None:
     assert "autoUpdate" in data
     assert "updateInterval" in data
     assert "telegramId" in data
+    assert "telegramUsername" in data

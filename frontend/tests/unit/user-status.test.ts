@@ -7,6 +7,7 @@ function user(status: AdminUser["status"]): AdminUser {
 	return {
 		id: 1,
 		username: "alice",
+		telegramUsername: null,
 		status,
 		tag: null,
 		description: null,

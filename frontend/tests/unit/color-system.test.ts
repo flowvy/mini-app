@@ -239,7 +239,7 @@ describe("desktop color parity", () => {
 					"components/home/hero-card.module.css",
 					"border-top: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);",
 				),
-				2,
+				3,
 			],
 			[
 				derivedKey(

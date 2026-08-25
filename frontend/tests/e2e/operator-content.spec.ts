@@ -158,6 +158,46 @@ test("admin saves allow-listed provider content as a locale map", async ({
 	expect(payload).not.toHaveProperty("supportUrl");
 });
 
+test("content language switching keeps rich-text editor instances alive", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.goto("/admin/settings/content");
+	await page.getByLabel("User-facing message").selectOption("inviteCard");
+	const contentLanguage = page.getByRole("radiogroup", { name: "Content language" });
+	const inviteDescription = page.getByRole("textbox", { name: "Invite card description" });
+	const inviteEditor = await inviteDescription.elementHandle();
+	expect(inviteEditor).not.toBeNull();
+
+	await contentLanguage.getByRole("radio", { name: "Russian" }).click();
+	await expect(contentLanguage.getByRole("radio", { name: "Russian" })).toBeChecked();
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+	);
+	expect(
+		await inviteDescription.evaluate((current, original) => current === original, inviteEditor),
+		"switching CommonMark content language must not destroy its Tiptap instance",
+	).toBe(true);
+
+	await page.goto("/admin/settings/welcome");
+	const welcomeLanguage = page.getByRole("radiogroup", { name: "Content language" });
+	const greetingText = page.getByRole("textbox", { name: "Greeting text" });
+	const greetingEditor = await greetingText.elementHandle();
+	expect(greetingEditor).not.toBeNull();
+
+	await welcomeLanguage.getByRole("radio", { name: "Russian" }).click();
+	await expect(welcomeLanguage.getByRole("radio", { name: "Russian" })).toBeChecked();
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+	);
+	expect(
+		await greetingText.evaluate((current, original) => current === original, greetingEditor),
+		"switching Telegram HTML content language must not destroy its Tiptap instance",
+	).toBe(true);
+});
+
 test("saved Communication content stays clean", async ({ page, mockApi: _mock }) => {
 	await installTelegramMainButton(page);
 	await page.goto(withTelegramMainButton("/admin/settings/communication"));

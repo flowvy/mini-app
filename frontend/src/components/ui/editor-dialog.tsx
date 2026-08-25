@@ -6,6 +6,7 @@ import {
 	useCallback,
 	useEffect,
 	useId,
+	useLayoutEffect,
 	useRef,
 } from "react";
 import { createPortal } from "react-dom";
@@ -59,7 +60,7 @@ export function EditorDialog({
 	telegramFooter,
 }: EditorDialogProps) {
 	const titleId = useId();
-	const dialogRef = useRef<HTMLDialogElement>(null);
+	const dialogRef = useRef<HTMLDivElement>(null);
 	const formRef = useRef<HTMLFormElement>(null);
 	const titleRef = useRef<HTMLHeadingElement>(null);
 	const busyRef = useRef(busy);
@@ -75,16 +76,17 @@ export function EditorDialog({
 		if (!busy) onClose();
 	});
 
-	useEffect(() => {
-		const dialog = dialogRef.current;
+	useLayoutEffect(() => {
+		const appRoot = document.getElementById("root");
+		const rootWasInert = appRoot?.inert ?? false;
 		if (restoreFocusFrameRef.current !== null) {
 			window.cancelAnimationFrame(restoreFocusFrameRef.current);
 			restoreFocusFrameRef.current = null;
 		}
-		if (dialog && !dialog.open) dialog.showModal();
+		if (appRoot) appRoot.inert = true;
 		titleRef.current?.focus();
 		return () => {
-			if (dialog?.open) dialog.close();
+			if (appRoot) appRoot.inert = rootWasInert;
 			const focusReturn = focusReturnRef.current;
 			restoreFocusFrameRef.current = window.requestAnimationFrame(() => {
 				restoreFocusFrameRef.current = null;
@@ -136,7 +138,7 @@ export function EditorDialog({
 	}, [busy, telegramPrimaryDisabled, telegramPrimaryText, telegramPrimaryVisible]);
 
 	const handleKeyDown = useCallback(
-		(event: KeyboardEvent<HTMLDialogElement>) => {
+		(event: KeyboardEvent<HTMLDivElement>) => {
 			if (event.key === "Escape" && !busy) {
 				event.preventDefault();
 				onClose();
@@ -161,40 +163,40 @@ export function EditorDialog({
 	);
 
 	return createPortal(
-		<dialog
-			ref={dialogRef}
-			className={styles.panel}
-			aria-modal="true"
-			aria-labelledby={titleId}
-			aria-busy={busy}
-			onKeyDown={handleKeyDown}
-			onCancel={(event) => {
-				event.preventDefault();
-				if (!busy) onClose();
-			}}
-		>
-			<form ref={formRef} className={styles.form} onSubmit={onSubmit} noValidate>
-				<header className={styles.header}>
-					<div>
-						<p className={styles.eyebrow}>{eyebrow}</p>
-						<h2 id={titleId} ref={titleRef} tabIndex={-1}>
-							{title}
-						</h2>
-						<p className={styles.subtitle}>{subtitle}</p>
-					</div>
-					<ActionBtn
-						variant="ghost"
-						className={styles.closeButton}
-						onClick={onClose}
-						disabled={busy}
-						aria-label={closeLabel}
-					>
-						<X size={18} />
-					</ActionBtn>
-				</header>
-				<div className={styles.body}>{children}</div>
-			</form>
-		</dialog>,
+		<div className={styles.backdrop}>
+			<div
+				ref={dialogRef}
+				className={styles.panel}
+				// biome-ignore lint/a11y/useSemanticElements: Telegram iOS WebView must not use the HTML dialog top layer; WAI-ARIA defines this modal pattern.
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby={titleId}
+				aria-busy={busy}
+				onKeyDown={handleKeyDown}
+			>
+				<form ref={formRef} className={styles.form} onSubmit={onSubmit} noValidate>
+					<header className={styles.header}>
+						<div>
+							<p className={styles.eyebrow}>{eyebrow}</p>
+							<h2 id={titleId} ref={titleRef} tabIndex={-1}>
+								{title}
+							</h2>
+							<p className={styles.subtitle}>{subtitle}</p>
+						</div>
+						<ActionBtn
+							variant="ghost"
+							className={styles.closeButton}
+							onClick={onClose}
+							disabled={busy}
+							aria-label={closeLabel}
+						>
+							<X size={18} />
+						</ActionBtn>
+					</header>
+					<div className={styles.body}>{children}</div>
+				</form>
+			</div>
+		</div>,
 		document.body,
 	);
 }

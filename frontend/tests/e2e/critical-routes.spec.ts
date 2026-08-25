@@ -219,9 +219,11 @@ test("admin routes render deterministic success and placeholder states", async (
 
 	await page.goto("/admin/users");
 	await expect(page.getByRole("button", { name: "Search users" })).toBeVisible();
-	await expect(page.getByText("alice")).toBeVisible();
+	await expect(page.getByText("@alice", { exact: true })).toBeVisible();
+	await expect(page.getByText("tg_123456789", { exact: false })).toBeVisible();
 	await page.goto("/admin/users/1");
-	await expect(page.getByText("alice", { exact: true })).toBeVisible();
+	await expect(page.getByText("@alice", { exact: true })).toBeVisible();
+	await expect(page.getByText("tg_123456789", { exact: true })).toBeVisible();
 	await expect(page.getByRole("button", { name: "Back" })).toHaveCount(0);
 	await expect(page.getByText("Invitations", { exact: true })).toBeVisible();
 	await expect(page.getByText("Registered users")).toBeVisible();
@@ -329,7 +331,7 @@ test("detail screens rely on Telegram Back instead of duplicate in-content heade
 		{ path: "/admin/settings/communication", marker: "Registration", title: "Communication" },
 		{ path: "/admin/settings/welcome", marker: "Content", title: "Welcome" },
 		{ path: "/admin/settings/access", marker: "Service mode", title: "Access" },
-		{ path: "/admin/users/1", marker: "alice", title: null },
+		{ path: "/admin/users/1", marker: "@alice", title: null },
 	] as const;
 
 	for (const screen of detailScreens) {

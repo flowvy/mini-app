@@ -18,6 +18,7 @@ from flowvy.services.subscription import SubscriptionService
 FAKE_RESPONSE = SubscriptionResponse(
     id="abc123",
     name="testuser",
+    telegram_username="alice",
     status="ACTIVE",
     used_bytes=4_200_000_000,
     total_bytes=50_000_000_000,
@@ -80,6 +81,7 @@ async def test_subscription_success() -> None:
     assert resp.status_code == 200
     body = resp.json()
     assert body["name"] == "testuser"
+    assert body["telegramUsername"] == "alice"
     assert body["usedBytes"] == 4_200_000_000
 
 

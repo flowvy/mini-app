@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 import pytest
@@ -34,7 +35,9 @@ async def test_dotted_username_is_not_misclassified_as_email() -> None:
     remnawave.search_user_by_username = AsyncMock(return_value=USER)
     redis = AsyncMock()
     redis.get = AsyncMock(return_value=b"{}")
-    service = AdminUsersService(remnawave, redis, AsyncMock())
+    users = AsyncMock()
+    users.get_by_telegram_ids = AsyncMock(return_value=[])
+    service = AdminUsersService(remnawave, redis, users)
 
     result = await service.search_user("john.doe")
 
@@ -50,11 +53,17 @@ async def test_user_detail_includes_direct_invitation_count() -> None:
     redis = AsyncMock()
     redis.get = AsyncMock(return_value=b"{}")
     users = AsyncMock()
+    users.get_by_telegram_id = AsyncMock(
+        return_value=SimpleNamespace(id=123, username="john_telegram"),
+    )
     users.count_invited_by = AsyncMock(return_value=4)
 
     result = await AdminUsersService(remnawave, redis, users).get_user(USER.provider_id)
 
     assert result.invited_count == 4
+    assert result.username == "john.doe"
+    assert result.telegram_username == "john_telegram"
+    users.get_by_telegram_id.assert_awaited_once_with(123)
     users.count_invited_by.assert_awaited_once_with(123)
 
 
@@ -68,9 +77,32 @@ async def test_user_list_preserves_normalized_unknown_status() -> None:
     )
     redis = AsyncMock()
     redis.get = AsyncMock(return_value=b"{}")
-    service = AdminUsersService(remnawave, redis, AsyncMock())
+    users = AsyncMock()
+    users.get_by_telegram_ids = AsyncMock(return_value=[])
+    service = AdminUsersService(remnawave, redis, users)
 
     result = await service.get_users()
 
     assert result.total == 1
     assert result.users[0].status == "UNKNOWN"
+    assert result.users[0].telegram_username is None
+
+
+@pytest.mark.asyncio
+async def test_user_list_adds_local_telegram_username_without_n_plus_one() -> None:
+    remnawave = AsyncMock()
+    remnawave.get_users = AsyncMock(
+        return_value=RemnawaveUsersPage(users=[USER], total=1),
+    )
+    redis = AsyncMock()
+    redis.get = AsyncMock(return_value=b"{}")
+    users = AsyncMock()
+    users.get_by_telegram_ids = AsyncMock(
+        return_value=[SimpleNamespace(id=123, username="john_telegram")],
+    )
+
+    result = await AdminUsersService(remnawave, redis, users).get_users()
+
+    assert result.users[0].username == "john.doe"
+    assert result.users[0].telegram_username == "john_telegram"
+    users.get_by_telegram_ids.assert_awaited_once_with([123])

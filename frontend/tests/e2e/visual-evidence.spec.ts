@@ -35,9 +35,9 @@ const screens = [
 		marker: "Request details",
 	},
 	{ name: "admin-dashboard", path: "/admin/dashboard", marker: "Remnawave unavailable" },
-	{ name: "admin-users", path: "/admin/users", marker: "alice" },
-	{ name: "admin-users-search", path: "/admin/users/search", marker: "alice" },
-	{ name: "admin-user-detail", path: "/admin/users/1", marker: "alice" },
+	{ name: "admin-users", path: "/admin/users", marker: "@alice" },
+	{ name: "admin-users-search", path: "/admin/users/search", marker: "@alice" },
+	{ name: "admin-user-detail", path: "/admin/users/1", marker: "@alice" },
 	{ name: "admin-broadcast", path: "/admin/broadcast", marker: "Broadcast is coming soon" },
 	{ name: "admin-settings", path: "/admin/settings", marker: "Integrations" },
 	{ name: "admin-settings-pulse", path: "/admin/settings/pulse", marker: "Active source" },
@@ -278,7 +278,7 @@ test("capture primary, focused-search, and nested navigation surfaces", async ({
 		await page.getByRole("button", { name: "Search users" }).click();
 		await expect(page.getByRole("navigation")).toHaveCount(0);
 		await expect(page.getByRole("textbox", { name: "Search users" })).toBeFocused();
-		await expect(page.getByText("alice", { exact: true })).toBeInViewport();
+		await expect(page.getByText("@alice", { exact: true })).toBeInViewport();
 		await page.screenshot({
 			path: testInfo.outputPath(`tab-navigation-search-${colorScheme}.png`),
 			animations: "disabled",

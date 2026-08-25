@@ -72,6 +72,9 @@ export function FormattedTextEditor({
 	const [linkError, setLinkError] = useState(false);
 	const [activeTool, setActiveTool] = useState(0);
 	const toolRefs = useRef<Array<HTMLButtonElement | null>>([]);
+	const placeholderRef = useRef(placeholder);
+	const appliedPlaceholderRef = useRef(placeholder);
+	placeholderRef.current = placeholder;
 
 	const editor = useEditor(
 		{
@@ -92,7 +95,7 @@ export function FormattedTextEditor({
 					},
 				}),
 				Markdown.configure({ markedOptions: { gfm: true, breaks: true } }),
-				Placeholder.configure({ placeholder }),
+				Placeholder.configure({ placeholder: () => placeholderRef.current }),
 				CharacterCount.configure({ limit: maxLength, autoTrim: false }),
 			],
 			editorProps: {
@@ -108,8 +111,15 @@ export function FormattedTextEditor({
 			},
 			onUpdate: ({ editor: currentEditor }) => onChange(currentEditor.getMarkdown()),
 		},
-		[id, maxLength, placeholder],
+		[id, maxLength],
 	);
+
+	useEffect(() => {
+		if (appliedPlaceholderRef.current === placeholder) return;
+		if (!editor || editor.isDestroyed || !editor.isInitialized) return;
+		appliedPlaceholderRef.current = placeholder;
+		editor.view.dispatch(editor.state.tr);
+	}, [editor, placeholder]);
 
 	useEffect(() => {
 		editor?.setEditable(!disabled, false);

@@ -52,7 +52,11 @@ class AdminUsersService:
             for batch in batches:
                 all_users.extend(batch.users)
         squad_map = await self._get_external_squads_map()
-        users = [_map_user_data(user, squad_map) for user in all_users]
+        telegram_usernames = await self._get_telegram_usernames(all_users)
+        users = [
+            _map_user_data(user, squad_map, telegram_usernames.get(user.telegram_id))
+            for user in all_users
+        ]
         return AdminUsersResponse(users=users, total=total)
 
     async def get_users(
@@ -63,14 +67,27 @@ class AdminUsersService:
         """Fetch paginated user list from Remnawave."""
         page = await self._remnawave.get_users(size, start)
         squad_map = await self._get_external_squads_map()
-        users = [_map_user_data(user, squad_map) for user in page.users]
+        telegram_usernames = await self._get_telegram_usernames(page.users)
+        users = [
+            _map_user_data(user, squad_map, telegram_usernames.get(user.telegram_id))
+            for user in page.users
+        ]
         return AdminUsersResponse(users=users, total=page.total)
 
     async def get_user(self, user_id: int) -> AdminUserResponse:
         """Fetch single user from Remnawave + resolve squad."""
         user = await self._remnawave.get_user_by_id(user_id)
         squad_map = await self._get_external_squads_map()
-        response = _map_user_data(user, squad_map)
+        local_user = (
+            await self._users.get_by_telegram_id(user.telegram_id)
+            if user.telegram_id is not None
+            else None
+        )
+        response = _map_user_data(
+            user,
+            squad_map,
+            local_user.username if local_user is not None else None,
+        )
         if user.telegram_id is not None:
             response.invited_count = await self._users.count_invited_by(user.telegram_id)
         return response
@@ -88,7 +105,8 @@ class AdminUsersService:
         if not result:
             return AdminUsersResponse(users=[], total=0)
         squad_map = await self._get_external_squads_map()
-        users = [_map_user_data(result, squad_map)]
+        telegram_usernames = await self._get_telegram_usernames([result])
+        users = [_map_user_data(result, squad_map, telegram_usernames.get(result.telegram_id))]
         return AdminUsersResponse(users=users, total=1)
 
     async def enable_user(self, user_id: int) -> None:
@@ -111,6 +129,16 @@ class AdminUsersService:
         """Permanently delete a user from Remnawave."""
         await self._remnawave.delete_user(user_id)
 
+    async def _get_telegram_usernames(
+        self,
+        provider_users: list[RemnawaveUserData],
+    ) -> dict[int, str]:
+        telegram_ids = sorted(
+            {user.telegram_id for user in provider_users if user.telegram_id is not None},
+        )
+        local_users = await self._users.get_by_telegram_ids(telegram_ids)
+        return {user.id: user.username for user in local_users if user.username is not None}
+
     async def _get_external_squads_map(self) -> dict[str, str]:
         """Return uuid→name map, cached in Redis for 5 minutes."""
         cached = await self._redis.get(SQUADS_CACHE_KEY)
@@ -129,12 +157,14 @@ class AdminUsersService:
 def _map_user_data(
     user: RemnawaveUserData,
     squad_map: dict[str, str],
+    telegram_username: str | None = None,
 ) -> AdminUserResponse:
     """Map typed RemnawaveUserData to admin user response."""
     ext_uuid = user.external_squad_uuid
     return AdminUserResponse(
         id=user.provider_id,
         username=user.username,
+        telegram_username=telegram_username,
         status=user.status,
         tag=user.tag,
         description=user.description,

@@ -14,6 +14,7 @@ export interface AdminUserInternalSquad {
 export interface AdminUser {
 	id: number;
 	username: string;
+	telegramUsername: string | null;
 	status: UserStatus;
 	tag: string | null;
 	description: string | null;

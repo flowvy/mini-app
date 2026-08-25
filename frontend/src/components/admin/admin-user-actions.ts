@@ -1,4 +1,5 @@
 import i18n from "../../i18n";
+import { getAdminUserDisplayName } from "../../lib/admin-user-identity.ts";
 /**
  * Action definitions for the admin user hero card.
  * Each action maps to a ConfirmDialog with label, description, and danger flag.
@@ -18,6 +19,7 @@ export interface ActionDef {
 
 export function getActions(user: AdminUser): ActionDef[] {
 	const isActive = user.status === "ACTIVE";
+	const displayName = getAdminUserDisplayName(user);
 	const statusAction: ActionDef[] =
 		user.status === "UNKNOWN"
 			? []
@@ -29,8 +31,8 @@ export function getActions(user: AdminUser): ActionDef[] {
 							? i18n.t("admin.actions.disableTitle")
 							: i18n.t("admin.actions.enableTitle"),
 						desc: isActive
-							? i18n.t("admin.actions.disableDesc", { username: user.username })
-							: i18n.t("admin.actions.enableDesc", { username: user.username }),
+							? i18n.t("admin.actions.disableDesc", { username: displayName })
+							: i18n.t("admin.actions.enableDesc", { username: displayName }),
 						confirmLabel: isActive
 							? i18n.t("admin.actions.disable")
 							: i18n.t("admin.actions.enable"),
@@ -43,7 +45,7 @@ export function getActions(user: AdminUser): ActionDef[] {
 			key: "reset",
 			label: i18n.t("admin.actions.resetTraffic"),
 			title: i18n.t("admin.actions.resetTrafficTitle"),
-			desc: i18n.t("admin.actions.resetTrafficDesc", { username: user.username }),
+			desc: i18n.t("admin.actions.resetTrafficDesc", { username: displayName }),
 			confirmLabel: i18n.t("admin.actions.resetConfirm"),
 			danger: false,
 		},
@@ -51,7 +53,7 @@ export function getActions(user: AdminUser): ActionDef[] {
 			key: "revoke",
 			label: i18n.t("admin.actions.revoke"),
 			title: i18n.t("admin.actions.revokeTitle"),
-			desc: i18n.t("admin.actions.revokeDesc", { username: user.username }),
+			desc: i18n.t("admin.actions.revokeDesc", { username: displayName }),
 			confirmLabel: i18n.t("admin.actions.revokeConfirm"),
 			danger: true,
 		},
@@ -59,7 +61,7 @@ export function getActions(user: AdminUser): ActionDef[] {
 			key: "delete",
 			label: i18n.t("admin.actions.delete"),
 			title: i18n.t("admin.actions.deleteTitle"),
-			desc: i18n.t("admin.actions.deleteDesc", { username: user.username }),
+			desc: i18n.t("admin.actions.deleteDesc", { username: displayName }),
 			confirmLabel: i18n.t("admin.actions.deleteConfirm"),
 			danger: true,
 		},

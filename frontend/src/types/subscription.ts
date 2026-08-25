@@ -7,6 +7,7 @@ export type ResetStrategy = "MONTH" | "MONTH_ROLLING" | "WEEK" | "DAY" | "NO_RES
 export interface SubscriptionData {
 	id: string;
 	name: string;
+	telegramUsername: string | null;
 	status: SubscriptionStatus;
 	usedBytes: number;
 	totalBytes: number;

@@ -143,6 +143,9 @@ export function TelegramHtmlEditor({
 	const [linkError, setLinkError] = useState(false);
 	const [activeTool, setActiveTool] = useState(0);
 	const toolRefs = useRef<Array<HTMLButtonElement | null>>([]);
+	const placeholderRef = useRef(placeholder);
+	const appliedPlaceholderRef = useRef(placeholder);
+	placeholderRef.current = placeholder;
 
 	const editor = useEditor(
 		{
@@ -163,7 +166,7 @@ export function TelegramHtmlEditor({
 				TelegramUnderline,
 				TelegramBlockquote,
 				TelegramEmoji,
-				Placeholder.configure({ placeholder }),
+				Placeholder.configure({ placeholder: () => placeholderRef.current }),
 			],
 			editorProps: {
 				attributes: {
@@ -189,8 +192,15 @@ export function TelegramHtmlEditor({
 				onChange(next);
 			},
 		},
-		[id, maxLength, placeholder],
+		[id, maxLength],
 	);
+
+	useEffect(() => {
+		if (appliedPlaceholderRef.current === placeholder) return;
+		if (!editor || editor.isDestroyed || !editor.isInitialized) return;
+		appliedPlaceholderRef.current = placeholder;
+		editor.view.dispatch(editor.state.tr);
+	}, [editor, placeholder]);
 
 	useEffect(() => {
 		if (!editor || serializeTelegramHtml(editor.getJSON()) === value) return;

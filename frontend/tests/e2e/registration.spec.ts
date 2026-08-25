@@ -245,8 +245,12 @@ test("admin configures registration policy and the global access profile", async
 	await page.getByLabel("Remnawave tag").selectOption("FREE_TRIAL");
 	await page.getByRole("checkbox", { name: "Primary" }).check();
 	await page.getByLabel("External squad").selectOption({ label: "Public" });
+	await expect(page.locator("#root")).toHaveAttribute("inert", "");
+	await expect(page.locator("body > dialog")).toHaveCount(0);
 	await submitEditor(page.getByRole("dialog", { name: "Create access profile" }));
 	await expect(page.getByRole("strong").filter({ hasText: "Weekend trial" })).toBeVisible();
+	await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
+	await expect(page.locator("body > dialog")).toHaveCount(0);
 	await page.getByRole("button", { name: "Edit access profile" }).last().click();
 	await page.getByText("Advanced Remnawave fields").focus();
 	await page.keyboard.press("Enter");
@@ -385,10 +389,18 @@ test("access profile editor traps focus, passes Axe, and returns focus to its tr
 	const dialog = page.getByRole("dialog", { name: "Create access profile" });
 	await expect(dialog).toBeVisible();
 	expect(
-		await dialog.evaluate(
-			(element) => element.matches(":modal") && element.parentElement === document.body,
-		),
-	).toBe(true);
+		await dialog.evaluate((element) => ({
+			ariaModal: element.getAttribute("aria-modal"),
+			isNativeDialog: element instanceof HTMLDialogElement,
+			isBodyPortal: element.parentElement?.parentElement === document.body,
+			rootIsInert: document.getElementById("root")?.inert,
+		})),
+	).toEqual({
+		ariaModal: "true",
+		isNativeDialog: false,
+		isBodyPortal: true,
+		rootIsInert: true,
+	});
 	await dialog.evaluate(async (element) => {
 		await Promise.all(
 			element
@@ -421,7 +433,7 @@ test("access profile editor traps focus, passes Axe, and returns focus to its tr
 	await expect(dialog.getByRole("button", { name: "Create profile", exact: true })).toHaveCount(0);
 	await expect(dialog.getByRole("button", { name: "Cancel" })).toHaveCount(0);
 
-	const result = await new AxeBuilder({ page }).include("dialog").analyze();
+	const result = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
 	const serious = result.violations.filter((violation) =>
 		["serious", "critical"].includes(violation.impact ?? ""),
 	);
@@ -429,6 +441,7 @@ test("access profile editor traps focus, passes Axe, and returns focus to its tr
 
 	await page.keyboard.press("Escape");
 	await expect(dialog).toHaveCount(0);
+	await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
 	await expect(create).toBeFocused();
 	await expect(create).toHaveAttribute("data-suppress-focus-ring", "");
 	await expect(create).toHaveCSS("outline-style", "none");

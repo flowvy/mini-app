@@ -19,6 +19,13 @@ class UserRepository(BaseRepository[User]):
         """Find user by Telegram ID (same as primary key)."""
         return await self.get_by_id(telegram_id)
 
+    async def get_by_telegram_ids(self, telegram_ids: Sequence[int]) -> list[User]:
+        """Return local users matching Telegram IDs without per-user queries."""
+        if not telegram_ids:
+            return []
+        stmt = select(User).where(User.id.in_(telegram_ids))
+        return list((await self._session.scalars(stmt)).all())
+
     async def get_by_telegram_id_for_update(self, telegram_id: int) -> User | None:
         """Lock one local account while creating a user-scoped durable intent."""
         stmt = select(User).where(User.id == telegram_id).with_for_update()

@@ -13,6 +13,10 @@ import {
 import { type FC, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+	getAdminUserDisplayName,
+	getAdminUserProviderName,
+} from "../../lib/admin-user-identity.ts";
+import {
 	formatExpiryCompact,
 	formatLastSeen,
 	formatResetStrategy,
@@ -67,6 +71,8 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 	const [confirm, setConfirm] = useState<ActionDef | null>(null);
 	const actionTriggerRef = useRef<HTMLButtonElement>(null);
 	const actions = getActions(user);
+	const displayName = getAdminUserDisplayName(user);
+	const providerName = getAdminUserProviderName(user);
 
 	const handleConfirm = () => {
 		if (confirm) {
@@ -79,7 +85,10 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 		<>
 			<div className={styles.hero}>
 				<div className={styles.identity}>
-					<strong>{user.username}</strong>
+					<div className={styles.identityNames}>
+						<strong>{displayName}</strong>
+						{providerName && <span>{providerName}</span>}
+					</div>
 					<StatusBadge status={user.status} context="user" />
 				</div>
 				<div className={styles.heroRow1}>
@@ -104,7 +113,9 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 							>
 								{unlExpiry ? <InfinityIcon size={16} /> : formatExpiryCompact(daysLeft)}
 							</div>
-							<div className={styles.heroKpiLabel}>{t("admin.userHero.expiresLabel")}</div>
+							<div className={styles.heroKpiLabel} data-ui="admin-expiry-label">
+								{t("admin.userHero.expiresLabel")}
+							</div>
 						</div>
 						<div className={styles.heroDivider} />
 						<div className={styles.heroKpi}>
@@ -115,7 +126,9 @@ export const AdminUserHero: FC<AdminUserHeroProps> = ({ user, onAction, actionLo
 									user.hwidDeviceLimit
 								)}
 							</div>
-							<div className={styles.heroKpiLabel}>{t("admin.userHero.devicesLabel")}</div>
+							<div className={styles.heroKpiLabel} data-ui="admin-devices-label">
+								{t("admin.userHero.devicesLabel")}
+							</div>
 						</div>
 					</div>
 				</div>

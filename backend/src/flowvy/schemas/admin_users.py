@@ -48,6 +48,7 @@ class AdminUserResponse(BaseModel):
 
     id: int
     username: str
+    telegram_username: str | None = None
     status: UserStatus
     tag: str | None = None
     description: str | None = None

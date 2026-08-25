@@ -34,6 +34,17 @@ async def test_get_by_telegram_id(session: AsyncSession) -> None:
     assert missing is None
 
 
+async def test_get_by_telegram_ids_returns_matching_users(session: AsyncSession) -> None:
+    repo = UserRepository(session)
+    await repo.create(id=100020, full_name="Alice", username="alice")
+    await repo.create(id=100021, full_name="Bob", username="bob")
+
+    found = await repo.get_by_telegram_ids([100021, 999999])
+
+    assert [(user.id, user.username) for user in found] == [(100021, "bob")]
+    assert await repo.get_by_telegram_ids([]) == []
+
+
 async def test_get_admins(session: AsyncSession) -> None:
     """Filter users by admin role."""
     repo = UserRepository(session)

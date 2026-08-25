@@ -1,23 +1,27 @@
-.panel {
-	all: unset;
+.backdrop {
 	position: fixed;
 	inset: 0;
+	z-index: 1000;
+	display: grid;
+	place-items: center;
+	box-sizing: border-box;
+	padding: 10px;
+	background: var(--v2-overlay-bg);
+	overflow: hidden;
+}
+
+.panel {
 	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
 	width: min(600px, calc(100vw - 20px));
-	max-height: min(820px, calc(100dvh - 20px));
-	margin: auto;
+	height: min(820px, calc(100dvh - 20px));
 	overflow: hidden;
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: 18px;
 	background: var(--v2-floor-0);
 	box-shadow: var(--v2-shadow);
 	animation: var(--fv-anim-modal-in) 0.2s ease-out;
-}
-
-.panel::backdrop {
-	background: var(--v2-overlay-bg);
 }
 
 .form {
@@ -99,22 +103,19 @@
 }
 
 @media (max-width: 600px) {
+	.backdrop {
+		padding: 0;
+		background: var(--v2-floor-0);
+	}
+
 	.panel {
-		inset: 0;
 		width: 100%;
-		height: auto;
-		max-height: none;
-		margin: 0;
+		height: 100dvh;
 		border: 0;
 		border-radius: 0;
 		box-shadow: none;
 		animation-duration: 0.16s;
 	}
-
-	.panel::backdrop {
-		background: var(--v2-floor-0);
-	}
-
 	.header {
 		padding-top: calc(
 			14px +

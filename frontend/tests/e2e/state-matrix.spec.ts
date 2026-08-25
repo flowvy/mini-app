@@ -691,7 +691,8 @@ test("users support empty search, missing detail, and failed actions", async ({
 	const users = Array.from({ length: 80 }, (_, index) => ({
 		...mockData.adminUser,
 		id: index + 1,
-		username: index === 0 ? "alice" : `user_${String(index + 1).padStart(3, "0")}`,
+		username: `tg_${String(index + 1).padStart(3, "0")}`,
+		telegramUsername: index === 0 ? "alice" : `user_${String(index + 1).padStart(3, "0")}`,
 		createdAt: index === 0 ? "2026-08-03T00:00:00Z" : "2026-01-01T00:00:00Z",
 	}));
 	mockApi.mock("GET", "/api/debug/admin/users/all", { body: { users, total: users.length } });
@@ -719,7 +720,7 @@ test("users support empty search, missing detail, and failed actions", async ({
 	await page.goto("/admin/users/1");
 	await page.getByRole("button", { name: "Disable", exact: true }).click();
 	await expect(page.getByRole("dialog", { name: "Disable user?" })).toBeVisible();
-	await expect(page.getByRole("dialog")).toContainText("alice will lose proxy access");
+	await expect(page.getByRole("dialog")).toContainText("@alice will lose proxy access");
 	await page.getByRole("button", { name: "Disable", exact: true }).last().click();
 	await expect(page.getByRole("alert")).toContainText("The action failed");
 	await assertNoHorizontalOverflow(page);
@@ -731,6 +732,7 @@ test("users are ordered by registration date with newest first", async ({ page, 
 			...mockData.adminUser,
 			id: 1,
 			username: "older_recently_online",
+			telegramUsername: null,
 			createdAt: "2026-01-01T00:00:00Z",
 			userTraffic: {
 				...mockData.adminUser.userTraffic,
@@ -741,6 +743,7 @@ test("users are ordered by registration date with newest first", async ({ page, 
 			...mockData.adminUser,
 			id: 2,
 			username: "newest_offline",
+			telegramUsername: null,
 			createdAt: "2026-08-02T00:00:00Z",
 			userTraffic: {
 				...mockData.adminUser.userTraffic,
@@ -751,6 +754,7 @@ test("users are ordered by registration date with newest first", async ({ page, 
 			...mockData.adminUser,
 			id: 3,
 			username: "newest_tiebreaker",
+			telegramUsername: null,
 			createdAt: "2026-08-02T00:00:00Z",
 			userTraffic: {
 				...mockData.adminUser.userTraffic,

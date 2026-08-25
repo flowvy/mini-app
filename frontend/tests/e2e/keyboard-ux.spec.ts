@@ -39,7 +39,7 @@ test("tab navigation renders only on primary routes and leaves before focused se
 	await expect(page.getByRole("navigation")).toHaveCount(0);
 	await expect(page.getByRole("textbox", { name: "Search users" })).toBeFocused();
 	await expect(page.getByRole("group", { name: "Filter by status" })).toBeInViewport();
-	await expect(page.getByText("alice", { exact: true })).toBeInViewport();
+	await expect(page.getByText("@alice", { exact: true })).toBeInViewport();
 
 	await page.getByRole("button", { name: "Cancel" }).click();
 	await expect(page).toHaveURL(/\/admin\/users$/);
@@ -65,7 +65,7 @@ test("direct focused search waits for its user list before focusing the input", 
 	await page.goto("/admin/users/search");
 	await expect(page.getByRole("navigation")).toHaveCount(0);
 	await expect(page.getByRole("textbox", { name: "Search users" })).toBeFocused();
-	await expect(page.getByText("alice", { exact: true })).toBeInViewport();
+	await expect(page.getByText("@alice", { exact: true })).toBeInViewport();
 });
 
 test("text entry focus suppresses primary tab navigation before the mobile viewport changes", async ({
@@ -195,7 +195,9 @@ test("IME actions search, advance, finish, and preserve multiline editing", asyn
 	await search.fill("alice");
 	await search.press("Enter");
 	await expect(search).not.toBeFocused();
-	await expect(page.getByText("alice", { exact: true })).toBeVisible();
+	await expect(page.getByText("@alice", { exact: true })).toBeVisible();
+	await search.fill("tg_123456789");
+	await expect(page.getByText("@alice", { exact: true })).toBeVisible();
 
 	await page.goto("/admin/settings/kuma");
 	const kumaUrl = page.getByLabel("URL");

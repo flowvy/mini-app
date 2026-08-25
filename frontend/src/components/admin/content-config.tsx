@@ -435,7 +435,7 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 			<SettingsPanel title={t(message.titleKey)}>
 				<SettingsFields>
 					{message.fields.map((definition) => {
-						const id = `content-${locale}-${definition.field}`;
+						const id = `content-${definition.field}`;
 						const commonProps = {
 							id,
 							value: content[definition.field] ?? "",

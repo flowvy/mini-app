@@ -26,6 +26,41 @@
 	box-sizing: border-box;
 }
 
+/*
+ * Content layout contract.
+ *
+ * Flex and grid items default to an automatic minimum inline size, which can let one long token
+ * resize an entire surface. Keep the baseline at zero so every application-owned box can shrink
+ * inside its assigned track. :where() keeps the rule at zero specificity, allowing a component to
+ * opt into a deliberate minimum size.
+ */
+:where(#root, #root *) {
+	min-inline-size: 0;
+}
+
+/* Preserve all text while preventing an unbroken user/provider value from widening its slot. */
+:where(
+		#root h1,
+		#root h2,
+		#root h3,
+		#root h4,
+		#root p,
+		#root span,
+		#root label,
+		#root li,
+		#root dt,
+		#root dd,
+		#root button,
+		#root a
+	) {
+	overflow-wrap: break-word;
+}
+
+/* Replaced content must stay within its owning surface. Icons keep their component-owned size. */
+:where(#root img, #root picture, #root video, #root canvas, #root iframe) {
+	max-inline-size: 100%;
+}
+
 /* ── Base styles ── */
 html,
 body {

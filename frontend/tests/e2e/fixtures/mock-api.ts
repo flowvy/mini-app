@@ -127,6 +127,7 @@ export const mockData = {
 	subscription: {
 		id: "sub-1",
 		name: "Primary",
+		telegramUsername: null,
 		status: "ACTIVE",
 		usedBytes: 10 * 1024 ** 3,
 		totalBytes: 100 * 1024 ** 3,
@@ -421,7 +422,8 @@ export const mockData = {
 	},
 	adminUser: {
 		id: 1,
-		username: "alice",
+		username: "tg_123456789",
+		telegramUsername: "alice",
 		status: "ACTIVE",
 		tag: "beta",
 		description: "Deterministic test user",

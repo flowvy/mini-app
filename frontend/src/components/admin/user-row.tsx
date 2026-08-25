@@ -1,6 +1,10 @@
 import { ChevronRight } from "lucide-react";
 import type { FC } from "react";
 import {
+	getAdminUserDisplayName,
+	getAdminUserProviderName,
+} from "../../lib/admin-user-identity.ts";
+import {
 	formatAdminExpiry,
 	formatLastSeen,
 	formatMetaList,
@@ -26,8 +30,11 @@ export const UserRow: FC<UserRowProps> = ({ user, onClick }) => {
 	const expiryText = formatAdminExpiry(user.expireAt);
 	const unlimitedExpiry = isUnlimitedExpiry(user.expireAt);
 	const expiryColor = getAdminExpiryColor(user.expireAt);
+	const displayName = getAdminUserDisplayName(user);
+	const providerName = getAdminUserProviderName(user);
 
 	const parts: string[] = [];
+	if (providerName) parts.push(providerName);
 	if (user.tag) parts.push(user.tag);
 	parts.push(formatTrafficPair(used, limit));
 	parts.push(formatLastSeen(user.userTraffic.onlineAt));
@@ -48,7 +55,7 @@ export const UserRow: FC<UserRowProps> = ({ user, onClick }) => {
 		>
 			<div className={styles.rowContent}>
 				<div className={styles.line1}>
-					<span className={styles.username}>{user.username}</span>
+					<span className={styles.username}>{displayName}</span>
 					<StatusBadge status={user.status} context="user" />
 					<div className={styles.rightGroup}>
 						{limit > 0 && (

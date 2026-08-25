@@ -61,6 +61,7 @@ test("Admin Users keeps individual cards and every row role in both themes", asy
 		...mockData.adminUser,
 		id: index + 1,
 		username: `surface-${status.toLowerCase()}`,
+		telegramUsername: null,
 		status,
 		trafficLimitBytes,
 		expireAt: expiry[index],

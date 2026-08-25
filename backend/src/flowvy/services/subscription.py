@@ -36,7 +36,9 @@ class SubscriptionService:
         user = await self._remnawave.get_user_by_telegram_id(telegram_id)
         if user is None:
             return None
-        await self._user_repo.ensure_exists(telegram_id, user.username)
+        local_user = await self._user_repo.get_by_telegram_id(telegram_id)
+        if local_user is None:
+            await self._user_repo.ensure_exists(telegram_id, user.username)
         await self._sub_repo.upsert_from_remnawave(
             user_id=telegram_id,
             remnawave_user_id=user.provider_id,
@@ -45,9 +47,17 @@ class SubscriptionService:
             device_limit=user.hwid_device_limit,
             expires_at=user.expire_at,
         )
-        return self._to_response(user)
+        return self._to_response(
+            user,
+            telegram_username=local_user.username if local_user is not None else None,
+        )
 
-    def _to_response(self, user: RemnawaveUserData) -> SubscriptionResponse:
+    def _to_response(
+        self,
+        user: RemnawaveUserData,
+        *,
+        telegram_username: str | None,
+    ) -> SubscriptionResponse:
         """Map RemnawaveUserData to the BFF response model."""
         expire_ts = int(user.expire_at.timestamp())
         created_ts = int(user.created_at.timestamp())
@@ -59,6 +69,7 @@ class SubscriptionService:
         return SubscriptionResponse(
             id=user.short_uuid,
             name=user.username,
+            telegram_username=telegram_username,
             status=user.status,
             used_bytes=user.user_traffic.used_traffic_bytes,
             total_bytes=user.traffic_limit_bytes,

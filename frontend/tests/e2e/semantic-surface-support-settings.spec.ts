@@ -82,7 +82,7 @@ async function expectTokenColor(locator: Locator, token: string): Promise<void> 
 async function expectAccessiblePage(page: Page, includeDialog = false): Promise<void> {
 	await assertNoHorizontalOverflow(page);
 	const axe = new AxeBuilder({ page }).include("main");
-	if (includeDialog) axe.include("dialog");
+	if (includeDialog) axe.include('dialog, [role="dialog"]');
 	const { violations } = await axe.analyze();
 	expect(violations).toEqual([]);
 }

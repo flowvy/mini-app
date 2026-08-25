@@ -74,6 +74,7 @@ export const AdminUsers: FC<AdminUsersProps> = ({ searchMode = false }) => {
 		if (q) {
 			list = list.filter((u) => {
 				if (u.username.toLowerCase().includes(q)) return true;
+				if (u.telegramUsername?.toLowerCase().includes(q)) return true;
 				if (u.tag?.toLowerCase().includes(q)) return true;
 				if (u.telegramId && String(u.telegramId).includes(q)) return true;
 				return false;
