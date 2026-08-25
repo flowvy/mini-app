@@ -430,6 +430,71 @@ test("access profile editor traps focus, passes Axe, and returns focus to its tr
 	await page.keyboard.press("Escape");
 	await expect(dialog).toHaveCount(0);
 	await expect(create).toBeFocused();
+	await expect(create).toHaveAttribute("data-suppress-focus-ring", "");
+	await expect(create).toHaveCSS("outline-style", "none");
+
+	await create.click();
+	await expect(dialog).toBeVisible();
+	await closeEditor.click();
+	await expect(dialog).toHaveCount(0);
+	await expect(create).toBeFocused();
+	await expect(create).toHaveAttribute("data-suppress-focus-ring", "");
+	await expect(create).toHaveCSS("outline-style", "none");
+});
+
+test("access editor preserves a visible focus return for keyboard navigation", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.goto("/admin/settings/access");
+	const create = page.getByRole("button", { name: "Create profile" });
+	await create.focus();
+	await page.keyboard.press("Enter");
+
+	const dialog = page.getByRole("dialog", { name: "Create access profile" });
+	await expect(dialog).toBeVisible();
+	await page.keyboard.press("Escape");
+
+	await expect(dialog).toHaveCount(0);
+	await expect(create).toBeFocused();
+	await expect(create).not.toHaveAttribute("data-suppress-focus-ring", "");
+	await expect(create).toHaveCSS("outline-style", "solid");
+});
+
+test("segmented controls contain long labels inside their own segment", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await page.goto("/admin/settings/access");
+	await page.getByRole("button", { name: "Create profile" }).click();
+	const validity = page.getByRole("radiogroup", { name: "Expiry" });
+	const automation = validity.getByRole("radio").nth(3);
+	await automation.evaluate((element) => {
+		element.textContent = "A deliberately long automation option";
+	});
+
+	const layout = await validity.evaluate((group) => {
+		const button = group.querySelectorAll<HTMLButtonElement>("button")[3];
+		const groupBox = group.getBoundingClientRect();
+		const buttonBox = button.getBoundingClientRect();
+		const style = getComputedStyle(button);
+		return {
+			insideGroup: buttonBox.left >= groupBox.left && buttonBox.right <= groupBox.right + 0.5,
+			isClipped: button.scrollWidth > button.clientWidth,
+			overflow: style.overflow,
+			textOverflow: style.textOverflow,
+			whiteSpace: style.whiteSpace,
+		};
+	});
+
+	expect(layout).toEqual({
+		insideGroup: true,
+		isClipped: true,
+		overflow: "hidden",
+		textOverflow: "ellipsis",
+		whiteSpace: "nowrap",
+	});
+	await assertNoHorizontalOverflow(page);
 });
 
 test("home keeps its structural skeleton until the page data settles", async ({

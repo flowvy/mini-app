@@ -17,6 +17,11 @@ import {
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useBackNavigationHandler } from "../../contexts/back-navigation-context.tsx";
+import {
+	type FocusReturnTarget,
+	captureFocusReturnTarget,
+	restoreFocusTarget,
+} from "../../lib/focus-return.ts";
 import { hapticImpact, hapticNotification } from "../../lib/haptics.ts";
 import { ActionBtn } from "./action-btn.tsx";
 import styles from "./confirm-dialog.module.css";
@@ -64,7 +69,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 	const modalRef = useRef<HTMLDialogElement>(null);
 	const titleRef = useRef<HTMLHeadingElement>(null);
 	const cancelButtonRef = useRef<HTMLButtonElement>(null);
-	const fallbackFocusRef = useRef<HTMLElement | null>(null);
+	const fallbackFocusRef = useRef<FocusReturnTarget | null>(null);
 	const restoreFocusFrameRef = useRef<number | null>(null);
 	const nativeRequestRef = useRef<ReturnType<typeof popup.show> | null>(null);
 	const mountedRef = useRef(false);
@@ -157,19 +162,19 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 			window.cancelAnimationFrame(restoreFocusFrameRef.current);
 			restoreFocusFrameRef.current = null;
 		}
-		fallbackFocusRef.current =
-			document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		fallbackFocusRef.current = captureFocusReturnTarget(returnFocusRef?.current);
 		const modal = modalRef.current;
 		if (modal && !modal.open) modal.showModal();
 		if (initialFocus === "cancel") cancelButtonRef.current?.focus();
 		else titleRef.current?.focus();
 		return () => {
 			if (modal?.open) modal.close();
-			const target = returnFocusRef?.current ?? fallbackFocusRef.current;
+			const focusReturn = fallbackFocusRef.current;
+			const target = returnFocusRef?.current ?? focusReturn?.element ?? null;
 			restoreFocusFrameRef.current = window.requestAnimationFrame(() => {
 				restoreFocusFrameRef.current = null;
 				const liveTarget = returnFocusRef?.current ?? target;
-				if (liveTarget?.isConnected) liveTarget.focus({ preventScroll: true });
+				if (focusReturn) restoreFocusTarget(focusReturn, liveTarget);
 			});
 		};
 	}, [initialFocus, nativePopupAvailable, open, returnFocusRef]);

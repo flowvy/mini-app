@@ -157,6 +157,12 @@ select:focus-visible {
 	border-color: var(--v2-border-positive-primary);
 }
 
+/* Pointer-closed dialogs still restore DOM focus, but must not leave a keyboard-only ring behind. */
+[data-suppress-focus-ring]:focus-visible {
+	outline: none !important;
+	box-shadow: none !important;
+}
+
 /* ── Auth screen (full-page loading / error) ── */
 
 .fv-auth-screen {

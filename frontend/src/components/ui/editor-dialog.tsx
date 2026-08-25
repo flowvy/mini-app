@@ -10,6 +10,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useBackNavigationHandler } from "../../contexts/back-navigation-context.tsx";
+import { captureFocusReturnTarget, restoreFocusTarget } from "../../lib/focus-return.ts";
 import {
 	type TelegramEditorButtonsController,
 	mountTelegramEditorButtons,
@@ -64,10 +65,7 @@ export function EditorDialog({
 	const busyRef = useRef(busy);
 	const telegramButtonsRef = useRef<TelegramEditorButtonsController | null>(null);
 	const initialTelegramFooterRef = useRef(telegramFooter);
-	const previousFocusRef = useRef<HTMLElement | null>(
-		returnFocusTo ??
-			(document.activeElement instanceof HTMLElement ? document.activeElement : null),
-	);
+	const focusReturnRef = useRef(captureFocusReturnTarget(returnFocusTo));
 	const restoreFocusFrameRef = useRef<number | null>(null);
 	const telegramPrimaryText = telegramFooter?.primaryText;
 	const telegramPrimaryDisabled = telegramFooter?.primaryDisabled;
@@ -87,10 +85,10 @@ export function EditorDialog({
 		titleRef.current?.focus();
 		return () => {
 			if (dialog?.open) dialog.close();
-			const previousFocus = previousFocusRef.current;
+			const focusReturn = focusReturnRef.current;
 			restoreFocusFrameRef.current = window.requestAnimationFrame(() => {
 				restoreFocusFrameRef.current = null;
-				if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+				restoreFocusTarget(focusReturn);
 			});
 		};
 	}, []);
