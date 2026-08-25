@@ -447,6 +447,7 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 										{...commonProps}
 										ariaLabel={t(definition.labelKey)}
 										maxLength={definition.maxLength}
+										allowCustomEmoji={false}
 										onChange={(value) => updateField(definition.field, value)}
 									/>
 								) : "format" in definition && definition.format === "commonmark" ? (

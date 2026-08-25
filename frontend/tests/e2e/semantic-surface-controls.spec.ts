@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./fixtures/mock-api.ts";
 import {
@@ -20,6 +21,7 @@ const primaryText = "var(--v2-text-primary)";
 const secondaryText = "var(--v2-text-secondary)";
 const iconPositive = "var(--v2-icon-positive)";
 const borderTertiary = "var(--v2-border-tertiary)";
+const borderPrimary = "var(--v2-border-primary)";
 const borderPositivePrimary = "var(--v2-border-positive-primary)";
 const borderPositiveSecondary = "var(--v2-border-positive-secondary)";
 const standaloneBorder = "color-mix(in srgb, var(--v2-border-secondary) 60%, transparent)";
@@ -288,6 +290,34 @@ for (const theme of themes) {
 			boxShadow: "none",
 			color: primaryText,
 		});
+
+		await body.fill("Readable formatting");
+		await body.press("ControlOrMeta+A");
+		await toolbar.getByRole("button", { name: "Quote" }).click();
+		const quote = body.locator("blockquote");
+		await expectSurfaceContract(quote, {
+			background: transparent,
+			border: splitBorder(noEdge(), noEdge(), noEdge(), edge(borderPrimary, "2px")),
+			outline: noOutline(),
+			boxShadow: "none",
+			color: primaryText,
+		});
+		await body.press("ControlOrMeta+A");
+		await toolbar.getByRole("button", { name: "Quote" }).click();
+		await toolbar.getByRole("button", { name: "Bulleted list" }).click();
+		const listItem = body.locator("li").first();
+		await expect(listItem).toBeVisible();
+		expect(await listItem.evaluate((element) => getComputedStyle(element, "::marker").color)).toBe(
+			await body.evaluate((element) => getComputedStyle(element).color),
+		);
+		const accessibility = await new AxeBuilder({ page })
+			.include('[data-ui="formatted-text-editor"]')
+			.analyze();
+		expect(accessibility.violations).toEqual([]);
+		await shell.screenshot({
+			path: testInfo.outputPath(`formatted-editor-${theme}.png`),
+			animations: "disabled",
+		});
 		await expectSurfaceContract(menu, {
 			background: primary,
 			border: splitBorder(noEdge(), noEdge(), edge(borderTertiary)),
@@ -364,7 +394,7 @@ for (const theme of themes) {
 		const shell = body.locator("xpath=ancestor::*[@data-ui='telegram-html-editor']");
 		const toolbar = shell.getByRole("toolbar", { name: "Telegram text formatting" });
 		const menu = toolbar.locator("..");
-		const footer = shell.getByText(/Telegram HTML source/).locator("..");
+		const footer = shell.getByText(/Select text to format it/).locator("..");
 
 		await expectSurfaceContract(shell, {
 			background: primary,
@@ -394,6 +424,28 @@ for (const theme of themes) {
 			boxShadow: "none",
 			color: secondaryText,
 		});
+
+		await body.fill("Readable Telegram formatting");
+		await body.press("ControlOrMeta+A");
+		await toolbar.getByRole("button", { name: "Quote" }).click();
+		const quote = body.locator("blockquote");
+		await expectSurfaceContract(quote, {
+			background: transparent,
+			border: splitBorder(noEdge(), noEdge(), noEdge(), edge(borderPrimary, "2px")),
+			outline: noOutline(),
+			boxShadow: "none",
+			color: primaryText,
+		});
+		await body.press("ControlOrMeta+A");
+		await toolbar.getByRole("button", { name: "Spoiler" }).click();
+		await expectSurfaceContract(body.locator("tg-spoiler"), {
+			background: tertiary,
+			border: noEdge(),
+			outline: noOutline(),
+			boxShadow: "none",
+			color: primaryText,
+		});
+		await body.press("ArrowRight");
 
 		const bold = toolbar.getByRole("button", { name: "Bold" });
 		if (testInfo.project.name === "desktop-chromium") {
@@ -435,7 +487,7 @@ for (const theme of themes) {
 			await page.mouse.move(0, 0);
 		}
 		const emojiId = shell.getByLabel("Emoji ID");
-		const emojiPanel = emojiId.locator("..");
+		const emojiPanel = emojiId.locator("xpath=ancestor::fieldset[1]");
 		await expectSurfaceContract(emojiPanel, {
 			background: transparent,
 			border: splitBorder(edge(borderTertiary)),
@@ -444,5 +496,9 @@ for (const theme of themes) {
 			color: primaryText,
 		});
 		await expectStandaloneControl(emojiId);
+		await shell.screenshot({
+			path: testInfo.outputPath(`telegram-html-editor-${theme}.png`),
+			animations: "disabled",
+		});
 	});
 }

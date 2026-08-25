@@ -6,6 +6,7 @@ import StarterKit from "@tiptap/starter-kit";
 import {
 	Bold as BoldIcon,
 	Check,
+	Code2,
 	Italic as ItalicIcon,
 	Link2,
 	List,
@@ -36,6 +37,7 @@ interface EditorViewState {
 	bold: boolean;
 	italic: boolean;
 	strike: boolean;
+	code: boolean;
 	link: boolean;
 	bulletList: boolean;
 	orderedList: boolean;
@@ -47,6 +49,7 @@ const EMPTY_VIEW_STATE: EditorViewState = {
 	bold: false,
 	italic: false,
 	strike: false,
+	code: false,
 	link: false,
 	bulletList: false,
 	orderedList: false,
@@ -78,7 +81,6 @@ export function FormattedTextEditor({
 			editable: !disabled,
 			extensions: [
 				StarterKit.configure({
-					code: false,
 					codeBlock: false,
 					heading: false,
 					horizontalRule: false,
@@ -132,6 +134,7 @@ export function FormattedTextEditor({
 							bold: currentEditor.isActive("bold"),
 							italic: currentEditor.isActive("italic"),
 							strike: currentEditor.isActive("strike"),
+							code: currentEditor.isActive("code"),
 							link: currentEditor.isActive("link"),
 							bulletList: currentEditor.isActive("bulletList"),
 							orderedList: currentEditor.isActive("orderedList"),
@@ -161,6 +164,13 @@ export function FormattedTextEditor({
 			active: viewState.strike,
 			icon: <Strikethrough size={15} aria-hidden="true" />,
 			run: () => editor?.chain().focus().toggleStrike().run(),
+		},
+		{
+			key: "code",
+			label: t("common.formattedText.monospace"),
+			active: viewState.code,
+			icon: <Code2 size={15} aria-hidden="true" />,
+			run: () => editor?.chain().focus().toggleCode().run(),
 		},
 		{
 			key: "link",

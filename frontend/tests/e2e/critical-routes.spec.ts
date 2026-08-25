@@ -210,7 +210,7 @@ test("user and admin pages share one external vertical rhythm", async ({
 
 test("admin routes render deterministic success and placeholder states", async ({
 	page,
-	mockApi: _mock,
+	mockApi,
 }) => {
 	await page.goto("/admin/dashboard");
 	await expect(page.getByRole("tab", { name: "Remnawave" })).toBeVisible();
@@ -292,10 +292,13 @@ test("admin routes render deterministic success and placeholder states", async (
 	await expect(page.getByText("Configured on server")).toBeVisible();
 	await expect(page.getByRole("button", { name: "Back" })).toHaveCount(0);
 
+	mockApi.seedSettings({ contentLocales: { en: { welcomeText: "" } } });
 	await page.goto("/admin/settings/welcome");
 	await expect(page.getByText("Default media", { exact: true })).toBeVisible();
-	await expect(page.getByLabel("Greeting text")).toHaveAttribute(
-		"placeholder",
+	const greetingEditor = page.getByLabel("Greeting text");
+	await expect(greetingEditor).toHaveAttribute("contenteditable", "true");
+	await expect(greetingEditor.locator("p.is-editor-empty")).toHaveAttribute(
+		"data-placeholder",
 		"Write the greeting shown in Telegram",
 	);
 	await expect(

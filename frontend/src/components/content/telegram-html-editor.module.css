@@ -1,8 +1,14 @@
-.editor {
+.editor,
+.editorPlaceholder {
 	min-width: 0;
-	overflow: hidden;
+	min-height: 146px;
 	border: 1px solid var(--v2-border-tertiary);
 	border-radius: var(--radius-sm);
+	background: var(--v2-bg-primary);
+}
+
+.editor {
+	overflow: hidden;
 	background: var(--v2-bg-primary);
 }
 
@@ -25,7 +31,8 @@
 }
 
 .toolbar button,
-.emojiEditor > button {
+.inlineEditorRow button,
+.emojiEditorRow > button {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -44,45 +51,139 @@
 	color: var(--v2-icon-positive);
 }
 
+.toolbar button[aria-pressed="true"] {
+	background: var(--v2-bg-positive-quaternary);
+	color: var(--v2-icon-positive);
+}
+
 .toolbar button:focus-visible,
-.emojiEditor > button:focus-visible {
+.inlineEditorRow button:focus-visible,
+.inlineEditorRow input:focus-visible,
+.emojiEditorRow > button:focus-visible {
 	outline: 2px solid var(--v2-border-positive-primary);
 	outline-offset: 1px;
 }
 
-.emojiEditor {
+.inlineEditor {
+	box-sizing: border-box;
+	min-width: 0;
+	width: 100%;
+	margin: 4px 0 0;
+	padding: 5px 0 0;
+	border: 0;
+	border-top: 1px solid var(--v2-border-tertiary);
+}
+
+.inlineEditor legend {
+	display: block;
+	padding: 1px 4px 5px;
+	font-size: var(--font-size-overline);
+	font-weight: 600;
+	color: var(--v2-text-secondary);
+}
+
+.inlineEditorRow {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+}
+
+.inlineEditorRow input {
+	min-width: 0;
+	flex: 1 1 auto;
+	height: 32px;
+	padding: 0 8px;
+	border: 1px solid var(--v2-border-secondary);
+	border-radius: 7px;
+	background: var(--v2-bg-primary);
+	color: var(--v2-text-primary);
+	font: var(--font-size-control) / 1.2 var(--font-sans);
+}
+
+.inlineEditorRow input[aria-invalid="true"] {
+	border-color: var(--v2-border-negative-primary);
+}
+
+.inlineError {
+	display: block;
+	padding: 5px 4px 1px;
+	font-size: var(--font-size-overline);
+	color: var(--v2-text-negative);
+}
+
+.emojiEditorRow {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr) 58px 32px;
 	align-items: center;
 	gap: 5px;
-	padding-top: 5px;
-	border-top: 1px solid var(--v2-border-tertiary);
 }
 
-.emojiEditor input {
+.emojiEditorRow input {
 	min-height: 32px;
 	height: 32px;
 	padding: 5px 7px;
 	font-size: var(--font-size-control);
 }
 
-.emojiEditor > button:disabled {
+.emojiEditorRow > button:disabled {
 	opacity: 0.4;
 	cursor: default;
 }
 
-.editor > textarea {
-	min-height: 106px;
-	border: 0;
-	border-radius: 0;
-	background: transparent;
-	font-family: var(--font-mono);
-	font-size: var(--font-size-control);
-	box-shadow: none;
+.surface {
+	min-height: 112px;
 }
 
-.editor > textarea:focus-visible {
-	box-shadow: none;
+.contentEditable {
+	box-sizing: border-box;
+	min-height: 112px;
+	padding: 11px 12px;
+	color: var(--v2-text-primary);
+	outline: none;
+	font-size: var(--font-size-control);
+	line-height: 1.5;
+	white-space: pre-wrap;
+	caret-color: var(--v2-icon-positive);
+}
+
+.contentEditable p:global(.is-editor-empty)::before {
+	float: left;
+	height: 0;
+	color: var(--v2-text-tertiary);
+	content: attr(data-placeholder);
+	pointer-events: none;
+}
+
+.contentEditable tg-spoiler {
+	padding: 0.04em 0.22em;
+	border-radius: 4px;
+	background: var(--v2-bg-tertiary);
+	text-decoration: underline dotted;
+	text-underline-offset: 0.14em;
+}
+
+.contentEditable tg-emoji {
+	display: inline-block;
+	padding: 0 0.1em;
+	border-radius: 4px;
+	background: var(--v2-bg-positive-quaternary);
+	line-height: 1.1;
+}
+
+.contentEditable pre {
+	margin: 0 0 0.65em;
+	padding: 0.55em 0.65em;
+	border-radius: 6px;
+	background: var(--v2-bg-tertiary);
+	color: var(--v2-text-primary);
+	font-family: var(--font-mono);
+	font-size: 0.92em;
+	white-space: pre-wrap;
+}
+
+.contentEditable :global(.ProseMirror-selectednode) {
+	outline: 2px solid var(--v2-border-positive-primary);
+	outline-offset: 1px;
 }
 
 .footer {
@@ -102,8 +203,9 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-	.toolbar button:hover:not([aria-expanded="true"]),
-	.emojiEditor > button:hover:not(:disabled) {
+	.toolbar button:hover:not([aria-expanded="true"]):not([aria-pressed="true"]),
+	.inlineEditorRow button:hover,
+	.emojiEditorRow > button:hover:not(:disabled) {
 		background: var(--v2-bg-tertiary);
 		color: var(--v2-icon-primary);
 	}

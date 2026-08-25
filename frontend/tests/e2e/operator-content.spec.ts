@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import { assertNoHorizontalOverflow, expect, test } from "./fixtures/mock-api.ts";
 import {
 	installTelegramMainButton,
@@ -64,6 +64,62 @@ async function assertStableDarkPage(page: Page): Promise<void> {
 			element.scrollTop = 0;
 		});
 	}
+}
+
+async function selectEditorText(editor: Locator, start: number, end: number): Promise<void> {
+	await editor.evaluate(
+		async (element, offsets) => {
+			(element as HTMLElement).focus();
+			const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+			let currentOffset = 0;
+			let startNode: Node | null = null;
+			let endNode: Node | null = null;
+			let startOffset = 0;
+			let endOffset = 0;
+			while (walker.nextNode()) {
+				const node = walker.currentNode;
+				const length = node.textContent?.length ?? 0;
+				if (!startNode && offsets.start <= currentOffset + length) {
+					startNode = node;
+					startOffset = offsets.start - currentOffset;
+				}
+				if (offsets.end <= currentOffset + length) {
+					endNode = node;
+					endOffset = offsets.end - currentOffset;
+					break;
+				}
+				currentOffset += length;
+			}
+			if (!startNode || !endNode) throw new Error("Selection offsets exceed editor text");
+			const range = document.createRange();
+			range.setStart(startNode, startOffset);
+			range.setEnd(endNode, endOffset);
+			const selection = window.getSelection();
+			selection?.removeAllRanges();
+			selection?.addRange(range);
+			document.dispatchEvent(new Event("selectionchange"));
+			await new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			);
+		},
+		{ start, end },
+	);
+}
+
+async function placeCaretAtEditorEnd(editor: Locator): Promise<void> {
+	await editor.evaluate(async (element) => {
+		(element as HTMLElement).focus();
+		const range = document.createRange();
+		range.selectNodeContents(element);
+		range.collapse(false);
+		const selection = window.getSelection();
+		selection?.removeAllRanges();
+		selection?.addRange(range);
+		document.dispatchEvent(new Event("selectionchange"));
+		await new Promise<void>((resolve) =>
+			requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+		);
+	});
 }
 
 test("admin saves allow-listed provider content as a locale map", async ({
@@ -224,8 +280,15 @@ test("Telegram invite share exposes formatting, media, preview and audience sett
 	await page.getByLabel("User-facing message").selectOption("inviteShare");
 
 	const message = page.getByRole("textbox", { name: "Telegram share message" });
-	await message.fill("Join <b>{{appName}}</b> with <code>{{code}}</code>");
+	await message.fill("Join {{appName}} with {{code}}");
+	await selectEditorText(message, 5, 16);
+	await page
+		.getByRole("toolbar", { name: "Telegram text formatting" })
+		.getByRole("button", { name: "Bold" })
+		.click();
+	await expect(message.locator("strong")).toHaveText("{{appName}}");
 	await expect(page.getByRole("button", { name: "Link" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Custom emoji" })).toHaveCount(0);
 	await page.getByLabel("Referral button label").fill("Open {{appName}}");
 	await page.locator('input[type="file"][accept*=".mp4"]').setInputFiles({
 		name: "invite.mp4",
@@ -310,23 +373,67 @@ test("plain and CommonMark Tone of Voice fields share one global text scale", as
 
 test("Welcome editor preserves Telegram HTML and exposes copyable templates", async ({
 	page,
-	mockApi: _mock,
+	mockApi,
 }) => {
+	mockApi.seedSettings({
+		contentLocales: {
+			en: {
+				welcomeText:
+					'<b>Existing</b> <ins>underlined</ins> <tg-spoiler>secret</tg-spoiler> <tg-emoji emoji-id="5368324170671202286">👍</tg-emoji>\n<blockquote expandable>More</blockquote>\n<pre>FVY-123</pre>',
+			},
+		},
+	});
 	await installTelegramMainButton(page);
 	await page.goto(withTelegramMainButton("/admin/settings/welcome"));
 
 	const greeting = page.getByLabel("Greeting text");
-	await greeting.fill("Hello {{appName}}");
-	await greeting.evaluate((element: HTMLTextAreaElement) => element.setSelectionRange(0, 5));
+	await expect(greeting.locator("strong")).toHaveText("Existing");
+	await expect(greeting.locator("u")).toHaveText("underlined");
+	await expect(greeting.locator("tg-spoiler")).toHaveText("secret");
+	await expect(greeting.locator('tg-emoji[emoji-id="5368324170671202286"]')).toHaveText("👍");
+	await expect(greeting).not.toContainText("<tg-emoji");
+	await expect(greeting.locator("blockquote[expandable]")).toHaveText("More");
+	await expect(greeting.locator("pre")).toHaveText("FVY-123");
+	await placeCaretAtEditorEnd(greeting);
+	await page.keyboard.type("!");
+	const legacyPatchRequest = page.waitForRequest(
+		(request) =>
+			request.method() === "PATCH" &&
+			new URL(request.url()).pathname === "/api/debug/admin/settings",
+	);
+	await pressTelegramMainButton(page);
+	const legacyPayload = (await legacyPatchRequest).postDataJSON();
+	expect(legacyPayload.contentLocales.en.welcomeText).toContain("<u>underlined</u>");
+	expect(legacyPayload.contentLocales.en.welcomeText).toContain(
+		"<blockquote expandable>More</blockquote>",
+	);
+	expect(legacyPayload.contentLocales.en.welcomeText).toContain("<pre>FVY-123</pre>");
+	expect(legacyPayload.contentLocales.en.welcomeText).toContain(
+		'<tg-emoji emoji-id="5368324170671202286">👍</tg-emoji>',
+	);
+	mockApi.seedSettings({ contentLocales: { en: { welcomeText: "Hello {{appName}}" } } });
+	await page.reload();
+	await expect(page.getByLabel("Greeting text")).toHaveText("Hello {{appName}}");
+
+	const cleanGreeting = page.getByLabel("Greeting text");
+	await selectEditorText(cleanGreeting, 0, 5);
 	await page.getByRole("button", { name: "Italic" }).click();
-	await expect(greeting).toHaveValue("<i>Hello</i> {{appName}}");
-	await greeting.press("End");
-	const telegramEditor = greeting.locator("xpath=ancestor::div[1]");
+	await expect(cleanGreeting.locator("em")).toHaveText("Hello");
+	await expect(cleanGreeting).not.toContainText("<i>");
+	await selectEditorText(cleanGreeting, 6, 17);
+	await page.getByRole("button", { name: "Monospace" }).click();
+	await expect(cleanGreeting.locator("code")).toHaveText("{{appName}}");
+	await placeCaretAtEditorEnd(cleanGreeting);
+	const telegramEditor = cleanGreeting.locator(
+		"xpath=ancestor::*[@data-ui='telegram-html-editor']",
+	);
 	await telegramEditor.getByRole("button", { name: "Custom emoji" }).click();
+	await expect(telegramEditor.getByLabel("Fallback emoji")).toHaveValue("");
+	await expect(telegramEditor.getByRole("button", { name: "Insert custom emoji" })).toBeDisabled();
 	await telegramEditor.getByLabel("Emoji ID").fill("5368324170671202286");
 	await telegramEditor.getByLabel("Fallback emoji").fill("👍");
 	await telegramEditor.getByRole("button", { name: "Insert custom emoji" }).click();
-	await expect(greeting).toHaveValue(/<tg-emoji emoji-id="5368324170671202286">👍<\/tg-emoji>/);
+	await expect(cleanGreeting.locator('tg-emoji[emoji-id="5368324170671202286"]')).toHaveText("👍");
 
 	const templates = page
 		.getByRole("heading", { name: "Content" })
@@ -344,7 +451,7 @@ test("Welcome editor preserves Telegram HTML and exposes copyable templates", as
 	await pressTelegramMainButton(page);
 	const payload = (await patchRequest).postDataJSON();
 	expect(payload.contentLocales.en.welcomeText).toContain("<i>Hello");
-	expect(payload.contentLocales.en.welcomeText).toContain("{{appName}}");
+	expect(payload.contentLocales.en.welcomeText).toContain("<code>{{appName}}</code>");
 	expect(payload.contentLocales.en.welcomeText).toContain("<tg-emoji");
 });
 
@@ -402,6 +509,34 @@ test("Mini App invite description authors and renders safe CommonMark", async ({
 	await page.goto("/");
 	await expect(page.getByText("Join Flowvy today", { exact: true })).toBeVisible();
 	await expect(page.locator("strong").filter({ hasText: "Join Flowvy today" })).toBeVisible();
+});
+
+test("Mini App formatted editor authors inline monospace CommonMark", async ({
+	page,
+	mockApi: _mock,
+}) => {
+	await installTelegramMainButton(page);
+	await page.goto(withTelegramMainButton("/admin/settings/content"));
+	await page.getByLabel("User-facing message").selectOption("inviteCard");
+
+	const inviteEditor = page.getByRole("textbox", { name: "Invite card description" });
+	await inviteEditor.fill("FVY-2345-6789");
+	await inviteEditor.press("ControlOrMeta+A");
+	await page
+		.getByRole("toolbar", { name: "Text formatting" })
+		.getByRole("button", {
+			name: "Monospace",
+		})
+		.click();
+
+	const patchRequest = page.waitForRequest(
+		(request) =>
+			request.method() === "PATCH" &&
+			new URL(request.url()).pathname === "/api/debug/admin/settings",
+	);
+	await pressTelegramMainButton(page);
+	const payload = (await patchRequest).postDataJSON();
+	expect(payload.contentLocales.en.inviteDescription).toBe("`FVY-2345-6789`");
 });
 
 test("provider copy reaches invite and onboarding surfaces", async ({ page, mockApi }) => {

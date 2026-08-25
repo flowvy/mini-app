@@ -435,8 +435,9 @@ Custom emoji хранит обязательный fallback emoji и numeric `em
 - `lib/api.ts` добавляет Telegram init data и является общим fetch wrapper.
 - `hooks/` описывают query/mutation lifecycles и переключаются на debug endpoints в mock mode.
 - `components/content/` содержит provider-neutral CommonMark editor/renderer для offer и Mini App
-  descriptions, Telegram HTML source editor с contextual toolbar и reusable collapsed template
-  disclosure/copy control. Persisted content не зависит от React editor implementation.
+  descriptions, Telegram HTML WYSIWYG с allow-listed serializer и route-specific capability для
+  custom emoji, а также reusable collapsed template disclosure/copy control. Persisted
+  CommonMark/Telegram HTML не зависит от React editor implementation.
 - `/me`, admin settings и Pulse живут в едином TanStack Query cache. Успешная settings mutation
   сразу обновляет settings/user cache, заново проверяет `/me` и сбрасывает
   старый Pulse response при смене provider-конфигурации.

@@ -30,13 +30,13 @@
 }
 
 .content li::marker {
-	color: var(--v2-text-tertiary);
+	color: var(--v2-text-primary);
 }
 
 .content blockquote {
 	padding-left: 0.75em;
-	border-left: 2px solid var(--v2-border-tertiary);
-	color: var(--v2-text-tertiary);
+	border-left: 2px solid var(--v2-border-primary);
+	color: var(--v2-text-primary);
 }
 
 .content a {

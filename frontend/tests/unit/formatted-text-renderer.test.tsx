@@ -5,12 +5,15 @@ import { FormattedText } from "../../src/components/content/formatted-text.tsx";
 describe("formatted text renderer", () => {
 	it("renders the shared CommonMark subset semantically", () => {
 		const markup = renderToStaticMarkup(
-			<FormattedText>{"**Thank you**\n\n- Fast support\n- More traffic"}</FormattedText>,
+			<FormattedText>
+				{"**Thank you**\n\n- Fast support\n- More traffic\n\n`FVY-123`"}
+			</FormattedText>,
 		);
 
 		expect(markup).toContain("<strong>Thank you</strong>");
 		expect(markup).toContain("<ul>");
 		expect(markup).toContain("<li>Fast support</li>");
+		expect(markup).toContain("<code>FVY-123</code>");
 	});
 
 	it("does not execute raw HTML or unsafe links", () => {
