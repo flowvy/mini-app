@@ -1,8 +1,8 @@
 # Текущее состояние Flowvy
 
 Последняя полная проверка: **2026-08-26**; последний change-aware gate: **2026-08-26**. Fresh
-tooling/migrations, Ruff, `563` backend tests, `56` pinned contracts, frontend lint/typecheck,
-`111` unit tests, production build и `229/229` mobile Chromium Playwright прошли. Focused semantic
+tooling/migrations, Ruff, `570` backend tests, `56` pinned contracts, frontend lint/typecheck,
+`111` unit tests, production build и `230/230` mobile Chromium Playwright прошли. Focused semantic
 surface matrix прошла `76/76`, а полный visual suite — `80/80` на 430x932, 320x568, iOS WebKit
 390x844 и desktop 1280x900; несупрессированные Axe scans зелёные. Прежний ledger ADR 0004 закрыт общей accessible Desktop/Mini
 App palette и больше не даёт completion exception.
@@ -63,6 +63,11 @@ App palette и больше не даёт completion exception.
   обращается к Tribute и оставляет редактируемую конфигурацию для повторной проверки. Удаление rule
   атомарно удаляет связанные offers, но сохраняет payment/checkout history, entitlement snapshots и
   уже выданный доступ; pending payment после удаления больше не автоматизируется.
+- Sponsor offer может хранить несколько исключённых Remnawave tags. Admin selector читает live
+  provider-owned catalog через BFF, create/изменение списка повторно валидируются backend'ом. Home
+  сравнивает список с одним актуальным nullable user `tag`; provider failure скрывает только
+  ограниченные offers, а direct checkout повторяет проверку против UUID bypass. Public sponsor API
+  не раскрывает exclusion list.
 - `GET /api/me/sponsor` вычисляет no/base/paid, pending, provisioning, review, one-time и recurring
   states только из локальных durable facts. `POST /api/me/sponsor/checkouts` создаёт один expiring
   redirect intent, а не provider payment. Pending check имеет явный progress/result;
@@ -183,11 +188,14 @@ App palette и больше не даёт completion exception.
 - На том же route admin создаёт user-facing sponsor offer из существующего automation rule.
   Publish readiness заранее учитывает сохранённый subscription destination: недоступный
   `Visible on Home` остаётся focusable через `aria-disabled` и рядом объясняет, что нужно заполнить
-  `Payment links`. Backend повторно проверяет rule/profile/destination и на гонке возвращает
+  `Payment links`. Remnawave tag selector позволяет исключить один или несколько provider tags;
+  недоступность catalog показывается явно и не стирает уже сохранённый выбор. Backend повторно
+  проверяет rule/profile/destination и на гонке возвращает
   стабильный `tribute_subscription_destination_missing`, который frontend локализует без разбора
   диагностического текста. Список показывает storefront
-  preview: статус, видимость, описание и все сохранённые provider periods/prices без обрезанной
-  технической строки. Старые дубли одной subscription не удаляются автоматически: основная карточка
+  preview через тот же `SponsorOfferCard`, что Home: title/description, discount, prices/billing,
+  donation instruction, benefits и CTA имеют один presentation path; admin CTA только
+  неинтерактивен. Старые дубли одной subscription не удаляются автоматически: основная карточка
   показывает общую матрицу периодов, остальные остаются явными, но свёрнутыми строками для проверки,
   редактирования или удаления. Editor и список переиспользуют общий SubscriptionBillingList, native
   dialog, FormField, Toggle, ActionBtn и ConfirmDialog без отдельной form/modal системы. Для donation
@@ -297,8 +305,8 @@ App palette и больше не даёт completion exception.
   account и не включать anonymity. Redirect сам по себе
   не меняет access. Subscription offer является отдельной коммерческой карточкой: заданные
   оператором название и описание, read-only список provider prices/billing intervals и одна
-  настоящая кнопка `Continue in Tribute`. Доступный offer повторяет accent border основной
-  опубликованной карточки в `Tribute > Sponsor offers`; legacy-дубликаты не являются референсом,
+  настоящая кнопка `Continue in Tribute`. Доступный offer и основной admin preview рендерятся одним
+  shared component; legacy-дубликаты не являются референсом,
   а заблокированный offer сохраняет neutral border. Flowvy не
   создаёт названия отдельных услуг из technical
   period enum; цена является главным фактом, а interval — вторичным условием списания. Billing rows
@@ -783,6 +791,7 @@ Devices `1 / 5`, Pulse `All systems operational` и Settings `v2.7.4`; ledger AD
 | Telegram iOS editor top-layer removal | official [Telegram Popup event](https://core.telegram.org/api/web-events#web-app-open-popup) and [WAI-ARIA modal dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) checked 2026-08-25; shared `EditorDialog`; four-project save/focus/Axe/visual regressions; Full gate; standard dev acceptance | Telegram Popup ограничен title/message и 1–3 buttons, поэтому не может содержать Access/Automation/Sponsor form. Shared editor сохраняет modal semantics через DOM overlay, `role=dialog`, `aria-modal`, inert app root, contained Tab sequence, `Escape` и focus return, но больше не создаёт HTML `<dialog>` top layer, который Swiftgram/iOS оставлял белыми полосами после успешного save/unmount. Create-profile success и modal contract прошли 8/8; registration/keyboard/Settings semantic matrix — 128/128 на 430x932, 320x568, iOS WebKit и desktop Chromium. Access editor light/dark visual matrix прошла 4/4; representative mobile, narrow, iOS WebKit и desktop artifacts просмотрены без visual/overflow/Axe regressions. Full подтвердил migration lifecycle/drift, Ruff, 562 backend, 56 pinned contracts, lint/typecheck, 111 unit, production build, 224/224 mobile Playwright и Markdown links. Standard Telegram-enabled dev пересобран с `index-Dd5ETyJh.js`: local frontend/backend/preview и public root/health/ready — `200`, public debug — `404`, PostgreSQL/Redis healthy, `telegram_main_app_ready` подтверждён. Live Swiftgram iOS acceptance остаётся обязательной; commit и push не выполнялись. |
 | Localized rich-text editor lifecycle | locked Tiptap 3.30.1 `useEditor` dependency and `Editor.commands` lifecycle; deterministic editor-identity regression; four-project bilingual content matrix; Changed gate; standard dev acceptance | Communication менял и локализованный placeholder, и DOM `id` при `en → ru`, поэтому `useEditor` уничтожал прежний Tiptap instance, а WebKit мог прочитать уже очищенный `commandManager`. CommonMark и Telegram HTML editors теперь используют стабильный control ID и поддерживаемую Tiptap placeholder function с transaction-only decoration refresh; смена языка обновляет value/placeholder без destroy/recreate. Новый regression сначала воспроизвёл замену instance на iOS WebKit, затем прошёл 4/4 на 430x932, 320x568, iOS WebKit и desktop. Communication/Welcome, Quick Answers и Sponsor focused matrix прошла 32/32; light/dark artifacts просмотрены без visual/overflow/console/network findings. Changed подтвердил Ruff, 441 service-free backend tests, frontend lint/typecheck, 111 unit, production build, 225/225 mobile Playwright и Markdown links. Standard Telegram-enabled dev пересобран с `index-B490lFsY.js`: local/public root, health и ready — `200`, public debug — `404`, PostgreSQL/Redis healthy, `telegram_main_app_ready` подтверждён. БД, provider state, commit и push не изменялись. |
 | Global content layout contract | CSS Flexbox/Grid intrinsic-size and `overflow-wrap` contracts; Home/admin KPI row geometry; four-project light/dark content matrix; Changed/Full gates; standard dev acceptance | Низкоспецифичный `:where()` baseline разрешает каждому app-owned Flex/Grid item сжиматься внутри назначенного track, длинные текстовые токены переносятся без глобального clipping, а replaced media ограничены owning surface. Home и admin expiry/device KPI используют общие value/label rows, поэтому SVG infinity и числовое значение больше не сдвигают подписи. На 320 px нижние четыре Home metrics переходят в стабильную сетку 2×2 без разрыва русских слов. Focused regression прошёл 8/8 на 430x932, 320x568, iOS WebKit и desktop в light/dark; screenshots просмотрены, alignment/overflow/Axe/console/network guards зелёные. Changed подтвердил 442 service-free backend tests, Ruff, lint/typecheck, 111 unit, production build и 229/229 mobile Playwright; Full подтвердил migrations/drift, 563 backend, 56 pinned Remnawave contracts и те же frontend/docs gates. Standard Telegram-enabled dev полностью перезапущен с asset `index-BmwM3hEx.js`: local frontend/backend/preview и public root/health/ready — `200`, public debug — `404`, PostgreSQL/Redis healthy, `telegram_main_app_ready` подтверждён. Реальные Telegram/Remnawave mutations, schema changes, commit и push не выполнялись. |
+| Sponsor offer Home parity and Remnawave tag exclusions | official exact 2.8.1/3.0.0/3.1.0 tag catalog and user models; reversible JSONB migration; backend eligibility/direct-checkout regressions; four-project exact preview matrix; Full gate | Admin и Home используют один `SponsorOfferCard`, поэтому title/description, discounts, billing, donation instruction, benefits и CTA больше не расходятся; admin status/toggle/edit остаются вне preview. Offer хранит нормализованный admin-only список исключённых Remnawave tags. Home делает exact read-only lookup только при restricted offers, сравнивает singular nullable user `tag`, скрывает совпавшие offers и при provider failure fail-closed скрывает только restricted; direct checkout повторяет guard. Public API список не раскрывает. Focused backend прошёл 56/56; exact preview — 4/4 projects с light/dark внутри каждого, computed styles/text, Axe, overflow, console/network guards зелёные, representative screenshots просмотрены. Финальный Full подтвердил migration lifecycle/drift, Ruff, 570 backend tests, 56 pinned contracts, lint/typecheck, 111 unit tests, production build, 230/230 mobile Chromium Playwright и Markdown links. Реальные Remnawave/Tribute calls и mutations, commit и push не выполнялись. |
 
 ## Следующее действие
 

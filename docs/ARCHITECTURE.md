@@ -228,7 +228,11 @@ major currency units, но wire/storage используют integer minor units
 `sponsor_offers` является отдельным provider-neutral presentation layer поверх одного
 `commerce_rule`: title/description/order не дублируют payment calculation. Description является
 настраиваемым мотивационным текстом конкретного варианта на Home; системные pending/active/review
-сообщения остаются server-state copy и не маскируют факты оплаты. Скрытый draft можно
+сообщения остаются server-state copy и не маскируют факты оплаты. Опциональный список
+`excluded_remnawave_tags` хранит нормализованные provider-owned tags, но не попадает в public
+sponsor response. При create и изменении списка backend повторно проверяет его по актуальному
+Remnawave tag catalog; прежний неизменённый список можно сохранить при временной недоступности
+provider. Скрытый draft можно
 сохранить без provider request. Снятие с публикации переводит immutable snapshot в SQL `NULL`,
 не запрашивает provider и сохраняет редактируемые поля; следующая публикация всегда строит новый
 проверенный snapshot. Admin может связать существующий offer с другим совместимым rule: update
@@ -265,7 +269,12 @@ Editor ограничивает
 
 Authenticated `GET /api/me/sponsor` не вызывает Tribute и возвращает единое server-computed
 состояние доступа/оплаты, допустимое primary action, точные paid/base expiry, pending checkout и
-только published ready offers. `POST /api/me/sponsor/checkouts` сериализует active local user,
+только published ready offers. Если хотя бы один offer ограничен по tag, BFF выполняет exact
+read-only Remnawave lookup текущего Telegram user: совпавший singular `tag` скрывает только этот
+offer, а недоступный или malformed provider response fail-closed скрывает только ограниченные
+offers. Пользователь без provider row либо без tag сохраняет доступ к ним. `POST
+/api/me/sponsor/checkouts` повторяет ту же eligibility-проверку, поэтому прямой UUID не обходит
+ограничение, затем сериализует active local user,
 записывает один 30-minute local `sponsor_checkouts` intent с immutable offer snapshot и возвращает
 provider-hosted URL. Повтор того же offer переиспользует intent, другой offer получает conflict.
 

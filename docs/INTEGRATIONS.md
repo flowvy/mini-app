@@ -407,8 +407,19 @@ official exact tags
 [2.8.1](https://github.com/remnawave/backend/blob/2.8.1/libs/contract/commands/users/tags/get-all-tags.command.ts),
 [3.0.0](https://github.com/remnawave/backend/blob/3.0.0/libs/contract/commands/users/tags/get-users-tags.command.ts)
 и [3.1.0](https://github.com/remnawave/backend/blob/3.1.0/libs/contract/commands/users/tags/get-users-tags.command.ts),
-проверено 2026-08-02. Ошибка каталога блокирует только новый/изменённый tag; profile без tag или с
+проверено 2026-08-26. Ошибка каталога блокирует только новый/изменённый tag; profile без tag или с
 неизменённым уже сохранённым tag не получает лишнюю зависимость от provider availability.
+
+Sponsor offer использует тот же catalog как набор checkbox-исключений. В exact user model
+[2.8.1](https://github.com/remnawave/backend/blob/2.8.1/libs/contract/models/users.schema.ts),
+[3.0.0](https://github.com/remnawave/backend/blob/3.0.0/libs/contract/models/users.schema.ts) и
+[3.1.0](https://github.com/remnawave/backend/blob/3.1.0/libs/contract/models/users.schema.ts)
+у пользователя одно nullable поле `tag`, а не массив. Поэтому Flowvy хранит у offer массив
+исключённых значений, но сравнивает его с одним актуальным normalized user tag. `GET
+/api/me/sponsor` обращается к exact read-only user lookup только при наличии ограниченных offers;
+ошибка/невалидный provider response скрывает только их, неограниченные остаются видимыми. User miss
+или `tag: null` означают отсутствие tag. Создание checkout повторяет проверку и не позволяет обойти
+её прямым offer UUID. Exclusion list остаётся admin-only и не раскрывается в public response.
 
 ## Pulse: Uptime Kuma или Beszel
 
@@ -563,6 +574,9 @@ subscription представлена одним rule и одним опубли
 все связанные public/draft offers и сам rule без запроса к Tribute. Сохранённые checkout/payment и
 entitlement snapshots не удаляются, уже выданный доступ не меняется; pending payment больше не
 сопоставляется автоматически с удалённым правилом.
+Admin получает Remnawave tag options отдельным read-only BFF endpoint и сохраняет ноль или несколько
+исключений. Home и direct checkout применяют их backend-authoritatively; frontend не решает
+eligibility и не получает внутренний exclusion list.
 
 ### Webhook, inbox и идемпотентность
 
