@@ -171,6 +171,7 @@ describe("Russian UI copy catalog", () => {
 		expect(russianLocale.home.heroCard.expiresLabel).toBe("Истекает");
 		expect(russianLocale.home.detail.devices).toBe("Лимит устройств");
 		expect(russianLocale.access.open).toBe("Открытый");
+		expect(russianLocale.access.deactivate).toBe("Удалить профиль");
 		expect(russianLocale.access.internalSquads).toBe("Внутренние сквады");
 		expect(russianLocale.format.relative).toMatchObject({
 			minutesAgo: "{{n}} мин.",
@@ -182,6 +183,7 @@ describe("Russian UI copy catalog", () => {
 		expect(russianLocale.admin.dashboard.flowvy.requests).toBe("API-запросы");
 		expect(russianLocale.support.status.withSupport).toBe("В Помощи");
 		expect(locale.home.sponsor.sponsorAccess).toBe("Extended access");
+		expect(locale.access.deactivate).toBe("Delete profile");
 		expect(locale.admin.dashboard.kpi.requests).toBe("API requests");
 		expect(locale.admin.dashboard.flowvy.requests).toBe("API requests");
 	});

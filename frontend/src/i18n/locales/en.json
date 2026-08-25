@@ -391,9 +391,9 @@
 		"settingsSaveError": "Could not save registration settings. Try again",
 		"settingsLoadError": "Registration settings are temporarily unavailable",
 		"profileSaveError": "Could not save the access profile. Check the values and try again",
-		"deactivateError": "Could not deactivate the access profile. Try again",
-		"deactivate": "Deactivate profile",
-		"deactivateTitle": "Deactivate access profile?",
+		"deactivateError": "Could not delete the access profile. Try again",
+		"deactivate": "Delete profile",
+		"deactivateTitle": "Delete access profile?",
 		"deactivateBody": "{{name}} will no longer be available for new registrations",
 		"cancel": "Cancel"
 	},
