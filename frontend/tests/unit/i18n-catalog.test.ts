@@ -170,6 +170,12 @@ describe("Russian UI copy catalog", () => {
 		expect(russianLocale.home.heroCard.openLink).toBe("Инструкция по установке");
 		expect(russianLocale.home.heroCard.expiresLabel).toBe("Истекает");
 		expect(russianLocale.home.detail.devices).toBe("Лимит устройств");
+		expect(russianLocale.home.detail.autoUpdateHint).toBe(
+			"Автоматическое обновление подписки в прокси-клиенте",
+		);
+		expect(russianLocale.home.detail.updateIntervalHint).toBe(
+			"Интервал автоматического обновления",
+		);
 		expect(russianLocale.access.open).toBe("Открытый");
 		expect(russianLocale.access.deactivate).toBe("Удалить профиль");
 		expect(russianLocale.access.internalSquads).toBe("Внутренние сквады");
@@ -183,6 +189,10 @@ describe("Russian UI copy catalog", () => {
 		expect(russianLocale.admin.dashboard.flowvy.requests).toBe("API-запросы");
 		expect(russianLocale.support.status.withSupport).toBe("В Помощи");
 		expect(locale.home.sponsor.sponsorAccess).toBe("Extended access");
+		expect(locale.home.detail.autoUpdateHint).toBe(
+			"Automatic subscription updates in the proxy client",
+		);
+		expect(locale.home.detail.updateIntervalHint).toBe("Automatic update interval");
 		expect(locale.access.deactivate).toBe("Delete profile");
 		expect(locale.admin.dashboard.kpi.requests).toBe("API requests");
 		expect(locale.admin.dashboard.flowvy.requests).toBe("API requests");

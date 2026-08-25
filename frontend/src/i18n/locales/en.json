@@ -296,11 +296,11 @@
 			"devicesCount": "{{n}} devices",
 			"profileSettings": "Profile Settings",
 			"autoUpdate": "Auto-update",
-			"autoUpdateHint": "Fetch profile updates automatically",
+			"autoUpdateHint": "Automatic subscription updates in the proxy client",
 			"autoUpdateOn": "On",
 			"autoUpdateOff": "Off",
 			"updateInterval": "Update interval",
-			"updateIntervalHint": "How often to check for updates",
+			"updateIntervalHint": "Automatic update interval",
 			"updateIntervalValue": "Every {{n}}h",
 			"notSpecified": "Not specified"
 		}

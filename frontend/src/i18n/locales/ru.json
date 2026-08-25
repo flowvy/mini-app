@@ -296,11 +296,11 @@
 			"devicesCount": "{{n}} шт.",
 			"profileSettings": "Профиль",
 			"autoUpdate": "Автоапдейт",
-			"autoUpdateHint": "Автоматически получать обновления профиля",
+			"autoUpdateHint": "Автоматическое обновление подписки в прокси-клиенте",
 			"autoUpdateOn": "Вкл.",
 			"autoUpdateOff": "Выкл.",
 			"updateInterval": "Интервал",
-			"updateIntervalHint": "Как часто проверять обновления",
+			"updateIntervalHint": "Интервал автоматического обновления",
 			"updateIntervalValue": "Раз в {{n}} ч",
 			"notSpecified": "Не указано"
 		}

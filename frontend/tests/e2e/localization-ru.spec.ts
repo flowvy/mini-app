@@ -90,6 +90,12 @@ test("Russian user routes keep accepted copy and fit compact navigation", async 
 		await expect(page.getByRole("link", { name: "Помощь" })).toBeVisible();
 		await expect(page.getByRole("button", { name: "Инструкция по установке" })).toBeVisible();
 		await expect(page.getByText("Истекает", { exact: true })).toBeVisible();
+		await expect(
+			page.getByText("Автоматическое обновление подписки в прокси-клиенте", { exact: true }),
+		).toBeVisible();
+		await expect(
+			page.getByText("Интервал автоматического обновления", { exact: true }),
+		).toBeVisible();
 		await expect(page.getByText("Обновлено", { exact: true }).locator("..")).toContainText(
 			/4 мин\.\s*Обновлено/,
 		);
