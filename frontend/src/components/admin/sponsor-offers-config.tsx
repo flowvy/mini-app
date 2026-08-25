@@ -6,12 +6,13 @@ import {
 	useCommerceRules,
 	useDeleteSponsorOffer,
 	useSaveSponsorOffer,
+	useSponsorOfferOptions,
 	useSponsorOffers,
 } from "../../hooks/use-commerce-rules.ts";
 import { SUPPORTED_LOCALES, localeLabel } from "../../i18n";
 import { TRIBUTE_PERIOD_KEYS } from "../../lib/commerce-labels.ts";
 import { getLocalizedError } from "../../lib/error-copy.ts";
-import { formatPlanMoney, majorToMinor, minorToMajorInput } from "../../lib/money.ts";
+import { majorToMinor, minorToMajorInput } from "../../lib/money.ts";
 import {
 	PAYMENT_DESTINATION_ISSUE_KEYS,
 	paymentDestinationIssue,
@@ -26,6 +27,7 @@ import type {
 	SponsorOfferPriceOption,
 	TributeDonationPeriod,
 } from "../../types/commerce.ts";
+import { SponsorOfferCard } from "../commerce/sponsor-offer-card.tsx";
 import { SubscriptionBillingList } from "../commerce/subscription-billing-list.tsx";
 import { FormattedText } from "../content/formatted-text.tsx";
 import { TemplateVariables } from "../content/template-variables.tsx";
@@ -41,6 +43,7 @@ import {
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { EditorSkeleton, SectionSkeleton } from "../ui/page-skeleton.tsx";
 import { SegmentedControl } from "../ui/segmented-control.tsx";
+import { Skeleton } from "../ui/skeleton.tsx";
 import { Toggle } from "../ui/toggle.tsx";
 import editorStyles from "./commerce-rule-editor.module.css";
 import styles from "./commerce-rules-config.module.css";
@@ -59,6 +62,7 @@ interface EditorState {
 
 interface OfferDraft {
 	contentLocales: Record<string, SponsorOfferLocale>;
+	excludedRemnawaveTags: string[];
 	commerceRuleId: string;
 	checkoutUrl: string;
 	amountMajor: string;
@@ -104,6 +108,7 @@ function initialDraft(
 	return offer
 		? {
 				contentLocales,
+				excludedRemnawaveTags: [...(offer.excludedRemnawaveTags ?? [])],
 				commerceRuleId: offer.commerceRuleId,
 				checkoutUrl: offer.commerceType === "donation" ? (offer.checkoutUrl ?? "") : "",
 				amountMajor:
@@ -120,6 +125,7 @@ function initialDraft(
 			}
 		: {
 				contentLocales,
+				excludedRemnawaveTags: [],
 				commerceRuleId: rules[0]?.id ?? "",
 				checkoutUrl: "",
 				amountMajor: "",
@@ -135,6 +141,7 @@ function offerInput(offer: SponsorOffer): SponsorOfferInput {
 		title: offer.title,
 		description: offer.description,
 		contentLocales: offer.contentLocales ?? {},
+		excludedRemnawaveTags: offer.excludedRemnawaveTags ?? [],
 		commerceRuleId: offer.commerceRuleId,
 		checkoutUrl: offer.commerceType === "donation" ? offer.checkoutUrl : null,
 		expectedAmountMinor: offer.commerceType === "donation" ? offer.expectedAmountMinor : null,
@@ -194,7 +201,7 @@ export function SponsorOffersConfig({
 	contentDefaultLocale,
 	templateVariables,
 }: SponsorOffersConfigProps) {
-	const { t, i18n } = useTranslation();
+	const { t } = useTranslation();
 	const offers = useSponsorOffers();
 	const rules = useCommerceRules();
 	const catalog = useCommerceCatalog();
@@ -398,26 +405,18 @@ export function SponsorOffersConfig({
 								);
 							}
 							return (
-								<article
-									className={offerStyles.offerCard}
+								<div
+									className={offerStyles.offerManagement}
 									key={offer.id}
 									data-published={offer.isPublished ? "true" : "false"}
-									aria-label={offer.title}
 								>
 									<div className={offerStyles.cardHeader}>
-										<div className={offerStyles.cardTitle}>
-											<div>
-												<strong>{offer.title}</strong>
-												<span data-availability={offer.availability}>
-													{t(AVAILABILITY_KEYS[offer.availability])}
-												</span>
-											</div>
-											{offer.description && (
-												<FormattedText className={offerStyles.offerDescription}>
-													{offer.description}
-												</FormattedText>
-											)}
-										</div>
+										<span
+											className={offerStyles.availability}
+											data-availability={offer.availability}
+										>
+											{t(AVAILABILITY_KEYS[offer.availability])}
+										</span>
 										<div className={offerStyles.visibility}>
 											<span>{t("settings.tribute.offers.visibilityLabel")}</span>
 											<Toggle
@@ -436,28 +435,7 @@ export function SponsorOffersConfig({
 										</div>
 									</div>
 
-									{offer.commerceType === "subscription" ? (
-										!compactDuplicate &&
-										periodOptions.length > 0 && (
-											<>
-												<SubscriptionBillingList options={periodOptions} tone="plain" />
-												<p className={offerStyles.periodHint}>
-													{t("settings.tribute.offers.cardPeriodHint")}
-												</p>
-											</>
-										)
-									) : periodOptions[0] ? (
-										<div className={offerStyles.donationFact} data-ui="sponsor-donation-fact">
-											<strong>
-												{formatPlanMoney(
-													periodOptions[0].priceMajor,
-													periodOptions[0].currency,
-													i18n.language,
-												)}
-											</strong>
-											<span>{t("settings.tribute.offers.donationPaymentFact")}</span>
-										</div>
-									) : null}
+									<SponsorOfferCard offer={{ ...offer, priceOptions: periodOptions }} preview />
 
 									<div className={offerStyles.cardFooter}>
 										<span>
@@ -474,7 +452,7 @@ export function SponsorOffersConfig({
 											{t("settings.tribute.offers.editAction")}
 										</ActionBtn>
 									</div>
-								</article>
+								</div>
 							);
 						})}
 					</div>
@@ -536,9 +514,13 @@ function SponsorOfferEditor({
 	const save = useSaveSponsorOffer();
 	const remove = useDeleteSponsorOffer();
 	const catalog = useCommerceCatalog();
+	const offerOptions = useSponsorOfferOptions();
 	const selectedRule = rules.find((rule) => rule.id === draft.commerceRuleId);
 	const selectedSubscription = catalog.data?.subscriptions.find(
 		(subscription) => subscription.externalItemId === selectedRule?.externalItemId,
+	);
+	const remnawaveTags = Array.from(
+		new Set([...(offerOptions.data?.remnawaveTags ?? []), ...draft.excludedRemnawaveTags]),
 	);
 	const selectableRules = offer
 		? rules
@@ -620,6 +602,7 @@ function SponsorOfferEditor({
 			title: defaultContent.title,
 			description: defaultContent.description,
 			contentLocales: localized,
+			excludedRemnawaveTags: draft.excludedRemnawaveTags,
 			commerceRuleId: draft.commerceRuleId,
 			checkoutUrl: isDonation ? draft.checkoutUrl.trim() || null : null,
 			expectedAmountMinor: isDonation ? amountMinor : null,
@@ -764,6 +747,46 @@ function SponsorOfferEditor({
 									});
 								}}
 							/>
+						</FormField>
+						<FormField
+							label={t("settings.tribute.offers.excludedTagsLabel")}
+							hint={t("settings.tribute.offers.excludedTagsHint")}
+							notice={
+								offerOptions.isError ? (
+									<span role="alert">{t("settings.tribute.offers.excludedTagsUnavailable")}</span>
+								) : undefined
+							}
+						>
+							{offerOptions.isPending ? (
+								<Skeleton width="100%" height={44} radius={8} />
+							) : remnawaveTags.length > 0 ? (
+								<fieldset className={offerStyles.tagChecks}>
+									<legend className={offerStyles.srOnly}>
+										{t("settings.tribute.offers.excludedTagsLabel")}
+									</legend>
+									{remnawaveTags.map((tag) => (
+										<label key={tag}>
+											<input
+												type="checkbox"
+												checked={draft.excludedRemnawaveTags.includes(tag)}
+												onChange={(event) =>
+													setDraft({
+														...draft,
+														excludedRemnawaveTags: event.target.checked
+															? [...draft.excludedRemnawaveTags, tag]
+															: draft.excludedRemnawaveTags.filter((selected) => selected !== tag),
+													})
+												}
+											/>
+											<span>{tag}</span>
+										</label>
+									))}
+								</fieldset>
+							) : (
+								<p className={offerStyles.emptyTags}>
+									{t("settings.tribute.offers.excludedTagsEmpty")}
+								</p>
+							)}
 						</FormField>
 						{selectedSubscription && (
 							<div className={`${editorStyles.providerExpiry} ${offerStyles.editorPeriods}`}>

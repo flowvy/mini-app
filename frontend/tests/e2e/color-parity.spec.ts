@@ -393,7 +393,7 @@ test("desktop color roles cover navigation, status, editors, and destructive act
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
 		const publishedSponsorOffer = page.getByRole("article", { name: sponsorOffer.title });
-		await expect(publishedSponsorOffer).toHaveCSS("background-color", colors.secondarySurface);
+		await expect(publishedSponsorOffer).toHaveCSS("background-color", colors.floor1);
 		await expect(publishedSponsorOffer).toHaveCSS("border-color", colors.positiveBorder);
 		await expect(publishedSponsorOffer).toHaveCSS(
 			"box-shadow",
@@ -402,9 +402,9 @@ test("desktop color roles cover navigation, status, editors, and destructive act
 		const adminPriceList = publishedSponsorOffer.getByRole("list", {
 			name: "Payment options from Tribute",
 		});
-		await expect(adminPriceList).toHaveCSS("background-color", colors.floor1);
-		await expect(adminPriceList).toHaveCSS("border-color", colors.borderTertiary);
-		await publishedSponsorOffer.getByRole("button", { name: "Edit" }).click();
+		await expect(adminPriceList).toHaveCSS("background-color", colors.secondarySurface);
+		await expect(adminPriceList).toHaveCSS("border-color", colors.borderSecondary);
+		await publishedSponsorOffer.locator("..").getByRole("button", { name: "Edit" }).click();
 		const offerEditor = page.getByRole("dialog", { name: "Edit sponsor offer" });
 		const templates = offerEditor.locator("details").filter({ hasText: "Templates" });
 		await expect(templates).toHaveCSS("background-color", colors.secondarySurface);

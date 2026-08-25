@@ -134,6 +134,7 @@ export interface SponsorOfferInput {
 	title: string;
 	description: string;
 	contentLocales: Record<string, SponsorOfferLocale>;
+	excludedRemnawaveTags: string[];
 	commerceRuleId: string;
 	checkoutUrl: string | null;
 	expectedAmountMinor: number | null;
@@ -143,19 +144,33 @@ export interface SponsorOfferInput {
 	sortOrder: number;
 }
 
-export interface SponsorOffer extends SponsorOfferInput {
+export interface SponsorOfferPresentation {
 	id: string;
 	provider: CommerceProvider;
+	title: string;
+	description: string;
+	commerceRuleId: string;
+	checkoutUrl: string | null;
+	expectedAmountMinor: number | null;
+	expectedPaymentMode: SponsorDonationPaymentMode | null;
+	expectedProviderPeriod: TributeDonationPeriod | null;
+	isPublished: boolean;
+	sortOrder: number;
 	commerceType: CommerceType;
 	paymentMode: PaymentMode;
 	externalItemId: string | null;
-	checkoutUrl: string | null;
 	priceOptions: SponsorOfferPriceOption[];
 	requiresNonAnonymous: boolean;
 	benefits: SponsorOfferBenefits;
 	availability: SponsorOfferAvailability;
 	welcomeDiscount: boolean;
 	welcomeDiscountPercent: number | null;
+}
+
+export interface SponsorOffer extends SponsorOfferInput, SponsorOfferPresentation {}
+
+export interface SponsorOfferOptions {
+	remnawaveTags: string[];
 }
 
 export type SponsorStateStatus =
@@ -200,7 +215,7 @@ export interface SponsorState {
 	currentOfferId: string | null;
 	managementUrl: string | null;
 	pendingCheckout: SponsorCheckout | null;
-	offers: SponsorOffer[];
+	offers: SponsorOfferPresentation[];
 }
 
 export function commerceRuleInput(rule: CommerceRule): CommerceRuleInput {

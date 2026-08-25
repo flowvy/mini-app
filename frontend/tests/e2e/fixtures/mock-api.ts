@@ -681,6 +681,10 @@ async function handleApi(
 		await reply(route, { body: { operations: [], hasMore: false } });
 		return;
 	}
+	if (method === "GET" && path === "/api/debug/admin/commerce/offer-options") {
+		await reply(route, { body: { remnawaveTags: mockData.registrationOptions.tags } });
+		return;
+	}
 	if (method === "GET" && path === "/api/debug/admin/commerce/offers") {
 		await reply(route, { body: state.sponsorOffers });
 		return;

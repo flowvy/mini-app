@@ -1,14 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { on } from "@telegram-apps/sdk-react";
-import {
-	ExternalLink,
-	Gauge,
-	HeartHandshake,
-	LockKeyhole,
-	MonitorSmartphone,
-	RefreshCw,
-	TicketPercent,
-} from "lucide-react";
+import { ExternalLink, HeartHandshake, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -16,30 +8,14 @@ import {
 	useSponsorState,
 	useStartSponsorCheckout,
 } from "../../hooks/use-sponsor.ts";
-import { TRIBUTE_PERIOD_KEYS } from "../../lib/commerce-labels.ts";
-import {
-	formatExpiryDate,
-	formatTraffic,
-	isUnlimitedExpiry,
-	isUnlimitedTraffic,
-} from "../../lib/format.ts";
+import { formatExpiryDate, isUnlimitedExpiry } from "../../lib/format.ts";
 import { hapticImpact } from "../../lib/haptics.ts";
-import { formatMajorMoney, formatPlanMoney } from "../../lib/money.ts";
-import {
-	operatorFormattedText,
-	operatorText,
-	renderFormattedTemplate,
-	renderTemplate,
-} from "../../lib/operator-content.ts";
+import { operatorFormattedText, operatorText } from "../../lib/operator-content.ts";
 import { queryKeys } from "../../lib/query.ts";
 import { openExternalDestination } from "../../lib/telegram-link.ts";
-import type {
-	SponsorOffer,
-	SponsorPrimaryAction,
-	SponsorStateStatus,
-} from "../../types/commerce.ts";
+import type { SponsorPrimaryAction, SponsorStateStatus } from "../../types/commerce.ts";
 import { useCurrentUser } from "../auth-guard.tsx";
-import { SubscriptionBillingList } from "../commerce/subscription-billing-list.tsx";
+import { SponsorOfferCard } from "../commerce/sponsor-offer-card.tsx";
 import { FormattedText } from "../content/formatted-text.tsx";
 import { ActionBtn } from "../ui/action-btn.tsx";
 import { InlineFeedback } from "../ui/inline-feedback.tsx";
@@ -122,7 +98,7 @@ function navigateToProvider(url: string): void {
 }
 
 export function SponsorCard() {
-	const { t, i18n } = useTranslation();
+	const { t } = useTranslation();
 	const { branding } = useCurrentUser();
 	const appName = branding.appName || t("common.appName");
 	const operatorContext = { appName, app_name: appName };
@@ -308,7 +284,7 @@ export function SponsorCard() {
 		if (refreshOnly) void refreshAccess();
 	};
 
-	const startCheckout = async (offer: SponsorOffer) => {
+	const startCheckout = async (offer: (typeof state.offers)[number]) => {
 		setPaymentFeedback(null);
 		try {
 			const attempt = await checkout.mutateAsync(offer.id);
@@ -319,142 +295,16 @@ export function SponsorCard() {
 		}
 	};
 
-	const donationInstruction = (offer: SponsorOffer): string | null => {
-		if (offer.commerceType !== "donation" || offer.priceOptions.length === 0) return null;
-		const price = offer.priceOptions[0];
-		const amount = formatMajorMoney(price.priceMajor, price.currency, i18n.language);
-		if (offer.expectedPaymentMode === "one_time") {
-			return t("home.sponsor.donationInstruction.oneTime", { amount });
-		}
-		if (offer.expectedPaymentMode === "recurring" && offer.expectedProviderPeriod) {
-			return t("home.sponsor.donationInstruction.recurring", {
-				amount,
-				period: t(TRIBUTE_PERIOD_KEYS[offer.expectedProviderPeriod]),
-			});
-		}
-		return t("home.sponsor.nonAnonymousWarning");
-	};
-
-	const renderOffer = (offer: SponsorOffer, blocked = false) => {
-		const instruction = donationInstruction(offer);
-		const isSubscription = offer.commerceType === "subscription";
-		const donationPrice = !isSubscription ? offer.priceOptions[0] : null;
-		const offerTitle = renderTemplate(offer.title, operatorContext);
-		const offerDescription = renderFormattedTemplate(offer.description, operatorContext);
-		const welcomeDiscountPercent = offer.welcomeDiscount ? offer.welcomeDiscountPercent : null;
-		const unlimitedTraffic = isUnlimitedTraffic(offer.benefits.trafficLimitBytes);
-		const unlimitedDevices = !offer.benefits.deviceLimit;
-		return (
-			<article
-				className={styles.offerCard}
-				key={offer.id}
-				data-blocked={blocked ? "true" : undefined}
-				aria-label={offerTitle}
-			>
-				<div className={styles.offerHeader}>
-					<strong className={styles.offerTitle}>{offerTitle}</strong>
-					{offerDescription && (
-						<FormattedText className={styles.offerDescription}>{offerDescription}</FormattedText>
-					)}
-				</div>
-
-				{isSubscription ? (
-					<>
-						{welcomeDiscountPercent !== null && (
-							<div className={styles.welcomeDiscount} data-ui="welcome-discount">
-								<span
-									className={styles.welcomeDiscountIcon}
-									data-ui="welcome-discount-icon"
-									aria-hidden="true"
-								>
-									<TicketPercent data-ui="welcome-discount-ticket-icon" size={20} />
-								</span>
-								<span>
-									<strong>
-										{t("home.sponsor.welcomeDiscountTitle", {
-											percent: welcomeDiscountPercent,
-										})}
-									</strong>
-									<small>{t("home.sponsor.welcomeDiscountDescription")}</small>
-								</span>
-							</div>
-						)}
-						<SubscriptionBillingList
-							options={offer.priceOptions}
-							discountPercent={welcomeDiscountPercent}
-						/>
-						<p className={styles.providerSelectionHint}>
-							{t(
-								welcomeDiscountPercent === null
-									? "home.sponsor.subscriptionPeriodHint"
-									: "home.sponsor.welcomeDiscountFinal",
-							)}
-						</p>
-					</>
-				) : (
-					donationPrice && (
-						<div className={styles.donationPrice} data-ui="sponsor-donation-price">
-							<strong>
-								{formatPlanMoney(donationPrice.priceMajor, donationPrice.currency, i18n.language)}
-							</strong>
-							<span>
-								{donationPrice.period
-									? t(TRIBUTE_PERIOD_KEYS[donationPrice.period])
-									: t("home.sponsor.donationOnce")}
-							</span>
-						</div>
-					)
-				)}
-
-				{offer.requiresNonAnonymous && instruction && (
-					<p className={styles.offerInstruction}>{instruction}</p>
-				)}
-
-				<div className={styles.benefits} aria-label={t("home.sponsor.benefits.label")}>
-					<div className={styles.benefit}>
-						<Gauge size={16} aria-hidden="true" />
-						<span>{t("home.sponsor.benefits.traffic")}</span>
-						<strong>
-							{unlimitedTraffic
-								? t("home.sponsor.benefits.unlimited")
-								: formatTraffic(offer.benefits.trafficLimitBytes)}
-						</strong>
-					</div>
-					<div className={styles.benefit}>
-						<MonitorSmartphone size={16} aria-hidden="true" />
-						<span>{t("home.sponsor.benefits.devices")}</span>
-						<strong>
-							{unlimitedDevices ? t("home.sponsor.benefits.unlimited") : offer.benefits.deviceLimit}
-						</strong>
-					</div>
-				</div>
-
-				<ActionBtn
-					variant={blocked ? "action" : "confirm"}
-					size="md"
-					className={styles.offerAction}
-					disabled={blocked || checkout.isPending}
-					aria-describedby={blocked ? "other-subscriptions-warning" : undefined}
-					onClick={blocked ? undefined : () => void startCheckout(offer)}
-				>
-					{blocked ? (
-						<LockKeyhole size={14} aria-hidden="true" />
-					) : (
-						<ExternalLink size={14} aria-hidden="true" />
-					)}
-					{welcomeDiscountPercent !== null && !blocked
-						? t("home.sponsor.welcomeDiscountAction", { percent: welcomeDiscountPercent })
-						: t(
-								blocked
-									? "home.sponsor.offerAction.locked"
-									: isSubscription
-										? "home.sponsor.action.continue"
-										: "home.sponsor.offerAction.donation",
-							)}
-				</ActionBtn>
-			</article>
-		);
-	};
+	const renderOffer = (offer: (typeof state.offers)[number], blocked = false) => (
+		<SponsorOfferCard
+			key={offer.id}
+			offer={offer}
+			blocked={blocked}
+			busy={checkout.isPending}
+			ariaDescribedBy="other-subscriptions-warning"
+			onSelect={(selected) => void startCheckout(selected)}
+		/>
+	);
 
 	return (
 		<section className={styles.card} aria-labelledby="sponsor-card-title">

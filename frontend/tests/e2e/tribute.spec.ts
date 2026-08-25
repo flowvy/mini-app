@@ -1317,6 +1317,12 @@ test("Tribute settings pass serious accessibility and overflow checks", async ({
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
+		await page.evaluate(
+			() =>
+				new Promise<void>((resolve) => {
+					requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+				}),
+		);
 		await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
 		const result = await new AxeBuilder({ page }).analyze();
 		const serious = result.violations.filter((violation) =>
@@ -1454,6 +1460,7 @@ test("admin creates a user-facing sponsor offer from an automation rule", async 
 	await expect(publish).not.toBeChecked();
 	await expect(page.getByText("Payment options from Tribute", { exact: true })).toBeVisible();
 	await expect(page.getByText(/user chooses one on the Tribute checkout screen/)).toBeVisible();
+	await page.getByRole("checkbox", { name: "PREMIUM" }).check();
 	const accessibilityByTheme: Array<{ theme: "light" | "dark"; serious: unknown[] }> = [];
 	for (const colorScheme of ["light", "dark"] as const) {
 		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
@@ -1481,6 +1488,7 @@ test("admin creates a user-facing sponsor offer from an automation rule", async 
 	const createPayload = (await createRequest).postDataJSON();
 	expect(createPayload.contentLocales.en.title).toBe("Monthly sponsor access");
 	expect(createPayload.contentLocales.ru.title).toBe("Расширенный доступ");
+	expect(createPayload.excludedRemnawaveTags).toEqual(["PREMIUM"]);
 
 	await expect(page.getByRole("heading", { name: "Create sponsor offer" })).toHaveCount(0);
 	const createdOffer = page.getByRole("article", { name: "Monthly sponsor access" });
@@ -1489,9 +1497,102 @@ test("admin creates a user-facing sponsor offer from an automation rule", async 
 	await expect(createdOffer.getByText("Billed yearly", { exact: true })).toBeVisible();
 	await expect(createdOffer).toContainText("500");
 	await expect(createdOffer).toContainText("3,500");
-	await expect(createdOffer.getByRole("button", { name: "Edit" })).toBeVisible();
+	await expect(createdOffer.locator("..").getByRole("button", { name: "Edit" })).toBeVisible();
 	expect(mockApi.calls).toContain("POST /api/debug/admin/commerce/offers");
 	await assertNoHorizontalOverflow(page);
+});
+
+test("admin offer preview uses the exact Home offer presentation", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	const offer = sponsorMultiPeriodOffer();
+	mockApi.seedCommerceRules([sponsorSubscriptionRule()]);
+	mockApi.seedSponsorOffers([offer]);
+	mockApi.seedSponsorState({
+		status: "no_access",
+		accessLevel: "none",
+		primaryAction: "choose_offer",
+		paidExpiresAt: null,
+		baseExpiresAt: null,
+		currentOfferId: null,
+		managementUrl: null,
+		pendingCheckout: null,
+		offers: [offer],
+	});
+
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.goto("/admin/settings/tribute/sponsor-offers");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		const adminPreview = page.getByRole("article", { name: offer.title });
+		await expect(adminPreview).toBeVisible();
+		await expect(adminPreview.getByRole("button", { name: "Continue in Tribute" })).toHaveAttribute(
+			"aria-disabled",
+			"true",
+		);
+		const adminText = await adminPreview.innerText();
+		const adminStyles = await adminPreview.evaluate((element) => {
+			const style = getComputedStyle(element);
+			return {
+				backgroundColor: style.backgroundColor,
+				borderColor: style.borderColor,
+				borderRadius: style.borderRadius,
+				boxShadow: style.boxShadow,
+				display: style.display,
+				gap: style.gap,
+				padding: style.padding,
+			};
+		});
+		await adminPreview.screenshot({
+			path: testInfo.outputPath(`offer-preview-admin-${colorScheme}.png`),
+			animations: "disabled",
+		});
+		await assertNoHorizontalOverflow(page);
+
+		await page.goto("/");
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		const homeOffer = page.getByRole("article", { name: offer.title });
+		await expect(homeOffer).toBeVisible();
+		await expect(
+			homeOffer.getByRole("button", { name: "Continue in Tribute" }),
+		).not.toHaveAttribute("aria-disabled", "true");
+		expect(await homeOffer.innerText()).toBe(adminText);
+		expect(
+			await homeOffer.evaluate((element) => {
+				const style = getComputedStyle(element);
+				return {
+					backgroundColor: style.backgroundColor,
+					borderColor: style.borderColor,
+					borderRadius: style.borderRadius,
+					boxShadow: style.boxShadow,
+					display: style.display,
+					gap: style.gap,
+					padding: style.padding,
+				};
+			}),
+		).toEqual(adminStyles);
+		const accessibility = await new AxeBuilder({ page }).analyze();
+		expect(
+			accessibility.violations.filter((violation) =>
+				["serious", "critical"].includes(violation.impact ?? ""),
+			),
+		).toEqual([]);
+		await homeOffer.screenshot({
+			path: testInfo.outputPath(`offer-preview-home-${colorScheme}.png`),
+			animations: "disabled",
+		});
+		await assertNoHorizontalOverflow(page);
+	}
+
+	expect(mockApi.unhandled).toEqual([]);
+	expect(mockApi.consoleErrors).toEqual([]);
+	expect(mockApi.pageErrors).toEqual([]);
+	expect(mockApi.requestFailures).toEqual([]);
 });
 
 test("sponsor offer maps a stale missing-destination response to actionable copy", async ({
@@ -1562,6 +1663,7 @@ test("formatted offer copy keeps one fixed toolbar and renders safely on Home", 
 	await page.goto("/admin/settings/tribute/sponsor-offers");
 	await page
 		.getByRole("article", { name: offer.title })
+		.locator("..")
 		.getByRole("button", { name: "Edit" })
 		.click();
 	const editor = page.getByRole("dialog", { name: "Edit sponsor offer" });
@@ -1707,6 +1809,7 @@ test("admin can relink an existing sponsor offer to another automation rule", as
 		}, colorScheme);
 		await page
 			.getByRole("article", { name: offer.title })
+			.locator("..")
 			.getByRole("button", { name: "Edit" })
 			.click();
 		const themedEditor = page.getByRole("dialog", { name: "Edit sponsor offer" });
@@ -1743,6 +1846,7 @@ test("admin can relink an existing sponsor offer to another automation rule", as
 	await expect(
 		page
 			.getByRole("article", { name: offer.title })
+			.locator("..")
 			.getByText("Access: Believer benefits", { exact: true }),
 	).toBeVisible();
 	await assertNoHorizontalOverflow(page);

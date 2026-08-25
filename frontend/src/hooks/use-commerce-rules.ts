@@ -12,6 +12,7 @@ import type {
 	EntitlementOperatorActionInput,
 	SponsorOffer,
 	SponsorOfferInput,
+	SponsorOfferOptions,
 } from "../types/commerce.ts";
 
 const prefix = isMockAuth ? "/debug/admin/commerce" : "/admin/commerce";
@@ -42,6 +43,14 @@ export function useSponsorOffers() {
 	return useQuery({
 		queryKey: queryKeys.sponsorOffers,
 		queryFn: () => apiGet<SponsorOffer[]>(`${prefix}/offers`),
+	});
+}
+
+export function useSponsorOfferOptions() {
+	return useQuery({
+		queryKey: queryKeys.sponsorOfferOptions,
+		queryFn: () => apiGet<SponsorOfferOptions>(`${prefix}/offer-options`),
+		retry: false,
 	});
 }
 

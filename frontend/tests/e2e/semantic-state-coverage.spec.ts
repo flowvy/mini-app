@@ -172,9 +172,10 @@ test("renders every unavailable Sponsor offer reason with warning hierarchy", as
 				boxShadow: "none",
 				color: "var(--v2-text-warning)",
 			});
-			const card = badge.locator("xpath=ancestor::article[1]");
+			const management = badge.locator("xpath=ancestor::*[@data-published][1]");
+			const card = management.getByRole("article");
 			await expectSurfaceContract(card, {
-				background: "var(--v2-bg-secondary)",
+				background: "var(--v2-bg-primary)",
 				border: edge("var(--v2-border-positive-secondary)"),
 				outline: noOutline(),
 				boxShadow: "inset 3px 0 0 var(--v2-border-positive-primary)",

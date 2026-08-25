@@ -445,14 +445,22 @@ for (const theme of themes) {
 		await page.goto("/admin/settings/tribute/sponsor-offers");
 		await setTheme(page, theme);
 		const offer = page.getByRole("article", { name: sponsorOffer.title });
-		await expectSecondaryFrame(offer);
+		const offerManagement = offer.locator("..");
+		await expectSecondaryFrame(offerManagement);
+		await expectSurfaceContract(offer, {
+			background: primary,
+			border: edge("var(--v2-border-positive-secondary)"),
+			outline: noOutline(),
+			boxShadow: "inset 3px 0 0 var(--v2-border-positive-primary)",
+			color: primaryText,
+		});
 		const legacy = page.locator('[data-ui="legacy-sponsor-offer"]');
 		await expectSecondaryFrame(legacy);
-		await expectNeutralBadge(offer.locator('[data-availability="draft"]'));
+		await expectNeutralBadge(offerManagement.locator('[data-availability="draft"]'));
 		await expectNeutralBadge(legacy.locator('[data-availability="draft"]'));
 		await expectSurfaceContract(offer.getByRole("list", { name: "Payment options from Tribute" }), {
-			background: primary,
-			border: edge(borderTertiary),
+			background: secondary,
+			border: edge("var(--v2-border-secondary)"),
 			outline: noOutline(),
 			boxShadow: "none",
 			color: primaryText,
@@ -464,7 +472,7 @@ for (const theme of themes) {
 			fullPage: true,
 		});
 
-		await offer.getByRole("button", { name: "Edit", exact: true }).click();
+		await offerManagement.getByRole("button", { name: "Edit", exact: true }).click();
 		const offerDialog = page.getByRole("dialog", { name: "Edit sponsor offer" });
 		const offerFields = offerDialog.locator('[data-ui="sponsor-offer-fields"]');
 		await expect(offerFields).toHaveCount(2);
@@ -524,9 +532,22 @@ for (const theme of themes) {
 		await page.goto("/admin/settings/tribute/sponsor-offers");
 		await setTheme(page, theme);
 		const donation = page.getByRole("article", { name: donationOffer.title });
-		await expectSecondaryFrame(donation);
-		const donationFact = donation.locator('[data-ui="sponsor-donation-fact"]');
-		await expectPrimaryFrame(donationFact);
+		await expectSecondaryFrame(donation.locator(".."));
+		await expectSurfaceContract(donation, {
+			background: primary,
+			border: edge("var(--v2-border-positive-secondary)"),
+			outline: noOutline(),
+			boxShadow: "inset 3px 0 0 var(--v2-border-positive-primary)",
+			color: primaryText,
+		});
+		const donationFact = donation.locator('[data-ui="sponsor-donation-price"]');
+		await expectSurfaceContract(donationFact, {
+			background: secondary,
+			border: edge("var(--v2-border-secondary)"),
+			outline: noOutline(),
+			boxShadow: "none",
+			color: primaryText,
+		});
 		await expectAccessiblePage(page);
 		await donationFact.screenshot({
 			path: testInfo.outputPath(`${theme}-settings-donation-fact.png`),

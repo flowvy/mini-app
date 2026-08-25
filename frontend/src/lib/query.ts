@@ -32,6 +32,7 @@ export const queryKeys = {
 	commerceCatalog: (provider: string) => ["admin", "commerce", "catalog", provider] as const,
 	entitlementOperations: ["admin", "commerce", "operations"] as const,
 	sponsorOffers: ["admin", "commerce", "offers"] as const,
+	sponsorOfferOptions: ["admin", "commerce", "offer-options"] as const,
 	sponsorState: ["commerce", "sponsor", "me"] as const,
 	myInvite: ["registration", "my-invite"] as const,
 	supportRequests: ["support", "requests"] as const,
