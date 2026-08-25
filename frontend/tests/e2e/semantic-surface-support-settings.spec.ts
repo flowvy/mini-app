@@ -580,16 +580,18 @@ for (const theme of themes) {
 				"/admin/settings/pulse",
 				"Choose from configured sources. Connections stay saved when inactive",
 			],
-			["/admin/settings/tribute", "Provider setup is separate from offers and payment operations"],
-			[
-				"/admin/settings/communication",
-				"Each message opens the fields used by its actual destination",
-			],
 		] as const) {
 			await page.goto(route);
 			await setTheme(page, theme);
 			await expectTokenColor(page.getByText(intro), secondaryText);
 		}
+		await page.goto("/admin/settings/communication");
+		await setTheme(page, theme);
+		await expect(
+			page.getByText("Each message opens the fields used by its actual destination", {
+				exact: true,
+			}),
+		).toHaveCount(0);
 		await expectTokenColor(page.getByRole("heading", { name: "Telegram" }), secondaryText);
 		await expectTokenColor(
 			page.getByRole("button", { name: /Welcome Message/ }).locator("small"),

@@ -121,7 +121,6 @@ export function InviteCard() {
 				<div className={styles.count} aria-label={t("home.invite.invitedLabel")}>
 					<Users size={14} />
 					<strong>{invite.data.invitedCount}</strong>
-					<span>{t("home.invite.invitedShort")}</span>
 				</div>
 			</div>
 

@@ -27,6 +27,14 @@ export function getTelegramPlatform(): string | undefined {
 	}
 }
 
+export function getTelegramUserLocale(): string | undefined {
+	try {
+		return retrieveLaunchParams().tgWebAppData?.user?.language_code;
+	} catch {
+		return undefined;
+	}
+}
+
 function setTheme(isDark: boolean): void {
 	document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
 }

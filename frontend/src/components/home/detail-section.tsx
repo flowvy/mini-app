@@ -49,12 +49,7 @@ export function DetailSection({ subscription }: DetailSectionProps) {
 						muted={!subscription.telegramId}
 					/>
 					<FormRowSeparator />
-					<Row
-						label={t("home.detail.devices")}
-						hint={t("home.detail.devicesHint")}
-						value={devicesValue}
-						mono
-					/>
+					<Row label={t("home.detail.devices")} value={devicesValue} mono />
 				</FormSectionCard>
 			</FormSection>
 

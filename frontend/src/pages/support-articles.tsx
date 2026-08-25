@@ -17,6 +17,7 @@ import {
 } from "../components/ui/form-section.tsx";
 import { InlineFeedback } from "../components/ui/inline-feedback.tsx";
 import { PageLoading } from "../components/ui/page-loading.tsx";
+import { SegmentedControl } from "../components/ui/segmented-control.tsx";
 import {
 	useAdminSupportArticle,
 	useAdminSupportArticles,
@@ -307,7 +308,7 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 		"other",
 	].map((value) => ({ value: value as SupportArticleTopic, label: t(`support.topics.${value}`) }));
 	const localeOptions = SUPPORTED_LOCALES.map((value) => ({
-		value,
+		key: value,
 		label: localeLabel(value, i18n.resolvedLanguage || i18n.language),
 	}));
 	return (
@@ -340,12 +341,12 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 								}
 							/>
 						</FormField>
-						<FormField label={t("support.manage.editor.language")} htmlFor="support-article-locale">
-							<FormFieldSelect
-								id="support-article-locale"
+						<FormField label={t("support.manage.editor.language")}>
+							<SegmentedControl
 								value={locale}
 								options={localeOptions}
-								onChange={(event) => setLocale(event.target.value)}
+								onChange={setLocale}
+								ariaLabel={t("support.manage.editor.language")}
 							/>
 						</FormField>
 						<FormField

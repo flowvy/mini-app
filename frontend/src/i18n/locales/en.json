@@ -145,11 +145,11 @@
 	"home": {
 		"noSubscription": "No active subscription",
 		"sponsor": {
-			"loadingLabel": "Loading sponsor access",
-			"unavailableTitle": "Sponsor status unavailable",
+			"loadingLabel": "Loading extended access",
+			"unavailableTitle": "Extended access status unavailable",
 			"unavailableDescription": "Your existing access is unchanged. Retry before starting or managing a payment",
-			"sponsorAccess": "Sponsor access",
-			"sponsorAccessUntil": "Sponsor access until",
+			"sponsorAccess": "Extended access",
+			"sponsorAccessUntil": "Extended access until",
 			"baseAccess": "Basic access",
 			"baseAccessUntil": "Basic access until",
 			"checkStatus": "Check payment status",
@@ -158,7 +158,7 @@
 			},
 			"paymentFeedback": {
 				"checkError": "Could not check the payment status. Your pending checkout is unchanged",
-				"refreshError": "Could not refresh sponsor status. Your existing access is unchanged",
+				"refreshError": "Could not refresh extended access status. Your existing access is unchanged",
 				"cancelError": "Could not close this payment attempt. It is still waiting for confirmation"
 			},
 			"checkoutNotice": "Payment is completed in Tribute. Return to {{appName}} afterward; access changes only after {{appName}} receives and applies Tribute's confirmation",
@@ -189,22 +189,22 @@
 			"otherSubscriptionsWarning": "You can choose another subscription after your current paid period ends on {{date}}",
 			"checkoutError": "Could not start this payment. No payment was created; retry from {{appName}}",
 			"action": {
-				"choose": "Choose sponsor access",
+				"choose": "Choose extended access",
 				"continue": "Continue in Tribute",
 				"refresh": "Refresh status",
 				"renew": "Extend access",
 				"manage": "Manage in Tribute",
 				"manageAutoDonation": "Manage auto-donation in Tribute",
-				"resume": "Resume sponsor access"
+				"resume": "Resume extended access"
 			},
 			"state": {
 				"noAccess": {
-					"title": "Get sponsor access",
+					"title": "Get extended access",
 					"description": "Choose a published option to support the service and receive the configured access"
 				},
 				"baseAccess": {
 					"title": "Upgrade your access",
-					"description": "Your basic access stays active. Sponsor access adds the benefits configured by the administrator"
+					"description": "Your basic access stays active. Extended access adds the benefits configured by the administrator"
 				},
 				"checkoutPending": {
 					"title": "Payment not confirmed yet",
@@ -212,30 +212,30 @@
 				},
 				"provisioning": {
 					"title": "Payment received",
-					"description": "{{appName}} is applying sponsor access. You do not need to pay again"
+					"description": "{{appName}} is applying extended access. You do not need to pay again"
 				},
 				"attention": {
 					"title": "Payment needs review",
 					"description": "{{appName}} received a payment it could not safely automate. Do not pay again; an administrator must review it"
 				},
 				"oneTimeActive": {
-					"title": "Sponsor access is active",
+					"title": "Extended access is active",
 					"description": "This access came from a one-time payment and will not renew automatically"
 				},
 				"oneTimeExpired": {
-					"title": "Sponsor access expired",
-					"description": "Choose a new one-time payment or a recurring option to restore sponsor access"
+					"title": "Extended access expired",
+					"description": "Choose a new one-time payment or a recurring option to restore extended access"
 				},
 				"recurringTrial": {
-					"title": "Sponsor trial is active",
+					"title": "Extended access trial is active",
 					"description": "Your trial access is available until the date below. Billing and cancellation are managed in Tribute"
 				},
 				"recurringActive": {
-					"title": "Sponsor access is active",
+					"title": "Extended access is active",
 					"description": "Your paid access is available until the date below. Billing and cancellation are managed in Tribute"
 				},
 				"recurringDonationActive": {
-					"title": "Sponsor access is active",
+					"title": "Extended access is active",
 					"description": "Your paid access is available until the date below"
 				},
 				"recurringCancelled": {
@@ -244,11 +244,11 @@
 				},
 				"recurringExpired": {
 					"title": "Recurring access ended",
-					"description": "Choose an available offer to start sponsor access again"
+					"description": "Choose an available offer to start extended access again"
 				},
 				"refunded": {
 					"title": "Payment was refunded",
-					"description": "Sponsor access from that payment is no longer active. Choose another offer only if you want to pay again"
+					"description": "Extended access from that payment is no longer active. Choose another offer only if you want to pay again"
 				}
 			}
 		},
@@ -257,7 +257,6 @@
 			"loadingLabel": "Loading invite",
 			"description": "Share your personal code. Friends can open the app and join with your invite",
 			"invitedLabel": "Registered through your invite",
-			"invitedShort": "invited",
 			"copy": "Copy",
 			"copied": "Copied",
 			"copyFailed": "Try again",
@@ -289,11 +288,10 @@
 			"expires": "Expires",
 			"expiresHint": "When this subscription expires",
 			"email": "Email",
-			"emailHint": "Account email address",
+			"emailHint": "Contact email",
 			"telegramId": "Telegram ID",
 			"telegramIdHint": "Linked Telegram account",
-			"devices": "Devices",
-			"devicesHint": "Max devices connected at the same time",
+			"devices": "Device limit",
 			"devicesUnlimited": "Unlimited",
 			"devicesCount": "{{n}} devices",
 			"profileSettings": "Profile Settings",
@@ -715,7 +713,6 @@
 			"keyAdded": "Key added",
 			"setupRequired": "Setup",
 			"hub": {
-				"intro": "Provider setup is separate from offers and payment operations",
 				"setup": "Setup",
 				"management": "Management",
 				"operations": "Operations",
@@ -1086,7 +1083,6 @@
 			"title": "Communication",
 			"description": "Telegram and Mini App messages",
 			"messageCount": "{{count}} messages",
-			"intro": "Each message opens the fields used by its actual destination",
 			"telegram": "Telegram",
 			"registration": "Registration",
 			"home": "Home",
@@ -1217,7 +1213,7 @@
 				"today": "Today",
 				"lifetime": "Lifetime",
 				"active": "Active",
-				"requests": "Requests",
+				"requests": "API requests",
 				"uptime": "Uptime",
 				"onlineNow": "{{n}} online now",
 				"allNodes": "all nodes",
@@ -1253,7 +1249,7 @@
 				"activity": "Activity",
 				"active1h": "Active 1h",
 				"active24h": "Active 24h",
-				"requests": "Requests",
+				"requests": "API requests",
 				"totalRequests": "Total",
 				"todayRequests": "Today",
 				"system": "System",

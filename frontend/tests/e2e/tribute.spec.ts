@@ -15,6 +15,15 @@ import {
 } from "./fixtures/telegram-main-button.ts";
 
 async function submitEditor(dialog: Locator): Promise<void> {
+	const language = dialog.getByRole("radiogroup", { name: "Content language" });
+	if ((await language.count()) > 0) {
+		await language.getByRole("radio", { name: "Russian" }).click();
+		const localizedTitle = dialog.getByLabel("Offer title");
+		if ((await localizedTitle.inputValue()) === "") {
+			await localizedTitle.fill("Расширенный доступ");
+		}
+		await language.getByRole("radio", { name: "English" }).click();
+	}
 	await dialog.locator("form").evaluate((form) => (form as HTMLFormElement).requestSubmit());
 }
 
@@ -191,6 +200,11 @@ test("Tribute onboarding is a separate payment-provider route with stable naviga
 	await expect(page.getByRole("heading", { name: "Setup" })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Management" })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Operations" })).toBeVisible();
+	await expect(
+		page.getByText("Provider setup is separate from offers and payment operations", {
+			exact: true,
+		}),
+	).toHaveCount(0);
 
 	await page.goBack();
 	await expect(page).toHaveURL(/\/admin\/settings$/);
@@ -1458,7 +1472,15 @@ test("admin creates a user-facing sponsor offer from an automation rule", async 
 	}
 	expect(accessibilityByTheme.filter(({ serious }) => serious.length > 0)).toEqual([]);
 	await page.getByRole("heading", { name: "Payment and access" }).click();
+	const createRequest = page.waitForRequest(
+		(request) =>
+			request.method() === "POST" &&
+			new URL(request.url()).pathname === "/api/debug/admin/commerce/offers",
+	);
 	await submitEditor(page.getByRole("dialog", { name: "Create sponsor offer" }));
+	const createPayload = (await createRequest).postDataJSON();
+	expect(createPayload.contentLocales.en.title).toBe("Monthly sponsor access");
+	expect(createPayload.contentLocales.ru.title).toBe("Расширенный доступ");
 
 	await expect(page.getByRole("heading", { name: "Create sponsor offer" })).toHaveCount(0);
 	const createdOffer = page.getByRole("article", { name: "Monthly sponsor access" });
@@ -1949,7 +1971,7 @@ test("Home starts a subscription checkout without treating the redirect as payme
 
 	await page.goto("/");
 	await expect(page.getByRole("article", { name: "No active subscription" })).toBeVisible();
-	await expect(page.getByRole("heading", { name: "Get sponsor access" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Get extended access" })).toBeVisible();
 	const subscriptionOffer = page.getByRole("article", { name: "Monthly sponsor access" });
 	await expect(subscriptionOffer).toBeVisible();
 	await expect(subscriptionOffer.getByText("Billed monthly", { exact: true })).toBeVisible();
@@ -2096,7 +2118,7 @@ test("Home reports confirmed subscription access without guessing cancellation s
 	});
 
 	await page.goto("/");
-	const activeCard = page.getByRole("region", { name: "Sponsor access is active" });
+	const activeCard = page.getByRole("region", { name: "Extended access is active" });
 	await expect(activeCard).toBeVisible();
 	await expect(
 		activeCard.getByText(
@@ -2172,9 +2194,9 @@ test("Home reports confirmed subscription access without guessing cancellation s
 	await page.reload();
 	await expect(page.getByRole("heading", { name: "Auto-renewal is off" })).toBeVisible();
 	await expect(page.getByText("Sep 14, 2026", { exact: true })).toBeVisible();
-	await expect(page.getByRole("button", { name: "Resume sponsor access" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Resume extended access" })).toBeVisible();
 	await expect(page.getByRole("button", { name: "Manage in Tribute" })).toHaveCount(0);
-	await page.getByRole("button", { name: "Resume sponsor access" }).click();
+	await page.getByRole("button", { name: "Resume extended access" }).click();
 	await expect(page.getByText("Monthly sponsor access", { exact: true })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
@@ -2198,7 +2220,7 @@ test("Home derives recurring billing UX from a recurring donation webhook lifecy
 	});
 
 	await page.goto("/");
-	await expect(page.getByRole("heading", { name: "Sponsor access is active" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Extended access is active" })).toBeVisible();
 	await expect(page.getByText("Your paid access is available until the date below")).toBeVisible();
 	await expect(
 		page.getByText(
@@ -2229,12 +2251,12 @@ test("Home derives recurring billing UX from a recurring donation webhook lifecy
 	});
 	await page.reload();
 	await expect(page.getByRole("heading", { name: "Recurring access ended" })).toBeVisible();
-	await expect(page.getByRole("button", { name: "Resume sponsor access" })).toBeVisible();
+	await expect(page.getByRole("button", { name: "Resume extended access" })).toBeVisible();
 	await expect(page.getByRole("button", { name: "Manage auto-donation in Tribute" })).toHaveCount(
 		0,
 	);
 	await expect(page.getByRole("button", { name: "Extend access" })).toHaveCount(0);
-	await page.getByRole("button", { name: "Resume sponsor access" }).click();
+	await page.getByRole("button", { name: "Resume extended access" }).click();
 	await expect(page.getByText("One month sponsor", { exact: true })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
@@ -2277,7 +2299,7 @@ test("Home keeps base access while offering an upgrade and handles one-time rene
 		offers: [offer],
 	});
 	await page.reload();
-	await expect(page.getByRole("heading", { name: "Sponsor access is active" })).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Extended access is active" })).toBeVisible();
 	await expect(page.getByRole("button", { name: "Extend access" })).toBeVisible();
 	await expect(page.getByRole("button", { name: "Manage in Tribute" })).toHaveCount(0);
 	await expect(page.getByText("Monthly sponsor access", { exact: true })).toHaveCount(0);
@@ -2402,12 +2424,14 @@ test("failed sponsor refresh keeps stale access visible and reveals an action er
 	await page.goto("/");
 	await expect(page.getByRole("heading", { name: "Payment received" })).toBeVisible();
 	await page.getByRole("button", { name: "Refresh status" }).click();
-	const error = page
-		.getByRole("alert")
-		.filter({ hasText: "Could not refresh sponsor status. Your existing access is unchanged" });
+	const error = page.getByRole("alert").filter({
+		hasText: "Could not refresh extended access status. Your existing access is unchanged",
+	});
 	await expectActionErrorRevealed(error);
 	await expect(page.getByRole("heading", { name: "Payment received" })).toBeVisible();
-	await expect(page.getByRole("heading", { name: "Sponsor status unavailable" })).toHaveCount(0);
+	await expect(
+		page.getByRole("heading", { name: "Extended access status unavailable" }),
+	).toHaveCount(0);
 	await assertNoHorizontalOverflow(page);
 });
 
@@ -2629,7 +2653,7 @@ test("returning to a completed donation refreshes access and removes pending gui
 	});
 
 	await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-	const activeCard = page.getByRole("region", { name: "Sponsor access is active" });
+	const activeCard = page.getByRole("region", { name: "Extended access is active" });
 	await expect(activeCard).toBeVisible();
 	await expect(page.getByRole("button", { name: "Continue in Tribute" })).toHaveCount(0);
 	await expect(page.getByRole("button", { name: "Check payment status" })).toHaveCount(0);
@@ -2779,7 +2803,7 @@ test("sponsor checkout card produces reviewable light and dark evidence", async 
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
-		await expect(page.getByRole("region", { name: "Sponsor access is active" })).toBeVisible();
+		await expect(page.getByRole("region", { name: "Extended access is active" })).toBeVisible();
 		await page.screenshot({
 			path: testInfo.outputPath(`home-sponsor-active-${colorScheme}.png`),
 			fullPage: true,
@@ -2809,7 +2833,7 @@ test("sponsor checkout card produces reviewable light and dark evidence", async 
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
-		const recurringCard = page.getByRole("region", { name: "Sponsor access is active" });
+		const recurringCard = page.getByRole("region", { name: "Extended access is active" });
 		await expect(recurringCard).toBeVisible();
 		await recurringCard.screenshot({
 			path: testInfo.outputPath(`sponsor-recurring-donation-${colorScheme}.png`),
@@ -2864,7 +2888,7 @@ test("identified donation checkout clearly warns against anonymous attribution",
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
-		const card = page.getByRole("region", { name: "Get sponsor access" });
+		const card = page.getByRole("region", { name: "Get extended access" });
 		await expect(card.getByText("Flexible sponsor donation", { exact: true })).toBeVisible();
 		const donationPriceRows = card.locator('[data-ui="sponsor-donation-price"]');
 		await expect(donationPriceRows).toHaveCount(2);

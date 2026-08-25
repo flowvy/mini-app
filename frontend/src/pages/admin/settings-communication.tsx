@@ -40,7 +40,6 @@ export const AdminCommunicationSettings: FC = () => {
 
 	return (
 		<div className={styles.page}>
-			<p className={styles.screenIntro}>{t("settings.communication.intro")}</p>
 			<SettingsSection title={t("settings.communication.telegram")}>
 				<SettingsNavRow
 					icon={<Bot size={17} strokeWidth={1.8} aria-hidden="true" />}

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../src/lib/telegram.ts", () => ({
 	getRawInitData: () => undefined,
+	getTelegramUserLocale: () => undefined,
 }));
 
 import { type ApiError, apiDelete, apiGet } from "../../src/lib/api.ts";

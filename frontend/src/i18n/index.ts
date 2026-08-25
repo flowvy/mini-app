@@ -1,6 +1,7 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import { selectSupportedLocale } from "../lib/locale.ts";
+import { selectInitialLocale } from "../lib/locale.ts";
+import { getTelegramUserLocale } from "../lib/telegram.ts";
 
 type LocaleModule = { default: Record<string, unknown> };
 
@@ -27,7 +28,8 @@ const resources = Object.fromEntries(
 	}),
 );
 
-const initialLocale = selectSupportedLocale(
+const initialLocale = selectInitialLocale(
+	getTelegramUserLocale(),
 	typeof navigator === "undefined" ? [] : navigator.languages,
 	SUPPORTED_LOCALES,
 );

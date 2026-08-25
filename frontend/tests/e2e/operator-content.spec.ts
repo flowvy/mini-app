@@ -129,12 +129,20 @@ test("admin saves allow-listed provider content as a locale map", async ({
 	await installTelegramMainButton(page);
 	await page.goto(withTelegramMainButton("/admin/settings/content"));
 	await expect(page.locator("header").getByText("Message", { exact: true })).toBeVisible();
-	await expect(page.getByLabel("Content language")).toHaveCount(0);
+	const contentLanguage = page.getByRole("radiogroup", { name: "Content language" });
+	await expect(contentLanguage.getByRole("radio", { name: "English" })).toBeChecked();
+	await expect(contentLanguage.getByRole("radio", { name: "Russian" })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Support" })).toHaveCount(0);
 
 	await page.getByLabel("Invite registration title").fill("Private {{appName}} access");
 	await page.getByLabel("User-facing message").selectOption("inviteCard");
 	await page.getByLabel("Invite card title").fill("Bring your crew");
+	await contentLanguage.getByRole("radio", { name: "Russian" }).click();
+	await expect(page.getByLabel("Invite card title")).toHaveAttribute(
+		"placeholder",
+		"Пригласи друзей",
+	);
+	await page.getByLabel("Invite card title").fill("Собери свою команду");
 	const patchRequest = page.waitForRequest(
 		(request) =>
 			request.method() === "PATCH" &&
@@ -145,6 +153,7 @@ test("admin saves allow-listed provider content as a locale map", async ({
 	const payload = (await patchRequest).postDataJSON();
 	expect(payload.contentLocales.en.onboardingInviteTitle).toBe("Private {{appName}} access");
 	expect(payload.contentLocales.en.inviteTitle).toBe("Bring your crew");
+	expect(payload.contentLocales.ru.inviteTitle).toBe("Собери свою команду");
 	expect(payload.contentLocales.en).not.toHaveProperty("botInviteRequired");
 	expect(payload).not.toHaveProperty("supportUrl");
 });
@@ -174,7 +183,18 @@ test("saved Welcome content stays clean", async ({ page, mockApi: _mock }) => {
 	await page.goto(withTelegramMainButton("/admin/settings/communication"));
 	await page.getByRole("button", { name: /^Welcome Message/ }).click();
 	await page.getByLabel("Greeting text").fill("Welcome back to Flowvy");
+	const language = page.getByRole("radiogroup", { name: "Content language" });
+	await language.getByRole("radio", { name: "Russian" }).click();
+	await page.getByLabel("Greeting text").fill("С возвращением в Flowvy");
+	const patchRequest = page.waitForRequest(
+		(request) =>
+			request.method() === "PATCH" &&
+			new URL(request.url()).pathname === "/api/debug/admin/settings",
+	);
 	await pressTelegramMainButton(page);
+	const payload = (await patchRequest).postDataJSON();
+	expect(payload.contentLocales.en.welcomeText).toBe("Welcome back to Flowvy");
+	expect(payload.contentLocales.ru.welcomeText).toBe("С возвращением в Flowvy");
 	await expect
 		.poll(() => latestTelegramMainButton(page))
 		.toEqual(expect.objectContaining({ is_active: false, is_visible: true }));
@@ -267,7 +287,9 @@ test("Communication groups all message contexts and opens the selected editor", 
 	await page.getByRole("button", { name: /^Sponsor · shared action/ }).click();
 	await expect(page).toHaveURL(/\/admin\/settings\/content\?message=sponsorAction$/);
 	await expect(page.getByLabel("Choose-offer button")).toBeVisible();
-	await expect(page.getByLabel("Content language")).toHaveCount(0);
+	const contentLanguage = page.getByRole("radiogroup", { name: "Content language" });
+	await expect(contentLanguage.getByRole("radio", { name: "English" })).toBeChecked();
+	await expect(contentLanguage.getByRole("radio", { name: "Russian" })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
 });
 

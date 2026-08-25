@@ -184,8 +184,12 @@ class MessageSender:
 
         overrides: dict[str, object] = {}
         content = resolve_operator_content(provider_settings, locale)
-        welcome_text = content.welcome_text or provider_settings.welcome_text
-        welcome_button_text = content.welcome_button_text or provider_settings.welcome_button_text
+        raw_locales = getattr(provider_settings, "content_locales", {})
+        has_locale_map = isinstance(raw_locales, dict) and bool(raw_locales)
+        legacy_text = provider_settings.welcome_text if not has_locale_map else None
+        legacy_button_text = provider_settings.welcome_button_text if not has_locale_map else None
+        welcome_text = content.welcome_text or legacy_text
+        welcome_button_text = content.welcome_button_text or legacy_button_text
         if welcome_text is not None:
             overrides["text"] = welcome_text
         if provider_settings.welcome_media_file_id is not None:

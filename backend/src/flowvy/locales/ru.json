@@ -1,0 +1,29 @@
+{
+  "common": {
+    "appName": "Flowvy"
+  },
+  "welcome": {
+    "text": "Привет! <tg-emoji emoji-id=\"5262526163959453517\">☺</tg-emoji>\nУправляй доступом прямо в Telegram.",
+    "button": "Открыть {{ app_name }}"
+  },
+  "inviteShare": {
+    "text": "Присоединяйся ко мне в {{appName}}. Если Telegram попросит, введи инвайт-код <code>{{code}}</code>.",
+    "button": "Открыть {{appName}}"
+  },
+  "supportNotifications": {
+    "userReply": "💬 <b>{{subject}}</b>\n\n<blockquote>{{message}}</blockquote>\n\nТикет #{{requestNumber}} • {{topic}}{{attachments}}",
+    "adminNewRequest": "💬 <b>{{subject}} • {{requester}}</b>\n\n<blockquote>{{message}}</blockquote>\n\nТикет #{{requestNumber}} • {{topic}}{{attachments}}",
+    "adminUserReply": "💬 <b>{{subject}} • {{requester}}</b>\n\n<blockquote>{{message}}</blockquote>\n\nТикет #{{requestNumber}} • {{topic}}{{attachments}}",
+    "replyButton": "Ответить",
+    "openButton": "Открыть",
+    "oneAttachment": "📎 1 файл",
+    "manyAttachments": "📎 Файлы: {{count}}",
+    "topics": {
+      "connection": "Подключение",
+      "subscription": "Подписка",
+      "devices": "Девайсы",
+      "payment": "Оплата",
+      "other": "Другое"
+    }
+  }
+}

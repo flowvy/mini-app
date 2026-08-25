@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 
 import pytest
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -15,6 +16,7 @@ from sqlalchemy.ext.asyncio import (
 from flowvy.models import Base
 
 TEST_DATABASE_URL = "postgresql+asyncpg://test:test@localhost:5432/test"
+TEST_REDIS_URL = "redis://localhost:6379/15"
 
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
@@ -29,7 +31,7 @@ def _env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Set minimal env vars so Settings() can be constructed."""
     monkeypatch.setenv("BOT_TOKEN", "000000:TEST")
     monkeypatch.setenv("DATABASE_URL", TEST_DATABASE_URL)
-    monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/0")
+    monkeypatch.setenv("REDIS_URL", TEST_REDIS_URL)
     monkeypatch.setenv("DEBUG", "false")
     monkeypatch.setenv("WEBHOOK_URL", "")
     monkeypatch.setenv("TELEGRAM_WEBHOOK_SECRET", "")
@@ -42,6 +44,22 @@ def _env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("R2_BUCKET_NAME", "")
     monkeypatch.setenv("R2_ACCESS_KEY_ID", "")
     monkeypatch.setenv("R2_SECRET_ACCESS_KEY", "")
+
+
+@pytest.fixture(autouse=True)
+async def _integration_redis_isolation(request: pytest.FixtureRequest) -> AsyncIterator[None]:
+    """Keep integration-test rate limits and caches out of local development Redis."""
+    if request.node.get_closest_marker("integration") is None:
+        yield
+        return
+
+    redis = Redis.from_url(TEST_REDIS_URL)
+    await redis.flushdb()
+    try:
+        yield
+    finally:
+        await redis.flushdb()
+        await redis.aclose()
 
 
 @pytest.fixture

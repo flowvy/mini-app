@@ -10,7 +10,7 @@ import styles from "./pulse.module.css";
 
 export const Pulse: FC = () => {
 	const { pulse, isPending, error, refetch } = usePulse();
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 
 	if (isPending) {
 		return <PageLoading />;
@@ -45,7 +45,7 @@ export const Pulse: FC = () => {
 								>
 									<strong>{incident.title}</strong>
 									<time dateTime={incident.createdAt}>
-										{new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(
+										{new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium" }).format(
 											new Date(incident.createdAt),
 										)}
 									</time>

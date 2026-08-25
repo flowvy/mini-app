@@ -36,7 +36,6 @@ export const AdminTributeConfig: FC = () => {
 		<SettingsDataPage>
 			{(settings) => (
 				<div className={styles.page}>
-					<p className={styles.screenIntro}>{t("settings.tribute.hub.intro")}</p>
 					<SettingsSection title={t("settings.tribute.hub.setup")}>
 						<SettingsNavRow
 							icon={<Plug size={17} strokeWidth={1.8} aria-hidden="true" />}

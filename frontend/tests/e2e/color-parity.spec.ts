@@ -148,7 +148,7 @@ test("desktop color roles cover navigation, status, editors, and destructive act
 		await page.evaluate((theme) => {
 			document.documentElement.setAttribute("data-theme", theme);
 		}, colorScheme);
-		const sponsorLoading = page.locator('section[aria-label="Loading sponsor access"]');
+		const sponsorLoading = page.locator('section[aria-label="Loading extended access"]');
 		await expect(sponsorLoading).toBeVisible();
 		await expect(sponsorLoading.locator('[data-ui="skeleton"]').first()).toHaveCSS(
 			"background-color",

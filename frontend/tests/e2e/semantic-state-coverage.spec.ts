@@ -55,7 +55,7 @@ test("renders every previously missing Sponsor state on the neutral outer surfac
 	const states = [
 		{
 			status: "one_time_expired",
-			title: "Sponsor access expired",
+			title: "Extended access expired",
 			accessLevel: "base",
 			primaryAction: "renew",
 			paidExpiresAt: "2026-08-01T00:00:00Z",
@@ -64,7 +64,7 @@ test("renders every previously missing Sponsor state on the neutral outer surfac
 		},
 		{
 			status: "recurring_trial",
-			title: "Sponsor trial is active",
+			title: "Extended access trial is active",
 			accessLevel: "paid",
 			primaryAction: "manage_subscription",
 			paidExpiresAt: "2027-08-01T00:00:00Z",

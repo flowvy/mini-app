@@ -51,3 +51,10 @@ def test_product_copy_and_bounded_placeholder_rendering_use_locale_catalog() -> 
     template = product_text("unknown", "welcome.button")
 
     assert render_placeholders(template, {"appName": "Acme", "app_name": "Acme"}) == "Open Acme"
+
+
+def test_russian_product_copy_uses_exact_then_base_locale_catalog() -> None:
+    template = product_text("ru-RU", "welcome.button")
+
+    assert render_placeholders(template, {"appName": "Acme", "app_name": "Acme"}) == "Открыть Acme"
+    assert product_text("ru", "supportNotifications.manyAttachments") == "📎 Файлы: {{count}}"

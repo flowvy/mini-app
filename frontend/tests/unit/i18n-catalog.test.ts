@@ -3,6 +3,7 @@ import { extname, join, resolve } from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import locale from "../../src/i18n/locales/en.json";
+import russianLocale from "../../src/i18n/locales/ru.json";
 
 const sourceRoot = resolve(import.meta.dirname, "../../src");
 const localeRoot = resolve(sourceRoot, "i18n/locales");
@@ -28,6 +29,10 @@ function flattenStrings(value: unknown, prefix = ""): Array<{ key: string; value
 	return Object.entries(value).flatMap(([key, child]) =>
 		flattenStrings(child, prefix ? `${prefix}.${key}` : key),
 	);
+}
+
+function placeholders(value: string): string[] {
+	return [...value.matchAll(/\{\{\s*([^}\s]+)\s*\}\}/g)].map((match) => match[1] ?? "").sort();
 }
 
 function parsedSources(): Array<{ path: string; source: ts.SourceFile }> {
@@ -136,6 +141,52 @@ describe("English UI copy catalog", () => {
 	});
 });
 
+describe("Russian UI copy catalog", () => {
+	it("keeps exact key and placeholder parity with English", () => {
+		const english = flattenStrings(locale).sort((left, right) => left.key.localeCompare(right.key));
+		const russian = flattenStrings(russianLocale).sort((left, right) =>
+			left.key.localeCompare(right.key),
+		);
+
+		expect(russian.map(({ key }) => key)).toEqual(english.map(({ key }) => key));
+		for (const [index, source] of english.entries()) {
+			const translated = russian[index];
+			expect(translated?.key).toBe(source.key);
+			expect(placeholders(translated?.value ?? ""), source.key).toEqual(placeholders(source.value));
+		}
+	});
+
+	it("keeps the accepted compact product terminology", () => {
+		expect(russianLocale.common.tab).toMatchObject({
+			home: "Главная",
+			devices: "Устройства",
+			support: "Помощь",
+			users: "Юзеры",
+		});
+		expect(russianLocale.home.sponsor).toMatchObject({
+			baseAccess: "Базовый доступ",
+			sponsorAccess: "Расширенный доступ",
+		});
+		expect(russianLocale.home.heroCard.openLink).toBe("Инструкция по установке");
+		expect(russianLocale.home.heroCard.expiresLabel).toBe("Истекает");
+		expect(russianLocale.home.detail.devices).toBe("Лимит устройств");
+		expect(russianLocale.access.open).toBe("Открытый");
+		expect(russianLocale.access.internalSquads).toBe("Внутренние сквады");
+		expect(russianLocale.format.relative).toMatchObject({
+			minutesAgo: "{{n}} мин.",
+			hoursAgo: "{{n}} ч.",
+			daysAgo: "{{n}} дн.",
+		});
+		expect(russianLocale.format.expiryCompact.ago).toBe("{{n}} дн. назад");
+		expect(russianLocale.admin.dashboard.kpi.requests).toBe("API-запросы");
+		expect(russianLocale.admin.dashboard.flowvy.requests).toBe("API-запросы");
+		expect(russianLocale.support.status.withSupport).toBe("В Помощи");
+		expect(locale.home.sponsor.sponsorAccess).toBe("Extended access");
+		expect(locale.admin.dashboard.kpi.requests).toBe("API requests");
+		expect(locale.admin.dashboard.flowvy.requests).toBe("API requests");
+	});
+});
+
 describe("Locale UI punctuation", () => {
 	it("does not end compact interface copy with a period", () => {
 		const findings = readdirSync(localeRoot)
@@ -143,7 +194,13 @@ describe("Locale UI punctuation", () => {
 			.flatMap((file) => {
 				const catalog: unknown = JSON.parse(readFileSync(join(localeRoot, file), "utf8"));
 				return flattenStrings(catalog)
-					.filter(({ value }) => /(?<!\.)\.$/u.test(value.trim()))
+					.filter(({ value }) => {
+						const compact = value.trim();
+						return (
+							/(?<!\.)\.$/u.test(compact) &&
+							!/(?:^|\s)(?:Вкл|Выкл|мин|ч|дн|мес|шт)\.$/u.test(compact)
+						);
+					})
 					.map(({ key, value }) => `${file}:${key} ${JSON.stringify(value)}`);
 			});
 

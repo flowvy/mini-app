@@ -109,6 +109,19 @@ async def test_article_service_enforces_publication_and_published_only_projectio
     assert public[0].title == "Connection does not work"
     assert public[0].body.startswith("Try **refreshing**")
 
+    bilingual_payload = _payload(status="published").model_dump(mode="json", by_alias=True)
+    bilingual_payload["contentLocales"]["ru"] = {
+        "title": "Подключение не работает",
+        "summary": "Сначала проверь частые причины",
+        "body": "Попробуй **обновить** профиль.",
+    }
+    await service.update(draft.id, SupportArticleInput.model_validate(bilingual_payload))
+    public_ru = await service.list_public("ru-RU")
+    public_fallback = await service.list_public("de-DE")
+    assert public_ru[0].title == "Подключение не работает"
+    assert public_ru[0].body == "Попробуй **обновить** профиль."
+    assert public_fallback[0].title == "Connection does not work"
+
     await service.update(draft.id, _payload(status="archived"))
     assert await service.list_public("en") == []
 

@@ -76,13 +76,13 @@ function formatBytes(bytes: number): string {
 	return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
-function formatUpdatedAt(value: string): string {
+function formatUpdatedAt(value: string, locale: string): string {
 	const date = new Date(value);
 	const today = new Date();
 	if (date.toDateString() === today.toDateString()) {
-		return new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(date);
+		return new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(date);
 	}
-	return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date);
+	return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(date);
 }
 
 function StatusPill({ status, admin }: { status: SupportRequestStatus; admin: boolean }) {
@@ -202,7 +202,7 @@ function RequestRow({
 	request,
 	admin = false,
 }: { request: SupportRequestSummary; admin?: boolean }) {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const navigate = useNavigate();
 	return (
 		<button
@@ -228,7 +228,7 @@ function RequestRow({
 							{request.unreadCount}
 						</b>
 					)}
-					{formatUpdatedAt(request.updatedAt)}
+					{formatUpdatedAt(request.updatedAt, i18n.language)}
 				</span>
 				<StatusPill status={request.status} admin={admin} />
 			</span>
@@ -729,7 +729,7 @@ function AttachmentIcon({ attachment }: { attachment: SupportAttachment }) {
 }
 
 export function SupportRequestPage() {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const user = useCurrentUser();
 	const isAdmin = user.role === "admin";
 	const { requestId } = useParams({ from: "/support/requests/$requestId" });
@@ -794,7 +794,9 @@ export function SupportRequestPage() {
 							<span>{topicLabel(t, request.topic)}</span>
 							<span className={styles.metaSeparator} aria-hidden="true" />
 							<span>
-								{t("support.request.updated", { value: formatUpdatedAt(request.updatedAt) })}
+								{t("support.request.updated", {
+									value: formatUpdatedAt(request.updatedAt, i18n.language),
+								})}
 							</span>
 						</div>
 					</div>
@@ -869,7 +871,9 @@ export function SupportRequestPage() {
 										</span>
 										<strong>{item.authorName}</strong>
 									</span>
-									<time dateTime={item.createdAt}>{formatUpdatedAt(item.createdAt)}</time>
+									<time dateTime={item.createdAt}>
+										{formatUpdatedAt(item.createdAt, i18n.language)}
+									</time>
 								</header>
 								<FormattedText className={styles.messageBody}>{item.body}</FormattedText>
 								{item.attachments.length > 0 && (

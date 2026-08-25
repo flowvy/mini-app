@@ -242,6 +242,32 @@ async def test_send_welcome_uses_operator_content_for_requested_locale(
     assert sent["reply_markup"].inline_keyboard[0][0].text == "Открыть"
 
 
+async def test_partial_russian_welcome_uses_russian_product_fallback(
+    sender: MessageSender,
+    bot: AsyncMock,
+) -> None:
+    settings = Settings(webapp_url="https://app.example.com")
+    ps = MagicMock()
+    ps.app_name = "Flowvy"
+    ps.content_default_locale = "en"
+    ps.content_locales = {
+        "en": {"welcome_text": "English operator copy", "welcome_button_text": "Open custom"},
+        "ru": {"invite_title": "Пригласи друзей"},
+    }
+    ps.welcome_text = "English legacy copy"
+    ps.welcome_media_url = None
+    ps.welcome_media_type = None
+    ps.welcome_media_file_id = None
+    ps.welcome_button_text = "English legacy button"
+
+    await sender.send_welcome(123, settings, ps, locale="ru-RU")
+
+    sent = bot.send_animation.call_args.kwargs
+    assert sent["caption"].startswith("Привет!")
+    assert "English legacy copy" not in sent["caption"]
+    assert sent["reply_markup"].inline_keyboard[0][0].text == "Открыть Flowvy"
+
+
 async def test_send_welcome_no_webapp_url(sender: MessageSender, bot: AsyncMock) -> None:
     """Welcome without webapp_url sends text-only message."""
     settings = Settings(webapp_url="")

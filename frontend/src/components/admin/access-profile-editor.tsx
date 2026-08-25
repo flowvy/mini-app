@@ -104,7 +104,7 @@ export function AccessProfileEditor({
 	returnFocusTo,
 	onClose,
 }: AccessProfileEditorProps) {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const [draft, setDraft] = useState<AccessProfileInput>(() =>
 		profile
 			? {
@@ -265,7 +265,7 @@ export function AccessProfileEditor({
 									<FormInlineDate
 										id="access-profile-expiry"
 										value={fixedDate}
-										displayValue={formatDateValue(fixedDate, navigator.language)}
+										displayValue={formatDateValue(fixedDate, i18n.language)}
 										min={dateValue(new Date().toISOString())}
 										onChange={(event) =>
 											setDraft({

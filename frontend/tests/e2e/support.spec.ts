@@ -11,6 +11,18 @@ async function useUserRole(page: import("@playwright/test").Page): Promise<void>
 	await page.addInitScript(() => localStorage.setItem("flowvy:mock-role", "user"));
 }
 
+async function selectEditorContents(editor: import("@playwright/test").Locator): Promise<void> {
+	await editor.evaluate((element) => {
+		const selection = window.getSelection();
+		if (!selection) throw new Error("Selection API is unavailable");
+		const range = document.createRange();
+		range.selectNodeContents(element);
+		selection.removeAllRanges();
+		selection.addRange(range);
+		document.dispatchEvent(new Event("selectionchange"));
+	});
+}
+
 test("user Support keeps the accepted section order and opens Quick Answers", async ({
 	page,
 	mockApi: _mock,
@@ -128,10 +140,26 @@ test("administrator follows the explicit article lifecycle and deletes the artic
 	await body.pressSequentially(
 		"Restart Flowvy Desktop, then reconnect. Never share an access key.",
 	);
+	const language = page.getByRole("radiogroup", { name: "Language" });
+	await language.getByRole("radio", { name: "Russian" }).click();
+	await page.getByLabel("Title").fill("Исправить DNS");
+	await page.getByLabel("Short description").fill("Проверь настройки DNS перед созданием тикета.");
+	await page
+		.getByRole("textbox", { name: "Article" })
+		.fill("Перезапусти Flowvy Desktop и подключись снова.");
+	await language.getByRole("radio", { name: "English" }).click();
 	await expect(page.getByRole("button", { name: "Save draft" })).toBeEnabled();
 	await status.selectOption("published");
 	await expect(page.getByRole("button", { name: "Publish" })).toBeEnabled();
+	const createRequest = page.waitForRequest(
+		(request) =>
+			request.method() === "POST" &&
+			new URL(request.url()).pathname === "/api/debug/admin/support/articles",
+	);
 	await page.getByRole("button", { name: "Publish" }).click();
+	const createPayload = (await createRequest).postDataJSON();
+	expect(createPayload.contentLocales.en.title).toBe("Fix DNS resolution");
+	expect(createPayload.contentLocales.ru.title).toBe("Исправить DNS");
 	await expect(page).toHaveURL(/\/support\/manage\/answers\/61000000-0000-4000-8000-000000000004$/);
 	await expect(page.getByRole("button", { name: "Publish", exact: true })).toHaveCount(0);
 	await expect(page.getByRole("button", { name: "Save changes" })).toBeDisabled();
@@ -400,7 +428,7 @@ test("new request accepts only screenshots, recordings, TXT and ZIP with a five-
 	const formattingToolbar = page.getByRole("toolbar", { name: "Text formatting" });
 	await expect(formattingToolbar).toBeVisible();
 	await message.fill("The client times out after refreshing the profile");
-	await message.press("ControlOrMeta+A");
+	await selectEditorContents(message);
 	await formattingToolbar.getByRole("button", { name: "Bold" }).click();
 	await expect(message.locator("strong")).toHaveText(
 		"The client times out after refreshing the profile",
@@ -610,7 +638,7 @@ test("administrator sees the queue, opaque ZIP metadata, reply and resolve contr
 	const replyToolbar = page.getByRole("toolbar", { name: "Text formatting" });
 	await expect(replyToolbar).toBeVisible();
 	await replyEditor.fill("Please try the refreshed profile once more");
-	await replyEditor.press("ControlOrMeta+A");
+	await selectEditorContents(replyEditor);
 	await replyToolbar.getByRole("button", { name: "Bold" }).click();
 	const replyRequest = page.waitForRequest(
 		(request) =>

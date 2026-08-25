@@ -13,3 +13,15 @@ export function selectSupportedLocale(
 	}
 	return supported.includes(fallback) ? fallback : (supported[0] ?? fallback);
 }
+
+export function selectInitialLocale(
+	telegramLocale: string | undefined,
+	browserLocales: readonly string[],
+	supported: readonly string[],
+	fallback = "en",
+): string {
+	if (telegramLocale?.trim()) {
+		return selectSupportedLocale([telegramLocale], supported, fallback);
+	}
+	return selectSupportedLocale(browserLocales, supported, fallback);
+}

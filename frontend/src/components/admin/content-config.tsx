@@ -279,6 +279,7 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 		if (initialMessageKey && isMessageKey(initialMessageKey)) setMessageKey(initialMessageKey);
 	}, [initialMessageKey]);
 	const content = contentLocales[locale] ?? {};
+	const targetT = i18n.getFixedT(locale);
 	const message = MESSAGES.find((candidate) => candidate.key === messageKey) ?? MESSAGES[0];
 	const variables = [
 		...new Set(
@@ -438,7 +439,7 @@ export const ContentConfig: FC<ContentConfigProps> = ({ settings, initialMessage
 						const commonProps = {
 							id,
 							value: content[definition.field] ?? "",
-							placeholder: t(definition.fallbackKey),
+							placeholder: targetT(definition.fallbackKey),
 						};
 						return (
 							<FormField key={definition.field} label={t(definition.labelKey)} htmlFor={id}>
