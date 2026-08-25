@@ -287,6 +287,7 @@ class ServiceProvider(Provider):
         profiles: AccessProfileRepository,
         provider_settings: ProviderSettingsRepository,
         catalog: CommerceCatalogService,
+        remnawave: RemnawaveClient,
     ) -> SponsorOfferService:
         return SponsorOfferService(
             offers,
@@ -294,6 +295,7 @@ class ServiceProvider(Provider):
             profiles,
             provider_settings,
             catalog,
+            remnawave,
         )
 
     @provide(scope=Scope.REQUEST)
@@ -309,6 +311,7 @@ class ServiceProvider(Provider):
         users: UserRepository,
         provider_settings: ProviderSettingsRepository,
         config: Settings,
+        remnawave: RemnawaveClient,
     ) -> SponsorStateService:
         return SponsorStateService(
             offers,
@@ -321,6 +324,7 @@ class ServiceProvider(Provider):
             users,
             provider_settings,
             config,
+            remnawave,
         )
 
     @provide(scope=Scope.REQUEST)

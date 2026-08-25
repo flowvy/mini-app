@@ -15,6 +15,7 @@ from flowvy.schemas.commerce import (
     CommerceRulePreviewResponse,
     CommerceRuleResponse,
     SponsorOfferInput,
+    SponsorOfferOptionsResponse,
     SponsorOfferResponse,
 )
 from flowvy.schemas.tribute_webhooks import (
@@ -68,6 +69,16 @@ async def debug_list_sponsor_offers(
 ) -> list[SponsorOfferResponse]:
     check_debug(request)
     return await service.list_admin()
+
+
+@router.get("/offer-options", response_model=SponsorOfferOptionsResponse)
+async def debug_get_sponsor_offer_options(
+    service: FromDishka[SponsorOfferService],
+) -> SponsorOfferOptionsResponse:
+    try:
+        return await service.get_options()
+    except SponsorOfferError as exc:
+        raise _sponsor_offer_error(exc) from exc
 
 
 @router.post(

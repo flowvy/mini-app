@@ -58,6 +58,10 @@ class SponsorOffer(Base):
             name="ck_sponsor_offers_content_locales_object",
         ),
         CheckConstraint(
+            "jsonb_typeof(excluded_remnawave_tags) = 'array'",
+            name="ck_sponsor_offers_excluded_remnawave_tags_array",
+        ),
+        CheckConstraint(
             "is_published = false OR checkout_snapshot IS NOT NULL",
             name="ck_sponsor_offers_published_snapshot",
         ),
@@ -76,6 +80,11 @@ class SponsorOffer(Base):
         JSONB,
         default=dict,
         server_default=text("'{}'::jsonb"),
+    )
+    excluded_remnawave_tags: Mapped[list[str]] = mapped_column(
+        JSONB,
+        default=list,
+        server_default=text("'[]'::jsonb"),
     )
     checkout_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     expected_amount_minor: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

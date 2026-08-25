@@ -22,6 +22,7 @@ from flowvy.schemas.commerce import (
     SponsorOfferInput,
     SponsorOfferResponse,
 )
+from flowvy.services.remnawave import RemnawaveError
 from flowvy.services.sponsor import (
     SponsorCheckoutConflictError,
     SponsorOfferDestinationMissingError,
@@ -81,6 +82,23 @@ def test_sponsor_offer_copy_supports_only_app_name_template() -> None:
             title="Support",
             description="Hello {{secret}}",
             commerce_rule_id=uuid.uuid4(),
+        )
+
+
+def test_sponsor_offer_excluded_tags_are_normalized_and_deduplicated() -> None:
+    payload = SponsorOfferInput(
+        title="Sponsor",
+        commerce_rule_id=RULE_ID,
+        excluded_remnawave_tags=["premium", "PREMIUM", "STAFF_1"],
+    )
+
+    assert payload.excluded_remnawave_tags == ["PREMIUM", "STAFF_1"]
+
+    with pytest.raises(ValueError, match="Remnawave tag"):
+        SponsorOfferInput(
+            title="Sponsor",
+            commerce_rule_id=RULE_ID,
+            excluded_remnawave_tags=["contains-dash"],
         )
 
 
@@ -186,6 +204,73 @@ async def test_subscription_offer_preserves_all_documented_provider_periods() ->
     ]
     assert result.benefits.traffic_limit_bytes == 100 * 1024**3
     assert result.benefits.device_limit == 5
+
+
+@pytest.mark.asyncio
+async def test_offer_exclusions_are_revalidated_against_provider_catalog() -> None:
+    rule = _rule("subscription")
+    offers = AsyncMock()
+    offers.list_all.return_value = []
+    offers.create.side_effect = lambda **values: SponsorOffer(id=OFFER_ID, **values)
+    rules = AsyncMock()
+    rules.get_by_id.return_value = rule
+    profiles = AsyncMock()
+    profiles.get_active.return_value = _profile()
+    provider_settings = AsyncMock()
+    provider_settings.get.return_value = SimpleNamespace(
+        tribute_subscription_urls={"42": "https://t.me/tribute/app?startapp=sub"},
+    )
+    catalog = AsyncMock()
+    catalog.get_tribute.return_value = CommerceCatalogResponse(
+        subscriptions=[
+            CommerceCatalogSubscription(
+                external_item_id="42",
+                name="Sponsor",
+                currency="RUB",
+                periods=[
+                    CommerceCatalogSubscriptionPeriod(
+                        period_id="1",
+                        period="monthly",
+                        price_major="500",
+                    )
+                ],
+            )
+        ],
+    )
+    remnawave = AsyncMock()
+    remnawave.get_user_tags.return_value = ["PREMIUM", "STAFF"]
+    service = SponsorOfferService(
+        offers,
+        rules,
+        profiles,
+        provider_settings,
+        catalog,
+        remnawave,
+    )
+
+    result = await service.create(
+        SponsorOfferInput(
+            title="Recurring sponsor",
+            commerce_rule_id=RULE_ID,
+            excluded_remnawave_tags=["PREMIUM"],
+            is_published=True,
+        ),
+        admin_id=1,
+    )
+
+    assert result.excluded_remnawave_tags == ["PREMIUM"]
+    assert offers.create.await_args.kwargs["excluded_remnawave_tags"] == ["PREMIUM"]
+    remnawave.get_user_tags.assert_awaited_once()
+
+    with pytest.raises(SponsorOfferError, match="unavailable"):
+        await service.create(
+            SponsorOfferInput(
+                title="Hidden from unknown tag",
+                commerce_rule_id=RULE_ID,
+                excluded_remnawave_tags=["UNKNOWN"],
+            ),
+            admin_id=1,
+        )
 
 
 @pytest.mark.asyncio
@@ -588,9 +673,14 @@ def _state_service(
     invited_by_id: int | None = None,
     discount_enabled: bool = False,
     has_paid: bool = False,
+    excluded_tags: list[str] | None = None,
+    user_tag: str | None = None,
+    provider_error: bool = False,
 ) -> SponsorStateService:
     offer_service = AsyncMock()
-    offer_service.list_published.return_value = [_public_offer()]
+    public_offer = _public_offer()
+    public_offer.excluded_remnawave_tags = excluded_tags or []
+    offer_service.list_published.return_value = [public_offer]
     offer_repository = AsyncMock()
     offer_repository.get_by_rule_id.return_value = SimpleNamespace(id=OFFER_ID)
     offer_repository.get_by_id.return_value = SimpleNamespace(id=OFFER_ID)
@@ -631,6 +721,14 @@ def _state_service(
         ),
         welcome_discount_percent=25 if discount_enabled else None,
     )
+    remnawave = AsyncMock()
+    remnawave.get_user_by_telegram_id.side_effect = (
+        RemnawaveError(503, "Provider returned HTTP 503", retryable=True)
+        if provider_error
+        else None
+    )
+    if not provider_error:
+        remnawave.get_user_by_telegram_id.return_value = SimpleNamespace(tag=user_tag)
     return SponsorStateService(
         offer_service,
         offer_repository,
@@ -642,6 +740,7 @@ def _state_service(
         users,
         provider_settings,
         _settings(monkeypatch),
+        remnawave,
         clock=lambda: NOW,
     )
 
@@ -931,6 +1030,63 @@ async def test_returning_payer_does_not_see_welcome_discount(
     assert result.offers[0].welcome_discount_percent is None
 
 
+@pytest.mark.asyncio
+async def test_state_hides_offer_from_matching_remnawave_tag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = _state_service(
+        monkeypatch,
+        operations=[],
+        active=[],
+        excluded_tags=["PREMIUM"],
+        user_tag="premium",
+    )
+
+    result = await service.get_state(123)
+
+    assert result.offers == []
+    assert result.primary_action == "none"
+
+
+@pytest.mark.asyncio
+async def test_state_keeps_restricted_offer_for_user_without_a_tag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = _state_service(
+        monkeypatch,
+        operations=[],
+        active=[],
+        excluded_tags=["PREMIUM"],
+        user_tag=None,
+    )
+
+    result = await service.get_state(123)
+
+    assert [offer.id for offer in result.offers] == [OFFER_ID]
+    assert "excluded_remnawave_tags" not in result.offers[0].model_dump()
+
+
+@pytest.mark.asyncio
+async def test_state_fails_closed_only_for_restricted_offers_when_provider_is_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = _state_service(
+        monkeypatch,
+        operations=[],
+        active=[],
+        excluded_tags=["PREMIUM"],
+        provider_error=True,
+    )
+    unrestricted = _public_offer()
+    unrestricted.id = uuid.uuid4()
+    service._offers.list_published.return_value.append(unrestricted)
+
+    result = await service.get_state(123)
+
+    assert [offer.id for offer in result.offers] == [unrestricted.id]
+    assert result.primary_action == "choose_offer"
+
+
 def _checkout_service(
     monkeypatch: pytest.MonkeyPatch,
     *,
@@ -939,9 +1095,14 @@ def _checkout_service(
     invited_by_id: int | None = None,
     discount_enabled: bool = False,
     has_paid: bool = False,
+    excluded_tags: list[str] | None = None,
+    user_tag: str | None = None,
+    provider_error: bool = False,
 ) -> tuple[SponsorStateService, AsyncMock, AsyncMock]:
     offers = AsyncMock()
-    offers.get_ready.return_value = _public_offer()
+    public_offer = _public_offer()
+    public_offer.excluded_remnawave_tags = excluded_tags or []
+    offers.get_ready.return_value = public_offer
     checkouts = AsyncMock()
     checkouts.expire_pending.return_value = pending
     checkouts.create.side_effect = lambda **values: SponsorCheckout(
@@ -967,6 +1128,14 @@ def _checkout_service(
         ),
         welcome_discount_percent=25 if discount_enabled else None,
     )
+    remnawave = AsyncMock()
+    remnawave.get_user_by_telegram_id.side_effect = (
+        RemnawaveError(503, "Provider returned HTTP 503", retryable=True)
+        if provider_error
+        else None
+    )
+    if not provider_error:
+        remnawave.get_user_by_telegram_id.return_value = SimpleNamespace(tag=user_tag)
     service = SponsorStateService(
         offers,
         AsyncMock(),
@@ -978,6 +1147,7 @@ def _checkout_service(
         users,
         provider_settings,
         _settings(monkeypatch),
+        remnawave,
         clock=lambda: NOW,
     )
     return service, offers, checkouts
@@ -1000,6 +1170,27 @@ async def test_start_checkout_records_intent_without_confirming_payment(
     assert values["external_item_id"] == "42"
     assert values["status"] == "pending"
     assert "confirmed_at" not in values
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("provider_error", [False, True])
+async def test_start_checkout_cannot_bypass_offer_tag_exclusion(
+    monkeypatch: pytest.MonkeyPatch,
+    provider_error: bool,
+) -> None:
+    service, offers, checkouts = _checkout_service(
+        monkeypatch,
+        pending=None,
+        excluded_tags=["PREMIUM"],
+        user_tag="PREMIUM",
+        provider_error=provider_error,
+    )
+
+    with pytest.raises(SponsorOfferError, match="unavailable"):
+        await service.start_checkout(123, OFFER_ID)
+
+    offers.get_ready.assert_awaited_once_with(OFFER_ID)
+    checkouts.create.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -1061,7 +1252,7 @@ async def test_same_pending_offer_is_reused_instead_of_creating_duplicate(
     result = await service.start_checkout(123, OFFER_ID)
 
     assert result.id == pending.id
-    offers.get_ready.assert_not_awaited()
+    offers.get_ready.assert_awaited_once_with(OFFER_ID)
     checkouts.create.assert_not_awaited()
 
 

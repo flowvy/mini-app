@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import re
 import uuid
 from collections.abc import Callable
 from decimal import Decimal
@@ -36,7 +37,9 @@ from flowvy.schemas.commerce import (
     SponsorOfferCheckoutSnapshot,
     SponsorOfferInput,
     SponsorOfferLocale,
+    SponsorOfferOptionsResponse,
     SponsorOfferPriceOption,
+    SponsorOfferPublicResponse,
     SponsorOfferResponse,
     SponsorStateResponse,
 )
@@ -50,6 +53,7 @@ from flowvy.services.commerce_catalog import (
     CommerceCatalogService,
     CommerceCatalogUnavailableError,
 )
+from flowvy.services.remnawave import RemnawaveClient, RemnawaveError
 
 TRIBUTE_MANAGEMENT_URL = "https://t.me/tribute"
 
@@ -96,12 +100,14 @@ class SponsorOfferService:
         profiles: AccessProfileRepository,
         provider_settings: ProviderSettingsRepository,
         catalog: CommerceCatalogService,
+        remnawave: RemnawaveClient | None = None,
     ) -> None:
         self._offers = offers
         self._rules = rules
         self._profiles = profiles
         self._provider_settings = provider_settings
         self._catalog = catalog
+        self._remnawave = remnawave
 
     async def list_admin(self) -> list[SponsorOfferResponse]:
         default_locale = await self._default_locale()
@@ -109,6 +115,15 @@ class SponsorOfferService:
             await self._response(offer, default_locale=default_locale)
             for offer in await self._offers.list_all()
         ]
+
+    async def get_options(self) -> SponsorOfferOptionsResponse:
+        if self._remnawave is None:
+            raise SponsorOfferError("Remnawave tags are unavailable")
+        try:
+            tags = await self._remnawave.get_user_tags()
+        except RemnawaveError as exc:
+            raise SponsorOfferError("Remnawave tags are unavailable") from exc
+        return SponsorOfferOptionsResponse(remnawave_tags=tags)
 
     async def list_published(self, locale: str | None = None) -> list[SponsorOfferResponse]:
         default_locale = await self._default_locale()
@@ -136,6 +151,7 @@ class SponsorOfferService:
         self._validate_destination_shape(rule, payload)
         default_locale = await self._default_locale()
         content_locales = self._content_locales(payload, default_locale)
+        await self._validate_excluded_tags(payload.excluded_remnawave_tags)
         snapshot = (
             await self._resolve_snapshot(rule, payload, current_offer_id=None)
             if payload.is_published
@@ -147,6 +163,7 @@ class SponsorOfferService:
             title=payload.title,
             description=payload.description,
             content_locales=dump_locale_map(content_locales),
+            excluded_remnawave_tags=payload.excluded_remnawave_tags,
             checkout_url=payload.checkout_url,
             expected_amount_minor=payload.expected_amount_minor,
             expected_payment_mode=payload.expected_payment_mode,
@@ -174,6 +191,8 @@ class SponsorOfferService:
             default_locale,
             existing=getattr(offer, "content_locales", None),
         )
+        if payload.excluded_remnawave_tags != (offer.excluded_remnawave_tags or []):
+            await self._validate_excluded_tags(payload.excluded_remnawave_tags)
         snapshot = (
             await self._resolve_snapshot(rule, payload, current_offer_id=offer.id)
             if payload.is_published
@@ -186,6 +205,7 @@ class SponsorOfferService:
             title=payload.title,
             description=payload.description,
             content_locales=dump_locale_map(content_locales),
+            excluded_remnawave_tags=payload.excluded_remnawave_tags,
             checkout_url=payload.checkout_url,
             expected_amount_minor=payload.expected_amount_minor,
             expected_payment_mode=payload.expected_payment_mode,
@@ -355,6 +375,18 @@ class SponsorOfferService:
         value = getattr(settings, "content_default_locale", DEFAULT_LOCALE)
         return normalize_locale(value if isinstance(value, str) else None)
 
+    async def _validate_excluded_tags(self, requested: list[str]) -> None:
+        if not requested:
+            return
+        if self._remnawave is None:
+            raise SponsorOfferError("Remnawave tags are unavailable")
+        try:
+            available = set(await self._remnawave.get_user_tags())
+        except RemnawaveError as exc:
+            raise SponsorOfferError("Remnawave tags are unavailable") from exc
+        if any(tag not in available for tag in requested):
+            raise SponsorOfferError("One or more Remnawave tags are unavailable")
+
     @staticmethod
     def _content_locales(
         payload: SponsorOfferInput,
@@ -428,6 +460,7 @@ class SponsorOfferService:
             title=localized.title if localized is not None else offer.title,
             description=(localized.description if localized is not None else offer.description),
             content_locales=content_locales if include_locales else {},
+            excluded_remnawave_tags=list(offer.excluded_remnawave_tags or []),
             commerce_rule_id=offer.commerce_rule_id,
             checkout_url=(snapshot.checkout_url if snapshot else offer.checkout_url),
             expected_amount_minor=(
@@ -518,6 +551,7 @@ class SponsorStateService:
         users: UserRepository,
         provider_settings: ProviderSettingsRepository,
         config: Settings,
+        remnawave: RemnawaveClient | None = None,
         clock: Callable[[], datetime.datetime] | None = None,
     ) -> None:
         self._offers = offers
@@ -530,12 +564,14 @@ class SponsorStateService:
         self._users = users
         self._provider_settings = provider_settings
         self._config = config
+        self._remnawave = remnawave
         self._clock = clock or (lambda: datetime.datetime.now(datetime.UTC))
 
     async def get_state(self, user_id: int, locale: str | None = None) -> SponsorStateResponse:
         now = self._clock()
         pending_checkout = await self._checkouts.expire_pending(user_id, now)
         published = await self._offers.list_published(locale)
+        published = await self._eligible_offers(user_id, published)
         welcome_discount = await self._welcome_discount_details(user_id)
         if welcome_discount is not None:
             welcome_discount_offer_id, welcome_discount_percent, _ = welcome_discount
@@ -716,7 +752,7 @@ class SponsorStateService:
             pending_checkout=(
                 self._checkout_response(pending_checkout) if pending_checkout is not None else None
             ),
-            offers=published,
+            offers=[self._public_offer(offer) for offer in published],
         )
 
     async def start_checkout(
@@ -729,11 +765,12 @@ class SponsorStateService:
         if user is None or not user.is_active:
             raise SponsorOfferError("Active user account required")
         pending = await self._checkouts.expire_pending(user_id, now)
+        offer = await self._offers.get_ready(offer_id)
+        if not await self._offer_is_eligible(user_id, offer):
+            raise SponsorOfferError("Sponsor offer is unavailable")
         if pending is not None:
             if pending.offer_id == offer_id:
                 return self._checkout_response(pending)
-
-        offer = await self._offers.get_ready(offer_id)
         if offer.commerce_type == "subscription":
             active_subscription = next(
                 (
@@ -812,6 +849,47 @@ class SponsorStateService:
             settings.welcome_discount_offer_id,
             settings.welcome_discount_percent,
             normalize_payment_destination(settings.welcome_discount_url),
+        )
+
+    async def _eligible_offers(
+        self,
+        user_id: int,
+        offers: list[SponsorOfferResponse],
+    ) -> list[SponsorOfferResponse]:
+        if not any(offer.excluded_remnawave_tags for offer in offers):
+            return offers
+        user_tag = await self._current_user_tag(user_id)
+        return [
+            offer
+            for offer in offers
+            if not offer.excluded_remnawave_tags
+            or (user_tag is not None and user_tag not in offer.excluded_remnawave_tags)
+        ]
+
+    async def _offer_is_eligible(self, user_id: int, offer: SponsorOfferResponse) -> bool:
+        if not offer.excluded_remnawave_tags:
+            return True
+        user_tag = await self._current_user_tag(user_id)
+        return user_tag is not None and user_tag not in offer.excluded_remnawave_tags
+
+    async def _current_user_tag(self, user_id: int) -> str | None:
+        if self._remnawave is None:
+            return None
+        try:
+            user = await self._remnawave.get_user_by_telegram_id(user_id)
+        except RemnawaveError:
+            return None
+        if user is None or user.tag is None:
+            return ""
+        normalized = user.tag.strip().upper()
+        if re.fullmatch(r"[A-Z0-9_]{1,16}", normalized) is None:
+            return None
+        return normalized
+
+    @staticmethod
+    def _public_offer(offer: SponsorOfferResponse) -> SponsorOfferPublicResponse:
+        return SponsorOfferPublicResponse.model_validate(
+            offer.model_dump(exclude={"content_locales", "excluded_remnawave_tags"})
         )
 
     async def _welcome_discount_checkout(

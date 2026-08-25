@@ -274,6 +274,7 @@ class SponsorOfferInput(CamelModel):
     title: str = Field(min_length=1, max_length=100)
     description: str = Field(default="", max_length=2_000)
     content_locales: dict[str, SponsorOfferLocale] | None = Field(default=None, max_length=20)
+    excluded_remnawave_tags: list[str] = Field(default_factory=list, max_length=100)
     commerce_rule_id: uuid.UUID
     checkout_url: PaymentDestinationUrl | None = None
     expected_amount_minor: int | None = Field(default=None, ge=1, le=MAX_MONEY_MINOR)
@@ -314,6 +315,19 @@ class SponsorOfferInput(CamelModel):
             return None
         return normalize_locale_map(value, SponsorOfferLocale)
 
+    @field_validator("excluded_remnawave_tags")
+    @classmethod
+    def normalize_excluded_remnawave_tags(cls, value: list[str]) -> list[str]:
+        """Match the provider tag grammar and keep deterministic set semantics."""
+        normalized: list[str] = []
+        for raw in value:
+            tag = raw.strip().upper()
+            if re.fullmatch(r"[A-Z0-9_]{1,16}", tag) is None:
+                raise ValueError("Remnawave tag may contain only A-Z, 0-9, and underscore")
+            if tag not in normalized:
+                normalized.append(tag)
+        return normalized
+
     @model_validator(mode="after")
     def validate_expected_donation_schedule(self) -> Self:
         if self.expected_payment_mode == "one_time" and self.expected_provider_period is not None:
@@ -340,6 +354,37 @@ class SponsorOfferResponse(SponsorOfferInput):
     welcome_discount: bool = False
     welcome_discount_percent: int | None = Field(default=None, ge=1, le=99)
     content_locales: dict[str, SponsorOfferLocale] = Field(default_factory=dict, max_length=20)
+
+
+class SponsorOfferOptionsResponse(CamelModel):
+    """Provider-owned choices required only by the sponsor-offer editor."""
+
+    remnawave_tags: list[str]
+
+
+class SponsorOfferPublicResponse(CamelModel):
+    """User-facing offer presentation without internal eligibility configuration."""
+
+    id: uuid.UUID
+    provider: CommerceProvider
+    title: str
+    description: str
+    commerce_rule_id: uuid.UUID
+    checkout_url: PaymentDestinationUrl | None = None
+    expected_amount_minor: int | None = None
+    expected_payment_mode: SponsorDonationPaymentMode | None = None
+    expected_provider_period: TributeDonationPeriod | None = None
+    is_published: bool
+    sort_order: int
+    commerce_type: CommerceType
+    payment_mode: PaymentMode
+    external_item_id: str | None
+    price_options: list[SponsorOfferPriceOption]
+    requires_non_anonymous: bool
+    benefits: SponsorOfferBenefits
+    availability: SponsorOfferAvailability
+    welcome_discount: bool = False
+    welcome_discount_percent: int | None = Field(default=None, ge=1, le=99)
 
 
 class SponsorCheckoutRequest(CamelModel):
@@ -369,7 +414,7 @@ class SponsorStateResponse(CamelModel):
     current_offer_id: uuid.UUID | None = None
     management_url: str | None = None
     pending_checkout: SponsorCheckoutResponse | None = None
-    offers: list[SponsorOfferResponse]
+    offers: list[SponsorOfferPublicResponse]
 
 
 __all__ = [
@@ -388,7 +433,9 @@ __all__ = [
     "SponsorOfferCheckoutSnapshot",
     "SponsorOfferInput",
     "SponsorOfferLocale",
+    "SponsorOfferOptionsResponse",
     "SponsorOfferPriceOption",
+    "SponsorOfferPublicResponse",
     "SponsorOfferResponse",
     "SponsorStateResponse",
 ]
