@@ -84,6 +84,12 @@ if ($frontendPackage.packageManager -ne "pnpm@11.24.0") {
 if ($frontendPackage.engines.node -ne ">=24.19.0 <25") {
     throw "frontend/package.json must require the Node 24.19.0 LTS line."
 }
+$ciWorkflow = Get-Content -Raw -LiteralPath (
+    Join-Path (Join-Path (Join-Path $repoRoot ".github") "workflows") "ci.yml"
+)
+if ($ciWorkflow -notmatch [regex]::Escape("package_json_file: frontend/package.json")) {
+    throw "CI must read the pinned pnpm version from frontend/package.json."
+}
 
 $actualUvVersion = (& uv --version).Trim()
 if ($actualUvVersion -notmatch '^uv 0\.12\.6(?:\s|$)') {
