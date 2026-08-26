@@ -13,8 +13,9 @@ Roadmap описывает порядок намерений, а не реали
 - locked bootstrap/dev/verification scripts;
 - validation CI, первый Vitest seed и mocked Playwright smoke.
 
-Осталось подтвердить первый удалённый CI run и исправлять найденные tooling gaps как regression, а не
-возвращать широкие ручные инструкции.
+Первый удалённый CI run подтверждён на `dev` 2026-08-26: backend gates и focused deterministic
+Playwright smoke зелёные. Найденные tooling gaps должны исправляться как regression, без возврата
+широких ручных инструкций.
 
 ## 1. Закрыть критический security-контур
 

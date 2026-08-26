@@ -5,7 +5,9 @@ exact-toolchain, lock и PostgreSQL 18 migration gates, Ruff, `570` backend test
 integration contracts, frontend lint/typecheck, `111` unit tests, production build и `245/245`
 mobile Chromium Playwright tests. Отдельная полная browser matrix прошла `735/735` на трёх Chromium
 viewports и `245/245` на iOS WebKit; Axe, overflow, console/network guards и visual evidence зелёные
-без retries, suppression, allow-list или completion exception.
+без retries, suppression, allow-list или completion exception. GitHub Actions на `dev` commit
+`75dfaab` также прошёл 2026-08-26: Backend и Frontend зелёные, включая focused `7/7`
+deterministic Playwright smoke ([run 32960070049](https://github.com/flowvy/mini-app/actions/runs/32960070049)).
 
 Стадия: **незавершённый MVP; production readiness не подтверждена**.
 
@@ -73,6 +75,9 @@ lockfiles и executable configuration имеют приоритет. Истор�
 
 - Checked-in PowerShell 7 workflows поддерживают Windows и macOS: locked bootstrap, safe dev
   lifecycle, migrations, changed/full verification, local data reset и Tunnel checks.
+- GitHub Actions выполняет backend gates и focused `@ci-smoke` browser subset на каждом push в
+  `dev`/`main` и в pull requests. Полный Playwright suite и live Telegram/Swiftgram acceptance
+  остаются отдельными local release gates.
 - Repository pins latest compatible stable stack: Python 3.14.7/uv 0.12.6, Node 24.19.0 LTS/pnpm
   11.24.0, PostgreSQL 18.6 и Redis 8.10.1. Frontend и backend lockfiles являются executable source
   of truth для exact framework/library versions; preview/RC releases не используются.
@@ -90,10 +95,6 @@ lockfiles и executable configuration имеют приоритет. Истор�
   смешала бы security boundaries или скрыла protocol/visual symmetry.
 
 ## Не завершено или не доказано
-
-### Перед решением об MVP release
-
-- Подтвердить первый successful remote CI run; локальный Full gate не доказывает remote CI.
 
 ### External и device evidence
 
@@ -116,5 +117,5 @@ lockfiles и executable configuration имеют приоритет. Истор�
 
 ## Следующее действие
 
-Подтвердить remote CI на обновлённом toolchain, затем согласовать release-перенос `dev -> main` и
-версию/tag. Broadcast уже исключён из MVP scope и остаётся post-MVP работой.
+Согласовать release-перенос `dev -> main` и версию/tag. Broadcast уже исключён из MVP scope и
+остаётся post-MVP работой.
