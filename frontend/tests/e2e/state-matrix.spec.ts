@@ -86,7 +86,6 @@ test("subscription loading, active, absent, and provider error states render saf
 	mockApi.mock("GET", "/api/me/subscription", [
 		{ delayMs: 1500, body: mockData.subscription },
 		{ status: 404, body: { detail: "No active subscription found" } },
-		{ status: 404, body: { detail: "No active subscription found" } },
 		{ status: 502, body: { detail: "Remnawave unavailable" } },
 		{ status: 502, body: { detail: "Remnawave unavailable" } },
 	]);

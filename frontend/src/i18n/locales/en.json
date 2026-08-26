@@ -322,6 +322,11 @@
 			"generic": "Could not complete registration. Try again"
 		}
 	},
+	"launch": {
+		"title": "Opening {{appName}}",
+		"description": "Preparing everything for launch",
+		"loading": "Opening {{appName}}"
+	},
 	"access": {
 		"registration": "Registration",
 		"settingsRow": "Registration & Access",

@@ -6,7 +6,6 @@ import { SponsorCard } from "../components/home/sponsor-card.tsx";
 import { ErrorState } from "../components/ui/error-state.tsx";
 import { PageLoading } from "../components/ui/page-loading.tsx";
 import { useSubscription } from "../hooks/use-subscription.ts";
-import { ApiError } from "../lib/api.ts";
 import styles from "./home.module.css";
 
 export const Home: FC = () => {
@@ -16,7 +15,7 @@ export const Home: FC = () => {
 		return <PageLoading />;
 	}
 
-	if (error && !(error instanceof ApiError && error.status === 404)) {
+	if (error) {
 		return (
 			<div className={styles.page}>
 				<ErrorState onAction={refetch} />
@@ -26,7 +25,7 @@ export const Home: FC = () => {
 		);
 	}
 
-	if (!subscription || (error instanceof ApiError && error.status === 404)) {
+	if (!subscription) {
 		return (
 			<div className={styles.page}>
 				<HeroCard subscription={null} />

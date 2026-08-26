@@ -4,6 +4,7 @@ import { useOnboarding } from "../hooks/use-onboarding.ts";
 import { getLocalizedError } from "../lib/error-copy.ts";
 import { operatorFormattedText, operatorText } from "../lib/operator-content.ts";
 import { FormattedText } from "./content/formatted-text.tsx";
+import { EntryTransition } from "./entry-transition.tsx";
 import styles from "./onboarding-screen.module.css";
 import { AppLogo } from "./ui/app-logo.tsx";
 import { ErrorState } from "./ui/error-state.tsx";
@@ -29,6 +30,10 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 	const isPending =
 		registerMutation.isPending || redeemMutation.isPending || redeemLaunchMutation.isPending;
 	const error = registerMutation.error ?? redeemMutation.error ?? redeemLaunchMutation.error;
+	const autoRedeemInProgress =
+		statusQuery.isSuccess &&
+		statusQuery.data.launchInviteAvailable &&
+		!redeemLaunchMutation.isError;
 
 	useEffect(() => {
 		document.title = appName;
@@ -60,6 +65,11 @@ export function OnboardingScreen({ initialState }: OnboardingScreenProps) {
 	};
 	if (statusQuery.isPending) {
 		return <LaunchSkeleton />;
+	}
+	if (autoRedeemInProgress) {
+		return (
+			<EntryTransition appName={statusQuery.data?.appName} logoUrl={statusQuery.data?.logoUrl} />
+		);
 	}
 	if (statusQuery.isError) {
 		return <ErrorState onAction={() => statusQuery.refetch()} />;

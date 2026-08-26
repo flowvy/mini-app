@@ -93,6 +93,7 @@ describe("semantic surface roles", () => {
 
 		expect(readSource("components/auth-guard.tsx")).toContain("<LaunchSkeleton />");
 		expect(readSource("components/onboarding-screen.tsx")).toContain("<LaunchSkeleton />");
+		expect(readSource("components/onboarding-screen.tsx")).toContain("<EntryTransition");
 		expect(readSource("components/admin/content-config.tsx")).toContain(
 			"<Suspense fallback={<EditorSkeleton />}>",
 		);

@@ -112,6 +112,7 @@ test("authentication and onboarding status use the neutral launch skeleton", asy
 	const launchSkeleton = page.locator('[data-ui="loading-skeleton"]:not([data-skeleton-variant])');
 	await expect(launchSkeleton).toBeVisible();
 	await expect(launchSkeleton).toHaveAttribute("aria-busy", "true");
+	await expect(page.locator('[data-ui="entry-transition"]')).toHaveCount(0);
 	await expect(page.locator('[data-loading-indicator=""]')).toHaveCount(0);
 	await assertNoHorizontalOverflow(page);
 	await expect(page.getByText("Account Info")).toBeVisible();

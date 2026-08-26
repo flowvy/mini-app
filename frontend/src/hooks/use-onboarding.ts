@@ -3,6 +3,7 @@ import { apiGet, apiPost } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";
 import type { OnboardingStatus } from "../types/registration.ts";
 import type { UserResponse } from "./use-auth.ts";
+import { subscriptionQueryOptions } from "./use-subscription.ts";
 
 export function useOnboarding() {
 	const queryClient = useQueryClient();
@@ -12,7 +13,8 @@ export function useOnboarding() {
 		retry: false,
 	});
 
-	const finish = (user: UserResponse) => {
+	const finish = async (user: UserResponse) => {
+		await queryClient.prefetchQuery(subscriptionQueryOptions());
 		queryClient.setQueryData(queryKeys.currentUser, user);
 		queryClient.removeQueries({ queryKey: queryKeys.onboarding, exact: true });
 	};

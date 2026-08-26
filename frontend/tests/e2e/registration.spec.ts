@@ -86,7 +86,7 @@ test("invite-only onboarding handles an invalid code and enters the app without 
 test("invite-only onboarding redeems only the server-validated Main Mini App referral", async ({
 	page,
 	mockApi,
-}) => {
+}, testInfo) => {
 	let requestBody: string | null | undefined;
 	page.on("request", (request) => {
 		if (new URL(request.url()).pathname === "/api/onboarding/redeem-launch") {
@@ -106,17 +106,56 @@ test("invite-only onboarding redeems only the server-validated Main Mini App ref
 			logoUrl: null,
 			launchInviteAvailable: true,
 		},
+		delayMs: 150,
 	});
-	mockApi.mock("POST", "/api/onboarding/redeem-launch", { body: registeredUser });
+	mockApi.mock("POST", "/api/onboarding/redeem-launch", {
+		body: registeredUser,
+		delayMs: 600,
+	});
+	mockApi.mock("GET", "/api/me/subscription", {
+		status: 404,
+		body: { detail: "No active subscription found" },
+		delayMs: 5_000,
+	});
 
 	await page.goto("/");
-	await expect(page.getByText("Account Info")).toBeVisible();
+	const transition = page.locator('[data-ui="entry-transition"]');
+	await expect(transition).toBeVisible();
+	await expect(page.getByRole("heading", { name: "Invitation required" })).toHaveCount(0);
+	await expect(transition).toContainText("Flowvy Test");
+	await expect(transition).toContainText("Preparing everything for launch");
+	await assertNoHorizontalOverflow(page);
+	for (const colorScheme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+		await page.evaluate((theme) => {
+			document.documentElement.setAttribute("data-theme", theme);
+		}, colorScheme);
+		const screenshotPath = testInfo.outputPath(`entry-transition-${colorScheme}.png`);
+		await transition.screenshot({ path: screenshotPath, animations: "disabled" });
+		await testInfo.attach(`entry-transition-${colorScheme}`, {
+			path: screenshotPath,
+			contentType: "image/png",
+		});
+		const axe = await new AxeBuilder({ page }).include('[data-ui="entry-transition"]').analyze();
+		expect(axe.violations, colorScheme).toEqual([]);
+	}
+	await expect
+		.poll(() => mockApi.calls.filter((call) => call === "GET /api/me/subscription").length)
+		.toBe(1);
+	await expect(page.getByRole("article", { name: "No active subscription" })).toBeVisible();
+	await expect(
+		page.locator('[data-ui="loading-skeleton"][data-skeleton-variant="home"]'),
+	).toHaveCount(0);
+	await expect(transition).toHaveCount(0);
 	await expect
 		.poll(
 			() => mockApi.calls.filter((call) => call === "POST /api/onboarding/redeem-launch").length,
 		)
 		.toBe(1);
 	expect(requestBody).toBeNull();
+	expect(mockApi.calls.indexOf("POST /api/onboarding/redeem-launch")).toBeLessThan(
+		mockApi.calls.indexOf("GET /api/me/subscription"),
+	);
 });
 
 test("open onboarding preserves the server-validated Main Mini App referral", async ({
@@ -176,10 +215,13 @@ test("open onboarding falls back to regular registration after a stale launch in
 	mockApi.mock("POST", "/api/onboarding/redeem-launch", {
 		status: 400,
 		body: { detail: { code: "invalid_invite", message: "Invite is invalid" } },
+		delayMs: 200,
 	});
 	mockApi.mock("POST", "/api/onboarding/register", { body: registeredUser });
 
 	await page.goto("/");
+	await expect(page.locator('[data-ui="entry-transition"]')).toBeVisible();
+	await expect(page.getByRole("button", { name: "Get started" })).toHaveCount(0);
 	await expect(page.getByRole("alert")).toContainText(
 		"This invite code is invalid or no longer available",
 	);
