@@ -273,7 +273,7 @@
 			"trafficUnlimited": "Безлимит",
 			"usedPercent": "Использовано {{pct}}%",
 			"trafficResetLabel": "Сброс",
-			"nextResetLabel": "Сброс через",
+			"nextResetLabel": "Сброс",
 			"allTimeLabel": "Всё время",
 			"lastUpdatedLabel": "Обновлено",
 			"openLink": "Инструкция по установке",

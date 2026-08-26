@@ -273,7 +273,7 @@
 			"trafficUnlimited": "Unlimited",
 			"usedPercent": "Used {{pct}}%",
 			"trafficResetLabel": "Traffic Reset",
-			"nextResetLabel": "Next Reset",
+			"nextResetLabel": "Reset",
 			"allTimeLabel": "All Time",
 			"lastUpdatedLabel": "Last Updated",
 			"openLink": "Open setup instructions",

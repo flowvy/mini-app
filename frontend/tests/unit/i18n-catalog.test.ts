@@ -169,6 +169,7 @@ describe("Russian UI copy catalog", () => {
 		});
 		expect(russianLocale.home.heroCard.openLink).toBe("Инструкция по установке");
 		expect(russianLocale.home.heroCard.expiresLabel).toBe("Истекает");
+		expect(russianLocale.home.heroCard.nextResetLabel).toBe("Сброс");
 		expect(russianLocale.home.detail.devices).toBe("Лимит устройств");
 		expect(russianLocale.home.detail.autoUpdateHint).toBe(
 			"Автоматическое обновление подписки в прокси-клиенте",
@@ -189,6 +190,7 @@ describe("Russian UI copy catalog", () => {
 		expect(russianLocale.admin.dashboard.flowvy.requests).toBe("API-запросы");
 		expect(russianLocale.support.status.withSupport).toBe("В Помощи");
 		expect(locale.home.sponsor.sponsorAccess).toBe("Extended access");
+		expect(locale.home.heroCard.nextResetLabel).toBe("Reset");
 		expect(locale.home.detail.autoUpdateHint).toBe(
 			"Automatic subscription updates in the proxy client",
 		);
