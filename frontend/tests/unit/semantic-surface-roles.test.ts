@@ -97,7 +97,7 @@ describe("semantic surface roles", () => {
 		expect(readSource("components/admin/content-config.tsx")).toContain(
 			"<Suspense fallback={<EditorSkeleton />}>",
 		);
-		expect(readSource("components/admin/sponsor-offers-config.tsx")).toContain(
+		expect(readSource("components/admin/sponsor-offer-editor.tsx")).toContain(
 			"<Suspense fallback={<EditorSkeleton />}>",
 		);
 		expect(readSource("components/ui/page-loading.tsx")).toContain(

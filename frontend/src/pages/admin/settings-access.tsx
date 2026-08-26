@@ -23,8 +23,8 @@ import {
 } from "../../hooks/use-registration-admin.ts";
 import { getLocalizedError } from "../../lib/error-copy.ts";
 import type { AccessProfile } from "../../types/registration.ts";
-import styles from "./settings-access.module.css";
 import ss from "./settings.module.css";
+import styles from "./settings-access.module.css";
 
 const GB = 1024 ** 3;
 

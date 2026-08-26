@@ -13,7 +13,6 @@
 	line-height: 1;
 }
 
-/* Variants */
 .positive {
 	background: var(--v2-bg-positive-quaternary);
 	border-color: var(--v2-border-positive-secondary);

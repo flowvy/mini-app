@@ -5,7 +5,7 @@ const sdk = vi.hoisted(() => ({
 	retrieveRawInitData: vi.fn<() => string | undefined>(),
 }));
 
-vi.mock("@telegram-apps/sdk-react", () => ({
+vi.mock("@tma.js/sdk-react", () => ({
 	init: vi.fn(),
 	miniApp: {},
 	retrieveLaunchParams: sdk.retrieveLaunchParams,

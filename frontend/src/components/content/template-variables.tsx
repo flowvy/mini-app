@@ -1,4 +1,4 @@
-import { copyTextToClipboard } from "@telegram-apps/sdk-react";
+import { copyTextToClipboard } from "@tma.js/sdk-react";
 import { Check, ChevronDown, Copy } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

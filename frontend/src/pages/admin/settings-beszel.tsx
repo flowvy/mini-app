@@ -1,4 +1,3 @@
-/** Page wrapper for BeszelConfig sub-screen. */
 import type { FC } from "react";
 import { BeszelConfig } from "../../components/admin/beszel-config.tsx";
 import { ErrorState } from "../../components/ui/error-state.tsx";

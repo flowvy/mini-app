@@ -5,7 +5,7 @@ instructions under `tests/` or `migrations/`.
 
 ## Current shape
 
-- Python 3.12, FastAPI, aiogram, Dishka, async SQLAlchemy, asyncpg, Redis, httpx, and Pydantic.
+- Python 3.14, FastAPI, aiogram, Dishka, async SQLAlchemy, asyncpg, Redis, httpx, and Pydantic.
 - `src/flowvy/api/routes/` translates HTTP/auth concerns into service calls.
 - `services/` owns orchestration and BFF mapping; `repositories/` owns reusable persistence access;
   `schemas/` is the HTTP/provider boundary; `models/` is the local database model.

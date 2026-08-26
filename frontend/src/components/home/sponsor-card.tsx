@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { on } from "@telegram-apps/sdk-react";
+import { on } from "@tma.js/sdk-react";
 import { ExternalLink, HeartHandshake, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";

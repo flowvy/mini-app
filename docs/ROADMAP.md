@@ -7,7 +7,8 @@ Roadmap описывает порядок намерений, а не реали
 
 Состояние: базовый контур создан 2026-08-01.
 
-- root/nested `AGENTS.md`, `PROJECT_STATE.md`, ExecPlans и разделённые source-of-truth docs;
+- root/nested `AGENTS.md`, `PROJECT_STATE.md`, временные local-only ExecPlans и разделённые
+  source-of-truth docs;
 - Flowvy-specific Codex skills/agents/rules;
 - locked bootstrap/dev/verification scripts;
 - validation CI, первый Vitest seed и mocked Playwright smoke.
@@ -64,8 +65,11 @@ Invite-only flow и профили начального Remnawave-доступа
 link, direct referral count, local-only grant, срок/трафик/устройства/status/tag/description/squads
 и deterministic UI/backend tests.
 
-Осталось принять отдельные решения по Support/renewal и Broadcast. Для Broadcast нужны аудит,
-preview, recipient scope, rate limits, retry/idempotency и safe cancellation. Не подключать
+Support requests, Quick Answers, optional private R2 attachments, Telegram notifications и
+Tribute sponsor checkout/entitlement flows закрыты кодом и deterministic tests. Для Tribute ещё
+нужны перечисленные в `PROJECT_STATE.md` live lifecycle confirmations. Broadcast явно исключён
+владельцем из MVP scope 2026-08-26 и остаётся post-MVP работой: перед реализацией ему понадобятся
+аудит, preview, recipient scope, rate limits, retry/idempotency и safe cancellation. Не подключать
 незавершённые модели только ради видимости прогресса.
 
 ## 5. Production readiness

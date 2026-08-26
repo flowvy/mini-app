@@ -35,7 +35,7 @@ def _safe_json_shape(body: bytes) -> dict[str, object]:
     """Describe signed JSON structure without logging provider-owned values."""
     try:
         value: Any = json.loads(body)
-    except (UnicodeDecodeError, json.JSONDecodeError):
+    except UnicodeDecodeError, json.JSONDecodeError:
         return {"root": "invalid_json"}
     if not isinstance(value, dict):
         return {"root": type(value).__name__}
@@ -102,7 +102,7 @@ async def receive_tribute_webhook(
 
     try:
         TributeWebhookTestEnvelope.model_validate_json(body)
-    except (ValidationError, ValueError, TypeError):
+    except ValidationError, ValueError, TypeError:
         pass
     else:
         logger.info("Authenticated Tribute webhook test acknowledged")
@@ -110,7 +110,7 @@ async def receive_tribute_webhook(
 
     try:
         envelope = TributeWebhookEnvelope.model_validate_json(body)
-    except (ValidationError, ValueError, TypeError):
+    except ValidationError, ValueError, TypeError:
         logger.warning(
             "Malformed Tribute webhook envelope shape=%s",
             _safe_json_shape(body),

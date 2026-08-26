@@ -1,5 +1,3 @@
-/* ── Admin User Detail Section ── */
-
 .sections {
 	display: grid;
 	gap: var(--layout-section-gap);

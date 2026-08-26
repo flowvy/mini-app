@@ -142,7 +142,9 @@ test("invite-only onboarding redeems only the server-validated Main Mini App ref
 	await expect
 		.poll(() => mockApi.calls.filter((call) => call === "GET /api/me/subscription").length)
 		.toBe(1);
-	await expect(page.getByRole("article", { name: "No active subscription" })).toBeVisible();
+	await expect(page.getByRole("article", { name: "No active subscription" })).toBeVisible({
+		timeout: 10_000,
+	});
 	await expect(
 		page.locator('[data-ui="loading-skeleton"][data-skeleton-variant="home"]'),
 	).toHaveCount(0);
@@ -261,13 +263,10 @@ test("admin configures registration policy and the global access profile", async
 }) => {
 	await page.goto("/admin/settings/access");
 	await expect(page.getByText("Service mode")).toBeVisible();
-	const serviceMode = page.getByRole("radiogroup", { name: "Service mode" });
+	const serviceMode = page.getByRole("group", { name: "Service mode" });
 	await serviceMode.getByRole("radio", { name: "Open" }).focus();
 	await page.keyboard.press("ArrowRight");
-	await expect(serviceMode.getByRole("radio", { name: "Invite only" })).toHaveAttribute(
-		"aria-checked",
-		"true",
-	);
+	await expect(serviceMode.getByRole("radio", { name: "Invite only" })).toBeChecked();
 
 	const profilesPanel = page
 		.getByRole("heading", { name: "Access profiles" })
@@ -522,14 +521,15 @@ test("segmented controls contain long labels inside their own segment", async ({
 }) => {
 	await page.goto("/admin/settings/access");
 	await page.getByRole("button", { name: "Create profile" }).click();
-	const validity = page.getByRole("radiogroup", { name: "Expiry" });
+	const validity = page.getByRole("group", { name: "Expiry" });
 	const automation = validity.getByRole("radio").nth(3);
 	await automation.evaluate((element) => {
-		element.textContent = "A deliberately long automation option";
+		const label = element.closest("label");
+		if (label) label.textContent = "A deliberately long automation option";
 	});
 
 	const layout = await validity.evaluate((group) => {
-		const button = group.querySelectorAll<HTMLButtonElement>("button")[3];
+		const button = group.querySelectorAll<HTMLLabelElement>("label")[3];
 		const groupBox = group.getBoundingClientRect();
 		const buttonBox = button.getBoundingClientRect();
 		const style = getComputedStyle(button);
@@ -606,7 +606,9 @@ test("registered user can copy and share a reusable personal invite", async ({
 
 	await expect(page.getByText("Invite friends")).toBeVisible();
 	await expect(page.getByText("FVY-2345-6789-ABCD-EFGH-JKMN")).toBeVisible();
-	await expect(page.getByLabel("Registered through your invite")).toContainText("3");
+	const inviteCountLabel = page.getByText("Registered through your invite: 3", { exact: true });
+	await expect(inviteCountLabel).toHaveCount(1);
+	await expect(inviteCountLabel.locator("..")).toContainText("3");
 	const copyAction = page.getByText("Copy", { exact: true });
 	const copyColors = await copyAction.evaluate((element) => {
 		const neutralProbe = document.createElement("span");

@@ -3,11 +3,11 @@ import type { Locator, Page } from "@playwright/test";
 import { expect, test } from "./fixtures/mock-api.ts";
 import {
 	type EdgeContract,
-	type OutlineContract,
 	expectSurfaceContract,
 	expectSvgContract,
 	noEdge,
 	noOutline,
+	type OutlineContract,
 } from "./helpers/surface-contract.ts";
 
 const themes = ["light", "dark"] as const;

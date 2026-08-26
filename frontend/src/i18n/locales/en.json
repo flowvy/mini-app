@@ -256,7 +256,7 @@
 			"title": "Invite friends",
 			"loadingLabel": "Loading invite",
 			"description": "Share your personal code. Friends can open the app and join with your invite",
-			"invitedLabel": "Registered through your invite",
+			"invitedCountLabel": "Registered through your invite: {{count}}",
 			"copy": "Copy",
 			"copied": "Copied",
 			"copyFailed": "Try again",

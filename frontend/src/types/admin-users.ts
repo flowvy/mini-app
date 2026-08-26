@@ -1,13 +1,13 @@
 import type { UserStatus } from "./user-status.ts";
 
-export interface AdminUserTraffic {
+interface AdminUserTraffic {
 	usedTrafficBytes: number;
 	lifetimeUsedTrafficBytes: number;
 	onlineAt: string | null;
 	firstConnectedAt: string | null;
 }
 
-export interface AdminUserInternalSquad {
+interface AdminUserInternalSquad {
 	name: string;
 }
 

@@ -73,7 +73,7 @@ async def test_readiness_is_generic_when_redis_fails() -> None:
 
 @pytest.mark.asyncio
 async def test_readiness_against_dev_services(session: AsyncSession) -> None:
-    redis = Redis.from_url("redis://localhost:6379/0")
+    redis = Redis.from_url("redis://localhost:6379/0", protocol=2)
     try:
         response = await readiness(session, redis)
     finally:

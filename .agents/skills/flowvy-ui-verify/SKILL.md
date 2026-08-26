@@ -25,10 +25,9 @@ Read `references/state-matrix.md` and `frontend/tests/e2e/AGENTS.md` before test
 
 - Check light and dark themes, safe areas, no horizontal overflow, fixed navigation, dialogs, focus visibility, long values, and mobile viewport fit.
 - Run automated accessibility checks on stable pages, then manually check keyboard order, dialog focus/return, names, and contrast-sensitive states.
-- Keep strict desktop-parity `color-contrast` findings visible. Do not suppress, allow-list,
-  downgrade, or describe them as passed; compare every fresh failure with ADR 0004's exact route,
-  theme, rule, node, and color-pair ledger. Only an exact ledger match may use the documented
-  completion exception; any new finding blocks completion.
+- Strict desktop parity never creates an accessibility exception. Any `color-contrast` or other Axe
+  finding blocks completion; do not suppress, allow-list, downgrade, or describe a red gate as
+  passed. ADR 0004 retains its former ledger only as historical evidence.
 - Capture focused screenshots of changed screens. Update committed baselines only when the user explicitly accepts the visual change.
 
 Use repository Playwright tests as the reproducible gate. The Codex in-app browser may supplement them for exploratory inspection, but browser availability must not change the pass criteria.

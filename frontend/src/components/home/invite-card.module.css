@@ -30,6 +30,7 @@
 }
 
 .count {
+	margin: 0;
 	flex: 0 0 auto;
 	display: grid;
 	grid-template-columns: auto auto;
@@ -42,14 +43,16 @@
 	font: 700 var(--font-size-heading) / 1 var(--font-mono);
 }
 
-.count span {
-	grid-column: 1 / -1;
-	margin-top: 3px;
-	font-size: var(--font-size-overline);
-	text-align: right;
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
-	color: var(--v2-text-secondary);
+.srOnly {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
 }
 
 .code {

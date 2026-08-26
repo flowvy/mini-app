@@ -1,8 +1,6 @@
 /* Flowvy design tokens. System theme by default (prefers-color-scheme).
    Shared color values are an exact runtime copy of flowvy_desktop/src/styles/tokens.css.
    Floating Header/TabBar glass effects are the owner-approved Mini App exception. */
-
-/* ── Typography ── */
 :root {
 	color-scheme: light;
 	--font-sans: "Geist Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -16,8 +14,6 @@
 	--font-size-title: 18px;
 	--font-size-display: 22px;
 }
-
-/* ── Radius & timing ── */
 :root {
 	--radius-sm: 8px;
 	--radius-md: 12px;
@@ -27,8 +23,6 @@
 	--layout-section-gap: 8px;
 	--duration-fast: 0.1s;
 	--duration-base: 0.15s;
-
-	/* ── Spring easing ── */
 	--spring-snappy: linear(
 		0,
 		0.009,
@@ -53,11 +47,8 @@
 
 /* ── System default: light ── */
 :root {
-	/* Layer */
 	--v2-floor-0: #f2f2f2;
 	--v2-floor-1: #ffffff;
-
-	/* Background */
 	--v2-bg-primary: #ffffff;
 	--v2-bg-secondary: #f2f2f2;
 	--v2-bg-tertiary: #e6e6e6;
@@ -70,8 +61,6 @@
 	--v2-bg-negative-primary: #c6352a;
 	--v2-bg-negative-secondary: #feeeed;
 	--v2-bg-warning: #ffefcc;
-
-	/* Text */
 	--v2-text-primary: #171717;
 	--v2-text-secondary: #454545;
 	--v2-text-tertiary: #c7c7c7;
@@ -79,8 +68,6 @@
 	--v2-text-positive: #24784f;
 	--v2-text-negative: #c6352a;
 	--v2-text-warning: #8a5b00;
-
-	/* Icon */
 	--v2-icon-primary: #171717;
 	--v2-icon-secondary: #454545;
 	--v2-icon-tertiary: #c7c7c7;
@@ -88,8 +75,6 @@
 	--v2-icon-positive: #24784f;
 	--v2-icon-negative: #c6352a;
 	--v2-icon-warning: #8a5b00;
-
-	/* Border */
 	--v2-border-primary: #454545;
 	--v2-border-secondary: #c7c7c7;
 	--v2-border-tertiary: #e6e6e6;
@@ -99,45 +84,29 @@
 	--v2-border-negative-secondary: #fdbdb8;
 	--v2-border-warning-primary: #8a5b00;
 	--v2-border-warning-secondary: #fcda92;
-
-	/* Static */
 	--v2-static-white: #ffffff;
-
-	/* Overlay */
 	--v2-overlay-bg: rgba(0, 0, 0, 0.25);
-
-	/* Gradient */
 	--v2-gradient-positive: linear-gradient(to right, #c6edd9, #f5fcf9);
-
-	/* Shadow */
 	--v2-shadow: 0 16px 48px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06);
 	--v2-shadow-dropdown: 0 12px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.08);
 	--v2-shadow-tooltip: 0 4px 12px rgba(0, 0, 0, 0.12);
 	--v2-shadow-popup: 0 4px 24px rgba(0, 0, 0, 0.12);
-
-	/* Glass */
 	--v2-glass-bg-bar: rgba(255, 255, 255, 0.92);
 	--v2-glass-border: rgba(0, 0, 0, 0.08);
 	--v2-glass-shadow-bar: 0 1px 12px rgba(0, 0, 0, 0.08);
-	--v2-glass-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 0
-		rgba(0, 0, 0, 0.04);
-
-	/* Syntax highlighting */
+	--v2-glass-highlight:
+		inset 0 1px 0 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 0 rgba(0, 0, 0, 0.04);
 	--v2-syntax-key: #0550ae;
 	--v2-syntax-string: #24784f;
 	--v2-syntax-number: #6f42c1;
 	--v2-syntax-bool: #cf222e;
 }
-
 /* ── System default: dark (before JS sets data-theme) ── */
 @media (prefers-color-scheme: dark) {
 	:root:not([data-theme]) {
 		color-scheme: dark;
-		/* Layer */
 		--v2-floor-0: #171717;
 		--v2-floor-1: #212121;
-
-		/* Background */
 		--v2-bg-primary: #212121;
 		--v2-bg-secondary: #292929;
 		--v2-bg-tertiary: #454545;
@@ -150,8 +119,6 @@
 		--v2-bg-negative-primary: #c6352a;
 		--v2-bg-negative-secondary: #2d1918;
 		--v2-bg-warning: #342d19;
-
-		/* Text */
 		--v2-text-primary: #ffffff;
 		--v2-text-secondary: #a3a3a3;
 		--v2-text-tertiary: #424242;
@@ -159,8 +126,6 @@
 		--v2-text-positive: #49dd93;
 		--v2-text-negative: #ff554a;
 		--v2-text-warning: #ffcb2f;
-
-		/* Icon */
 		--v2-icon-primary: #ffffff;
 		--v2-icon-secondary: #a3a3a3;
 		--v2-icon-tertiary: #424242;
@@ -168,8 +133,6 @@
 		--v2-icon-positive: #49dd93;
 		--v2-icon-negative: #ff554a;
 		--v2-icon-warning: #ffcb2f;
-
-		/* Border */
 		--v2-border-primary: #a3a3a3;
 		--v2-border-secondary: #424242;
 		--v2-border-tertiary: #252525;
@@ -179,45 +142,29 @@
 		--v2-border-negative-secondary: #652722;
 		--v2-border-warning-primary: #ffcb2f;
 		--v2-border-warning-secondary: #63521d;
-
-		/* Static */
 		--v2-static-white: #ffffff;
-
-		/* Overlay */
 		--v2-overlay-bg: rgba(0, 0, 0, 0.5);
-
-		/* Gradient */
 		--v2-gradient-positive: linear-gradient(to right, #182d22, #18251f);
-
-		/* Shadow */
 		--v2-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
 		--v2-shadow-dropdown: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
 		--v2-shadow-tooltip: 0 4px 12px rgba(0, 0, 0, 0.3);
 		--v2-shadow-popup: 0 4px 24px rgba(0, 0, 0, 0.3);
-
-		/* Glass */
 		--v2-glass-bg-bar: rgba(33, 33, 33, 0.92);
 		--v2-glass-border: rgba(255, 255, 255, 0.08);
 		--v2-glass-shadow-bar: 0 1px 12px rgba(0, 0, 0, 0.3);
-		--v2-glass-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 0
-			rgba(0, 0, 0, 0.2);
-
-		/* Syntax highlighting */
+		--v2-glass-highlight:
+			inset 0 1px 0 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 0 rgba(0, 0, 0, 0.2);
 		--v2-syntax-key: #7dcfff;
 		--v2-syntax-string: #a9dc76;
 		--v2-syntax-number: #ab9df2;
 		--v2-syntax-bool: #ff6188;
 	}
 }
-
 /* ── Dark theme (explicit) ── */
 :root[data-theme="dark"] {
 	color-scheme: dark;
-	/* Layer */
 	--v2-floor-0: #171717;
 	--v2-floor-1: #212121;
-
-	/* Background */
 	--v2-bg-primary: #212121;
 	--v2-bg-secondary: #292929;
 	--v2-bg-tertiary: #454545;
@@ -230,8 +177,6 @@
 	--v2-bg-negative-primary: #c6352a;
 	--v2-bg-negative-secondary: #2d1918;
 	--v2-bg-warning: #342d19;
-
-	/* Text */
 	--v2-text-primary: #ffffff;
 	--v2-text-secondary: #a3a3a3;
 	--v2-text-tertiary: #424242;
@@ -239,8 +184,6 @@
 	--v2-text-positive: #49dd93;
 	--v2-text-negative: #ff554a;
 	--v2-text-warning: #ffcb2f;
-
-	/* Icon */
 	--v2-icon-primary: #ffffff;
 	--v2-icon-secondary: #a3a3a3;
 	--v2-icon-tertiary: #424242;
@@ -248,8 +191,6 @@
 	--v2-icon-positive: #49dd93;
 	--v2-icon-negative: #ff554a;
 	--v2-icon-warning: #ffcb2f;
-
-	/* Border */
 	--v2-border-primary: #a3a3a3;
 	--v2-border-secondary: #424242;
 	--v2-border-tertiary: #252525;
@@ -259,44 +200,28 @@
 	--v2-border-negative-secondary: #652722;
 	--v2-border-warning-primary: #ffcb2f;
 	--v2-border-warning-secondary: #63521d;
-
-	/* Static */
 	--v2-static-white: #ffffff;
-
-	/* Overlay */
 	--v2-overlay-bg: rgba(0, 0, 0, 0.5);
-
-	/* Gradient */
 	--v2-gradient-positive: linear-gradient(to right, #182d22, #18251f);
-
-	/* Shadow */
 	--v2-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
 	--v2-shadow-dropdown: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
 	--v2-shadow-tooltip: 0 4px 12px rgba(0, 0, 0, 0.3);
 	--v2-shadow-popup: 0 4px 24px rgba(0, 0, 0, 0.3);
-
-	/* Glass */
 	--v2-glass-bg-bar: rgba(33, 33, 33, 0.92);
 	--v2-glass-border: rgba(255, 255, 255, 0.08);
 	--v2-glass-shadow-bar: 0 1px 12px rgba(0, 0, 0, 0.3);
-	--v2-glass-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 0
-		rgba(0, 0, 0, 0.2);
-
-	/* Syntax highlighting */
+	--v2-glass-highlight:
+		inset 0 1px 0 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 0 rgba(0, 0, 0, 0.2);
 	--v2-syntax-key: #7dcfff;
 	--v2-syntax-string: #a9dc76;
 	--v2-syntax-number: #ab9df2;
 	--v2-syntax-bool: #ff6188;
 }
-
 /* ── Light theme (explicit) ── */
 :root[data-theme="light"] {
 	color-scheme: light;
-	/* Layer */
 	--v2-floor-0: #f2f2f2;
 	--v2-floor-1: #ffffff;
-
-	/* Background */
 	--v2-bg-primary: #ffffff;
 	--v2-bg-secondary: #f2f2f2;
 	--v2-bg-tertiary: #e6e6e6;
@@ -309,8 +234,6 @@
 	--v2-bg-negative-primary: #c6352a;
 	--v2-bg-negative-secondary: #feeeed;
 	--v2-bg-warning: #ffefcc;
-
-	/* Text */
 	--v2-text-primary: #171717;
 	--v2-text-secondary: #454545;
 	--v2-text-tertiary: #c7c7c7;
@@ -318,8 +241,6 @@
 	--v2-text-positive: #24784f;
 	--v2-text-negative: #c6352a;
 	--v2-text-warning: #8a5b00;
-
-	/* Icon */
 	--v2-icon-primary: #171717;
 	--v2-icon-secondary: #454545;
 	--v2-icon-tertiary: #c7c7c7;
@@ -327,8 +248,6 @@
 	--v2-icon-positive: #24784f;
 	--v2-icon-negative: #c6352a;
 	--v2-icon-warning: #8a5b00;
-
-	/* Border */
 	--v2-border-primary: #454545;
 	--v2-border-secondary: #c7c7c7;
 	--v2-border-tertiary: #e6e6e6;
@@ -338,37 +257,23 @@
 	--v2-border-negative-secondary: #fdbdb8;
 	--v2-border-warning-primary: #8a5b00;
 	--v2-border-warning-secondary: #fcda92;
-
-	/* Static */
 	--v2-static-white: #ffffff;
-
-	/* Overlay */
 	--v2-overlay-bg: rgba(0, 0, 0, 0.25);
-
-	/* Gradient */
 	--v2-gradient-positive: linear-gradient(to right, #c6edd9, #f5fcf9);
-
-	/* Shadow */
 	--v2-shadow: 0 16px 48px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06);
 	--v2-shadow-dropdown: 0 12px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.08);
 	--v2-shadow-tooltip: 0 4px 12px rgba(0, 0, 0, 0.12);
 	--v2-shadow-popup: 0 4px 24px rgba(0, 0, 0, 0.12);
-
-	/* Glass */
 	--v2-glass-bg-bar: rgba(255, 255, 255, 0.92);
 	--v2-glass-border: rgba(0, 0, 0, 0.08);
 	--v2-glass-shadow-bar: 0 1px 12px rgba(0, 0, 0, 0.08);
-	--v2-glass-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 0
-		rgba(0, 0, 0, 0.04);
-
-	/* Syntax highlighting */
+	--v2-glass-highlight:
+		inset 0 1px 0 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 0 rgba(0, 0, 0, 0.04);
 	--v2-syntax-key: #0550ae;
 	--v2-syntax-string: #24784f;
 	--v2-syntax-number: #6f42c1;
 	--v2-syntax-bool: #cf222e;
 }
-
-/* ── Animation name vars (CSS Modules scoping workaround) ── */
 :root {
 	--fv-anim-slide-up: fvSlideUp;
 	--fv-anim-slide-down: fvSlideDown;
@@ -389,8 +294,6 @@
 :root[data-tray-position="top"] {
 	--fv-anim-popup-in: fvPopupInFromTop;
 }
-
-/* ── Animations ── */
 @keyframes fvSlideUp {
 	from {
 		opacity: 0;

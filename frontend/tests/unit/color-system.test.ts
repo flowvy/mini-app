@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -209,7 +209,7 @@ describe("desktop color parity", () => {
 		const allowedSnippets: Record<string, string[]> = {
 			"lib/telegram.ts": [
 				'miniApp.setHeaderColor(isDark ? "#171717" : "#f2f2f2");',
-				'miniApp.setBackgroundColor(isDark ? "#171717" : "#f2f2f2");',
+				'miniApp.setBgColor(isDark ? "#171717" : "#f2f2f2");',
 			],
 			"lib/telegram-editor-buttons.ts": [
 				'readColorToken("--v2-floor-0", "#171717")',

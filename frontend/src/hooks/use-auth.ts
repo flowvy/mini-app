@@ -1,7 +1,3 @@
-/**
- * Authentication hook — fetches the current user from backend.
- * Set VITE_MOCK_AUTH=true to use a mock admin user for local UI testing.
- */
 import { useQuery } from "@tanstack/react-query";
 import i18n from "../i18n";
 import { apiGet } from "../lib/api.ts";
@@ -10,11 +6,11 @@ import { queryKeys } from "../lib/query.ts";
 import { isMockAuth } from "../lib/runtime.ts";
 import type { OperatorContent } from "../types/operator-content.ts";
 
-export interface FeaturesData {
+interface FeaturesData {
 	pulse: boolean;
 }
 
-export interface BrandingData {
+interface BrandingData {
 	appName: string | null;
 	logoUrl: string | null;
 	content: OperatorContent;

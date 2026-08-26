@@ -140,7 +140,7 @@ test("administrator follows the explicit article lifecycle and deletes the artic
 	await body.pressSequentially(
 		"Restart Flowvy Desktop, then reconnect. Never share an access key.",
 	);
-	const language = page.getByRole("radiogroup", { name: "Language" });
+	const language = page.getByRole("group", { name: "Language" });
 	await language.getByRole("radio", { name: "Russian" }).click();
 	await page.getByLabel("Title").fill("Исправить DNS");
 	await page.getByLabel("Short description").fill("Проверь настройки DNS перед созданием тикета.");
@@ -291,7 +291,7 @@ test("Telegram article deletion uses a native popup and leaves no WebKit dialog 
 				message: "This article will be permanently deleted. This cannot be undone",
 				buttons: [
 					{ id: "confirm", text: "Delete", type: "destructive" },
-					{ id: "cancel", text: "Cancel" },
+					{ id: "cancel", text: "Cancel", type: "default" },
 				],
 			},
 		]);
@@ -337,7 +337,7 @@ test("Telegram article deletion reopens the native confirmation with a safe retr
 			"The article was not deleted. Try again\n\nThis article will be permanently deleted. This cannot be undone",
 		buttons: [
 			{ id: "confirm", text: "Delete", type: "destructive" },
-			{ id: "cancel", text: "Cancel" },
+			{ id: "cancel", text: "Cancel", type: "default" },
 		],
 	});
 	expect(JSON.stringify(popups[1])).not.toContain("private database diagnostic");
@@ -489,7 +489,7 @@ test("administrator sees server-owned R2 setup and can check configured access",
 		page.locator("header").getByText("Support attachments", { exact: true }),
 	).toBeVisible();
 	await expect(page.locator('[data-support-storage="configured"]')).toBeVisible();
-	await expect(page.getByText("flowvy-support", { exact: true })).toBeVisible();
+	await expect(page.getByText("test-support-bucket", { exact: true })).toBeVisible();
 	await expect(page.getByText("R2_ACCESS_KEY_ID", { exact: true })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Attachment storage" })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Limits and retention" })).toBeVisible();

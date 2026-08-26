@@ -1,9 +1,9 @@
-import { type CSSProperties, type KeyboardEvent, useCallback, useRef } from "react";
+import { type CSSProperties, type KeyboardEvent, useCallback, useId, useRef } from "react";
 import { useSwipe } from "../../hooks/use-swipe.ts";
 import { hapticSelection } from "../../lib/haptics.ts";
 import styles from "./segmented-control.module.css";
 
-export interface SegmentedControlOption {
+interface SegmentedControlOption {
 	key: string;
 	label: string;
 	id?: string;
@@ -17,7 +17,7 @@ export interface SegmentedControlProps {
 	ariaLabel?: string;
 	disabled?: boolean;
 	variant?: "navigation" | "choice";
-	semantics?: "tabs" | "radiogroup";
+	semantics?: "tabs" | "choice";
 }
 
 interface SegmentedControlStyle extends CSSProperties {
@@ -32,10 +32,11 @@ export function SegmentedControl({
 	ariaLabel,
 	disabled = false,
 	variant = "choice",
-	semantics = "radiogroup",
+	semantics = "choice",
 }: SegmentedControlProps) {
 	const activeIndex = options.findIndex((o) => o.key === value);
 	const buttonRefs = useRef<Array<HTMLButtonElement | null>>([]);
+	const radioName = useId();
 
 	const selectOption = useCallback(
 		(index: number, moveFocus = false) => {
@@ -103,38 +104,65 @@ export function SegmentedControl({
 		"--segment-count": options.length,
 		"--active-index": Math.max(activeIndex, 0),
 	};
+	const renderedOptions = options.map((opt, index) => {
+		if (semantics === "choice") {
+			return (
+				<label key={opt.key} className={`${styles.btn} ${value === opt.key ? styles.active : ""}`}>
+					<input
+						className={styles.radio}
+						type="radio"
+						name={radioName}
+						value={opt.key}
+						checked={value === opt.key}
+						onChange={() => selectOption(index)}
+						disabled={disabled}
+					/>
+					<span>{opt.label}</span>
+				</label>
+			);
+		}
 
-	return (
-		<div
-			className={`${styles.root} ${variant === "navigation" ? styles.navigation : styles.choice}`}
-			aria-label={ariaLabel}
-			role={semantics === "tabs" ? "tablist" : "radiogroup"}
-			aria-disabled={disabled || undefined}
-			style={rootStyle}
-			onTouchStart={onTouchStart}
-			onTouchEnd={onTouchEnd}
-		>
-			{options.map((opt, index) => (
-				<button
-					key={opt.key}
-					ref={(element) => {
-						buttonRefs.current[index] = element;
-					}}
-					id={opt.id}
-					type="button"
-					className={`${styles.btn} ${value === opt.key ? styles.active : ""}`}
-					onClick={() => selectOption(index)}
-					onKeyDown={(event) => handleKeyDown(event, index)}
-					role={semantics === "tabs" ? "tab" : "radio"}
-					aria-selected={semantics === "tabs" ? value === opt.key : undefined}
-					aria-checked={semantics === "radiogroup" ? value === opt.key : undefined}
-					aria-controls={semantics === "tabs" ? opt.panelId : undefined}
-					tabIndex={value === opt.key ? 0 : -1}
-					disabled={disabled}
-				>
-					{opt.label}
-				</button>
-			))}
+		const commonProps = {
+			ref: (element: HTMLButtonElement | null) => {
+				buttonRefs.current[index] = element;
+			},
+			id: opt.id,
+			type: "button" as const,
+			className: `${styles.btn} ${value === opt.key ? styles.active : ""}`,
+			onClick: () => selectOption(index),
+			onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => handleKeyDown(event, index),
+			tabIndex: value === opt.key ? 0 : -1,
+			disabled,
+		};
+
+		return (
+			<button
+				key={opt.key}
+				{...commonProps}
+				role="tab"
+				aria-selected={value === opt.key}
+				aria-controls={opt.panelId}
+			>
+				{opt.label}
+			</button>
+		);
+	});
+	const rootProps = {
+		className: `${styles.root} ${variant === "navigation" ? styles.navigation : styles.choice}`,
+		"aria-label": ariaLabel,
+		"aria-disabled": disabled || undefined,
+		style: rootStyle,
+		onTouchStart,
+		onTouchEnd,
+	};
+
+	return semantics === "tabs" ? (
+		<div {...rootProps} role="tablist">
+			{renderedOptions}
 		</div>
+	) : (
+		<fieldset {...rootProps} disabled={disabled}>
+			{renderedOptions}
+		</fieldset>
 	);
 }

@@ -7,8 +7,8 @@ import { useCommerceCatalog } from "../../hooks/use-commerce-rules.ts";
 import { TRIBUTE_PERIOD_KEYS } from "../../lib/commerce-labels.ts";
 import { formatMajorMoney } from "../../lib/money.ts";
 import {
-	PAYMENT_DESTINATION_ISSUE_KEYS,
 	compactPaymentDestinations,
+	PAYMENT_DESTINATION_ISSUE_KEYS,
 	paymentDestinationIssue,
 } from "../../lib/payment-destination.ts";
 import type { AdminSettings } from "../../types/admin-settings.ts";

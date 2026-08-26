@@ -1,4 +1,3 @@
-/** Presentational media file row — displays current media and action buttons. */
 import { Film, Image } from "lucide-react";
 import { type FC, useRef } from "react";
 import { useTranslation } from "react-i18next";

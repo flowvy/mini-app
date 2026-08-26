@@ -5,8 +5,8 @@ Telegram/Remnawave/Kuma/Beszel. По умолчанию не используй�
 
 ## Что понадобится
 
-- Python 3.12+ и `uv`;
-- Node.js и `pnpm`;
+- Python 3.14.7 и `uv 0.12.6`;
+- Node.js 24.19.0 LTS и `pnpm 11.24.0`;
 - PowerShell 7 (`pwsh`) для checked-in lifecycle scripts;
 - Docker Desktop/Engine с Compose;
 - для реального Telegram Mini App — тестовый bot/account и HTTPS tunnel;
@@ -31,19 +31,29 @@ PowerShell 7 и locked toolchain. Один воспроизводимый вар
 
 ```bash
 xcode-select --install
-brew install uv node@22 cloudflared
+brew install uv node@24 cloudflared
 brew install --cask powershell
-npm install --global pnpm@10.33.0
-uv python install 3.12
+corepack enable
+corepack prepare pnpm@11.24.0 --activate
+uv python install 3.14.7
+```
+
+Homebrew устанавливает `node@24` как keg-only formula. Если другая Node уже linked, добавьте exact
+runtime в `PATH` текущего shell перед bootstrap и проверками:
+
+```bash
+export PATH="$(brew --prefix node@24)/bin:$PATH"
+node --version
 ```
 
 После установки один раз откройте Docker Desktop и дождитесь `docker info`. `uv` официально
-поддерживает Apple Silicon, `frontend/package.json` фиксирует `pnpm@10.33.0`, а CI использует
-Node 22. Не переносите с Windows `.venv`, `node_modules`, `dist`, `.artifacts` или Docker volume:
+поддерживает Apple Silicon, `frontend/.node-version` фиксирует Node 24.19.0 LTS,
+`frontend/package.json` фиксирует `pnpm@11.24.0`, и те же версии использует CI. Не переносите с
+Windows `.venv`, `node_modules`, `dist`, `.artifacts` или Docker volume:
 их создают заново из lockfiles/Compose. Локальные `.env` переносятся только отдельным защищённым
 каналом и никогда не попадают в Git.
 
-Контракт сверён 2026-08-21 с официальными инструкциями
+Контракт сверён 2026-08-26 с официальными инструкциями
 [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/),
 [`uv` installation/platform support](https://docs.astral.sh/uv/getting-started/installation/),
 [PowerShell platform variables](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_automatic_variables?view=powershell-7.6)
@@ -69,8 +79,13 @@ docker compose -f docker-compose.dev.yml up -d postgres redis
 docker compose -f docker-compose.dev.yml ps
 ```
 
-Compose публикует PostgreSQL 16 на `localhost:5432` и Redis 7 на `localhost:6379`. Backend и frontend
-в Compose не входят. Named volume `pgdata` сохраняет dev data между перезапусками.
+Compose публикует PostgreSQL 18.6 на `localhost:5432` и Redis 8.10.1 на `localhost:6379`. Backend и
+frontend в Compose не входят. Named volume `pgdata18` сохраняет dev data между перезапусками.
+
+PostgreSQL major нельзя обновлять прямым подключением старого data directory. При переходе с 16 на
+18 сохраните старый `pgdata` volume и переносите данные через `pg_dump`/`pg_restore` либо
+`pg_upgrade`; обычный `docker compose up` не является процедурой миграции данных. PostgreSQL 18
+также использует mount `/var/lib/postgresql`, соответствующий текущему official image contract.
 
 При первом создании volume PostgreSQL выполняет `backend/scripts/init-test-db.sql`: создаёт отдельные
 database/user `test` для pytest. Если volume существовал раньше, init script повторно автоматически
@@ -333,7 +348,7 @@ Change-aware gate из корня:
 `verify-tooling.ps1`, который парсит все PowerShell scripts и проверяет platform port contract.
 
 `Full` добавляет migrations, полный pytest, Remnawave snapshot/client check и UI smoke. GitHub
-Actions выполняет тот же минимальный backend/frontend контур на pull request и push в `main`.
+Actions выполняет тот же минимальный backend/frontend контур на pull request и push в `dev`/`main`.
 
 ## Cloudflare Tunnel и реальный Telegram test flow
 

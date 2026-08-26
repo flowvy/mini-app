@@ -1,7 +1,3 @@
-/**
- * Admin user detail view — drill-down from user list.
- * Shows hero card + detail rows with action buttons.
- */
 import { type FC, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { UserAction } from "../../components/admin/admin-user-actions.ts";

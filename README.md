@@ -15,17 +15,18 @@ backend-потоки реализованы; добавлены единые п�
 
 ## Состав проекта
 
-- `backend/` — Python 3.12, FastAPI, aiogram, Dishka, SQLAlchemy/Alembic, PostgreSQL, Redis.
-- `frontend/` — React 19, TypeScript, Vite, TanStack Router/Query, Telegram Apps SDK.
+- `backend/` — Python 3.14, FastAPI, aiogram, Dishka, SQLAlchemy/Alembic, PostgreSQL, Redis.
+- `frontend/` — React 19, TypeScript 7, Vite 8, TanStack Router/Query, TMA.js SDK.
 - `docker-compose.dev.yml` — только локальные PostgreSQL и Redis.
 - `scripts/` и `.github/workflows/ci.yml` — одинаковые локальные и CI-проверки.
 - `.agents/skills/` и `.codex/` — процедуры, узкие агенты и project guardrails Codex.
 - `docs/` — архитектура, запуск и текущее состояние.
-- `plans/` — живые планы крупных задач и их завершённые итоги.
+- `plans/` — Git-ignored локальные планы только для выполняющихся крупных задач.
 
 ## Быстрый локальный запуск
 
-Нужны Python 3.12+, [uv](https://docs.astral.sh/uv/), Node.js с pnpm, Docker Desktop/Engine и
+Нужны Python 3.14.7, [uv 0.12.6](https://docs.astral.sh/uv/), Node.js 24.19.0 LTS с pnpm 11.24.0,
+Docker Desktop/Engine и
 PowerShell 7. Одни и те же checked-in `.ps1` workflows работают на Windows и macOS. Команды ниже
 запускаются из корня; на macOS используйте `./scripts/...` вместо `.\scripts\...`.
 
@@ -140,5 +141,6 @@ console/network cleanliness, accessibility, keyboard focus и четыре brows
 
 Перед задачей Codex должен прочитать корневой и ближайший вложенный `AGENTS.md`, проверить dirty
 worktree и открыть `PROJECT_STATE.md`. Для большой или прерываемой работы создаётся план в
-`plans/active/`. Готовность подтверждается только свежими командами и, для UI, реальной проверкой
-поведения и отображения.
+`plans/`; до финального handoff его устойчивые выводы переносятся в canonical docs/instructions, а
+сам план удаляется. Завершённые планы не хранятся. Готовность подтверждается только свежими командами
+и, для UI, реальной проверкой поведения и отображения.

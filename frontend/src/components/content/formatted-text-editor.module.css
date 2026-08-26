@@ -9,7 +9,9 @@
 
 .editor {
 	overflow: hidden;
-	transition: border-color var(--duration-base) ease, box-shadow var(--duration-base) ease;
+	transition:
+		border-color var(--duration-base) ease,
+		box-shadow var(--duration-base) ease;
 }
 
 .editor:focus-within {

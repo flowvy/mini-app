@@ -43,9 +43,9 @@
 }
 
 .rowActions {
-	display: flex !important;
+	display: flex;
 	align-items: center;
-	gap: 4px !important;
+	gap: 4px;
 	flex-shrink: 0;
 }
 

@@ -1,5 +1,3 @@
-/* ── Welcome Media Row ── */
-
 .row {
 	display: grid;
 	grid-template-columns: 18px minmax(0, 1fr) auto;

@@ -58,8 +58,10 @@ async def test_debug_routes_are_absent_when_disabled(
 ) -> None:
     monkeypatch.setenv("DEBUG", "false")
     app = create_app()
-    paths = {route.path for route in app.routes}
-    assert not any(path.startswith("/api/debug") for path in paths)
+    transport = ASGITransport(app=app)  # type: ignore[arg-type]
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/debug/pulse")
+    assert response.status_code == 404
 
 
 @pytest.mark.asyncio

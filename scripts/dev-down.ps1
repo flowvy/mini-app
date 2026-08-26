@@ -19,7 +19,7 @@ if (Test-Path $processFile) {
             @("pnpm", "cmd", "node")
         }
         else {
-            @("uv", "python", "python3", "python3.12", "flowvy")
+            @("uv", "python", "python3", "python3.12", "python3.14", "flowvy")
         }
         if ($null -ne $processes.$processNameProperty) {
             $allowedNames = @([string]$processes.$processNameProperty)

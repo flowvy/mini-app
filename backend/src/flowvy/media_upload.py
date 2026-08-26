@@ -58,7 +58,7 @@ class UploadInputFile(InputFile):
         )
         self._upload = upload
 
-    async def read(self, bot: Bot) -> AsyncGenerator[bytes, None]:
+    async def read(self, bot: Bot) -> AsyncGenerator[bytes]:
         """Yield bounded chunks for aiogram's multipart encoder."""
         await self._upload.seek(0)
         while chunk := await self._upload.read(self.chunk_size):

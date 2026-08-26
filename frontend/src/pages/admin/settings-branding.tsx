@@ -1,4 +1,3 @@
-/** Page wrapper for BrandingConfig sub-screen — loads settings. */
 import type { FC } from "react";
 import { BrandingConfig } from "../../components/admin/branding-config.tsx";
 import { ErrorState } from "../../components/ui/error-state.tsx";

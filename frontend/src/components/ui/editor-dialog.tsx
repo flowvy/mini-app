@@ -13,8 +13,8 @@ import { createPortal } from "react-dom";
 import { useBackNavigationHandler } from "../../contexts/back-navigation-context.tsx";
 import { captureFocusReturnTarget, restoreFocusTarget } from "../../lib/focus-return.ts";
 import {
-	type TelegramEditorButtonsController,
 	mountTelegramEditorButtons,
+	type TelegramEditorButtonsController,
 } from "../../lib/telegram-editor-buttons.ts";
 import { ActionBtn } from "./action-btn.tsx";
 import styles from "./editor-dialog.module.css";
@@ -167,7 +167,6 @@ export function EditorDialog({
 			<div
 				ref={dialogRef}
 				className={styles.panel}
-				// biome-ignore lint/a11y/useSemanticElements: Telegram iOS WebView must not use the HTML dialog top layer; WAI-ARIA defines this modal pattern.
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby={titleId}

@@ -1,4 +1,3 @@
-/** Page wrapper for WelcomeConfig sub-screen — loads settings. */
 import type { FC } from "react";
 import { WelcomeConfig } from "../../components/admin/welcome-config.tsx";
 import { ErrorState } from "../../components/ui/error-state.tsx";

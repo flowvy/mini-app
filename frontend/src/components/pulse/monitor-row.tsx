@@ -1,6 +1,3 @@
-/**
- * Single monitor row — status dot, name, uptime %, heartbeat bar.
- */
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import type { PulseMonitor } from "../../types/pulse.ts";

@@ -1,4 +1,3 @@
-/** Admin Settings page — main list, sub-screens are separate routes. */
 import { useNavigate } from "@tanstack/react-router";
 import { Activity, Cloud, MessageSquareText, Palette, ShieldCheck } from "lucide-react";
 import type { FC } from "react";

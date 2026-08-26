@@ -72,6 +72,7 @@ docker-compose.override.yml
 
 # Codex and verification artifacts
 .artifacts/
+/plans/
 frontend/test-results/
 frontend/playwright-report/
 frontend/coverage/

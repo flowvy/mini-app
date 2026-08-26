@@ -1,10 +1,3 @@
-/**
- * Devices data hook backed by TanStack Query.
- * Fetches from GET /api/me/devices (Remnawave via BFF).
- *
- * Debug mode: when VITE_MOCK_AUTH=true and VITE_DEBUG_TELEGRAM_ID is set,
- * fetches from GET /api/debug/devices/{telegramId} instead.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiDelete, apiGet } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";

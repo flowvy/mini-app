@@ -280,5 +280,5 @@ class ProviderSettingsService:
         try:
             data = await self._remnawave.get_metadata()
             return data.get("version")
-        except (RemnawaveError, Exception):
+        except RemnawaveError:
             return None

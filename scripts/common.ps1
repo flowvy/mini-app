@@ -106,7 +106,7 @@ function Get-FlowvyChildProcessIds {
 }
 
 $script:FlowvyAllowedChildProcessNames = @(
-    "uv", "python", "python3", "python3.12", "flowvy",
+	"uv", "python", "python3", "python3.12", "python3.14", "flowvy",
     "pnpm", "node", "esbuild", "cmd", "conhost", "sh", "bash", "zsh", "cloudflared"
 )
 

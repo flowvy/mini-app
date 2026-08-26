@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { formatShortDate } from "../../lib/format.ts";
 import type { DeviceData } from "../../types/devices.ts";
 import styles from "./device-row.module.css";
-import { PlatformIcon, getPlatformKind } from "./platform-icon.tsx";
+import { getPlatformKind, PlatformIcon } from "./platform-icon.tsx";
 
 interface DeviceRowProps {
 	device: DeviceData;

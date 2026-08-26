@@ -23,9 +23,13 @@ Xray самостоятельно: он связывает Telegram identity, л
 4. Увидеть статус, срок, трафик, лимит устройств и connection link активной подписки.
 5. Посмотреть HWID-устройства и удалить одно либо все устройства.
 6. Посмотреть Pulse status, если администратор выбрал Uptime Kuma или Beszel.
+7. Открыть опубликованные sponsor offers, перейти в Tribute, проверить статус локального checkout и
+   увидеть подтверждённый paid/base access без client-side доказательства оплаты.
+8. Создать Support request с optional attachment, продолжить conversation и читать опубликованные
+   Quick Answers. Установка без настроенного private R2 честно остаётся text-only.
 
-Маршруты Support и Broadcast существуют, но пока показывают единый `Coming Soon`. Покупка, продление, оплата,
-покупка/продление и полноценный support flow не реализованы.
+Broadcast явно исключён владельцем из MVP scope. Product-owned `Coming Soon` маршрут сохраняется как
+честная post-MVP заглушка; отправка рассылок не реализована и не считается возможностью этого MVP.
 
 ### Администратор
 
@@ -39,9 +43,16 @@ Xray самостоятельно: он связывает Telegram identity, л
 - переключать открытую регистрацию и invite-only;
 - создавать переиспользуемые профили доступа: безлимитный/ограниченный трафик, срок, устройства,
   статус, tag, description, internal/external squads;
-- назначать единый профиль доступа всем новым пользователям и видеть число приглашённых в карточке пользователя.
+- назначать единый профиль доступа всем новым пользователям и видеть число приглашённых в карточке
+  пользователя;
+- настраивать bilingual product/operator content, Tribute destinations, commerce rules и
+  опубликованные sponsor offers;
+- обрабатывать durable Tribute activity и Support queue, отвечать пользователю, менять lifecycle
+  request и управлять Quick Answers.
 
-Broadcast пока является заглушкой. Аудит опасных admin actions отсутствует.
+Broadcast остаётся post-MVP заглушкой. Production-grade общий operator audit, deployment и
+наблюдаемость всё ещё требуют отдельной готовности; текущий append-only activity contract покрывает
+Tribute operator actions, но не является универсальным аудитом всего admin UI.
 
 ## Продуктовые правила
 
@@ -64,5 +75,6 @@ Broadcast пока является заглушкой. Аудит опасны�
 
 Наличие маршрута или компонента не означает завершённый продуктовый поток. До production отдельно
 нужны безопасность, оставшиеся live/интеграционные проверки, эксплуатационный контур, deployment,
-backup/recovery, integrated fake-backend UI suite и согласованное поведение Support/Broadcast.
+backup/recovery и integrated fake-backend UI suite. Broadcast относится к post-MVP roadmap и не
+входит в этот readiness criterion.
 Эти пробелы нельзя маскировать mock mode или зелёным build.

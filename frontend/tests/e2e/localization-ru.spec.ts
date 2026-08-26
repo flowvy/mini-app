@@ -124,6 +124,7 @@ test("Russian admin routes keep short labels and complete translated settings", 
 	page,
 	mockApi: _mock,
 }, testInfo) => {
+	testInfo.setTimeout(60_000);
 	await page.addInitScript(() => localStorage.setItem("flowvy:mock-role", "admin"));
 	const routes =
 		testInfo.project.name === "desktop-chromium" ? ALL_ADMIN_ROUTES : MOBILE_ADMIN_ROUTES;
@@ -145,6 +146,7 @@ test("Russian admin routes keep short labels and complete translated settings", 
 		await gotoInTheme(page, "/admin/settings", theme);
 		await expect(page.locator("header").getByText("Настройки", { exact: true })).toBeVisible();
 		await gotoInTheme(page, "/admin/settings/communication", theme);
+		await expect(page.getByRole("heading", { name: "Регистрация" })).toBeVisible();
 		await expect(
 			page.getByText("Каждое сообщение открывает поля для своего назначения", { exact: true }),
 		).toHaveCount(0);

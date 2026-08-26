@@ -2,7 +2,7 @@
  * Thin wrappers around Telegram Mini App haptic feedback.
  * Every call is non-critical: guarded by isAvailable() + try/catch.
  */
-import { hapticFeedback } from "@telegram-apps/sdk-react";
+import { hapticFeedback } from "@tma.js/sdk-react";
 
 export function hapticImpact(style: "light" | "medium" | "heavy" = "light"): void {
 	try {

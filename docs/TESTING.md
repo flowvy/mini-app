@@ -146,6 +146,16 @@ pnpm test:e2e:all   # primary, 320x568, iPhone/WebKit, desktop
 pnpm test:e2e:live  # существующие dev-up frontend/backend и реальный read-only provider
 ```
 
+Обычная полная matrix запускает Chromium projects с локальным parallelism, затем WebKit
+последовательными короткими shards без retries. Screenshot/Axe-heavy WebKit evidence получает свежий
+browser process, чтобы долгоживущий WebKit worker не накапливал renderer state между независимыми
+экранами. Все assertions, themes и viewports сохраняются; sharding меняет только process isolation.
+
+Playwright traces, screenshots, videos и HTML report по умолчанию пишутся в системный temp каталог
+`flowvy-playwright`, а не в repository tree. Это исключает generated-artifact churn в Git workspace и
+синхронизируемых папках. Для controlled artifact location задайте `PLAYWRIGHT_ARTIFACT_DIR` перед
+запуском.
+
 Обычный Playwright suite запускает только Vite с `VITE_MOCK_AUTH=true`; stateful fixture перехватывает
 каждый `/api/*` request. Неизвестный запрос, `console.error`, `pageerror` или network failure валит
 тест. Матрица покрывает auth/role, loading/empty/error/malformed/retry, device mutation, Pulse,
@@ -218,10 +228,10 @@ Tunnel; затем через внешний DNS edge проверяет `health
 
 ## CI
 
-`.github/workflows/ci.yml` запускается на pull request и push в `main`:
+`.github/workflows/ci.yml` запускается на pull request и push в `dev`/`main`:
 
-- backend: locked Python 3.12 environment, PostgreSQL/Redis, Ruff, Alembic и pytest;
-- frontend: Node 22/pnpm, Biome, TypeScript, Vitest, build и Chromium smoke;
+- backend: locked Python 3.14.7/uv 0.12.6, PostgreSQL 18.6, Redis 8.10.1, Ruff, Alembic и pytest;
+- frontend: Node 24.19.0 LTS/pnpm 11.24.0, Biome 2, TypeScript 7, Vitest 4, Vite 8 build и Chromium smoke;
 - failure artifacts: Playwright traces/screenshots/video/report.
 
 Workflow пока не заменяет локальную focused проверку и не подтверждает production deployment. Его

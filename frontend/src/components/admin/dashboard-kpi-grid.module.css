@@ -1,5 +1,3 @@
-/* ── KPI Grid (2×2) ── */
-
 .grid {
 	display: grid;
 	grid-template-columns: 1fr 1fr;

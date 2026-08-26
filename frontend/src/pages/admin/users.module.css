@@ -1,5 +1,3 @@
-/* ── Admin Users Page ── */
-
 .page {
 	display: flex;
 	flex-direction: column;
@@ -12,7 +10,6 @@
 	padding-bottom: 16px;
 }
 
-/* Search + chips block — scrolls with content, NOT sticky */
 .searchBlock {
 	display: flex;
 	flex-direction: column;
@@ -118,8 +115,6 @@
 	padding: 0;
 }
 
-/* ── Detail view ── */
-
 .detailPage {
 	display: flex;
 	flex-direction: column;
@@ -127,7 +122,6 @@
 	gap: var(--layout-section-gap);
 }
 
-/* Empty / error states */
 .empty {
 	display: flex;
 	flex-direction: column;

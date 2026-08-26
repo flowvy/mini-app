@@ -1,4 +1,4 @@
-import { copyTextToClipboard, isShareMessageError, shareMessage } from "@telegram-apps/sdk-react";
+import { copyTextToClipboard, ShareMessageError, shareMessage } from "@tma.js/sdk-react";
 import { Check, Copy, Send, Users } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -14,7 +14,7 @@ import { InlineFeedback } from "../ui/inline-feedback.tsx";
 import { Skeleton } from "../ui/skeleton.tsx";
 import styles from "./invite-card.module.css";
 
-export function InviteCardSkeleton() {
+function InviteCardSkeleton() {
 	const { t } = useTranslation();
 	return (
 		<section className={styles.card} aria-label={t("home.invite.loadingLabel")} aria-busy="true">
@@ -79,7 +79,7 @@ export function InviteCard() {
 			const prepared = await apiPost<PreparedInviteShare>("/me/invite/prepared-share");
 			await shareMessage(prepared.id);
 		} catch (error) {
-			if (!(isShareMessageError(error) && String(error).includes("USER_DECLINED"))) {
+			if (!(ShareMessageError.is(error) && String(error).includes("USER_DECLINED"))) {
 				setShareFailed(true);
 				hapticNotification("error");
 			}
@@ -118,10 +118,13 @@ export function InviteCard() {
 						)}
 					</FormattedText>
 				</div>
-				<div className={styles.count} aria-label={t("home.invite.invitedLabel")}>
-					<Users size={14} />
-					<strong>{invite.data.invitedCount}</strong>
-				</div>
+				<p className={styles.count}>
+					<span className={styles.srOnly}>
+						{t("home.invite.invitedCountLabel", { count: invite.data.invitedCount })}
+					</span>
+					<Users size={14} aria-hidden="true" />
+					<strong aria-hidden="true">{invite.data.invitedCount}</strong>
+				</p>
 			</div>
 
 			<button type="button" className={styles.code} onClick={() => void copyCode()}>

@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from flowvy.api.routes.admin.commerce import _sponsor_offer_error
+from flowvy.api.routes.commerce_errors import sponsor_offer_http_error
 from flowvy.config import Settings
 from flowvy.models.commerce_rule import CommerceRule
 from flowvy.models.entitlement_operation import EntitlementOperation
@@ -324,7 +324,7 @@ async def test_subscription_offer_reports_missing_destination_with_stable_code()
 
 
 def test_missing_destination_error_has_stable_admin_http_contract() -> None:
-    response = _sponsor_offer_error(
+    response = sponsor_offer_http_error(
         SponsorOfferDestinationMissingError("Tribute subscription destination is not configured")
     )
 

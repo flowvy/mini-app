@@ -100,7 +100,9 @@
 	cursor: pointer;
 	flex-shrink: 0;
 	margin-top: 3px;
-	transition: background var(--duration-base), color var(--duration-base);
+	transition:
+		background var(--duration-base),
+		color var(--duration-base);
 }
 
 @media (hover: hover) and (pointer: fine) {

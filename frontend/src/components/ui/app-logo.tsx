@@ -1,4 +1,3 @@
-/** AppLogo — provider artwork or the token-driven built-in Flowvy mark. */
 import styles from "./app-logo.module.css";
 
 interface AppLogoProps {

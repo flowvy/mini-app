@@ -34,18 +34,25 @@ export default defineConfig({
 		},
 	},
 	build: {
-		rollupOptions: {
+		rolldownOptions: {
 			output: {
-				manualChunks: {
-					i18n: ["i18next", "react-i18next", "i18next-resources-to-backend"],
-					markdown: ["react-markdown", "remark-breaks", "remark-gfm"],
-					richTextEditor: [
-						"@floating-ui/dom",
-						"@tiptap/extension-character-count",
-						"@tiptap/extension-placeholder",
-						"@tiptap/markdown",
-						"@tiptap/react",
-						"@tiptap/starter-kit",
+				codeSplitting: {
+					groups: [
+						{
+							name: "i18n",
+							test: /node_modules[\\/](?:i18next|react-i18next)/,
+							includeDependenciesRecursively: true,
+						},
+						{
+							name: "markdown",
+							test: /node_modules[\\/](?:react-markdown|remark-breaks|remark-gfm)/,
+							includeDependenciesRecursively: true,
+						},
+						{
+							name: "richTextEditor",
+							test: /node_modules[\\/](?:@floating-ui|@tiptap)/,
+							includeDependenciesRecursively: true,
+						},
 					],
 				},
 			},

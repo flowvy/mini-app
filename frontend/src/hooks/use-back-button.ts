@@ -1,5 +1,5 @@
 import { useLocation, useRouter } from "@tanstack/react-router";
-import { backButton } from "@telegram-apps/sdk-react";
+import { backButton } from "@tma.js/sdk-react";
 /**
  * Global Telegram BackButton hook — shows/hides based on route depth.
  * Call once in AppShell. On tab routes the button is hidden;

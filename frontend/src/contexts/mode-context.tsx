@@ -1,10 +1,7 @@
-/**
- * App mode context — switches between user and admin tab sets.
- */
 import { useLocation } from "@tanstack/react-router";
 import {
-	type ReactNode,
 	createContext,
+	type ReactNode,
 	useCallback,
 	useContext,
 	useEffect,

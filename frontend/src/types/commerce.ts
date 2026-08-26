@@ -1,4 +1,4 @@
-export type CommerceProvider = "tribute";
+type CommerceProvider = "tribute";
 export type CommerceType = "donation" | "subscription";
 export type PaymentMode = "any" | "one_time" | "recurring";
 export type SponsorDonationPaymentMode = Exclude<PaymentMode, "any">;
@@ -13,7 +13,7 @@ export type TributeSubscriptionPeriod =
 	| "halfyearly"
 	| "yearly";
 export type TributeDonationPeriod = Exclude<TributeSubscriptionPeriod, "trial" | "onetime">;
-export type EntitlementOperationKind = "grant" | "refund" | "restore" | "review";
+type EntitlementOperationKind = "grant" | "refund" | "restore" | "review";
 export type EntitlementOperatorAction = "retry" | "resolve";
 export type EntitlementOperationStatus =
 	| "pending"
@@ -24,7 +24,7 @@ export type EntitlementOperationStatus =
 	| "resolved"
 	| "cancelled";
 
-export interface AmountBand {
+interface AmountBand {
 	fromAmountMinor: number;
 	unitAmountMinor: number;
 	unitDays: number;
@@ -56,7 +56,7 @@ export interface CommerceRulePreview {
 	matchedBand: AmountBand | null;
 }
 
-export interface CommerceCatalogSubscriptionPeriod {
+interface CommerceCatalogSubscriptionPeriod {
 	periodId: string;
 	period: TributeSubscriptionPeriod;
 	priceMajor: string;
@@ -120,7 +120,7 @@ export interface SponsorOfferPriceOption {
 	period: TributeSubscriptionPeriod | null;
 }
 
-export interface SponsorOfferBenefits {
+interface SponsorOfferBenefits {
 	trafficLimitBytes: number;
 	deviceLimit: number | null;
 }

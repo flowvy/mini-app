@@ -9,7 +9,7 @@ const sdk = vi.hoisted(() => ({
 	},
 }));
 
-vi.mock("@telegram-apps/sdk-react", () => sdk);
+vi.mock("@tma.js/sdk-react", () => sdk);
 
 describe("Telegram editor main button", () => {
 	beforeEach(() => {
@@ -53,7 +53,7 @@ describe("Telegram editor main button", () => {
 			isLoaderVisible: false,
 			isVisible: true,
 			hasShineEffect: false,
-			backgroundColor: "#747474",
+			bgColor: "#747474",
 			textColor: "#171717",
 		});
 
@@ -75,7 +75,7 @@ describe("Telegram editor main button", () => {
 				isEnabled: false,
 				isLoaderVisible: true,
 				isVisible: false,
-				backgroundColor: "#ffffff",
+				bgColor: "#ffffff",
 				textColor: "#171717",
 			}),
 		);
@@ -111,7 +111,7 @@ describe("Telegram editor main button", () => {
 		expect(sdk.mainButton.setParams).toHaveBeenLastCalledWith(
 			expect.objectContaining({
 				isEnabled: false,
-				backgroundColor: "#9a9a9a",
+				bgColor: "#9a9a9a",
 				textColor: "#f7f7f7",
 			}),
 		);

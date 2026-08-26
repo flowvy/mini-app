@@ -1,6 +1,3 @@
-/**
- * Toggle switch — matches Desktop Toggle.module.css exactly.
- */
 import type { FC } from "react";
 import { hapticImpact } from "../../lib/haptics.ts";
 import styles from "./toggle.module.css";

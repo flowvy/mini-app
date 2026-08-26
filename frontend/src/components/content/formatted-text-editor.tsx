@@ -19,8 +19,8 @@ import {
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { normalizeFormattedTextLink } from "../../lib/formatted-text.ts";
-import styles from "./formatted-text-editor.module.css";
 import contentStyles from "./formatted-text.module.css";
+import styles from "./formatted-text-editor.module.css";
 
 interface FormattedTextEditorProps {
 	id: string;

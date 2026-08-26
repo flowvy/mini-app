@@ -1,6 +1,3 @@
-/**
- * TanStack Router — code-based route definitions.
- */
 import {
 	createRootRoute,
 	createRoute,

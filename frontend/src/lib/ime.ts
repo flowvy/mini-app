@@ -21,7 +21,7 @@ function isAvailableTextEntry(element: HTMLElement): boolean {
 }
 
 /** Move to the next rendered text-entry control in the current form/task surface. */
-export function focusNextTextEntry(current: HTMLElement): boolean {
+function focusNextTextEntry(current: HTMLElement): boolean {
 	const scope =
 		current.closest<HTMLElement>("form, dialog, [data-ime-scope], main") ?? document.body;
 	const entries = Array.from(scope.querySelectorAll<HTMLElement>(TEXT_ENTRY_SELECTOR)).filter(

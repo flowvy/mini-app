@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getActions } from "../../src/components/admin/admin-user-actions.ts";
 import type { AdminUser } from "../../src/types/admin-users.ts";
-import { PROVIDER_USER_STATUSES, isProviderUserStatus } from "../../src/types/user-status.ts";
+import { isProviderUserStatus, PROVIDER_USER_STATUSES } from "../../src/types/user-status.ts";
 
 function user(status: AdminUser["status"]): AdminUser {
 	return {

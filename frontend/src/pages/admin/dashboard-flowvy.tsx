@@ -1,5 +1,5 @@
-import { DashboardKpiGrid } from "../../components/admin/dashboard-kpi-grid.tsx";
 import type { KpiItem } from "../../components/admin/dashboard-kpi-grid.tsx";
+import { DashboardKpiGrid } from "../../components/admin/dashboard-kpi-grid.tsx";
 import {
 	FormRowSeparator,
 	FormSection,
@@ -7,13 +7,16 @@ import {
 } from "../../components/ui/form-section.tsx";
 import { formatMemory, formatPositiveNumber, formatUptime } from "../../lib/format.ts";
 import type { DashboardResponse } from "../../types/dashboard.ts";
-import { Row } from "./dashboard-rows.tsx";
 import styles from "./dashboard.module.css";
+import { Row } from "./dashboard-rows.tsx";
 
 export function FlowvyContent({
 	data,
 	t,
-}: { data: DashboardResponse; t: (k: string, o?: Record<string, unknown>) => string }) {
+}: {
+	data: DashboardResponse;
+	t: (k: string, o?: Record<string, unknown>) => string;
+}) {
 	const { system, users, requests } = data.bot;
 
 	const kpis: KpiItem[] = [

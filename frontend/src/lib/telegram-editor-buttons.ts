@@ -1,4 +1,4 @@
-import { mainButton } from "@telegram-apps/sdk-react";
+import { mainButton } from "@tma.js/sdk-react";
 
 export interface TelegramEditorButtonState {
 	primaryText: string;
@@ -89,7 +89,7 @@ export function mountTelegramEditorButtons(
 				isLoaderVisible: nextState.primaryLoading,
 				isVisible: nextState.primaryVisible ?? true,
 				hasShineEffect: false,
-				backgroundColor: colors.primaryBackground,
+				bgColor: colors.primaryBackground,
 				textColor: colors.primaryText,
 			});
 			return true;

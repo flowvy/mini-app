@@ -1,4 +1,4 @@
-import { openLink, openTelegramLink } from "@telegram-apps/sdk-react";
+import { openLink, openTelegramLink } from "@tma.js/sdk-react";
 
 /** Use Telegram's native link bridge when available and leave browser fallback to the anchor. */
 export function openTelegramDestination(url: string): boolean {

@@ -16,7 +16,7 @@ export interface PulseGroup {
 	monitors: PulseMonitor[];
 }
 
-export interface PulseIncident {
+interface PulseIncident {
 	title: string;
 	createdAt: string;
 }

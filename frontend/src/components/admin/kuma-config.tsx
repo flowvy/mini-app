@@ -1,7 +1,4 @@
 import { useBlocker } from "@tanstack/react-router";
-/**
- * Kuma configuration sub-screen — URL, slug, connection test, save.
- */
 import { type FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useTestKuma, useUpdateSettings } from "../../hooks/use-admin-settings.ts";

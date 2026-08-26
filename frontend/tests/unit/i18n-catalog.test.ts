@@ -1,6 +1,6 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
-import ts from "typescript";
+import ts from "@typescript/typescript6";
 import { describe, expect, it } from "vitest";
 import locale from "../../src/i18n/locales/en.json";
 import russianLocale from "../../src/i18n/locales/ru.json";

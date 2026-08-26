@@ -1,5 +1,4 @@
 import { useBlocker } from "@tanstack/react-router";
-/** Branding sub-screen — app name, logo URL, save. */
 import { type FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";

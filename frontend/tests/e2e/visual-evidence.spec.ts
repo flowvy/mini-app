@@ -94,6 +94,10 @@ const screens = [
 	},
 ] as const;
 
+const screenGroups = Array.from({ length: Math.ceil(screens.length / 4) }, (_, index) =>
+	screens.slice(index * 4, index * 4 + 4),
+);
+
 test("capture invite-only onboarding", async ({ page, mockApi }, testInfo) => {
 	await page.addInitScript(() => localStorage.setItem("flowvy:mock-auth", "onboarding"));
 	mockApi.mock("GET", "/api/me", {
@@ -195,34 +199,36 @@ test("capture Home without an active subscription", async ({ page, mockApi }, te
 	}
 });
 
-test("capture deterministic visual evidence for key screens", async ({
-	page,
-	mockApi: _mock,
-}, testInfo) => {
-	test.setTimeout(300_000);
-	for (const colorScheme of ["light", "dark"] as const) {
-		await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-		for (const screen of screens) {
-			await page.goto(screen.path);
-			await page.evaluate((theme) => {
-				document.documentElement.setAttribute("data-theme", theme);
-			}, colorScheme);
-			await expect(page.getByText(screen.marker, { exact: true }).first()).toBeVisible();
-			await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
-			if (screen.path === "/admin/settings/content") {
-				await expect(
-					page.getByRole("textbox", { name: "Invite registration description" }),
-				).toBeVisible();
+for (const colorScheme of ["light", "dark"] as const) {
+	for (const [groupIndex, screenGroup] of screenGroups.entries()) {
+		test(`capture deterministic visual evidence for key screens in ${colorScheme}, group ${groupIndex + 1}`, async ({
+			page,
+			mockApi: _mock,
+		}, testInfo) => {
+			testInfo.setTimeout(60_000);
+			await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+			for (const screen of screenGroup) {
+				await page.goto(screen.path);
+				await page.evaluate((theme) => {
+					document.documentElement.setAttribute("data-theme", theme);
+				}, colorScheme);
+				await expect(page.getByText(screen.marker, { exact: true }).first()).toBeVisible();
+				await expect(page.getByRole("main").locator(":scope > div")).toHaveCSS("opacity", "1");
+				if (screen.path === "/admin/settings/content") {
+					await expect(
+						page.getByRole("textbox", { name: "Invite registration description" }),
+					).toBeVisible();
+				}
+				await assertNoHorizontalOverflow(page);
+				expect((await new AxeBuilder({ page }).include("main").analyze()).violations).toEqual([]);
+				await page.screenshot({
+					path: testInfo.outputPath(`${screen.name}-${colorScheme}.png`),
+					animations: "disabled",
+				});
 			}
-			await assertNoHorizontalOverflow(page);
-			expect((await new AxeBuilder({ page }).include("main").analyze()).violations).toEqual([]);
-			await page.screenshot({
-				path: testInfo.outputPath(`${screen.name}-${colorScheme}.png`),
-				animations: "disabled",
-			});
-		}
+		});
 	}
-});
+}
 
 test("capture the user and admin mode switch states", async ({
 	page,

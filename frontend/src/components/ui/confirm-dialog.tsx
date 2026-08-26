@@ -1,8 +1,4 @@
-/**
- * Confirm dialog — matches Desktop Modal + ConfirmDialog pattern.
- * Header with title + close button, body, footer with action buttons.
- */
-import { popup } from "@telegram-apps/sdk-react";
+import { popup } from "@tma.js/sdk-react";
 import { X } from "lucide-react";
 import {
 	type FC,
@@ -18,8 +14,8 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useBackNavigationHandler } from "../../contexts/back-navigation-context.tsx";
 import {
-	type FocusReturnTarget,
 	captureFocusReturnTarget,
+	type FocusReturnTarget,
 	restoreFocusTarget,
 } from "../../lib/focus-return.ts";
 import { hapticImpact, hapticNotification } from "../../lib/haptics.ts";
@@ -124,7 +120,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
 						text: confirmLabel,
 						type: confirmVariant === "danger" ? "destructive" : "default",
 					},
-					{ id: "cancel", text: cancelLabel },
+					{ id: "cancel", text: cancelLabel, type: "default" },
 				],
 			});
 		} catch {

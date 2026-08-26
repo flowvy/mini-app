@@ -1,5 +1,3 @@
-/* ── Layered segmented control with a shared sliding selection surface ── */
-
 .root {
 	position: relative;
 	display: flex;
@@ -13,6 +11,21 @@
 	-webkit-tap-highlight-color: transparent;
 }
 
+.radio {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+
+.radio:focus-visible + span {
+	outline: 1.5px solid var(--v2-bg-positive-primary);
+	outline-offset: 2px;
+}
+
 .root::before {
 	position: absolute;
 	inset-block: 3px;
@@ -21,8 +34,9 @@
 	border-radius: calc(var(--radius-md) - 4px);
 	background: var(--v2-bg-positive-tertiary);
 	content: "";
-	transition: inset-inline-start 180ms cubic-bezier(0.2, 0.8, 0.2, 1), width 180ms
-		cubic-bezier(0.2, 0.8, 0.2, 1);
+	transition:
+		inset-inline-start 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+		width 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .navigation {
@@ -58,7 +72,9 @@
 	white-space: nowrap;
 	cursor: pointer;
 	-webkit-tap-highlight-color: transparent;
-	transition: color 140ms ease-out, transform 120ms ease-out;
+	transition:
+		color 140ms ease-out,
+		transform 120ms ease-out;
 }
 
 .btn:active:not(:disabled) {

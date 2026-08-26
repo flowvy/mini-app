@@ -1,7 +1,3 @@
-/**
- * TanStack Query hook for admin dashboard data.
- * Debug mode: VITE_MOCK_AUTH=true → uses /api/debug/admin/dashboard.
- */
 import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";

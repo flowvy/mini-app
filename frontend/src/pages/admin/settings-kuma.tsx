@@ -1,4 +1,3 @@
-/** Page wrapper for KumaConfig sub-screen — loads settings. */
 import type { FC } from "react";
 import { KumaConfig } from "../../components/admin/kuma-config.tsx";
 import { ErrorState } from "../../components/ui/error-state.tsx";

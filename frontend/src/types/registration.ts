@@ -1,10 +1,7 @@
-import type { UserResponse } from "../hooks/use-auth.ts";
 import type { OperatorContent } from "./operator-content.ts";
 import type { ProviderUserStatus } from "./user-status.ts";
 
-export type { ProviderUserStatus } from "./user-status.ts";
-
-export type RegistrationMode = "open" | "invite_only";
+type RegistrationMode = "open" | "invite_only";
 export type ValidityMode = "duration" | "fixed" | "lifetime" | "automation";
 export type TrafficStrategy = "NO_RESET" | "DAY" | "WEEK" | "MONTH" | "MONTH_ROLLING";
 export interface OnboardingStatus {
@@ -43,7 +40,7 @@ export interface RegistrationSettings {
 	defaultAccessProfileId: string | null;
 }
 
-export interface ProviderSquad {
+interface ProviderSquad {
 	uuid: string;
 	name: string;
 }
@@ -64,10 +61,4 @@ export interface UserInvite {
 export interface PreparedInviteShare {
 	id: string;
 	expirationDate: string;
-}
-
-export interface OnboardingApi {
-	status: OnboardingStatus;
-	register: () => Promise<UserResponse>;
-	redeem: (code: string) => Promise<UserResponse>;
 }

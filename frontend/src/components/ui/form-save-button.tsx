@@ -1,8 +1,8 @@
 import { type FC, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-	type TelegramEditorButtonsController,
 	mountTelegramEditorButtons,
+	type TelegramEditorButtonsController,
 } from "../../lib/telegram-editor-buttons.ts";
 import styles from "./form-save-button.module.css";
 import { SpinnerIcon } from "./spinner-icon.tsx";

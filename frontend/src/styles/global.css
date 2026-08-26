@@ -1,9 +1,7 @@
-/* Flowvy global styles. Imported after tokens.css. */
-
-/* ── Fonts ── */
+/* Geist binaries are vendored under the adjacent SIL OFL 1.1 license. */
 @font-face {
 	font-family: "Geist Variable";
-	src: url("/node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2") format("woff2");
+	src: url("../assets/fonts/Geist-Variable.woff2") format("woff2");
 	font-weight: 100 900;
 	font-style: normal;
 	font-display: swap;
@@ -11,13 +9,11 @@
 
 @font-face {
 	font-family: "Geist Mono Variable";
-	src: url("/node_modules/geist/dist/fonts/geist-mono/GeistMono-Variable.woff2") format("woff2");
+	src: url("../assets/fonts/GeistMono-Variable.woff2") format("woff2");
 	font-weight: 100 900;
 	font-style: normal;
 	font-display: swap;
 }
-
-/* ── Reset ── */
 *,
 *::before,
 *::after {
@@ -40,19 +36,19 @@
 
 /* Preserve all text while preventing an unbroken user/provider value from widening its slot. */
 :where(
-		#root h1,
-		#root h2,
-		#root h3,
-		#root h4,
-		#root p,
-		#root span,
-		#root label,
-		#root li,
-		#root dt,
-		#root dd,
-		#root button,
-		#root a
-	) {
+	#root h1,
+	#root h2,
+	#root h3,
+	#root h4,
+	#root p,
+	#root span,
+	#root label,
+	#root li,
+	#root dt,
+	#root dd,
+	#root button,
+	#root a
+) {
 	overflow-wrap: break-word;
 }
 
@@ -60,8 +56,6 @@
 :where(#root img, #root picture, #root video, #root canvas, #root iframe) {
 	max-inline-size: 100%;
 }
-
-/* ── Base styles ── */
 html,
 body {
 	height: 100%;
@@ -71,7 +65,9 @@ body {
 	font-family: var(--font-sans);
 	font-size: var(--font-size-body);
 	line-height: 1.4;
-	font-feature-settings: "liga" 1, "calt" 1;
+	font-feature-settings:
+		"liga" 1,
+		"calt" 1;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
@@ -88,7 +84,6 @@ html.popup-window[data-win10] body {
 	background: var(--v2-floor-0);
 }
 
-/* Text is not selectable */
 body {
 	user-select: none;
 	-webkit-user-select: none;
@@ -97,16 +92,12 @@ body {
 #root {
 	height: 100%;
 }
-
-/* ── Monospace font ── */
 code,
 pre,
 kbd,
 samp {
 	font-family: var(--font-mono);
 }
-
-/* ── Interactive elements ── */
 button {
 	font: inherit;
 	color: inherit;
@@ -139,8 +130,6 @@ a {
 	color: inherit;
 	text-decoration: none;
 }
-
-/* ── Scrollbar ── */
 ::-webkit-scrollbar {
 	width: 4px;
 	height: 4px;
@@ -160,15 +149,14 @@ a {
 		background: var(--v2-border-secondary);
 	}
 }
-
-/* ── Default transitions ── */
 a,
 button {
-	transition: color var(--duration-base) ease, background-color var(--duration-base) ease,
-		border-color var(--duration-base) ease, opacity var(--duration-base) ease;
+	transition:
+		color var(--duration-base) ease,
+		background-color var(--duration-base) ease,
+		border-color var(--duration-base) ease,
+		opacity var(--duration-base) ease;
 }
-
-/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
 	*,
 	*::before,
@@ -178,8 +166,6 @@ button {
 		transition-duration: 0.01ms !important;
 	}
 }
-
-/* ── Focus-visible (keyboard navigation) ── */
 button:focus-visible,
 [role="button"]:focus-visible {
 	outline: 1.5px solid var(--v2-bg-positive-primary);
@@ -197,8 +183,6 @@ select:focus-visible {
 	outline: none !important;
 	box-shadow: none !important;
 }
-
-/* ── Auth screen (full-page loading / error) ── */
 
 .fv-auth-screen {
 	display: flex;

@@ -1,4 +1,4 @@
-import { type Page, type Route, test as base, expect } from "@playwright/test";
+import { test as base, expect, type Page, type Route } from "@playwright/test";
 import type { EntitlementOperation } from "../../../src/types/commerce.ts";
 
 export function entitlementOperation(
@@ -220,7 +220,7 @@ export const mockData = {
 	supportStorage: {
 		configured: true,
 		attachmentsEnabled: true,
-		bucketName: "flowvy-support",
+		bucketName: "test-support-bucket",
 		endpoint: "https://example.r2.cloudflarestorage.com",
 		maxFiles: 5,
 		maxFileBytes: 50 * 1024 ** 2,

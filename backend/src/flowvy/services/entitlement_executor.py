@@ -20,129 +20,22 @@ from flowvy.repositories.subscription import SubscriptionRepository
 from flowvy.repositories.user import UserRepository
 from flowvy.schemas.registration import AccessProfileInput
 from flowvy.schemas.remnawave import (
-    RemnawaveCreateUserRequest,
     RemnawaveUpdateUserRequest,
     RemnawaveUserData,
 )
 from flowvy.services.access_profile_snapshot import access_profile_snapshot
+from flowvy.services.entitlement_provider_state import (
+    create_user_request,
+    matches_expiry,
+    matches_user_request,
+    normalize_provider_expiry,
+    normalize_utc,
+    profile_update_request,
+    provider_profile_snapshot,
+)
 from flowvy.services.remnawave import RemnawaveClient, RemnawaveError
 
 logger = logging.getLogger(__name__)
-
-
-def _utc(value: datetime.datetime) -> datetime.datetime:
-    if value.tzinfo is None or value.utcoffset() is None:
-        return value.replace(tzinfo=datetime.UTC)
-    return value.astimezone(datetime.UTC)
-
-
-def _provider_expiry(value: datetime.datetime) -> datetime.datetime:
-    """Normalize to the millisecond precision observed at the Remnawave boundary."""
-    normalized = _utc(value)
-    return normalized.replace(microsecond=(normalized.microsecond // 1000) * 1000)
-
-
-def _same_expiry(left: datetime.datetime, right: datetime.datetime) -> bool:
-    return _provider_expiry(left) == _provider_expiry(right)
-
-
-def _profile_request(
-    profile: AccessProfileInput,
-    expire_at: datetime.datetime,
-) -> RemnawaveUpdateUserRequest:
-    """Build an explicit full-profile update, including nullable fields to clear."""
-    return RemnawaveUpdateUserRequest(
-        status="ACTIVE",
-        traffic_limit_bytes=profile.traffic_limit_bytes,
-        traffic_limit_strategy=profile.traffic_limit_strategy,
-        expire_at=_provider_expiry(expire_at),
-        description=profile.description,
-        tag=profile.tag,
-        hwid_device_limit=profile.hwid_device_limit,
-        active_internal_squads=profile.internal_squad_uuids,
-        external_squad_uuid=profile.external_squad_uuid,
-    )
-
-
-def _create_request(
-    telegram_id: int,
-    request: RemnawaveUpdateUserRequest,
-) -> RemnawaveCreateUserRequest:
-    """Convert a validated paid-access target into the official create-user subset."""
-    if (
-        request.status != "ACTIVE"
-        or request.traffic_limit_bytes is None
-        or request.traffic_limit_strategy is None
-        or request.active_internal_squads is None
-    ):
-        raise ValueError("Paid access target is incomplete")
-    return RemnawaveCreateUserRequest(
-        username=f"tg_{telegram_id}",
-        status=request.status,
-        traffic_limit_bytes=request.traffic_limit_bytes,
-        traffic_limit_strategy=request.traffic_limit_strategy,
-        expire_at=request.expire_at,
-        description=request.description,
-        tag=request.tag,
-        telegram_id=telegram_id,
-        hwid_device_limit=request.hwid_device_limit,
-        active_internal_squads=request.active_internal_squads,
-        external_squad_uuid=request.external_squad_uuid,
-    )
-
-
-def _matches_request(
-    provider_user: RemnawaveUserData,
-    request: RemnawaveUpdateUserRequest,
-) -> bool:
-    """Compare every explicitly requested access field, not expiry alone."""
-    if not _same_expiry(provider_user.expire_at, request.expire_at):
-        return False
-    comparisons = {
-        "status": provider_user.status,
-        "traffic_limit_bytes": provider_user.traffic_limit_bytes,
-        "traffic_limit_strategy": provider_user.traffic_limit_strategy,
-        "description": provider_user.description,
-        "tag": provider_user.tag,
-        "hwid_device_limit": provider_user.hwid_device_limit,
-        "external_squad_uuid": provider_user.external_squad_uuid,
-    }
-    for field, current in comparisons.items():
-        if field in request.model_fields_set:
-            desired = getattr(request, field)
-            if field == "external_squad_uuid":
-                desired = str(desired) if desired is not None else None
-            if current != desired:
-                return False
-    if "active_internal_squads" in request.model_fields_set:
-        current_squads = {item.uuid for item in provider_user.active_internal_squads}
-        desired_squads = {str(item) for item in request.active_internal_squads or []}
-        if current_squads != desired_squads:
-            return False
-    return True
-
-
-def _provider_profile_snapshot(provider_user: RemnawaveUserData) -> dict[str, object]:
-    """Capture only the documented access fields Flowvy can restore exactly."""
-    return AccessProfileInput(
-        name="Captured base access",
-        validity_mode="fixed",
-        fixed_expire_at=provider_user.expire_at,
-        traffic_limit_bytes=provider_user.traffic_limit_bytes,
-        traffic_limit_strategy=provider_user.traffic_limit_strategy,  # type: ignore[arg-type]
-        hwid_device_limit=provider_user.hwid_device_limit,
-        tag=provider_user.tag,
-        description=provider_user.description,
-        status="ACTIVE",
-        internal_squad_uuids=[
-            uuid.UUID(item.uuid) for item in provider_user.active_internal_squads
-        ],
-        external_squad_uuid=(
-            uuid.UUID(provider_user.external_squad_uuid)
-            if provider_user.external_squad_uuid is not None
-            else None
-        ),
-    ).model_dump(mode="json")
 
 
 class EntitlementExecutor:
@@ -229,21 +122,21 @@ class EntitlementExecutor:
 
         if provider_user is None:
             try:
-                create_request = _create_request(operation.telegram_user_id, request)
+                create_request = create_user_request(operation.telegram_user_id, request)
             except ValueError:
                 await self._mark_review(operation_id, "grant_plan_incomplete")
                 return
             created = await self._remnawave.create_user(create_request)
-            if not _matches_request(created, request):
+            if not matches_user_request(created, request):
                 await self._mark_review(operation_id, "provider_state_mismatch")
                 return
             await self._mark_applied(operation_id, created)
             return
-        if _matches_request(provider_user, request):
+        if matches_user_request(provider_user, request):
             await self._mark_applied(operation_id, provider_user)
             return
         updated = await self._remnawave.update_user_access(provider_user, request)
-        if not _matches_request(updated, request):
+        if not matches_user_request(updated, request):
             await self._mark_review(operation_id, "provider_state_mismatch")
             return
         await self._mark_applied(operation_id, updated)
@@ -288,10 +181,12 @@ class EntitlementExecutor:
                 operation.provider_expiry = provider_user.expire_at
                 operation.locked_at = None
                 return False
-            had_access = provider_user.status == "ACTIVE" and _utc(provider_user.expire_at) > now
+            had_access = (
+                provider_user.status == "ACTIVE" and normalize_utc(provider_user.expire_at) > now
+            )
             try:
-                snapshot = _provider_profile_snapshot(provider_user) if had_access else None
-            except (TypeError, ValueError):
+                snapshot = provider_profile_snapshot(provider_user) if had_access else None
+            except TypeError, ValueError:
                 operation.status = "review"
                 operation.reason_code = "provider_state_not_restorable"
                 operation.provider_expiry = provider_user.expire_at
@@ -345,16 +240,18 @@ class EntitlementExecutor:
                 operation.locked_at = None
                 return None
 
-            provider_expiry = _utc(provider_user.expire_at) if provider_user is not None else now
+            provider_expiry = (
+                normalize_utc(provider_user.expire_at) if provider_user is not None else now
+            )
             latest_provider = await operations.latest_applied_provider_operation(operation.user_id)
             if provider_user is not None and latest_provider is not None:
                 expected_provider_expiry = latest_provider.target_expiry
                 if (
                     expected_provider_expiry is not None
-                    and not _same_expiry(provider_expiry, expected_provider_expiry)
+                    and not matches_expiry(provider_expiry, expected_provider_expiry)
                     and (
                         operation.target_expiry is None
-                        or not _same_expiry(provider_expiry, operation.target_expiry)
+                        or not matches_expiry(provider_expiry, operation.target_expiry)
                     )
                 ):
                     operation.status = "review"
@@ -365,14 +262,19 @@ class EntitlementExecutor:
 
             paid_grants = await operations.uncompensated_applied_grants(operation.user_id)
             paid_expiries = [
-                _utc(item.target_expiry)
+                normalize_utc(item.target_expiry)
                 for item in paid_grants
-                if item.target_expiry is not None and _utc(item.target_expiry) > now
+                if item.target_expiry is not None and normalize_utc(item.target_expiry) > now
             ]
             latest_paid_expiry = max(paid_expiries, default=None)
             if absolute_target:
-                assert operation.target_expiry is not None
-                operation.target_expiry = _provider_expiry(operation.target_expiry)
+                target_expiry = operation.target_expiry
+                if target_expiry is None:
+                    operation.status = "review"
+                    operation.reason_code = "grant_plan_incomplete"
+                    operation.locked_at = None
+                    return None
+                operation.target_expiry = normalize_provider_expiry(target_expiry)
                 if operation.target_expiry <= now:
                     operation.status = "review"
                     operation.reason_code = "provider_entitlement_expired"
@@ -394,11 +296,11 @@ class EntitlementExecutor:
                     operation.provider_expiry = provider_expiry
                 elif (
                     provider_user is not None
-                    and not _same_expiry(
+                    and not matches_expiry(
                         provider_expiry,
                         operation.base_expiry,
                     )
-                    and not _same_expiry(provider_expiry, operation.target_expiry)
+                    and not matches_expiry(provider_expiry, operation.target_expiry)
                 ):
                     operation.status = "review"
                     operation.reason_code = "provider_state_conflict"
@@ -406,7 +308,12 @@ class EntitlementExecutor:
                     operation.locked_at = None
                     return None
             elif operation.target_expiry is None:
-                assert operation.duration_days is not None
+                duration_days = operation.duration_days
+                if duration_days is None:
+                    operation.status = "review"
+                    operation.reason_code = "grant_plan_incomplete"
+                    operation.locked_at = None
+                    return None
                 base = (
                     max(now, latest_paid_expiry)
                     if operation.grant_mode == "extend" and latest_paid_expiry is not None
@@ -414,7 +321,7 @@ class EntitlementExecutor:
                 )
                 operation.base_expiry = provider_expiry
                 operation.calculation_at = now
-                operation.target_expiry = base + datetime.timedelta(days=operation.duration_days)
+                operation.target_expiry = base + datetime.timedelta(days=duration_days)
                 operation.provider_expiry = provider_expiry
             elif operation.base_expiry is None:
                 operation.status = "review"
@@ -423,11 +330,11 @@ class EntitlementExecutor:
                 return None
             elif (
                 provider_user is not None
-                and not _same_expiry(
+                and not matches_expiry(
                     provider_expiry,
                     operation.base_expiry,
                 )
-                and not _same_expiry(provider_expiry, operation.target_expiry)
+                and not matches_expiry(provider_expiry, operation.target_expiry)
             ):
                 operation.status = "review"
                 operation.reason_code = "provider_state_conflict"
@@ -435,7 +342,7 @@ class EntitlementExecutor:
                 operation.locked_at = None
                 return None
 
-            return _profile_request(profile, operation.target_expiry)
+            return profile_update_request(profile, operation.target_expiry)
 
     async def _prepare_refund(
         self,
@@ -486,14 +393,14 @@ class EntitlementExecutor:
                     refund.locked_at = None
                     return None
                 if grant.duration_days is None:
-                    desired_paid_expiry = _utc(grant.target_expiry)
+                    desired_paid_expiry = normalize_utc(grant.target_expiry)
                 else:
                     if grant.calculation_at is None:
                         refund.status = "review"
                         refund.reason_code = "refund_history_incomplete"
                         refund.locked_at = None
                         return None
-                    calculated_at = _utc(grant.calculation_at)
+                    calculated_at = normalize_utc(grant.calculation_at)
                     base = (
                         max(calculated_at, desired_paid_expiry)
                         if grant.grant_mode == "extend" and desired_paid_expiry is not None
@@ -504,7 +411,7 @@ class EntitlementExecutor:
                 desired_paid_expiry = None
                 desired_profile = None
 
-            provider_expiry = _utc(provider_user.expire_at)
+            provider_expiry = normalize_utc(provider_user.expire_at)
             if refund.target_expiry is None:
                 latest_provider = await operations.latest_applied_provider_operation(
                     refund.user_id
@@ -514,7 +421,7 @@ class EntitlementExecutor:
                     if latest_provider is not None
                     else original.target_expiry
                 )
-                if expected is None or not _same_expiry(provider_expiry, expected):
+                if expected is None or not matches_expiry(provider_expiry, expected):
                     refund.status = "review"
                     refund.reason_code = "provider_state_conflict"
                     refund.provider_expiry = provider_expiry
@@ -530,9 +437,9 @@ class EntitlementExecutor:
                     baseline.had_access
                     and baseline.expires_at is not None
                     and baseline.profile_snapshot is not None
-                    and _utc(baseline.expires_at) > now
+                    and normalize_utc(baseline.expires_at) > now
                 ):
-                    refund.target_expiry = _utc(baseline.expires_at)
+                    refund.target_expiry = normalize_utc(baseline.expires_at)
                     refund.profile_snapshot = baseline.profile_snapshot
                 else:
                     refund.target_expiry = now
@@ -542,7 +449,7 @@ class EntitlementExecutor:
                 refund.reason_code = "refund_history_incomplete"
                 refund.locked_at = None
                 return None
-            elif not _same_expiry(provider_expiry, refund.base_expiry) and not _same_expiry(
+            elif not matches_expiry(provider_expiry, refund.base_expiry) and not matches_expiry(
                 provider_expiry,
                 refund.target_expiry,
             ):
@@ -563,7 +470,7 @@ class EntitlementExecutor:
                 refund.reason_code = "profile_snapshot_invalid"
                 refund.locked_at = None
                 return None
-            return _profile_request(profile, refund.target_expiry)
+            return profile_update_request(profile, refund.target_expiry)
 
     async def _prepare_restore(
         self,
@@ -583,10 +490,10 @@ class EntitlementExecutor:
                 restore.reason_code = "baseline_missing"
                 restore.locked_at = None
                 return None
-            provider_expiry = _utc(provider_user.expire_at)
-            if not _same_expiry(provider_expiry, restore.base_expiry) and (
+            provider_expiry = normalize_utc(provider_user.expire_at)
+            if not matches_expiry(provider_expiry, restore.base_expiry) and (
                 restore.target_expiry is None
-                or not _same_expiry(provider_expiry, restore.target_expiry)
+                or not matches_expiry(provider_expiry, restore.target_expiry)
             ):
                 restore.status = "review"
                 restore.reason_code = "provider_state_conflict"
@@ -599,9 +506,9 @@ class EntitlementExecutor:
                 baseline.had_access
                 and baseline.expires_at is not None
                 and baseline.profile_snapshot is not None
-                and _utc(baseline.expires_at) > now
+                and normalize_utc(baseline.expires_at) > now
             ):
-                restore.target_expiry = _utc(baseline.expires_at)
+                restore.target_expiry = normalize_utc(baseline.expires_at)
                 try:
                     profile = AccessProfileInput.model_validate(baseline.profile_snapshot)
                 except ValueError:
@@ -609,7 +516,7 @@ class EntitlementExecutor:
                     restore.reason_code = "profile_snapshot_invalid"
                     restore.locked_at = None
                     return None
-                return _profile_request(profile, restore.target_expiry)
+                return profile_update_request(profile, restore.target_expiry)
             restore.target_expiry = restore.target_expiry or now
             return RemnawaveUpdateUserRequest(
                 status="DISABLED",
@@ -657,13 +564,13 @@ class EntitlementExecutor:
                         operation.user_id,
                     )
                     paid_remains = any(
-                        item.target_expiry is not None and _utc(item.target_expiry) > now
+                        item.target_expiry is not None and normalize_utc(item.target_expiry) > now
                         for item in paid_grants
                     )
                     if (
                         paid_remains
                         and operation.target_expiry is not None
-                        and _utc(operation.target_expiry) > now
+                        and normalize_utc(operation.target_expiry) > now
                     ):
                         await self._schedule_restore(
                             session,
@@ -762,12 +669,12 @@ class EntitlementExecutor:
         baseline = await EntitlementBaselineRepository(session).get_by_id(source.user_id)
         if baseline is None:
             return
-        due_at = _utc(source.target_expiry)
+        due_at = normalize_utc(source.target_expiry)
         restore_target = (
-            _utc(baseline.expires_at)
+            normalize_utc(baseline.expires_at)
             if baseline.had_access
             and baseline.expires_at is not None
-            and _utc(baseline.expires_at) > due_at
+            and normalize_utc(baseline.expires_at) > due_at
             else None
         )
         await EntitlementOperationRepository(session).create_once(

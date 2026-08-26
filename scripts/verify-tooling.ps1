@@ -59,6 +59,44 @@ if (Test-FlowvyTcpPort -Port $testPort) {
 if ("esbuild" -notin $script:FlowvyAllowedChildProcessNames) {
     throw "Vite's esbuild child must remain in the owned-process allowlist."
 }
+if ("python3.14" -notin $script:FlowvyAllowedChildProcessNames) {
+    throw "Python 3.14 must remain in the owned-process allowlist."
+}
+
+$pythonVersion = (
+    Get-Content -Raw -LiteralPath (Join-Path (Join-Path $repoRoot "backend") ".python-version")
+).Trim()
+if ($pythonVersion -ne "3.14.7") {
+    throw "backend/.python-version must pin Python 3.14.7."
+}
+$frontendPackage = Get-Content -Raw -LiteralPath (
+    Join-Path (Join-Path $repoRoot "frontend") "package.json"
+) | ConvertFrom-Json
+$nodeVersion = (
+    Get-Content -Raw -LiteralPath (Join-Path (Join-Path $repoRoot "frontend") ".node-version")
+).Trim()
+if ($nodeVersion -ne "24.19.0") {
+    throw "frontend/.node-version must pin Node 24.19.0 LTS."
+}
+if ($frontendPackage.packageManager -ne "pnpm@11.24.0") {
+    throw "frontend/package.json must pin pnpm 11.24.0."
+}
+if ($frontendPackage.engines.node -ne ">=24.19.0 <25") {
+    throw "frontend/package.json must require the Node 24.19.0 LTS line."
+}
+
+$actualUvVersion = (& uv --version).Trim()
+if ($actualUvVersion -notmatch '^uv 0\.12\.6(?:\s|$)') {
+    throw "Active uv must be 0.12.6; found: $actualUvVersion"
+}
+$actualNodeVersion = (& node --version).Trim()
+if ($actualNodeVersion -ne "v24.19.0") {
+    throw "Active Node.js must be v24.19.0; found: $actualNodeVersion"
+}
+$actualPnpmVersion = (& pnpm --version).Trim()
+if ($actualPnpmVersion -ne "11.24.0") {
+    throw "Active pnpm must be 11.24.0; found: $actualPnpmVersion"
+}
 
 $toolingArtifactDir = Join-Path (Join-Path $repoRoot ".artifacts") "tooling"
 New-Item -ItemType Directory -Force -Path $toolingArtifactDir | Out-Null
@@ -104,4 +142,4 @@ foreach ($requiredText in "PowerShell 7", "http://localhost:4173", "dev-app.flow
     }
 }
 
-Write-Host "PowerShell lifecycle scripts parse and platform contracts are consistent."
+Write-Host "PowerShell lifecycle scripts and active toolchain versions are consistent."

@@ -1,6 +1,6 @@
 import { DashboardBandwidthRow } from "../../components/admin/dashboard-bandwidth-row.tsx";
-import { DashboardKpiGrid } from "../../components/admin/dashboard-kpi-grid.tsx";
 import type { KpiItem } from "../../components/admin/dashboard-kpi-grid.tsx";
+import { DashboardKpiGrid } from "../../components/admin/dashboard-kpi-grid.tsx";
 import {
 	FormRowSeparator,
 	FormSection,
@@ -8,13 +8,16 @@ import {
 } from "../../components/ui/form-section.tsx";
 import { formatMemory, formatTraffic, formatUptime } from "../../lib/format.ts";
 import type { DashboardResponse } from "../../types/dashboard.ts";
-import { Row, StatusRow, formatBwDiffSub } from "./dashboard-rows.tsx";
 import styles from "./dashboard.module.css";
+import { formatBwDiffSub, Row, StatusRow } from "./dashboard-rows.tsx";
 
 export function RemnawaveContent({
 	data,
 	t,
-}: { data: DashboardResponse; t: (k: string, o?: Record<string, unknown>) => string }) {
+}: {
+	data: DashboardResponse;
+	t: (k: string, o?: Record<string, unknown>) => string;
+}) {
 	const rw = data.remnawaveStats;
 	const bw = data.remnawaveBandwidth;
 

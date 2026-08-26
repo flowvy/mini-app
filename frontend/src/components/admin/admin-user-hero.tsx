@@ -1,7 +1,3 @@
-/**
- * Admin user detail — hero card with traffic, KPIs, progress bar,
- * stats strip, and action buttons.
- */
 import {
 	Ban,
 	CheckCircle,
@@ -34,7 +30,7 @@ import type { ResetStrategy } from "../../types/subscription.ts";
 import { ActionBtn } from "../ui/action-btn.tsx";
 import { ConfirmDialog } from "../ui/confirm-dialog.tsx";
 import { StatusBadge } from "../ui/status-badge.tsx";
-import { type ActionDef, type UserAction, getActions } from "./admin-user-actions.ts";
+import { type ActionDef, getActions, type UserAction } from "./admin-user-actions.ts";
 import styles from "./admin-user-hero.module.css";
 
 interface AdminUserHeroProps {

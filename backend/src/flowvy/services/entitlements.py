@@ -243,7 +243,7 @@ class TributeEntitlementPlanner:
             raw_rule_id = sponsor_checkout.offer_snapshot.get("commerce_rule_id")
             try:
                 preferred_rule_id = uuid.UUID(str(raw_rule_id))
-            except (TypeError, ValueError, AttributeError):
+            except TypeError, ValueError, AttributeError:
                 return await self._review(
                     source,
                     event,

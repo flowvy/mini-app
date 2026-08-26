@@ -1,10 +1,3 @@
-/**
- * Subscription data hook backed by TanStack Query.
- * Fetches from GET /api/me/subscription (Remnawave via BFF).
- *
- * Debug mode: when VITE_MOCK_AUTH=true and VITE_DEBUG_TELEGRAM_ID is set,
- * fetches real data from GET /api/debug/subscription/{telegramId} instead.
- */
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { ApiError, apiGet } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";

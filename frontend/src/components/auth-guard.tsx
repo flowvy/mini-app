@@ -1,8 +1,4 @@
-/**
- * AuthGuard — protects children from rendering until auth is resolved.
- * Provides current user via context to avoid redundant fetches.
- */
-import { type ReactElement, type ReactNode, createContext, useContext, useEffect } from "react";
+import { createContext, type ReactElement, type ReactNode, useContext, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { type UserResponse, useAuth } from "../hooks/use-auth.ts";
 import { ApiError } from "../lib/api.ts";

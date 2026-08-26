@@ -61,7 +61,9 @@
 	border-radius: 999px;
 	background: var(--v2-bg-secondary);
 	cursor: pointer;
-	transition: background-color var(--duration-base) ease, border-color var(--duration-base) ease;
+	transition:
+		background-color var(--duration-base) ease,
+		border-color var(--duration-base) ease;
 }
 
 .adminMode {
@@ -80,8 +82,9 @@
 	border-radius: 50%;
 	background: var(--v2-bg-quaternary);
 	transform: translateX(0);
-	transition: transform var(--spring-duration) var(--spring-snappy), background-color
-		var(--duration-base) ease;
+	transition:
+		transform var(--spring-duration) var(--spring-snappy),
+		background-color var(--duration-base) ease;
 	pointer-events: none;
 }
 
@@ -94,8 +97,10 @@
 	position: absolute;
 	display: grid;
 	place-items: center;
-	transition: color var(--duration-base) ease, opacity var(--duration-base) ease, transform
-		var(--spring-duration) var(--spring-snappy);
+	transition:
+		color var(--duration-base) ease,
+		opacity var(--duration-base) ease,
+		transform var(--spring-duration) var(--spring-snappy);
 }
 
 .userIcon {

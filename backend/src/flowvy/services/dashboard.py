@@ -56,7 +56,7 @@ class DashboardService:
                     if raw_bandwidth is not None
                     else None
                 )
-            except (json.JSONDecodeError, TypeError, ValueError, ValidationError):
+            except json.JSONDecodeError, TypeError, ValueError, ValidationError:
                 await self._redis.delete(CACHE_KEY)
                 cached = None
         if not cached:

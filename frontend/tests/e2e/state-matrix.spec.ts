@@ -428,6 +428,22 @@ test("device details use OS logos and compact provider metadata", async ({ page,
 
 test("remove-all gives every device its own staggered dust layer", async ({ page, mockApi }) => {
 	await page.emulateMedia({ reducedMotion: "no-preference" });
+	await page.addInitScript(() => {
+		const observedWindow = window as typeof window & {
+			__flowvyDustKeyframeProperties?: string[];
+		};
+		observedWindow.__flowvyDustKeyframeProperties = [];
+		const originalAnimate = Element.prototype.animate;
+		Element.prototype.animate = function (keyframes, options) {
+			if (this instanceof HTMLCanvasElement && this.dataset.flowvyDustLayer !== undefined) {
+				const properties = Array.isArray(keyframes)
+					? keyframes.flatMap((frame) => Object.keys(frame))
+					: Object.keys(keyframes);
+				observedWindow.__flowvyDustKeyframeProperties?.push(...properties);
+			}
+			return originalAnimate.call(this, keyframes, options);
+		};
+	});
 	const twoDevices = {
 		devices: [
 			mockData.devices.devices[0],
@@ -463,12 +479,14 @@ test("remove-all gives every device its own staggered dust layer", async ({ page
 	await expect(page.locator('[data-flowvy-dust-overlay="true"]')).toHaveCount(2);
 	const dustLayers = page.locator("[data-flowvy-dust-layer]");
 	await expect(dustLayers).toHaveCount(24);
-	const animatedProperties = await dustLayers.first().evaluate((layer) => {
-		const animation = layer.getAnimations()[0];
-		return animation?.effect instanceof KeyframeEffect
-			? animation.effect.getKeyframes().flatMap((frame) => Object.keys(frame))
-			: [];
-	});
+	const animatedProperties = await page.evaluate(
+		() =>
+			(
+				window as typeof window & {
+					__flowvyDustKeyframeProperties?: string[];
+				}
+			).__flowvyDustKeyframeProperties ?? [],
+	);
 	expect(animatedProperties).toContain("transform");
 	expect(animatedProperties).toContain("opacity");
 	expect(animatedProperties).not.toContain("filter");

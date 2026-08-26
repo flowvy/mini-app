@@ -1,6 +1,3 @@
-/**
- * 40-beat visualization bar — each beat colored by status.
- */
 import type { FC } from "react";
 import type { PulseHeartbeat } from "../../types/pulse.ts";
 import styles from "./heartbeat-bar.module.css";

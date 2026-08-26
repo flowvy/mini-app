@@ -1,5 +1,3 @@
-/* ── Row: label left, value right ── */
-
 .sections {
 	display: grid;
 	gap: var(--layout-section-gap);

@@ -1,7 +1,3 @@
-/**
- * Admin user detail — account info, squads, and connection rows.
- * Follows Desktop DetailRows.tsx pattern.
- */
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";
 import {

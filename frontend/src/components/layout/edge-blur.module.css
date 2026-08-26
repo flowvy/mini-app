@@ -17,8 +17,6 @@
 	height: var(--shell-bottom);
 }
 
-/* ── Gradient fade to background color ── */
-
 .containerTop .cap {
 	position: absolute;
 	inset: 0;
@@ -33,5 +31,10 @@
 .containerBottom .cap {
 	position: absolute;
 	inset: 0;
-	background: linear-gradient(to top, var(--v2-floor-0) 0%, var(--v2-floor-0) 20%, transparent 100%);
+	background: linear-gradient(
+		to top,
+		var(--v2-floor-0) 0%,
+		var(--v2-floor-0) 20%,
+		transparent 100%
+	);
 }

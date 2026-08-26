@@ -13,8 +13,8 @@ import { ActionBtn } from "../../components/ui/action-btn.tsx";
 import { ErrorState } from "../../components/ui/error-state.tsx";
 import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { useAdminSupportStorage, useTestAdminSupportStorage } from "../../hooks/use-support.ts";
-import supportStyles from "./settings-support.module.css";
 import styles from "./settings.module.css";
+import supportStyles from "./settings-support.module.css";
 
 function formatLimit(bytes: number): string {
 	return `${Math.round(bytes / 1024 ** 2)} MB`;

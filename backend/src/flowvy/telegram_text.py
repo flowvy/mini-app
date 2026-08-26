@@ -80,7 +80,7 @@ class _TelegramHtmlParser(HTMLParser):
             if not fallback or len(fallback) > 8 or _EMOJI_RE.search(fallback) is None:
                 raise TelegramHtmlError("Custom emoji require valid fallback emoji text")
 
-    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def handle_startendtag(self, tag: str, _attrs: list[tuple[str, str | None]]) -> None:
         raise TelegramHtmlError(f"Self-closing Telegram HTML tag is not supported: {tag}")
 
     def handle_data(self, data: str) -> None:
@@ -97,13 +97,13 @@ class _TelegramHtmlParser(HTMLParser):
         except ValueError as exc:
             raise TelegramHtmlError("Invalid numeric HTML entity") from exc
 
-    def handle_comment(self, data: str) -> None:
+    def handle_comment(self, _data: str) -> None:
         raise TelegramHtmlError("HTML comments are not supported")
 
-    def handle_decl(self, decl: str) -> None:
+    def handle_decl(self, _decl: str) -> None:
         raise TelegramHtmlError("HTML declarations are not supported")
 
-    def unknown_decl(self, data: str) -> None:
+    def unknown_decl(self, _data: str) -> None:
         raise TelegramHtmlError("HTML declarations are not supported")
 
     def finish(self) -> str:

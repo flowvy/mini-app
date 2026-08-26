@@ -1,5 +1,3 @@
-/* ── Shared attached section ── */
-
 .section {
 	display: grid;
 	min-width: 0;
@@ -34,22 +32,6 @@
 	flex: 0 0 auto;
 }
 
-/* ── Section Footer ── */
-
-.footer {
-	padding-top: 6px;
-	padding-left: 14px;
-	font-size: var(--font-size-caption);
-	color: var(--v2-text-secondary);
-	line-height: 1.45;
-}
-
-.warning {
-	color: var(--v2-text-negative);
-}
-
-/* ── Section Card ── */
-
 .card {
 	background: var(--v2-bg-primary);
 	border: 1px solid var(--v2-border-tertiary);
@@ -62,8 +44,6 @@
 	border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
-/* ── Shared task-form body ── */
-
 .surfaceBody {
 	display: grid;
 	gap: 14px;
@@ -71,8 +51,6 @@
 	padding: 14px;
 	background: transparent;
 }
-
-/* ── Row ── */
 
 .row {
 	display: flex;
@@ -97,15 +75,11 @@
 	min-width: 0;
 }
 
-/* ── Row Separator ── */
-
 .separator {
 	margin-left: 14px;
 	height: 1px;
 	background: var(--v2-border-tertiary);
 }
-
-/* ── Stacked editor field ── */
 
 .field {
 	display: grid;
@@ -144,7 +118,9 @@
 	line-height: 1.25;
 	outline: none;
 	scroll-margin-block: 20px;
-	transition: border-color var(--duration-base) ease, box-shadow var(--duration-base) ease,
+	transition:
+		border-color var(--duration-base) ease,
+		box-shadow var(--duration-base) ease,
 		background-color var(--duration-base) ease;
 }
 
@@ -187,7 +163,9 @@
 	line-height: 1.25;
 	touch-action: manipulation;
 	-webkit-tap-highlight-color: transparent;
-	transition: border-color var(--duration-base) ease, box-shadow var(--duration-base) ease,
+	transition:
+		border-color var(--duration-base) ease,
+		box-shadow var(--duration-base) ease,
 		background-color var(--duration-base) ease;
 }
 
@@ -199,12 +177,6 @@
 	border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);
 	border-radius: var(--radius-sm);
 	background: var(--v2-bg-primary);
-}
-
-.inlineSelectShell {
-	min-height: 36px;
-	max-width: min(190px, 100%);
-	padding-left: 8px;
 }
 
 .selectValue,
@@ -325,54 +297,4 @@
 	:global(:root:not([data-theme])) .nativeDate {
 		color-scheme: dark;
 	}
-}
-
-/* ── Textarea ── */
-
-.textareaWrap {
-	padding: 11px 14px;
-}
-
-.textarea {
-	width: 100%;
-	padding: 0;
-	border: none;
-	background: transparent;
-	color: var(--v2-text-primary);
-	font-size: var(--font-size-control);
-	font-family: var(--font-mono);
-	resize: none;
-	line-height: 1.5;
-	outline: none;
-	box-sizing: border-box;
-}
-
-.textarea::placeholder {
-	color: var(--v2-text-tertiary);
-	font-size: inherit;
-	line-height: inherit;
-}
-
-/* ── Inline Input ── */
-
-.inlineInput {
-	width: 100%;
-	text-align: right;
-	padding: 0;
-	border: none;
-	background: transparent;
-	color: var(--v2-text-primary);
-	font-size: var(--font-size-control);
-	font-family: var(--font-sans);
-	outline: none;
-}
-
-.inlineInput::placeholder {
-	color: var(--v2-text-tertiary);
-	font-size: inherit;
-	line-height: inherit;
-}
-
-.inlineInput.mono {
-	font-family: var(--font-mono);
 }

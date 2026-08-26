@@ -34,7 +34,7 @@ interface StatusBadgeProps {
 	context: StatusLabelContext;
 }
 
-export function getStatusLabelKey(status: UserStatus, context: StatusLabelContext): string {
+function getStatusLabelKey(status: UserStatus, context: StatusLabelContext): string {
 	return STATUS_LABEL[context][status];
 }
 

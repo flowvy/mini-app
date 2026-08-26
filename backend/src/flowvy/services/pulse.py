@@ -66,7 +66,7 @@ class PulseService:
         if cached:
             try:
                 return PulseResponse.model_validate_json(cached)
-            except (ValidationError, ValueError):
+            except ValidationError, ValueError:
                 await self._redis.delete(CACHE_KEY)
 
         if ps.pulse_provider == "kuma":

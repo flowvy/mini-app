@@ -64,7 +64,7 @@ async def receive_remnawave_webhook(
             logger.warning("Webhook timestamp header does not match signed payload")
             return Response(status_code=status.HTTP_401_UNAUTHORIZED)
         payload = WebhookPayload.model_validate(decoded)
-    except (json.JSONDecodeError, UnicodeDecodeError, ValidationError, ValueError, TypeError):
+    except json.JSONDecodeError, UnicodeDecodeError, ValidationError, ValueError, TypeError:
         logger.warning("Malformed webhook payload")
         return Response(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT)
 

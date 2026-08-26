@@ -62,6 +62,7 @@
 	border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);
 	border-radius: var(--radius-md);
 	background: var(--v2-bg-primary);
+	color: var(--v2-text-primary);
 	font-family: var(--font-mono);
 	font-size: var(--font-size-control);
 	text-align: center;

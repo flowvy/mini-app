@@ -1,9 +1,5 @@
 import i18n from "../../i18n";
 import { getAdminUserDisplayName } from "../../lib/admin-user-identity.ts";
-/**
- * Action definitions for the admin user hero card.
- * Each action maps to a ConfirmDialog with label, description, and danger flag.
- */
 import type { AdminUser } from "../../types/admin-users.ts";
 
 export type UserAction = "enable" | "disable" | "reset" | "revoke" | "delete";

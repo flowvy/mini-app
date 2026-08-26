@@ -67,7 +67,11 @@ function Section({
 	rows = 2,
 	icons = false,
 	tall = false,
-}: { rows?: number; icons?: boolean; tall?: boolean }) {
+}: {
+	rows?: number;
+	icons?: boolean;
+	tall?: boolean;
+}) {
 	return (
 		<div className={styles.section}>
 			<SectionTitle />

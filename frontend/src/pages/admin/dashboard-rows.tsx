@@ -6,7 +6,12 @@ export function Row({
 	value,
 	muted,
 	accent,
-}: { label: string; value: string | number; muted?: boolean; accent?: string }) {
+}: {
+	label: string;
+	value: string | number;
+	muted?: boolean;
+	accent?: string;
+}) {
 	return (
 		<div className={styles.row}>
 			<span className={styles.rowLabel}>{label}</span>

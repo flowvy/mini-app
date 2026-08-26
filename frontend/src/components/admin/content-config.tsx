@@ -1,8 +1,8 @@
 import { useBlocker } from "@tanstack/react-router";
-import { type ChangeEvent, type FC, Suspense, lazy, useEffect, useState } from "react";
+import { type ChangeEvent, type FC, lazy, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateSettings } from "../../hooks/use-admin-settings.ts";
-import { SUPPORTED_LOCALES, localeLabel } from "../../i18n";
+import { localeLabel, SUPPORTED_LOCALES } from "../../i18n";
 import { apiUploadFile } from "../../lib/api.ts";
 import { isMockAuth } from "../../lib/runtime.ts";
 import ss from "../../pages/admin/settings.module.css";

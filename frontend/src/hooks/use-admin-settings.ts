@@ -1,7 +1,3 @@
-/**
- * TanStack Query hooks for admin settings CRUD.
- * Debug mode: VITE_MOCK_AUTH=true → uses /api/debug/admin/settings.
- */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import i18n from "../i18n";
 import { apiGet, apiPatch, apiPost } from "../lib/api.ts";

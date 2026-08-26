@@ -1,10 +1,3 @@
-/**
- * Pulse data hook backed by TanStack Query.
- * Fetches normalized Kuma or Beszel status from GET /api/pulse via the BFF.
- *
- * Debug mode: when VITE_MOCK_AUTH=true, fetches from
- * GET /api/debug/pulse instead.
- */
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiGet } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";

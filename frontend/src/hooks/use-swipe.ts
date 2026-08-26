@@ -3,9 +3,8 @@ import { useCallback, useRef } from "react";
 interface UseSwipeOptions {
 	onSwipeLeft?: () => void;
 	onSwipeRight?: () => void;
-	/** Minimum horizontal distance to trigger swipe (px) */
 	threshold?: number;
-	/** Dead zone from screen edges to avoid iOS edge-swipe conflict (px) */
+	/** Avoid intercepting the native iOS edge-swipe gesture. */
 	edgeDeadZone?: number;
 }
 
@@ -30,14 +29,11 @@ export function useSwipe({
 			const dx = touch.clientX - startX.current;
 			const dy = touch.clientY - startY.current;
 
-			// Ignore if vertical movement is greater (user is scrolling)
 			if (Math.abs(dy) > Math.abs(dx)) return;
 
-			// Ignore if started in edge dead zone
 			const screenWidth = window.innerWidth;
 			if (startX.current < edgeDeadZone || startX.current > screenWidth - edgeDeadZone) return;
 
-			// Ignore if below threshold
 			if (Math.abs(dx) < threshold) return;
 
 			if (dx < 0) {

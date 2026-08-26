@@ -1,7 +1,7 @@
 import type { OperatorContentLocales } from "./operator-content.ts";
 
 export type PulseProvider = "disabled" | "kuma" | "beszel";
-export type InviteShareMediaType = "photo" | "animation" | "video";
+type InviteShareMediaType = "photo" | "animation" | "video";
 export type InviteSharePreviewMode = "auto" | "hidden" | "small" | "large";
 
 export interface AdminSettings {
@@ -85,7 +85,7 @@ export interface WelcomeMediaUpload {
 	mediaType: string;
 }
 
-export interface ProviderTestResult {
+interface ProviderTestResult {
 	ok: boolean;
 	error: string | null;
 }

@@ -5,7 +5,6 @@
 	padding: 16px;
 }
 
-/* Groups container */
 .groups {
 	display: flex;
 	flex-direction: column;
@@ -16,7 +15,6 @@
 	display: none;
 }
 
-/* Incidents empty */
 .incidentsEmpty {
 	padding: 12px 14px;
 	text-align: center;

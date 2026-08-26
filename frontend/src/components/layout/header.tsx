@@ -1,6 +1,3 @@
-/**
- * App header — shows page title (or logo + app name on home) and admin/user mode toggle.
- */
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
 	Activity,

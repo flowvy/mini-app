@@ -281,7 +281,7 @@
 	gap: 14px;
 	padding: 14px;
 }
-.formCard [data-ui="support-new-fields"] > button {
+.newRequestSubmit {
 	justify-self: end;
 }
 .contextNotice {
@@ -375,22 +375,21 @@
 }
 .article > p {
 	margin: 0;
-	color: var(--v2-text-secondary);
-	font-size: var(--font-size-body);
 	line-height: 1.65;
 }
 .articleSummary {
-	color: var(--v2-text-primary) !important;
+	color: var(--v2-text-primary);
+	font-size: var(--font-size-body);
 	font-weight: 600;
 }
 .articleBody {
 	color: var(--v2-text-primary);
 }
 .eyebrow {
-	color: var(--v2-text-secondary) !important;
-	font-size: var(--font-size-overline) !important;
+	color: var(--v2-text-secondary);
+	font-size: var(--font-size-overline);
 	font-weight: 700;
-	letter-spacing: .06em;
+	letter-spacing: 0.06em;
 	text-transform: uppercase;
 }
 .article ol {
@@ -532,12 +531,6 @@
 .message[data-owned="true"] .messageFile {
 	background: var(--v2-bg-primary);
 }
-.message[data-owned="true"] .fileKind {
-	background: var(--v2-bg-secondary);
-}
-.message[data-owned="true"] .messageAvatar {
-	background: var(--v2-bg-primary);
-}
 .message[data-author="support"] {
 	box-shadow: inset 3px 0 0 var(--v2-border-positive-primary);
 }
@@ -575,6 +568,9 @@
 	background: var(--v2-bg-secondary);
 	color: var(--v2-icon-secondary);
 }
+.message[data-owned="true"] .messageAvatar {
+	background: var(--v2-bg-primary);
+}
 .message[data-author="support"] .messageAvatar {
 	color: var(--v2-icon-positive);
 }
@@ -599,6 +595,9 @@
 	border-radius: var(--radius-sm);
 	background: var(--v2-bg-primary);
 	color: var(--v2-icon-secondary);
+}
+.message[data-owned="true"] .fileKind {
+	background: var(--v2-bg-secondary);
 }
 .composer {
 	gap: 10px;

@@ -1,6 +1,3 @@
-/**
- * Overall system status banner — shows one of four states.
- */
 import { AlertTriangle, CheckCircle, Wrench } from "lucide-react";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";

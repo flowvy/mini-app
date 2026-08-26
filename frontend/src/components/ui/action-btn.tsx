@@ -1,9 +1,4 @@
-/**
- * Action button — matches Desktop ActionButton.module.css.
- * Variants: action (outline), confirm (solid CTA), ghost (text-only).
- * Sizes: sm, md.
- */
-import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from "react";
+import { type ButtonHTMLAttributes, forwardRef, type ReactNode } from "react";
 import styles from "./action-btn.module.css";
 import { SpinnerIcon } from "./spinner-icon.tsx";
 

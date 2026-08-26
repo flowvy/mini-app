@@ -1,6 +1,3 @@
-/**
- * Named group of monitors — header + card body with rows.
- */
 import type { FC } from "react";
 import type { PulseGroup as PulseGroupType } from "../../types/pulse.ts";
 import { FormRowSeparator, FormSection, FormSectionCard } from "../ui/form-section.tsx";

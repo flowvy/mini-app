@@ -1,4 +1,3 @@
-/** Page wrapper for admin user detail — fetches user by UUID from route param. */
 import { useNavigate, useParams } from "@tanstack/react-router";
 import type { FC } from "react";
 import { ErrorState } from "../../components/ui/error-state.tsx";

@@ -3,8 +3,8 @@ import {
 	EditorContent,
 	type JSONContent,
 	Mark,
-	Node,
 	mergeAttributes,
+	Node,
 	useEditor,
 	useEditorState,
 } from "@tiptap/react";

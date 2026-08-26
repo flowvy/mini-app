@@ -370,7 +370,7 @@ class RedisProvider(Provider):
     @provide(scope=Scope.APP)
     async def get_redis(self, settings: Settings) -> AsyncIterable[Redis]:
         """Create Redis client, close on shutdown."""
-        client: Redis = Redis.from_url(settings.redis_url)
+        client: Redis = Redis.from_url(settings.redis_url, protocol=2)
         yield client
         await client.aclose()
 

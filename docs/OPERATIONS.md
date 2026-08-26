@@ -20,7 +20,7 @@ URL вместо случайных process-level `DATABASE_URL`/`REDIS_URL`, п
 запускаемых процессов. `-EnableTelegram` использует защищённый webhook при полной конфигурации либо
 long polling при пустом `WEBHOOK_URL`; одновременно должен работать только один polling-процесс
 test bot. PID и stdout/stderr находятся в `.artifacts/dev`. `dev-down` останавливает только
-записанные process trees и Compose services, не удаляя `pgdata`.
+записанные process trees и Compose services, не удаляя `pgdata18`.
 Lifecycle работает в PowerShell 7 на Windows и macOS. Windows использует native process/CIM branch,
 macOS — `pgrep` и тот же PID/start-time ownership contract; неизвестный или переиспользованный PID
 останавливать запрещено.
@@ -253,7 +253,7 @@ Downgrade, очистка volume и production migration требуют отде
 
 ## CI и артефакты
 
-GitHub Actions выполняет backend/frontend validation на pull request и push в `main`. Browser failure
+GitHub Actions выполняет backend/frontend validation на pull request и push в `dev`/`main`. Browser failure
 artifacts сохраняются как `playwright-artifacts`; локальные `test-results`, `playwright-report`,
 coverage и `.artifacts` игнорируются Git. CI не собирает image и ничего не deploy.
 
@@ -266,7 +266,7 @@ coverage и `.artifacts` игнорируются Git. CI не собирает 
   `main` создаётся и публикуется согласованный version tag; имя/версия тега не придумываются
   автоматически.
 
-Автоматизация release image/deployment пока отсутствует. Текущий CI проверяет push в `main`, но не
+Автоматизация release image/deployment пока отсутствует. Текущий CI проверяет push в `dev`/`main`, но не
 заменяет отдельный release-план, сборку артефакта и публикацию тега.
 
 ## Что отсутствует для production

@@ -26,7 +26,7 @@ import {
 	useReorderSupportArticles,
 	useUpdateSupportArticle,
 } from "../hooks/use-support.ts";
-import { SUPPORTED_LOCALES, localeLabel } from "../i18n";
+import { localeLabel, SUPPORTED_LOCALES } from "../i18n";
 import type {
 	SupportArticleAdmin,
 	SupportArticleInput,

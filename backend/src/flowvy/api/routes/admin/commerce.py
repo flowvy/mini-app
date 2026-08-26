@@ -8,6 +8,7 @@ from dishka.integrations.fastapi import DishkaRoute, FromDishka
 from fastapi import APIRouter, HTTPException, Query, status
 
 from flowvy.api.routes.admin.deps import CurrentAdmin
+from flowvy.api.routes.commerce_errors import commerce_rule_http_error, sponsor_offer_http_error
 from flowvy.schemas.commerce import (
     CommerceCatalogResponse,
     CommerceRuleInput,
@@ -23,11 +24,7 @@ from flowvy.schemas.tribute_webhooks import (
     EntitlementOperationResponse,
     EntitlementOperatorActionInput,
 )
-from flowvy.services.commerce import (
-    CommerceRuleError,
-    CommerceRuleNotFoundError,
-    CommerceRuleService,
-)
+from flowvy.services.commerce import CommerceRuleError, CommerceRuleService
 from flowvy.services.commerce_catalog import (
     CommerceCatalogService,
     CommerceCatalogUnavailableError,
@@ -39,7 +36,6 @@ from flowvy.services.entitlements import (
 )
 from flowvy.services.sponsor import (
     SponsorOfferError,
-    SponsorOfferNotFoundError,
     SponsorOfferService,
 )
 
@@ -48,18 +44,6 @@ router = APIRouter(
     tags=["admin-commerce"],
     route_class=DishkaRoute,
 )
-
-
-def _sponsor_offer_error(exc: SponsorOfferError) -> HTTPException:
-    code = (
-        status.HTTP_404_NOT_FOUND
-        if isinstance(exc, SponsorOfferNotFoundError)
-        else status.HTTP_422_UNPROCESSABLE_CONTENT
-    )
-    return HTTPException(
-        code,
-        detail={"code": exc.code, "message": str(exc)},
-    )
 
 
 @router.get("/offers", response_model=list[SponsorOfferResponse])
@@ -78,7 +62,7 @@ async def get_sponsor_offer_options(
     try:
         return await service.get_options()
     except SponsorOfferError as exc:
-        raise _sponsor_offer_error(exc) from exc
+        raise sponsor_offer_http_error(exc) from exc
 
 
 @router.post(
@@ -94,7 +78,7 @@ async def create_sponsor_offer(
     try:
         return await service.create(payload, admin.user.id)
     except SponsorOfferError as exc:
-        raise _sponsor_offer_error(exc) from exc
+        raise sponsor_offer_http_error(exc) from exc
 
 
 @router.put("/offers/{offer_id}", response_model=SponsorOfferResponse)
@@ -107,7 +91,7 @@ async def update_sponsor_offer(
     try:
         return await service.update(offer_id, payload)
     except SponsorOfferError as exc:
-        raise _sponsor_offer_error(exc) from exc
+        raise sponsor_offer_http_error(exc) from exc
 
 
 @router.delete("/offers/{offer_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -119,7 +103,7 @@ async def delete_sponsor_offer(
     try:
         await service.delete(offer_id)
     except SponsorOfferError as exc:
-        raise _sponsor_offer_error(exc) from exc
+        raise sponsor_offer_http_error(exc) from exc
 
 
 @router.get("/catalog", response_model=CommerceCatalogResponse)
@@ -172,15 +156,6 @@ async def act_on_entitlement_operation(
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
 
 
-def _commerce_error(exc: CommerceRuleError) -> HTTPException:
-    code = (
-        status.HTTP_404_NOT_FOUND
-        if isinstance(exc, CommerceRuleNotFoundError)
-        else status.HTTP_422_UNPROCESSABLE_CONTENT
-    )
-    return HTTPException(code, str(exc))
-
-
 @router.get("/rules", response_model=list[CommerceRuleResponse])
 async def list_commerce_rules(
     _admin: CurrentAdmin,
@@ -203,7 +178,7 @@ async def create_commerce_rule(
     try:
         return await service.create_rule(payload, admin.user.id)
     except CommerceRuleError as exc:
-        raise _commerce_error(exc) from exc
+        raise commerce_rule_http_error(exc) from exc
 
 
 @router.put("/rules/{rule_id}", response_model=CommerceRuleResponse)
@@ -216,7 +191,7 @@ async def update_commerce_rule(
     try:
         return await service.update_rule(rule_id, payload)
     except CommerceRuleError as exc:
-        raise _commerce_error(exc) from exc
+        raise commerce_rule_http_error(exc) from exc
 
 
 @router.delete("/rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -228,7 +203,7 @@ async def delete_commerce_rule(
     try:
         await service.delete_rule(rule_id)
     except CommerceRuleError as exc:
-        raise _commerce_error(exc) from exc
+        raise commerce_rule_http_error(exc) from exc
 
 
 @router.post("/preview", response_model=CommerceRulePreviewResponse)
@@ -240,7 +215,7 @@ async def preview_commerce_rule(
     try:
         return await service.preview(payload)
     except CommerceRuleError as exc:
-        raise _commerce_error(exc) from exc
+        raise commerce_rule_http_error(exc) from exc
 
 
 __all__ = ["router"]

@@ -1,6 +1,6 @@
 import type { UserStatus } from "./user-status.ts";
 
-export type SubscriptionStatus = UserStatus;
+type SubscriptionStatus = UserStatus;
 
 export type ResetStrategy = "MONTH" | "MONTH_ROLLING" | "WEEK" | "DAY" | "NO_RESET";
 
@@ -23,12 +23,4 @@ export interface SubscriptionData {
 	telegramId: string | null;
 	autoUpdate: boolean;
 	updateInterval: number;
-}
-
-export interface ServerData {
-	id: string;
-	name: string;
-	location: string;
-	connectionLink: string;
-	isOnline: boolean;
 }

@@ -20,7 +20,12 @@ Applies to `frontend/`. Follow the repository root and `tests/e2e/AGENTS.md` whe
 - Keep API behavior in `lib/api.ts` and hooks. Explicitly handle `204`/empty bodies, structured and
   unstructured errors, cancellation, and retry behavior; do not parse every success as JSON.
 - Put every user-visible string and accessible label in the locale resources before using it. Keep
-  translation keys grouped by feature and update the i18n catalog when it remains part of the repo.
+  translation keys grouped by an existing feature domain; add a new top-level domain only for a
+  distinct durable product area. Keep `en.json` and `ru.json` in exact key and interpolation-token
+  parity, use i18next `{{name}}` interpolation instead of assembling sentences in JSX, and remove a
+  key when its final use is removed. A new locale requires a complete resource, selection/fallback
+  wiring, parity tests, plural/date/number review, long-copy UI coverage, and RTL coverage when
+  applicable.
 - Use existing CSS Modules and `--v2-*` tokens. `flowvy_desktop/src/styles/tokens.css` is authoritative
   for shared color values and semantic roles; do not add local contrast replacements, aliases that
   change values, or one-off UI colors. Floating Header/TabBar glass tokens are the only approved
@@ -48,6 +53,8 @@ pnpm test:e2e
 
 Start with the smallest relevant unit/component test, then the full commands. The current Vitest file
 and mocked critical-route Playwright smoke are only a seed; add focused states for the changed flow.
+For locale changes, run `tests/unit/i18n-catalog.test.ts` and inspect normal, long/interpolated,
+empty, error, accessible-name, and mobile-overflow states as applicable.
 For UI changes, also manually inspect affected states at mobile and admin desktop viewports. Fail on
 unexpected `console.error`, `pageerror`, and failed or unmocked requests. Do not update screenshots
 until the behavioral result is understood.

@@ -31,8 +31,10 @@
 	font-weight: 500;
 	font-family: var(--font-sans);
 	cursor: pointer;
-	transition: background var(--duration-fast), border-color var(--duration-fast), color
-		var(--duration-fast);
+	transition:
+		background var(--duration-fast),
+		border-color var(--duration-fast),
+		color var(--duration-fast);
 }
 
 .chip.active {

@@ -1,6 +1,3 @@
-/**
- * TanStack Query client configuration and query key registry.
- */
 import { QueryClient } from "@tanstack/react-query";
 
 export const queryClient = new QueryClient({
@@ -19,10 +16,8 @@ export const queryKeys = {
 	nodes: ["nodes"] as const,
 	pulse: ["pulse"] as const,
 	adminDashboard: ["admin", "dashboard"] as const,
-	adminUsers: ["admin", "users", "list"] as const,
 	adminUsersAll: ["admin", "users", "all"] as const,
 	adminUser: (id: string) => ["admin", "users", "detail", id] as const,
-	adminUsersSearch: (q: string) => ["admin", "users", "search", q] as const,
 	adminSettings: ["admin", "settings"] as const,
 	onboarding: ["onboarding"] as const,
 	registrationSettings: ["admin", "registration", "settings"] as const,

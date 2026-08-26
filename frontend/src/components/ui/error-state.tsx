@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ActionBtn } from "./action-btn.tsx";
 import styles from "./error-state.module.css";
 
-export type ErrorStateVariant = "load" | "auth" | "forbidden" | "notFound";
+type ErrorStateVariant = "load" | "auth" | "forbidden" | "notFound";
 
 const COPY_KEYS: Record<ErrorStateVariant, { title: string; description: string; action: string }> =
 	{

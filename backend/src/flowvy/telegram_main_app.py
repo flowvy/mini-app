@@ -87,7 +87,7 @@ async def discover_main_app(
         try:
             async with asyncio.timeout(timeout_seconds):
                 profile = await bot.me()
-        except (TelegramNetworkError, TelegramServerError, TimeoutError):
+        except TelegramNetworkError, TelegramServerError, TimeoutError:
             if attempt + 1 >= attempts:
                 return TelegramMainApp.unavailable()
             await asyncio.sleep(retry_delay_seconds)

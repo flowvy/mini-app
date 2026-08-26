@@ -28,8 +28,9 @@ Flowvy распространяется как open-source Mini App. У разн
    для статей Support описано ниже.
 3. Public API не отдаёт весь словарь: `/api/me`, `/api/onboarding` и sponsor state разрешают одну
    locale из `Accept-Language`; Telegram bot использует `User.language_code`. Fallback идёт по
-   exact tag → base language → locale оператора → English. Сейчас поставляется только English,
-   но схема и редакторы сразу поддерживают несколько locale.
+   exact tag → base language → locale оператора → English. Сейчас поставляются полные English и
+   Russian product catalogs; схема и редакторы поддерживают независимые locale maps без отдельной
+   schema migration для каждого нового языка.
 4. Данные Remnawave/Kuma/Beszel/Tribute не становятся локалью: имя access profile, его description,
    subscription facts, monitor/group/incident names, traffic/expiry/device limits и versions
    остаются typed runtime data. Enum/status от provider нормализуется кодом, а его видимая подпись

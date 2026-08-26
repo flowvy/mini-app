@@ -10,7 +10,7 @@ import {
 	swipeBehavior,
 	themeParams,
 	viewport,
-} from "@telegram-apps/sdk-react";
+} from "@tma.js/sdk-react";
 import {
 	resolveTelegramViewportStartup,
 	restoreWindowedTelegramDesktopViewport,
@@ -44,8 +44,8 @@ function syncNativeColors(isDark: boolean): void {
 		if (miniApp.setHeaderColor.isAvailable()) {
 			miniApp.setHeaderColor(isDark ? "#171717" : "#f2f2f2");
 		}
-		if (miniApp.setBackgroundColor.isAvailable()) {
-			miniApp.setBackgroundColor(isDark ? "#171717" : "#f2f2f2");
+		if (miniApp.setBgColor.isAvailable()) {
+			miniApp.setBgColor(isDark ? "#171717" : "#f2f2f2");
 		}
 	} catch {
 		/* non-critical */
@@ -66,8 +66,8 @@ export function initTelegramApp(): void {
 	}
 
 	try {
-		if (themeParams.mountSync.isAvailable()) {
-			themeParams.mountSync();
+		if (themeParams.mount.isAvailable()) {
+			themeParams.mount();
 		}
 		if (themeParams.bindCssVars.isAvailable()) {
 			themeParams.bindCssVars();
@@ -77,8 +77,8 @@ export function initTelegramApp(): void {
 	}
 
 	try {
-		if (miniApp.mountSync.isAvailable()) {
-			miniApp.mountSync();
+		if (miniApp.mount.isAvailable()) {
+			miniApp.mount();
 		}
 		setTheme(miniApp.isDark());
 		syncNativeColors(miniApp.isDark());
@@ -103,7 +103,7 @@ export function initTelegramApp(): void {
 	}
 
 	try {
-		if (viewport.mount.isAvailable() && !viewport.isMounting()) {
+		if (viewport.mount.isAvailable() && !viewport.isMounted()) {
 			void viewport
 				.mount()
 				.then(() => {

@@ -4,7 +4,8 @@
 
 These instructions apply to the whole repository. Before editing a subtree, read its nearest
 `AGENTS.md`; the more specific file adds to or overrides this one. Keep durable guidance here,
-task-specific reasoning in `plans/active/`, and current facts in `docs/PROJECT_STATE.md`.
+temporary task reasoning in the Git-ignored `plans/` workspace, and current facts in
+`docs/PROJECT_STATE.md`.
 
 ## Product and boundaries
 
@@ -52,6 +53,14 @@ Source-of-truth order:
   Record the source, version, and access date in the relevant document or plan.
 - Use read-heavy agents in parallel when useful. Keep overlapping code writes sequential and let one
   owner integrate and verify the final diff.
+- Treat line count as a responsibility-review trigger, not an automatic failure: review production
+  files above 500 lines and require an explicit cohesion decision above 800; for React files use
+  350/600, and for tests use 1000/1500. Generated files, lockfiles, migrations, snapshots, and
+  vendored contracts are exempt. Do not grow an already oversized file without recording why it
+  remains cohesive or splitting it without changing observable behavior.
+- Keep source comments in English. Retain comments that explain a non-obvious invariant, protocol,
+  security boundary, or lifecycle; remove comments that only restate code, are stale, or preserve
+  commented-out implementation.
 - Review the final diff for accidental generated files, secrets, debug shortcuts, stale docs, and
   unrelated user changes.
 
@@ -155,8 +164,11 @@ A change is done only when its behavior and failure paths are covered at the che
 all relevant lint/type/build/test commands pass freshly, and the final diff is reviewed. UI changes
 also require functional browser interaction at affected routes and viewports, console/network error
 checks, and visual inspection in light and dark themes. Update `docs/PROJECT_STATE.md`, architecture,
-runbooks, or the active plan when their facts or decisions changed. State anything that could not be
-run and why; never silently substitute a weaker check.
+runbooks, or the current plan when their facts or decisions changed. Before the final handoff,
+transfer durable plan outcomes to their canonical instructions, docs, or ADR, then delete the local
+plan as required by `PLANS.md`; completed plans never remain as repository artifacts. State anything
+that could not be run and why; never silently
+substitute a weaker check.
 
 Strict Flowvy Desktop color parity does not exempt accessibility failures. Axe `color-contrast`
 scans must pass without suppression, allow-lists, or impact downgrade. Any failing node, color pair,

@@ -1,15 +1,15 @@
 import { CalendarDays, ChevronDown } from "lucide-react";
 import {
 	type FC,
+	forwardRef,
 	type HTMLAttributes,
 	type InputHTMLAttributes,
 	type ReactNode,
 	type SelectHTMLAttributes,
 	type TextareaHTMLAttributes,
-	forwardRef,
 	useId,
 } from "react";
-import { type ImeActionHint, handleImeKeyDown } from "../../lib/ime.ts";
+import { handleImeKeyDown, type ImeActionHint } from "../../lib/ime.ts";
 import styles from "./form-section.module.css";
 
 interface FormSectionProps {
@@ -32,15 +32,6 @@ export const FormSection: FC<FormSectionProps> = ({ title, action, children }) =
 		</section>
 	);
 };
-
-interface FormSectionFooterProps {
-	children: ReactNode;
-	warning?: boolean;
-}
-
-export const FormSectionFooter: FC<FormSectionFooterProps> = ({ children, warning }) => (
-	<div className={`${styles.footer} ${warning ? styles.warning : ""}`}>{children}</div>
-);
 
 export const FormSectionCard: FC<{ children: ReactNode }> = ({ children }) => (
 	<div className={styles.card} data-ui="form-section-card">
@@ -93,7 +84,6 @@ interface FormFieldProps {
 	children: ReactNode;
 }
 
-/** Stacked field used by full-width editor forms. */
 export const FormField: FC<FormFieldProps> = ({ label, htmlFor, hint, notice, children }) => (
 	<div className={styles.field}>
 		{htmlFor ? (
@@ -194,35 +184,6 @@ export const FormFieldTextarea = forwardRef<
 ));
 FormFieldTextarea.displayName = "FormFieldTextarea";
 
-export const FormInlineSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
-	({ className, options, value, defaultValue, disabled, ...props }, ref) => (
-		<span
-			className={`${styles.selectShell} ${styles.inlineSelectShell} ${className ?? ""}`}
-			data-disabled={disabled ? "" : undefined}
-		>
-			<span className={styles.selectValue} aria-hidden="true">
-				{selectedOptionLabel(options, value, defaultValue)}
-			</span>
-			<ChevronDown size={14} aria-hidden="true" />
-			<select
-				ref={ref}
-				className={styles.nativeSelect}
-				value={value}
-				defaultValue={defaultValue}
-				disabled={disabled}
-				{...props}
-			>
-				{options.map((option) => (
-					<option key={option.value} value={option.value} disabled={option.disabled}>
-						{option.label}
-					</option>
-				))}
-			</select>
-		</span>
-	),
-);
-FormInlineSelect.displayName = "FormInlineSelect";
-
 interface FormInlineFieldProps {
 	label: string;
 	htmlFor: string;
@@ -230,7 +191,6 @@ interface FormInlineFieldProps {
 	children: ReactNode;
 }
 
-/** Compact iOS-style label/value row for pickers in constrained forms. */
 export const FormInlineField: FC<FormInlineFieldProps> = ({ label, htmlFor, hint, children }) => (
 	<fieldset className={styles.inlineFieldGroup} aria-label={label}>
 		<div className={styles.inlineFieldRow}>
@@ -262,69 +222,3 @@ export const FormInlineDate = forwardRef<HTMLInputElement, FormInlineDateProps>(
 	),
 );
 FormInlineDate.displayName = "FormInlineDate";
-
-interface FormTextareaProps {
-	value: string;
-	onChange: (value: string) => void;
-	placeholder?: string;
-	rows?: number;
-	disabled?: boolean;
-}
-
-export const FormTextarea: FC<FormTextareaProps> = ({
-	value,
-	onChange,
-	placeholder,
-	rows = 4,
-	disabled,
-}) => (
-	<div className={styles.textareaWrap}>
-		<textarea
-			value={value}
-			onChange={(e) => onChange(e.target.value)}
-			placeholder={placeholder}
-			rows={rows}
-			enterKeyHint="enter"
-			disabled={disabled}
-			className={styles.textarea}
-		/>
-	</div>
-);
-
-interface FormInlineInputProps {
-	id?: string;
-	value: string;
-	onChange: (value: string) => void;
-	placeholder?: string;
-	mono?: boolean;
-	disabled?: boolean;
-	type?: "text" | "url";
-	enterKeyHint: ImeActionHint;
-}
-
-export const FormInlineInput: FC<FormInlineInputProps> = ({
-	id,
-	value,
-	onChange,
-	placeholder,
-	mono,
-	disabled,
-	type = "text",
-	enterKeyHint,
-}) => (
-	<input
-		id={id}
-		type={type}
-		value={value}
-		onChange={(e) => onChange(e.target.value)}
-		placeholder={placeholder}
-		disabled={disabled}
-		enterKeyHint={enterKeyHint}
-		onKeyDown={(event) => handleImeKeyDown(event, enterKeyHint)}
-		inputMode={type === "url" ? "url" : "text"}
-		autoCapitalize={type === "url" || mono ? "none" : undefined}
-		autoCorrect={type === "url" || mono ? "off" : undefined}
-		spellCheck={type === "url" || mono ? false : undefined}
-		className={`${styles.inlineInput} ${mono ? styles.mono : ""}`}
-	/>
-);

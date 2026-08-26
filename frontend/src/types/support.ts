@@ -42,7 +42,7 @@ export interface SupportArticleInput {
 	contentLocales: Record<string, SupportArticleLocale>;
 }
 
-export type SupportAttachmentKind = "image" | "video" | "text" | "zip";
+type SupportAttachmentKind = "image" | "video" | "text" | "zip";
 
 export interface SupportAttachment {
 	id: string;
@@ -52,7 +52,7 @@ export interface SupportAttachment {
 	passwordProtected: boolean;
 }
 
-export interface SupportRequester {
+interface SupportRequester {
 	id: number;
 	fullName: string;
 	username: string | null;
@@ -70,7 +70,7 @@ export interface SupportRequestSummary {
 	requester: SupportRequester;
 }
 
-export interface SupportMessage {
+interface SupportMessage {
 	id: string;
 	author: "user" | "support";
 	authorName: string;
@@ -79,7 +79,7 @@ export interface SupportMessage {
 	attachments: SupportAttachment[];
 }
 
-export interface SupportRequestContext {
+interface SupportRequestContext {
 	subscriptionStatus: string | null;
 	device: string | null;
 	appVersion: string | null;
@@ -124,7 +124,7 @@ export interface SupportUploadFileInput {
 	checksumSha256: string;
 }
 
-export interface SupportUploadTarget {
+interface SupportUploadTarget {
 	id: string;
 	uploadUrl: string;
 	headers: Record<string, string>;

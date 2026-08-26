@@ -10,9 +10,9 @@ import type {
 	ValidityMode,
 } from "../../types/registration.ts";
 import {
+	isProviderUserStatus,
 	PROVIDER_USER_STATUSES,
 	type ProviderUserStatus,
-	isProviderUserStatus,
 } from "../../types/user-status.ts";
 import { EditorDialog } from "../ui/editor-dialog.tsx";
 import {

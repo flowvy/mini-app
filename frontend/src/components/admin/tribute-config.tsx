@@ -1,4 +1,3 @@
-/** Tribute setup screen — server-side credential, read-only API check, and capability map. */
 import { BadgeInfo } from "lucide-react";
 import type { FC } from "react";
 import { useTranslation } from "react-i18next";

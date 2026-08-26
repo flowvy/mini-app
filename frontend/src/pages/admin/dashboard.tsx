@@ -5,9 +5,9 @@ import { PageLoading } from "../../components/ui/page-loading.tsx";
 import { SegmentedControl } from "../../components/ui/segmented-control.tsx";
 import { useDashboard } from "../../hooks/use-dashboard.ts";
 import { useSwipe } from "../../hooks/use-swipe.ts";
+import styles from "./dashboard.module.css";
 import { FlowvyContent } from "./dashboard-flowvy.tsx";
 import { RemnawaveContent } from "./dashboard-remnawave.tsx";
-import styles from "./dashboard.module.css";
 
 export const AdminDashboard: FC = () => {
 	const { t } = useTranslation();

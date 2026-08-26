@@ -33,7 +33,6 @@ interface SettingsPanelProps {
 	children: ReactNode;
 }
 
-/** Contained form surface used by nested Settings routes. */
 export const SettingsPanel: FC<SettingsPanelProps> = ({ title, action, children }) => {
 	const headingId = useId();
 
@@ -56,7 +55,6 @@ export const SettingsFields: FC<{ children: ReactNode }> = ({ children }) => (
 	</FormSurfaceBody>
 );
 
-/** Padded non-form content inside a Settings panel. */
 export const SettingsInset: FC<{ children: ReactNode }> = ({ children }) => (
 	<div className={styles.inset} data-ui="settings-inset">
 		{children}

@@ -129,7 +129,7 @@ test("admin saves allow-listed provider content as a locale map", async ({
 	await installTelegramMainButton(page);
 	await page.goto(withTelegramMainButton("/admin/settings/content"));
 	await expect(page.locator("header").getByText("Message", { exact: true })).toBeVisible();
-	const contentLanguage = page.getByRole("radiogroup", { name: "Content language" });
+	const contentLanguage = page.getByRole("group", { name: "Content language" });
 	await expect(contentLanguage.getByRole("radio", { name: "English" })).toBeChecked();
 	await expect(contentLanguage.getByRole("radio", { name: "Russian" })).toBeVisible();
 	await expect(page.getByRole("heading", { name: "Support" })).toHaveCount(0);
@@ -164,7 +164,7 @@ test("content language switching keeps rich-text editor instances alive", async 
 }) => {
 	await page.goto("/admin/settings/content");
 	await page.getByLabel("User-facing message").selectOption("inviteCard");
-	const contentLanguage = page.getByRole("radiogroup", { name: "Content language" });
+	const contentLanguage = page.getByRole("group", { name: "Content language" });
 	const inviteDescription = page.getByRole("textbox", { name: "Invite card description" });
 	const inviteEditor = await inviteDescription.elementHandle();
 	expect(inviteEditor).not.toBeNull();
@@ -181,7 +181,7 @@ test("content language switching keeps rich-text editor instances alive", async 
 	).toBe(true);
 
 	await page.goto("/admin/settings/welcome");
-	const welcomeLanguage = page.getByRole("radiogroup", { name: "Content language" });
+	const welcomeLanguage = page.getByRole("group", { name: "Content language" });
 	const greetingText = page.getByRole("textbox", { name: "Greeting text" });
 	const greetingEditor = await greetingText.elementHandle();
 	expect(greetingEditor).not.toBeNull();
@@ -223,7 +223,7 @@ test("saved Welcome content stays clean", async ({ page, mockApi: _mock }) => {
 	await page.goto(withTelegramMainButton("/admin/settings/communication"));
 	await page.getByRole("button", { name: /^Welcome Message/ }).click();
 	await page.getByLabel("Greeting text").fill("Welcome back to Flowvy");
-	const language = page.getByRole("radiogroup", { name: "Content language" });
+	const language = page.getByRole("group", { name: "Content language" });
 	await language.getByRole("radio", { name: "Russian" }).click();
 	await page.getByLabel("Greeting text").fill("С возвращением в Flowvy");
 	const patchRequest = page.waitForRequest(
@@ -276,7 +276,7 @@ test("Communication discard uses Telegram's native popup without a WebKit dialog
 			message: "The unsaved provider content will be lost",
 			buttons: [
 				{ id: "confirm", text: "Discard", type: "default" },
-				{ id: "cancel", text: "Keep editing" },
+				{ id: "cancel", text: "Keep editing", type: "default" },
 			],
 		});
 	await page.evaluate(() => {
@@ -327,7 +327,7 @@ test("Communication groups all message contexts and opens the selected editor", 
 	await page.getByRole("button", { name: /^Sponsor · shared action/ }).click();
 	await expect(page).toHaveURL(/\/admin\/settings\/content\?message=sponsorAction$/);
 	await expect(page.getByLabel("Choose-offer button")).toBeVisible();
-	const contentLanguage = page.getByRole("radiogroup", { name: "Content language" });
+	const contentLanguage = page.getByRole("group", { name: "Content language" });
 	await expect(contentLanguage.getByRole("radio", { name: "English" })).toBeChecked();
 	await expect(contentLanguage.getByRole("radio", { name: "Russian" })).toBeVisible();
 	await assertNoHorizontalOverflow(page);
@@ -839,62 +839,65 @@ test("capture dark administrator Support queue", async ({ page, mockApi: _mock }
 	});
 });
 
-test("focused Tone of Voice editor remains usable in every required viewport and theme", async ({
-	page,
-	mockApi: _mock,
-}, testInfo) => {
-	const accessibilityByContext: Array<{
-		viewport: string;
-		theme: "light" | "dark";
-		serious: unknown[];
-	}> = [];
-	for (const viewport of [
-		{ name: "narrow", width: 320, height: 568 },
-		{ name: "mobile", width: 430, height: 932 },
-		{ name: "desktop", width: 1280, height: 900 },
-	] as const) {
-		for (const colorScheme of ["light", "dark"] as const) {
-			await page.setViewportSize(viewport);
-			await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
-			await page.goto("/admin/settings/content");
-			await page.evaluate((theme) => {
-				document.documentElement.setAttribute("data-theme", theme);
-			}, colorScheme);
-			await expect(page.locator("header").getByText("Message", { exact: true })).toBeVisible();
-			await expect(page.getByRole("heading", { name: "Invite-only registration" })).toBeVisible();
-			await expect(page.getByRole("heading", { name: "Open registration" })).toHaveCount(0);
-			const variables = page
-				.getByRole("heading", { name: "Variables for this message" })
-				.locator("xpath=ancestor::section[1]");
-			await expect(variables.locator("details")).toHaveCount(0);
-			await expect(variables.getByRole("button", { name: "Copy {{appName}}" })).toBeVisible();
+test.describe("Tone of Voice evidence", () => {
+	test.describe.configure({ timeout: 60_000 });
+	test("focused Tone of Voice editor remains usable in every required viewport and theme", async ({
+		page,
+		mockApi: _mock,
+	}, testInfo) => {
+		const accessibilityByContext: Array<{
+			viewport: string;
+			theme: "light" | "dark";
+			serious: unknown[];
+		}> = [];
+		for (const viewport of [
+			{ name: "narrow", width: 320, height: 568 },
+			{ name: "mobile", width: 430, height: 932 },
+			{ name: "desktop", width: 1280, height: 900 },
+		] as const) {
+			for (const colorScheme of ["light", "dark"] as const) {
+				await page.setViewportSize(viewport);
+				await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+				await page.goto("/admin/settings/content");
+				await page.evaluate((theme) => {
+					document.documentElement.setAttribute("data-theme", theme);
+				}, colorScheme);
+				await expect(page.locator("header").getByText("Message", { exact: true })).toBeVisible();
+				await expect(page.getByRole("heading", { name: "Invite-only registration" })).toBeVisible();
+				await expect(page.getByRole("heading", { name: "Open registration" })).toHaveCount(0);
+				const variables = page
+					.getByRole("heading", { name: "Variables for this message" })
+					.locator("xpath=ancestor::section[1]");
+				await expect(variables.locator("details")).toHaveCount(0);
+				await expect(variables.getByRole("button", { name: "Copy {{appName}}" })).toBeVisible();
 
-			await page.getByLabel("User-facing message").selectOption("inviteShare");
-			await expect(page.getByRole("textbox", { name: "Telegram share message" })).toBeVisible();
-			await expect(variables.getByRole("button", { name: "Copy {{code}}" })).toBeVisible();
-			await page.screenshot({
-				path: testInfo.outputPath(`tone-of-voice-share-${viewport.name}-${colorScheme}.png`),
-				fullPage: true,
-				animations: "disabled",
-			});
-			await page.getByLabel("User-facing message").selectOption("inviteRegistration");
+				await page.getByLabel("User-facing message").selectOption("inviteShare");
+				await expect(page.getByRole("textbox", { name: "Telegram share message" })).toBeVisible();
+				await expect(variables.getByRole("button", { name: "Copy {{code}}" })).toBeVisible();
+				await page.screenshot({
+					path: testInfo.outputPath(`tone-of-voice-share-${viewport.name}-${colorScheme}.png`),
+					fullPage: true,
+					animations: "disabled",
+				});
+				await page.getByLabel("User-facing message").selectOption("inviteRegistration");
 
-			await assertNoHorizontalOverflow(page);
-			const accessibility = await new AxeBuilder({ page }).analyze();
-			const serious = accessibility.violations.filter((violation) =>
-				["serious", "critical"].includes(violation.impact ?? ""),
-			);
-			accessibilityByContext.push({
-				viewport: viewport.name,
-				theme: colorScheme,
-				serious,
-			});
-			await page.screenshot({
-				path: testInfo.outputPath(`tone-of-voice-${viewport.name}-${colorScheme}.png`),
-				fullPage: true,
-				animations: "disabled",
-			});
+				await assertNoHorizontalOverflow(page);
+				const accessibility = await new AxeBuilder({ page }).analyze();
+				const serious = accessibility.violations.filter((violation) =>
+					["serious", "critical"].includes(violation.impact ?? ""),
+				);
+				accessibilityByContext.push({
+					viewport: viewport.name,
+					theme: colorScheme,
+					serious,
+				});
+				await page.screenshot({
+					path: testInfo.outputPath(`tone-of-voice-${viewport.name}-${colorScheme}.png`),
+					fullPage: true,
+					animations: "disabled",
+				});
+			}
 		}
-	}
-	expect(accessibilityByContext.filter(({ serious }) => serious.length > 0)).toEqual([]);
+		expect(accessibilityByContext.filter(({ serious }) => serious.length > 0)).toEqual([]);
+	});
 });

@@ -124,7 +124,7 @@ export function SponsorOfferCard({
 				<p className={styles.offerInstruction}>{instruction}</p>
 			)}
 
-			<div className={styles.benefits} aria-label={t("home.sponsor.benefits.label")}>
+			<section className={styles.benefits} aria-label={t("home.sponsor.benefits.label")}>
 				<div className={styles.benefit}>
 					<Gauge size={16} aria-hidden="true" />
 					<span>{t("home.sponsor.benefits.traffic")}</span>
@@ -141,7 +141,7 @@ export function SponsorOfferCard({
 						{unlimitedDevices ? t("home.sponsor.benefits.unlimited") : offer.benefits.deviceLimit}
 					</strong>
 				</div>
-			</div>
+			</section>
 
 			<ActionBtn
 				variant={blocked ? "action" : "confirm"}

@@ -53,7 +53,7 @@ async def _integration_redis_isolation(request: pytest.FixtureRequest) -> AsyncI
         yield
         return
 
-    redis = Redis.from_url(TEST_REDIS_URL)
+    redis = Redis.from_url(TEST_REDIS_URL, protocol=2)
     await redis.flushdb()
     try:
         yield

@@ -1,4 +1,3 @@
-/** Beszel configuration sub-screen — origin, credential state, test, save. */
 import { useBlocker } from "@tanstack/react-router";
 import { type FC, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";

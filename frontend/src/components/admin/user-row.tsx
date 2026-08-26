@@ -20,7 +20,7 @@ import styles from "./user-row.module.css";
 
 interface UserRowProps {
 	user: AdminUser;
-	onClick?: () => void;
+	onClick: () => void;
 }
 
 export const UserRow: FC<UserRowProps> = ({ user, onClick }) => {
@@ -40,19 +40,7 @@ export const UserRow: FC<UserRowProps> = ({ user, onClick }) => {
 	parts.push(formatLastSeen(user.userTraffic.onlineAt));
 
 	return (
-		<div
-			className={styles.row}
-			onClick={onClick}
-			onKeyDown={
-				onClick
-					? (e) => {
-							if (e.key === "Enter") onClick();
-						}
-					: undefined
-			}
-			role={onClick ? "button" : undefined}
-			tabIndex={onClick ? 0 : undefined}
-		>
+		<button type="button" className={styles.row} onClick={onClick}>
 			<div className={styles.rowContent}>
 				<div className={styles.line1}>
 					<span className={styles.username}>{displayName}</span>
@@ -85,6 +73,6 @@ export const UserRow: FC<UserRowProps> = ({ user, onClick }) => {
 					)}
 				</div>
 			</div>
-		</div>
+		</button>
 	);
 };

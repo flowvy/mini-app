@@ -64,7 +64,7 @@ async def _flush_last_seen(session: AsyncSession, redis: Redis) -> bool:
         try:
             telegram_id = int(tid_bytes)
             last_seen = datetime.fromtimestamp(int(ts_bytes), tz=UTC)
-        except (OSError, OverflowError, TypeError, ValueError):
+        except OSError, OverflowError, TypeError, ValueError:
             logger.warning("Ignoring malformed last_seen metric")
             continue
         await session.execute(

@@ -1,31 +1,10 @@
-/**
- * TanStack Query hooks for admin users list, search, detail, and actions.
- * Debug mode: VITE_MOCK_AUTH=true -> uses /api/debug/admin/users.
- */
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiDelete, apiGet, apiPost } from "../lib/api.ts";
 import { queryKeys } from "../lib/query.ts";
 import { isMockAuth } from "../lib/runtime.ts";
-import type { AdminUser, AdminUsersResponse } from "../types/admin-users.ts";
+import type { AdminUser } from "../types/admin-users.ts";
 
 const prefix = isMockAuth ? "/debug/admin/users" : "/admin/users";
-
-const PAGE_SIZE = 25;
-
-export function useAdminUsers() {
-	return useInfiniteQuery<AdminUsersResponse>({
-		queryKey: queryKeys.adminUsers,
-		queryFn: ({ pageParam }) =>
-			apiGet<AdminUsersResponse>(`${prefix}?size=${PAGE_SIZE}&start=${pageParam}`),
-		initialPageParam: 0,
-		getNextPageParam: (_lastPage, allPages) => {
-			const total = allPages[0]?.total ?? 0;
-			const loaded = allPages.flatMap((p) => p.users).length;
-			return loaded < total ? loaded : undefined;
-		},
-		staleTime: 0,
-	});
-}
 
 export function useAdminUser(id: string) {
 	const { data, isPending, error, refetch } = useQuery<AdminUser>({
@@ -35,17 +14,6 @@ export function useAdminUser(id: string) {
 	});
 
 	return { data: data ?? undefined, isPending, error, refetch };
-}
-
-export function useSearchUser(query: string) {
-	const { data, isPending, error } = useQuery<AdminUsersResponse>({
-		queryKey: queryKeys.adminUsersSearch(query),
-		queryFn: () => apiGet<AdminUsersResponse>(`${prefix}/search?q=${encodeURIComponent(query)}`),
-		enabled: query.length > 0,
-		staleTime: 0,
-	});
-
-	return { data: data ?? null, isPending, error };
 }
 
 function useAdminUserAction(method: "post" | "delete") {

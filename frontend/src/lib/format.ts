@@ -25,7 +25,6 @@ export function parseExpiry(expiry: ExpiryValue | null): ParsedExpiry | null {
 	};
 }
 
-/** Format bytes to human-readable traffic string. */
 export function formatTraffic(bytes: number): string {
 	if (bytes <= 0) return i18n.t("format.number.zero");
 	if (bytes >= TB) return formatTrafficValue((bytes / TB).toFixed(1), "format.traffic.tb");
@@ -52,34 +51,29 @@ export function isUnlimitedExpiry(expiry: ExpiryValue): boolean {
 	return parseExpiry(expiry)?.isUnlimited ?? false;
 }
 
-/** Days until expiration (negative = expired). */
 export function getDaysLeft(expiry: ExpiryValue): number {
 	const parsed = parseExpiry(expiry);
 	if (!parsed) return 0;
 	return Math.floor((parsed.date.getTime() - Date.now()) / 86400000);
 }
 
-/** Traffic usage percent (0–100), clamped. */
 export function getTrafficPercent(used: number, total: number): number {
 	if (total <= 0) return 0;
 	return Math.min(100, Math.round((used / total) * 100));
 }
 
-/** CSS variable for traffic color based on usage percent. */
 export function getTrafficColor(pct: number): string {
 	if (pct > 90) return "var(--v2-text-negative)";
 	if (pct > 70) return "var(--v2-text-warning)";
 	return "var(--v2-text-positive)";
 }
 
-/** CSS variable for days-left color. */
 export function getExpiryColor(daysLeft: number): string {
 	if (daysLeft < 0) return "var(--v2-text-negative)";
 	if (daysLeft <= 7) return "var(--v2-text-warning)";
 	return "var(--v2-text-primary)";
 }
 
-/** Human-readable expiry label. */
 export function formatExpiry(daysLeft: number): string {
 	if (daysLeft < 0) return i18n.t("format.expiry.expired");
 	if (daysLeft === 0) return i18n.t("format.expiry.today");
@@ -87,19 +81,16 @@ export function formatExpiry(daysLeft: number): string {
 	return i18n.t("format.expiry.days", { n: daysLeft });
 }
 
-/** Format Unix timestamp to short date with year. */
 export function formatShortDate(unix: number): string {
 	return formatCalendarDate(new Date(unix * 1000));
 }
 
-/** Format Unix timestamp to compact month + day (no year). */
 export function formatMonthDay(unix: number): string {
 	return new Intl.DateTimeFormat(i18n.language, { month: "short", day: "numeric" }).format(
 		new Date(unix * 1000),
 	);
 }
 
-/** Format Unix timestamp (seconds) to relative time. */
 export function formatRelativeTimeUnix(unix: number): string {
 	const diff = Date.now() - unix * 1000;
 	const secs = Math.floor(diff / 1000);
@@ -112,7 +103,6 @@ export function formatRelativeTimeUnix(unix: number): string {
 	return i18n.t("format.relative.daysAgo", { n: days });
 }
 
-/** Format traffic pair: "3.5 MB / 1 TB" or "5 GB / ∞". */
 export function formatTrafficPair(used: number, limit: number): string {
 	return formatRatio(
 		formatTraffic(used),
@@ -120,7 +110,6 @@ export function formatTrafficPair(used: number, limit: number): string {
 	);
 }
 
-/** Format ISO date string to relative last-seen label. */
 export function formatLastSeen(onlineAt: string | null): string {
 	if (!onlineAt) return i18n.t("format.lastSeen.never");
 	const diff = Date.now() - new Date(onlineAt).getTime();
@@ -134,7 +123,6 @@ export function formatLastSeen(onlineAt: string | null): string {
 	return i18n.t("format.lastSeen.monthsAgo", { n: Math.floor(days / 30) });
 }
 
-/** Format ISO expiry for admin users list. */
 export function formatAdminExpiry(expireAt: string): string {
 	const parsed = parseExpiry(expireAt);
 	if (!parsed) return formatMissing();
@@ -147,7 +135,6 @@ export function formatAdminExpiry(expireAt: string): string {
 	return i18n.t("format.adminExpiry.monthsLeft", { n: Math.floor(days / 30) });
 }
 
-/** CSS var for admin expiry color (≤3d = warning, <0 = negative). */
 export function getAdminExpiryColor(expireAt: string): string | null {
 	const parsed = parseExpiry(expireAt);
 	if (!parsed || parsed.isUnlimited) return null;
@@ -158,13 +145,11 @@ export function getAdminExpiryColor(expireAt: string): string | null {
 	return null;
 }
 
-/** Format ISO date string to "Mon DD, YYYY". */
 export function formatDateISO(iso: string | null): string {
 	if (!iso) return formatMissing();
 	return formatCalendarDate(new Date(iso));
 }
 
-/** Format an expiry consistently, including Flowvy's lifetime sentinel. */
 export function formatExpiryDate(expiry: ExpiryValue | null): string {
 	const parsed = parseExpiry(expiry);
 	if (!parsed) return formatMissing();
@@ -180,19 +165,10 @@ function formatCalendarDate(date: Date): string {
 	}).format(date);
 }
 
-/** Whether device limit is unlimited (null or 0 in Remnawave). */
 export function isUnlimitedDevices(limit: number | null | undefined): boolean {
 	return !limit || limit === 0;
 }
 
-/** CSS variable for ISO expiry color. */
-export function getExpiryColorISO(daysLeft: number): string | undefined {
-	if (daysLeft < 0) return "var(--v2-text-negative)";
-	if (daysLeft <= 3) return "var(--v2-text-warning)";
-	return undefined;
-}
-
-/** Compact expiry label for admin hero (days-based). */
 export function formatExpiryCompact(daysLeft: number): string {
 	if (daysLeft < 0) return i18n.t("format.expiryCompact.ago", { n: Math.abs(daysLeft) });
 	if (daysLeft === 0) return i18n.t("format.expiryCompact.today");
@@ -200,7 +176,6 @@ export function formatExpiryCompact(daysLeft: number): string {
 	return i18n.t("format.expiryCompact.months", { n: Math.floor(daysLeft / 30) });
 }
 
-/** Format memory usage: "2.5 GB / 3.8 GB (66%)". */
 export function formatMemory(used: number, total: number): string {
 	const pct = total > 0 ? Math.round((used / total) * 100) : 0;
 	return i18n.t("format.memory", {
@@ -238,7 +213,6 @@ export function formatMetaList(parts: string[]): string {
 	return parts.join(i18n.t("format.metaSeparator"));
 }
 
-/** Format uptime seconds: "39d 1h" or "5h". */
 export function formatUptime(seconds: number): string {
 	const d = Math.floor(seconds / 86400);
 	const h = Math.floor((seconds % 86400) / 3600);
@@ -254,7 +228,6 @@ const RESET_LABELS: Record<ResetStrategy, string> = {
 	NO_RESET: "format.resetStrategy.never",
 };
 
-/** Human-readable reset strategy label. */
 export function formatResetStrategy(strategy: ResetStrategy): string {
 	return i18n.t(RESET_LABELS[strategy]);
 }

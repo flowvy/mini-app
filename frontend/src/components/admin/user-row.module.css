@@ -1,6 +1,12 @@
-/* ── User Row ── */
-
 .row {
+	display: block;
+	width: 100%;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: start;
 	cursor: pointer;
 }
 
@@ -10,7 +16,6 @@
 	gap: 3px;
 }
 
-/* Line 1: username + badge + traffic bar + chevron */
 .line1 {
 	display: flex;
 	align-items: center;
@@ -34,7 +39,6 @@
 	gap: 6px;
 }
 
-/* Traffic micro bar */
 .trafficBar {
 	width: 32px;
 	height: 3px;
@@ -55,7 +59,6 @@
 	color: var(--v2-icon-tertiary);
 }
 
-/* Line 2: meta + expiry */
 .line2 {
 	display: flex;
 	align-items: center;

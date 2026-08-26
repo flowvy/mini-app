@@ -13,7 +13,7 @@ def _settings() -> Settings:
     return Settings(
         _env_file=None,
         r2_account_id="a" * 32,
-        r2_bucket_name="flowvy-support",
+        r2_bucket_name="test-support-bucket",
         r2_access_key_id="EXAMPLE_ACCESS_KEY",
         r2_secret_access_key="EXAMPLE_SECRET_KEY",
     )
@@ -30,7 +30,7 @@ async def test_presigned_upload_binds_content_type_and_sha256_headers() -> None:
         )
 
     assert url.startswith("https://")
-    assert "flowvy-support/support/objects/1/example" in url
+    assert "test-support-bucket/support/objects/1/example" in url
     assert headers == {
         "Content-Type": "application/zip",
         "x-amz-checksum-sha256": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",

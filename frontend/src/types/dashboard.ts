@@ -1,5 +1,4 @@
-/** Validated Remnawave system stats projection returned by the BFF. */
-export interface RemnawaveStatusCounts {
+interface RemnawaveStatusCounts {
 	ACTIVE: number;
 	DISABLED: number;
 	LIMITED: number;
@@ -7,7 +6,7 @@ export interface RemnawaveStatusCounts {
 	UNKNOWN: number;
 }
 
-export interface RemnawaveStats {
+interface RemnawaveStats {
 	cpu: { cores: number };
 	memory: { total: number; free: number; used: number };
 	uptime: number;
@@ -21,15 +20,13 @@ export interface RemnawaveStats {
 	nodes: { totalOnline: number; totalBytesLifetime: string };
 }
 
-/** Single bandwidth comparison period. */
-export interface BandwidthPeriod {
+interface BandwidthPeriod {
 	current: string;
 	previous: string;
 	difference: string;
 }
 
-/** Validated Remnawave bandwidth projection returned by the BFF. */
-export interface RemnawaveBandwidth {
+interface RemnawaveBandwidth {
 	bandwidthLastTwoDays: BandwidthPeriod;
 	bandwidthLastSevenDays: BandwidthPeriod;
 	bandwidthLast30Days: BandwidthPeriod;
@@ -37,7 +34,7 @@ export interface RemnawaveBandwidth {
 	bandwidthCurrentYear: BandwidthPeriod;
 }
 
-export interface BotSystemStats {
+interface BotSystemStats {
 	cpuCores: number;
 	memoryTotal: number;
 	memoryUsed: number;
@@ -46,7 +43,7 @@ export interface BotSystemStats {
 	version: string;
 }
 
-export interface BotUserStats {
+interface BotUserStats {
 	totalUsers: number;
 	newToday: number;
 	newThisWeek: number;
@@ -54,12 +51,12 @@ export interface BotUserStats {
 	active24H: number;
 }
 
-export interface BotRequestStats {
+interface BotRequestStats {
 	totalRequests: number;
 	todayRequests: number;
 }
 
-export interface BotStats {
+interface BotStats {
 	system: BotSystemStats;
 	users: BotUserStats;
 	requests: BotRequestStats;

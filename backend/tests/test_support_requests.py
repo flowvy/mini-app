@@ -101,7 +101,7 @@ def _settings(*, admin_id: int | None = None, configured: bool = False) -> Setti
     if configured:
         values.update(
             r2_account_id="a" * 32,
-            r2_bucket_name="flowvy-support",
+            r2_bucket_name="test-support-bucket",
             r2_access_key_id="test-access-key",
             r2_secret_access_key="test-secret-key",
         )

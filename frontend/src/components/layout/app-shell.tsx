@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { viewport } from "@telegram-apps/sdk-react";
+import { viewport } from "@tma.js/sdk-react";
 import { type FocusEvent, useCallback, useEffect, useRef, useState } from "react";
 import { ModeProvider } from "../../contexts/mode-context.tsx";
 import { useBackButton } from "../../hooks/use-back-button.ts";
