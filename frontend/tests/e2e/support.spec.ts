@@ -122,6 +122,40 @@ test("administrator manages article order and opens the existing editor", async 
 	await assertNoHorizontalOverflow(page);
 });
 
+test("article language tabs stay centered", async ({ page }, testInfo) => {
+	await page.goto("/support/manage/answers/new");
+	const language = page.getByRole("group", { name: "Language" });
+	await expect(language.getByRole("radio", { name: "English" })).toBeChecked();
+	await expect(language.getByRole("radio", { name: "Russian" })).not.toBeChecked();
+
+	const centerDeltas = await language.locator("label").evaluateAll((labels) =>
+		labels.map((label) => {
+			const text = label.querySelector("span");
+			if (!text) throw new Error("Segment label text is missing");
+			const segmentBox = label.getBoundingClientRect();
+			const textBox = text.getBoundingClientRect();
+			return Math.abs(segmentBox.left + segmentBox.width / 2 - (textBox.left + textBox.width / 2));
+		}),
+	);
+	expect(centerDeltas.every((delta) => delta <= 1)).toBe(true);
+	await assertNoHorizontalOverflow(page);
+
+	for (const theme of ["light", "dark"] as const) {
+		await page.evaluate(
+			(value) => document.documentElement.setAttribute("data-theme", value),
+			theme,
+		);
+		await language.screenshot({
+			path: testInfo.outputPath(`support-article-language-${theme}-${testInfo.project.name}.png`),
+			animations: "disabled",
+		});
+		const { violations } = await new AxeBuilder({ page })
+			.include('[aria-label="Language"]')
+			.analyze();
+		expect(violations).toEqual([]);
+	}
+});
+
 test("administrator follows the explicit article lifecycle and deletes the article", async ({
 	page,
 	mockApi,

@@ -21,6 +21,12 @@
 	cursor: pointer;
 }
 
+.btn > span {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
 .radio:focus-visible + span {
 	outline: 1.5px solid var(--v2-bg-positive-primary);
 	outline-offset: 2px;
@@ -56,6 +62,9 @@
 	flex: 1;
 	position: relative;
 	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	min-width: 0;
 	min-height: 32px;
 	overflow: hidden;
@@ -68,6 +77,7 @@
 	font-weight: 600;
 	font-family: var(--font-sans);
 	line-height: 1.15;
+	text-align: center;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	cursor: pointer;
