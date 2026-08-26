@@ -93,6 +93,9 @@ if ($ciWorkflow -notmatch [regex]::Escape("package_json_file: frontend/package.j
 if ($ciWorkflow -notmatch [regex]::Escape("run: pnpm test:e2e:ci")) {
     throw "CI must run the focused deterministic Playwright smoke suite."
 }
+if ($ciWorkflow -notmatch "PLAYWRIGHT_ARTIFACT_DIR") {
+    throw "CI must write Playwright failure artifacts to the uploaded workspace paths."
+}
 
 $actualUvVersion = (& uv --version).Trim()
 if ($actualUvVersion -notmatch '^uv 0\.12\.6(?:\s|$)') {

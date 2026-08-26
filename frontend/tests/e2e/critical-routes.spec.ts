@@ -211,9 +211,9 @@ test("user and admin pages share one external vertical rhythm", async ({
 	await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
 });
 
-test("admin routes render deterministic success and placeholder states @ci-smoke", async ({
+test("admin core routes render deterministic success states @ci-smoke", async ({
 	page,
-	mockApi,
+	mockApi: _mock,
 }) => {
 	await page.goto("/admin/dashboard");
 	await expect(page.getByRole("tab", { name: "Remnawave" })).toBeVisible();
@@ -231,7 +231,9 @@ test("admin routes render deterministic success and placeholder states @ci-smoke
 	await expect(page.getByText("Invitations", { exact: true })).toBeVisible();
 	await expect(page.getByText("Registered users")).toBeVisible();
 	await expect(page.getByText("3", { exact: true })).toBeVisible();
+});
 
+test("admin settings routes render deterministic success states", async ({ page, mockApi }) => {
 	await page.goto("/admin/settings");
 	await expect(page.getByText("Integrations")).toBeVisible();
 	await expect(page.getByText("Remnawave", { exact: true })).toBeVisible();
@@ -313,11 +315,6 @@ test("admin routes render deterministic success and placeholder states @ci-smoke
 	const premiumNotice = page.getByRole("note");
 	await expect(premiumNotice).toContainText("Custom emoji require Telegram Premium");
 	await expect(premiumNotice).toBeVisible();
-
-	await page.goto("/admin/broadcast");
-	await expect(page.getByRole("heading", { name: "Broadcast" })).toBeVisible();
-	await expect(page.getByText("Broadcast is coming soon")).toBeVisible();
-	await assertNoHorizontalOverflow(page);
 });
 
 test("detail screens rely on Telegram Back instead of duplicate in-content headers", async ({

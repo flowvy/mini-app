@@ -110,6 +110,8 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - name: UI smoke
         run: pnpm test:e2e:ci
+        env:
+          PLAYWRIGHT_ARTIFACT_DIR: ${{ github.workspace }}/frontend
       - name: Upload browser failure artifacts
         if: failure()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
