@@ -42,7 +42,10 @@ async function expectAttachedSection(heading: Locator): Promise<void> {
 	expect(geometry.cardBottomRadius).not.toBe("0px");
 }
 
-test("user routes render deterministic success states", async ({ page, mockApi: _mock }) => {
+test("user routes render deterministic success states @ci-smoke", async ({
+	page,
+	mockApi: _mock,
+}) => {
 	await page.goto("/");
 	await expect(page.getByText("Account Info")).toBeVisible();
 	await expect(page.getByText("Active", { exact: true })).toBeVisible();
@@ -208,7 +211,7 @@ test("user and admin pages share one external vertical rhythm", async ({
 	await expect(page.getByRole("button", { name: "Save", exact: true })).toHaveCount(0);
 });
 
-test("admin routes render deterministic success and placeholder states", async ({
+test("admin routes render deterministic success and placeholder states @ci-smoke", async ({
 	page,
 	mockApi,
 }) => {
@@ -344,7 +347,10 @@ test("detail screens rely on Telegram Back instead of duplicate in-content heade
 	}
 });
 
-test("settings hubs stay accessible without mobile overflow", async ({ page, mockApi: _mock }) => {
+test("settings hubs stay accessible without mobile overflow @ci-smoke", async ({
+	page,
+	mockApi: _mock,
+}) => {
 	const accessibilityByContext: Array<{
 		viewport: string;
 		theme: "light" | "dark";

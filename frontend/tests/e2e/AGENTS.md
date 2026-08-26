@@ -41,6 +41,10 @@ Maintain a small smoke path for every user-visible route and focused cases for c
 - Keep traces, screenshots, and videos only as failure artifacts unless a reviewed baseline is part
   of the test. Never commit artifacts containing real user/provider data.
 
+Use `pnpm test:e2e:ci` only for the fast deterministic `@ci-smoke` subset in GitHub Actions. Keep
+`pnpm test:e2e` as the complete mobile-Chromium suite for local UI verification and release gates;
+live Telegram or Swiftgram acceptance remains a separate manual check and never belongs in CI.
+
 Run the configured Playwright command from `frontend/` after the test scaffold exists, followed by
 `pnpm lint`, `pnpm test`, and `pnpm build`. If an interactive Codex browser is unavailable, the
 deterministic Playwright suite remains mandatory and the missing manual inspection must be reported.

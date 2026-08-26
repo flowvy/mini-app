@@ -90,6 +90,9 @@ $ciWorkflow = Get-Content -Raw -LiteralPath (
 if ($ciWorkflow -notmatch [regex]::Escape("package_json_file: frontend/package.json")) {
     throw "CI must read the pinned pnpm version from frontend/package.json."
 }
+if ($ciWorkflow -notmatch [regex]::Escape("run: pnpm test:e2e:ci")) {
+    throw "CI must run the focused deterministic Playwright smoke suite."
+}
 
 $actualUvVersion = (& uv --version).Trim()
 if ($actualUvVersion -notmatch '^uv 0\.12\.6(?:\s|$)') {

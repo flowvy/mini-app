@@ -24,7 +24,7 @@ async function assertOnlyExpectedViewportZoomRestriction(page: Page): Promise<vo
 	expect(await analyzeWithoutExpectedViewportZoomRestriction(page)).toEqual([]);
 }
 
-test("authentication retry and direct admin denial are explicit", async ({
+test("authentication retry and direct admin denial are explicit @ci-smoke", async ({
 	page,
 	mockApi: _mock,
 }) => {
@@ -79,7 +79,7 @@ test("stable authentication codes use localized copy instead of backend diagnost
 	await expect(errorState).not.toContainText("Raw backend account diagnostic");
 });
 
-test("subscription loading, active, absent, and provider error states render safely", async ({
+test("subscription loading, active, absent, and provider error states render safely @ci-smoke", async ({
 	page,
 	mockApi,
 }) => {
@@ -280,7 +280,7 @@ test("Home opens setup instructions as the primary action and keeps copy seconda
 	await assertNoHorizontalOverflow(page);
 });
 
-test("device confirmations support cancel, failure, and successful remove-all", async ({
+test("device confirmations support cancel, failure, and successful remove-all @ci-smoke", async ({
 	page,
 	mockApi,
 }) => {
@@ -541,7 +541,7 @@ test("successful device removal collapses without waiting for the devices refetc
 	await assertNoHorizontalOverflow(page);
 });
 
-test("Pulse renders partial, down, maintenance, incidents, failure, and retry", async ({
+test("Pulse renders partial, down, maintenance, incidents, failure, and retry @ci-smoke", async ({
 	page,
 	mockApi,
 }) => {

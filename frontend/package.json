@@ -17,6 +17,7 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"test:e2e": "playwright test --project=mobile-chromium",
+		"test:e2e:ci": "playwright test --project=mobile-chromium --grep @ci-smoke",
 		"test:e2e:all": "playwright test --project=mobile-chromium --project=small-mobile-chromium --project=desktop-chromium && pnpm test:e2e:webkit",
 		"test:e2e:webkit": "node scripts/run-webkit-e2e.mjs",
 		"test:e2e:live": "playwright test --config=playwright.live.config.ts",
