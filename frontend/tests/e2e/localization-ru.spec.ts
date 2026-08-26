@@ -145,6 +145,9 @@ test("Russian user routes keep accepted copy and fit compact navigation", async 
 		await attachScreenshot(page, testInfo, `support-ru-${theme}`);
 
 		await gotoInTheme(page, "/support/new", theme);
+		await expect(page.getByRole("complementary")).toContainText(
+			"Добавим данные аккаунта, версию Flowvy и тип устройства. Историю других тикетов и платёжные данные не добавляем, переписку за пределы этого тикета не передаём",
+		);
 		await page.getByLabel("Заголовок").fill("подключение подписки");
 		await expect(page.getByRole("heading", { name: "Возможно, ответ уже есть" })).toBeVisible();
 		await expect(page.getByRole("status")).toHaveText("Подходящих статей: 1");

@@ -199,6 +199,37 @@ describe("Russian UI copy catalog", () => {
 		expect(locale.admin.dashboard.kpi.requests).toBe("API requests");
 		expect(locale.admin.dashboard.flowvy.requests).toBe("API requests");
 	});
+
+	it("preserves operational context in rewritten Russian copy", () => {
+		expect(russianLocale.home.sponsor.checkoutNotice).toContain(
+			"получит подтверждение платежа от Tribute и применит его",
+		);
+		expect(russianLocale.home.sponsor.otherSubscriptionsWarning).toContain(
+			"когда закончится текущий оплаченный период",
+		);
+		expect(russianLocale.home.sponsor.welcomeDiscountFinal).toBe(
+			"Цена рассчитана с учётом настроенного промо. Итоговую сумму Tribute подтвердит при оплате",
+		);
+		expect(russianLocale.home.sponsor.state.baseAccess.description).toContain(
+			"настроенными преимуществами",
+		);
+		expect(russianLocale.home.sponsor.state.attention.description).toContain(
+			"доступ должен проверить админ",
+		);
+		expect(russianLocale.home.invite.shareUnavailable).toContain(
+			"код можно скопировать и отправить вручную",
+		);
+		expect(russianLocale.support.quickAnswers.notFoundDescription).toContain("перенесён в архив");
+		expect(russianLocale.support.new.contextDescription).toContain(
+			"переписку за пределы этого тикета не передаём",
+		);
+		expect(russianLocale.settings.tribute.activity.action.retryBody).toContain(
+			"через провайдера после актуальной проверки аккаунта",
+		);
+		expect(russianLocale.settings.tribute.activity.action.retryBody).toContain(
+			"не создаст дублирующую операцию",
+		);
+	});
 });
 
 describe("Locale UI punctuation", () => {
