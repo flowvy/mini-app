@@ -95,10 +95,17 @@
 }
 .answerRow strong,
 .requestCopy strong {
-	overflow: hidden;
 	color: var(--v2-text-primary);
 	font-size: var(--font-size-body);
 	font-weight: 650;
+}
+.answerRow strong {
+	line-height: 1.3;
+	overflow-wrap: anywhere;
+	white-space: normal;
+}
+.requestCopy strong {
+	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
@@ -391,37 +398,6 @@
 	font-weight: 700;
 	letter-spacing: 0.06em;
 	text-transform: uppercase;
-}
-.article ol {
-	display: grid;
-	gap: 9px;
-	margin: 2px 0;
-	padding: 0;
-	list-style: none;
-}
-.article li {
-	display: grid;
-	grid-template-columns: 26px minmax(0, 1fr);
-	gap: 9px;
-	align-items: start;
-}
-.article li > span {
-	display: grid;
-	width: 26px;
-	height: 26px;
-	place-items: center;
-	border-radius: 50%;
-	border: 1px solid var(--v2-border-tertiary);
-	background: var(--v2-bg-secondary);
-	color: var(--v2-text-secondary);
-	font-size: var(--font-size-caption);
-	font-weight: 700;
-}
-.article li p {
-	margin: 3px 0 0;
-	color: var(--v2-text-primary);
-	font-size: var(--font-size-body);
-	line-height: 1.5;
 }
 .articleCta {
 	display: flex;

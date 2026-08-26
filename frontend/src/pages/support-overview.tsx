@@ -1,17 +1,16 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
 	BookOpenText,
+	Cable,
 	ChevronRight,
 	CircleAlert,
 	CircleCheck,
-	CircleHelp,
 	Clock3,
 	CreditCard,
+	Link,
 	MessageSquarePlus,
-	RefreshCw,
+	MonitorSmartphone,
 	Search,
-	Smartphone,
-	WifiOff,
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -59,11 +58,11 @@ function RequestStatusIcon({ status, admin }: { status: SupportRequestStatus; ad
 
 function TopicIcon({ topic }: { topic: SupportArticleTopic }) {
 	const Icon = {
-		connection: WifiOff,
-		subscription: RefreshCw,
-		devices: Smartphone,
+		connection: Cable,
+		subscription: Link,
+		devices: MonitorSmartphone,
 		payment: CreditCard,
-		other: CircleHelp,
+		other: BookOpenText,
 	}[topic];
 	return <Icon size={18} aria-hidden="true" />;
 }

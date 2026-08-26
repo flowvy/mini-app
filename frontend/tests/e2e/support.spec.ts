@@ -67,6 +67,129 @@ test("user Support keeps the accepted section order and opens Quick Answers", as
 	await assertNoHorizontalOverflow(page);
 });
 
+test("Quick Answers wraps long titles and uses neutral topic icons", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	mockApi.mock("GET", "/api/support/articles", {
+		body: {
+			articles: [
+				{
+					id: "61000000-0000-4000-8000-000000000001",
+					topic: "connection",
+					title: "Как подключить подписку",
+					summary: "Открой персональную инструкцию с Главной.",
+					body: "Инструкция по подключению.",
+					updatedAt: "2026-08-26T12:00:00Z",
+				},
+				{
+					id: "61000000-0000-4000-8000-000000000002",
+					topic: "subscription",
+					title: "Ссылка подписки не открывается или не загружается",
+					summary: "Проверь статус подписки и обнови ссылку.",
+					body: "Инструкция по обновлению подписки.",
+					updatedAt: "2026-08-26T12:00:00Z",
+				},
+			],
+		},
+	});
+
+	await useUserRole(page);
+	await page.goto("/support");
+	const connectionArticle = page.getByRole("button", { name: /Как подключить подписку/ });
+	const subscriptionArticle = page.getByRole("button", {
+		name: /Ссылка подписки не открывается или не загружается/,
+	});
+	await expect(connectionArticle.locator("svg").first()).toHaveClass(/lucide-cable/);
+	await expect(subscriptionArticle.locator("svg").first()).toHaveClass(/lucide-link/);
+
+	const longTitle = subscriptionArticle.locator("strong");
+	const titleLayout = await longTitle.evaluate((element) => {
+		const styles = getComputedStyle(element);
+		return {
+			clientHeight: element.clientHeight,
+			lineHeight: Number.parseFloat(styles.lineHeight),
+			scrollHeight: element.scrollHeight,
+			whiteSpace: styles.whiteSpace,
+		};
+	});
+	expect(titleLayout.whiteSpace).toBe("normal");
+	expect(titleLayout.scrollHeight).toBeLessThanOrEqual(titleLayout.clientHeight + 1);
+	if ((page.viewportSize()?.width ?? 0) <= 430) {
+		expect(titleLayout.clientHeight).toBeGreaterThanOrEqual(titleLayout.lineHeight * 1.8);
+	}
+	await assertNoHorizontalOverflow(page);
+
+	for (const theme of ["light", "dark"] as const) {
+		await page.evaluate(
+			(value) => document.documentElement.setAttribute("data-theme", value),
+			theme,
+		);
+		await page.locator("main").screenshot({
+			path: testInfo.outputPath(`support-answer-list-${theme}-${testInfo.project.name}.png`),
+			animations: "disabled",
+		});
+		const { violations } = await new AxeBuilder({ page }).include("main").analyze();
+		expect(violations).toEqual([]);
+	}
+});
+
+test("published article renders Markdown lists at readable width", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	const articleId = "61000000-0000-4000-8000-000000000002";
+	mockApi.mock("GET", `/api/support/articles/${articleId}`, {
+		body: {
+			id: articleId,
+			topic: "connection",
+			title: "Как подключить подписку",
+			summary: "Открой персональную инструкцию с Главной.",
+			body: [
+				"Подписка подключается через персональную страницу с инструкцией.",
+				"",
+				"1. Открой **Главную** в Flowvy.",
+				"2. Нажми **Инструкция по установке**.",
+				"3. Страница определит платформу и покажет подходящие приложения.",
+				"",
+				"- Выбери приложение.",
+				"- Импортируй подписку.",
+			].join("\n"),
+			updatedAt: "2026-08-26T12:00:00Z",
+		},
+	});
+
+	await useUserRole(page);
+	await page.goto(`/support/answers/${articleId}`);
+	await expect(page.getByRole("heading", { name: "Как подключить подписку" })).toBeVisible();
+	await expect(page.getByText("Инструкция по установке", { exact: true })).toBeVisible();
+
+	const listItems = page.locator("article li");
+	await expect(listItems).toHaveCount(5);
+	const itemLayout = await listItems.evaluateAll((items) =>
+		items.map((item) => ({
+			display: getComputedStyle(item).display,
+			width: item.getBoundingClientRect().width,
+		})),
+	);
+	expect(itemLayout.every(({ display }) => display === "list-item")).toBe(true);
+	expect(itemLayout.every(({ width }) => width >= 150)).toBe(true);
+	await assertNoHorizontalOverflow(page);
+
+	for (const theme of ["light", "dark"] as const) {
+		await page.evaluate(
+			(value) => document.documentElement.setAttribute("data-theme", value),
+			theme,
+		);
+		await page.locator("article").screenshot({
+			path: testInfo.outputPath(`support-article-lists-${theme}-${testInfo.project.name}.png`),
+			animations: "disabled",
+		});
+		const { violations } = await new AxeBuilder({ page }).include("article").analyze();
+		expect(violations).toEqual([]);
+	}
+});
+
 test("administrator manages article order and opens the existing editor", async ({
 	page,
 	mockApi,
