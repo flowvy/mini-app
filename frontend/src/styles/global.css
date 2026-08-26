@@ -72,6 +72,13 @@ body {
 	-moz-osx-font-smoothing: grayscale;
 }
 
+/* The app is fully responsive, so WebKit must not inflate only selected text blocks after a
+   viewport change. Keep authored type sizes stable without changing the page zoom contract. */
+html {
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+}
+
 /* Popup window: transparent background so CSS border-radius on .popup shows through. */
 html.popup-window,
 html.popup-window body {
@@ -91,6 +98,16 @@ body {
 
 #root {
 	height: 100%;
+	text-wrap-style: pretty;
+}
+
+/* Balance short headings while keeping editable text stable as its contents change. */
+:where(#root h1, #root h2, #root h3, #root h4) {
+	text-wrap-style: balance;
+}
+
+:where(#root textarea, #root [contenteditable="true"]) {
+	text-wrap-style: stable;
 }
 code,
 pre,

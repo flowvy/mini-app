@@ -2,7 +2,7 @@
 .editorPlaceholder {
 	min-width: 0;
 	min-height: 146px;
-	border: 1px solid var(--v2-border-tertiary);
+	border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);
 	border-radius: var(--radius-sm);
 	background: var(--v2-bg-primary);
 }

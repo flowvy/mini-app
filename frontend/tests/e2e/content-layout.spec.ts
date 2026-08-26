@@ -79,6 +79,65 @@ test("dynamic content keeps its assigned layout slots", async ({ page, mockApi }
 	await verifyThemeEvidence(page, testInfo, "home-content-layout");
 });
 
+test("application text follows the global wrapping policy", async ({
+	page,
+	mockApi: _mock,
+}, testInfo) => {
+	await page.addInitScript(() => localStorage.setItem("flowvy:mock-role", "user"));
+	await page.goto("/support");
+	const heading = page.getByRole("heading", { name: "Quick Answers" });
+	const paragraph = page.getByText("Send a request and keep the whole conversation here", {
+		exact: true,
+	});
+	await expect(heading).toBeVisible();
+	await expect(paragraph).toBeVisible();
+
+	const wrapping = await page.evaluate(() => {
+		const root = document.getElementById("root");
+		const heading = document.querySelector("main h2");
+		const paragraph = Array.from(document.querySelectorAll("main p")).find((element) =>
+			element.textContent?.includes("whole conversation"),
+		);
+		if (!root || !heading || !paragraph) throw new Error("Typography probes are missing");
+
+		const editor = document.createElement("div");
+		editor.contentEditable = "true";
+		editor.textContent = "Editable wrapping probe";
+		root.append(editor);
+		const result = {
+			supported: CSS.supports("text-wrap-style", "pretty"),
+			root: getComputedStyle(root).getPropertyValue("text-wrap-style"),
+			heading: getComputedStyle(heading).getPropertyValue("text-wrap-style"),
+			paragraph: getComputedStyle(paragraph).getPropertyValue("text-wrap-style"),
+			editor: getComputedStyle(editor).getPropertyValue("text-wrap-style"),
+		};
+		editor.remove();
+		return result;
+	});
+
+	expect(wrapping).toEqual({
+		supported: true,
+		root: "pretty",
+		heading: "balance",
+		paragraph: "pretty",
+		editor: "stable",
+	});
+	await assertNoHorizontalOverflow(page);
+	for (const theme of ["light", "dark"] as const) {
+		await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+		await page.evaluate(
+			(value) => document.documentElement.setAttribute("data-theme", value),
+			theme,
+		);
+		await page.locator("main").screenshot({
+			path: testInfo.outputPath(`global-text-wrapping-${theme}-${testInfo.project.name}.png`),
+			animations: "disabled",
+		});
+		const { violations } = await new AxeBuilder({ page }).include("main").analyze();
+		expect(violations).toEqual([]);
+	}
+});
+
 test("admin mixed icon and numeric metrics share one label row", async ({
 	page,
 	mockApi,

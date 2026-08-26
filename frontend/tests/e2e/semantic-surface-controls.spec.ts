@@ -285,10 +285,14 @@ for (const theme of themes) {
 
 		await expectSurfaceContract(shell, {
 			background: primary,
-			border: edge(borderTertiary),
+			border: edge(standaloneBorder),
 			outline: noOutline(),
 			boxShadow: "none",
 			color: primaryText,
+		});
+		await shell.screenshot({
+			path: testInfo.outputPath(`formatted-editor-unfocused-${theme}.png`),
+			animations: "disabled",
 		});
 
 		await body.fill("Readable formatting");
@@ -398,10 +402,14 @@ for (const theme of themes) {
 
 		await expectSurfaceContract(shell, {
 			background: primary,
-			border: edge(borderTertiary),
+			border: edge(standaloneBorder),
 			outline: noOutline(),
 			boxShadow: "none",
 			color: primaryText,
+		});
+		await shell.screenshot({
+			path: testInfo.outputPath(`telegram-html-editor-unfocused-${theme}.png`),
+			animations: "disabled",
 		});
 		await expectSurfaceContract(menu, {
 			background: primary,

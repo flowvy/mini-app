@@ -281,6 +281,13 @@ describe("desktop color parity", () => {
 					"components/content/formatted-text-editor.module.css",
 					"border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);",
 				),
+				2,
+			],
+			[
+				derivedKey(
+					"components/content/telegram-html-editor.module.css",
+					"border: 1px solid color-mix(in srgb, var(--v2-border-secondary) 60%, transparent);",
+				),
 				1,
 			],
 			[

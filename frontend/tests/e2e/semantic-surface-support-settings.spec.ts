@@ -44,6 +44,16 @@ async function expectPrimaryFrame(locator: Locator): Promise<void> {
 	});
 }
 
+async function expectStandaloneEditor(locator: Locator): Promise<void> {
+	await expectSurfaceContract(locator, {
+		background: primary,
+		border: edge(standaloneBorder),
+		outline: noOutline(),
+		boxShadow: "none",
+		color: primaryText,
+	});
+}
+
 async function expectSecondaryFrame(locator: Locator, color = primaryText): Promise<void> {
 	await expectSurfaceContract(locator, {
 		background: secondary,
@@ -238,7 +248,7 @@ for (const theme of themes) {
 			boxShadow: "none",
 			color: primaryText,
 		});
-		await expectPrimaryFrame(page.locator('[data-ui="formatted-text-editor"]'));
+		await expectStandaloneEditor(page.locator('[data-ui="formatted-text-editor"]'));
 
 		await page.goto("/support/requests/request-31");
 		await setTheme(page, theme);
@@ -277,7 +287,7 @@ for (const theme of themes) {
 
 		const composer = page.locator('[data-ui="support-reply-composer"]');
 		await expectTransparentBody(composer);
-		await expectPrimaryFrame(composer.locator('[data-ui="formatted-text-editor"]'));
+		await expectStandaloneEditor(composer.locator('[data-ui="formatted-text-editor"]'));
 
 		await page.evaluate(() => localStorage.setItem("flowvy:mock-role", "user"));
 		await page.goto("/support/requests/request-31");

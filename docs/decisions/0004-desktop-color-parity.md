@@ -86,7 +86,8 @@ negative background в обеих темах — `#C6352A`, dark negative foregr
     повторяет Desktop Settings/Modal composition без придуманного nested `floor-0`. Dialog/page
     canvas может быть `floor-0`, но этот token не вкладывается повторно внутрь primary card.
 15. Rich-text/Telegram HTML authoring использует Desktop ConfigEditor nesting: primary outer editor,
-    tertiary frame/dividers, primary toolbar/menu, positive focus и semantic icon roles. Persistent
+    standalone `border-secondary` frame, tertiary dividers, primary toolbar/menu, positive focus и
+    semantic icon roles. Persistent
     `InlineFeedback` использует semantic notice-card surfaces с соответствующими secondary borders.
     Focusable commerce rows получают явный Desktop positive outline. Text-only content сохраняет
     text roles; standalone glyph owners используют icon roles.

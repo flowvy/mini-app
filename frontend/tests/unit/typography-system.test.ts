@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const sourceRoot = resolve(import.meta.dirname, "../../src");
 const tokensPath = resolve(sourceRoot, "styles/tokens.css");
+const globalStylesPath = resolve(sourceRoot, "styles/global.css");
 
 function sourceFiles(directory: string): string[] {
 	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -28,6 +29,21 @@ describe("global typography system", () => {
 		expect(tokens).toContain("--font-size-heading: 15px;");
 		expect(tokens).toContain("--font-size-title: 18px;");
 		expect(tokens).toContain("--font-size-display: 22px;");
+	});
+
+	it("defines one global line wrapping policy", () => {
+		const styles = readFileSync(globalStylesPath, "utf8");
+		expect(styles).toContain("text-wrap-style: pretty;");
+		expect(styles).toContain(":where(#root h1, #root h2, #root h3, #root h4)");
+		expect(styles).toContain("text-wrap-style: balance;");
+		expect(styles).toContain(':where(#root textarea, #root [contenteditable="true"])');
+		expect(styles).toContain("text-wrap-style: stable;");
+	});
+
+	it("keeps WebKit text autosizing from inflating only selected responsive blocks", () => {
+		const styles = readFileSync(globalStylesPath, "utf8");
+		expect(styles).toContain("-webkit-text-size-adjust: 100%;");
+		expect(styles).toContain("text-size-adjust: 100%;");
 	});
 
 	it("keeps component and page sizes on semantic tokens", () => {

@@ -125,7 +125,10 @@ describe("semantic surface roles", () => {
 		const telegram = readSource("components/content/telegram-html-editor.module.css");
 
 		expect(formatted).toMatch(
-			/\.editor,\s*\.editorPlaceholder\s*\{[^}]*border: 1px solid var\(--v2-border-tertiary\)[^}]*background: var\(--v2-bg-primary\)/s,
+			/\.editor,\s*\.editorPlaceholder\s*\{[^}]*border: 1px solid color-mix\(in srgb, var\(--v2-border-secondary\) 60%, transparent\)[^}]*background: var\(--v2-bg-primary\)/s,
+		);
+		expect(telegram).toMatch(
+			/\.editor,\s*\.editorPlaceholder\s*\{[^}]*border: 1px solid color-mix\(in srgb, var\(--v2-border-secondary\) 60%, transparent\)[^}]*background: var\(--v2-bg-primary\)/s,
 		);
 		expect(declarations(formatted, ".fixedMenu")).toContain(
 			"border-bottom: 1px solid var(--v2-border-tertiary)",
