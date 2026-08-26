@@ -134,6 +134,63 @@ test("Quick Answers wraps long titles and uses neutral topic icons", async ({
 	}
 });
 
+test("Quick Answers reveals four more articles at a time and searches the full feed", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	const articles = Array.from({ length: 10 }, (_, index) => ({
+		id: `61000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+		topic: index % 2 === 0 ? ("connection" as const) : ("devices" as const),
+		title: `FAQ article ${index + 1}`,
+		summary: `Summary for article ${index + 1}`,
+		body: `Detailed answer ${index + 1}`,
+		updatedAt: "2026-08-26T12:00:00Z",
+	}));
+	mockApi.mock("GET", "/api/support/articles", { body: { articles } });
+
+	await useUserRole(page);
+	await page.goto("/support");
+	const showMore = page.getByRole("button", { name: "Show more" });
+	await expect(page.getByRole("button", { name: /FAQ article 4/ })).toBeVisible();
+	await expect(page.getByRole("button", { name: /FAQ article 5/ })).toHaveCount(0);
+	await expect(showMore).toBeVisible();
+	await assertNoHorizontalOverflow(page);
+
+	for (const theme of ["light", "dark"] as const) {
+		await page.evaluate(
+			(value) => document.documentElement.setAttribute("data-theme", value),
+			theme,
+		);
+		await page.locator("main").screenshot({
+			path: testInfo.outputPath(
+				`support-answer-pagination-initial-${theme}-${testInfo.project.name}.png`,
+			),
+			animations: "disabled",
+		});
+		const { violations } = await new AxeBuilder({ page }).include("main").analyze();
+		expect(violations).toEqual([]);
+	}
+
+	await showMore.click();
+	await expect(page.getByRole("button", { name: /FAQ article 8/ })).toBeVisible();
+	await expect(page.getByRole("button", { name: /FAQ article 9/ })).toHaveCount(0);
+
+	const search = page.getByRole("searchbox", { name: "Search help" });
+	await search.fill("article 10");
+	await expect(page.getByRole("button", { name: /FAQ article 10/ })).toBeVisible();
+	await expect(page.getByRole("button", { name: /^FAQ article 1\b/ })).toHaveCount(0);
+	await expect(showMore).toHaveCount(0);
+
+	await search.fill("");
+	await expect(page.getByRole("button", { name: /FAQ article 4/ })).toBeVisible();
+	await expect(page.getByRole("button", { name: /FAQ article 5/ })).toHaveCount(0);
+	await showMore.click();
+	await showMore.click();
+	await expect(page.getByRole("button", { name: /FAQ article 10/ })).toBeVisible();
+	await expect(showMore).toHaveCount(0);
+	await assertNoHorizontalOverflow(page);
+});
+
 test("published article renders Markdown lists at readable width", async ({
 	page,
 	mockApi,
@@ -292,6 +349,7 @@ test("administrator follows the explicit article lifecycle and deletes the artic
 	await expect(page.getByRole("button", { name: "Save draft" })).toBeDisabled();
 	await page.getByLabel("Title").fill("Fix DNS resolution");
 	await page.getByLabel("Short description").fill("Check DNS settings before opening a request.");
+	await page.getByLabel("Search phrases").fill("internet is down, connection timeout");
 	const body = page.getByRole("textbox", { name: "Article" });
 	await body.focus();
 	await body.pressSequentially(
@@ -301,6 +359,7 @@ test("administrator follows the explicit article lifecycle and deletes the artic
 	await language.getByRole("radio", { name: "Russian" }).click();
 	await page.getByLabel("Title").fill("Исправить DNS");
 	await page.getByLabel("Short description").fill("Проверь настройки DNS перед созданием тикета.");
+	await page.getByLabel("Search phrases").fill("нет интернета, не работает впн");
 	await page
 		.getByRole("textbox", { name: "Article" })
 		.fill("Перезапусти Flowvy Desktop и подключись снова.");
@@ -317,6 +376,14 @@ test("administrator follows the explicit article lifecycle and deletes the artic
 	const createPayload = (await createRequest).postDataJSON();
 	expect(createPayload.contentLocales.en.title).toBe("Fix DNS resolution");
 	expect(createPayload.contentLocales.ru.title).toBe("Исправить DNS");
+	expect(createPayload.contentLocales.en.searchAliases).toEqual([
+		"internet is down",
+		"connection timeout",
+	]);
+	expect(createPayload.contentLocales.ru.searchAliases).toEqual([
+		"нет интернета",
+		"не работает впн",
+	]);
 	await expect(page).toHaveURL(/\/support\/manage\/answers\/61000000-0000-4000-8000-000000000004$/);
 	await expect(page.getByRole("button", { name: "Publish", exact: true })).toHaveCount(0);
 	await expect(page.getByRole("button", { name: "Save changes" })).toBeDisabled();
@@ -555,6 +622,77 @@ test("article and management direct URLs fail closed for missing content and non
 	await page.goto("/support/manage/answers");
 	await expect(page.getByRole("heading", { name: "Access denied" })).toBeVisible();
 	await expect(page.getByText("This section is available to administrators only")).toBeVisible();
+});
+
+test("new request suggests related FAQ answers without replacing or losing the draft", async ({
+	page,
+	mockApi: _mock,
+}, testInfo) => {
+	await useUserRole(page);
+	await page.goto("/support/new");
+	const subject = page.getByLabel("Subject");
+	const message = page.getByRole("textbox", { name: "What happened?" });
+
+	await subject.fill("ne");
+	await expect(page.getByRole("heading", { name: "Your answer may already be here" })).toHaveCount(
+		0,
+	);
+	await subject.fill("new device connection");
+	await expect(page.getByRole("status")).toHaveText("Matching FAQ articles: 2");
+	await expect(
+		page.getByRole("heading", { name: "Your answer may already be here" }),
+	).toBeVisible();
+	const deviceSuggestion = page.locator("summary").filter({
+		hasText: "Set up Flowvy on a new device",
+	});
+	const connectionSuggestion = page.locator("summary").filter({
+		hasText: "Connection does not work",
+	});
+	await expect(deviceSuggestion).toBeVisible();
+	await expect(connectionSuggestion).toBeVisible();
+	await expect(page.locator("summary").first()).toContainText("Set up Flowvy on a new device");
+
+	await message.fill("I still need help after trying the FAQ steps.");
+	await subject.focus();
+	await subject.press("Tab");
+	await expect(deviceSuggestion).toBeFocused();
+	await deviceSuggestion.press("Enter");
+	await expect(
+		page.getByText("Add the new device by opening Flowvy", { exact: false }),
+	).toBeVisible();
+	await expect(subject).toHaveValue("new device connection");
+	await expect(message).toContainText("I still need help after trying the FAQ steps.");
+	await assertNoHorizontalOverflow(page);
+
+	for (const theme of ["light", "dark"] as const) {
+		await page.evaluate(
+			(value) => document.documentElement.setAttribute("data-theme", value),
+			theme,
+		);
+		await page.locator("main").screenshot({
+			path: testInfo.outputPath(`support-new-suggestions-${theme}-${testInfo.project.name}.png`),
+			animations: "disabled",
+		});
+		const { violations } = await new AxeBuilder({ page }).include("main").analyze();
+		expect(violations).toEqual([]);
+	}
+});
+
+test("FAQ suggestion failure never blocks a new request", async ({ page, mockApi }) => {
+	await useUserRole(page);
+	mockApi.mock("GET", "/api/support/articles/suggestions", {
+		status: 503,
+		body: { detail: "Unavailable" },
+	});
+	await page.goto("/support/new");
+	await page.getByLabel("Subject").fill("Connection does not work");
+	await page.getByRole("textbox", { name: "What happened?" }).fill("The connection times out.");
+	await expect(page.getByRole("button", { name: "Send request" })).toBeEnabled();
+	await expect(page.getByRole("heading", { name: "Your answer may already be here" })).toHaveCount(
+		0,
+	);
+	await page.getByRole("button", { name: "Send request" }).click();
+	await expect(page).toHaveURL(/\/support\/requests\/request-32$/);
 });
 
 test("new request accepts only screenshots, recordings, TXT and ZIP with a five-file guard", async ({

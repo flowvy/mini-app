@@ -19,6 +19,7 @@ export interface SupportArticleLocale {
 	title: string;
 	summary: string;
 	body: string;
+	searchAliases: string[];
 }
 
 export interface SupportArticleAdmin {

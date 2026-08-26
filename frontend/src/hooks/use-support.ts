@@ -11,6 +11,7 @@ import type {
 	SupportArticleAdminListResponse,
 	SupportArticleInput,
 	SupportArticlesResponse,
+	SupportArticleTopic,
 	SupportCapabilities,
 	SupportDownloadResponse,
 	SupportRequest,
@@ -80,6 +81,19 @@ export function useSupportArticles() {
 	return useQuery({
 		queryKey: queryKeys.supportArticles,
 		queryFn: () => apiGet<SupportArticlesResponse>("/support/articles"),
+		staleTime: 60_000,
+	});
+}
+
+export function useSupportArticleSuggestions(query: string, topic: SupportArticleTopic) {
+	const normalizedQuery = query.trim().replace(/\s+/g, " ");
+	return useQuery({
+		queryKey: queryKeys.supportArticleSuggestions(normalizedQuery, topic),
+		queryFn: () => {
+			const params = new URLSearchParams({ query: normalizedQuery, topic });
+			return apiGet<SupportArticlesResponse>(`/support/articles/suggestions?${params}`);
+		},
+		enabled: normalizedQuery.length >= 3,
 		staleTime: 60_000,
 	});
 }

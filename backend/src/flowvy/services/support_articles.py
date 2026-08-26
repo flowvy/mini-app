@@ -8,6 +8,7 @@ import uuid
 from flowvy.localization import (
     DEFAULT_LOCALE,
     dump_locale_map,
+    locale_candidates,
     normalize_locale,
     resolve_locale_map,
 )
@@ -64,6 +65,26 @@ class SupportArticleService:
             raise SupportArticleNotFoundError("Support article was not found")
         return self._public_response(article, locale, await self._default_locale())
 
+    async def suggest_public(
+        self,
+        query: str,
+        topic: str | None,
+        locale: str | None,
+        *,
+        limit: int = 3,
+    ) -> list[SupportArticlePublicResponse]:
+        normalized_query = " ".join(query.strip().split())
+        if len(normalized_query) < 3:
+            return []
+        default_locale = await self._default_locale()
+        articles = await self._articles.search_published(
+            normalized_query,
+            locale_candidates(locale, default_locale),
+            topic,
+            limit=limit,
+        )
+        return [self._public_response(article, locale, default_locale) for article in articles]
+
     async def list_admin(self) -> list[SupportArticleAdminResponse]:
         return [self._admin_response(article) for article in await self._articles.list_all()]
 
@@ -87,6 +108,7 @@ class SupportArticleService:
             created_by_id=admin_id,
             published_at=self._published_at(payload.status),
         )
+        await self._sync_search_documents(article, payload)
         return self._admin_response(article)
 
     async def update(
@@ -108,6 +130,7 @@ class SupportArticleService:
             content_locales=dump_locale_map(payload.content_locales),
             published_at=published_at,
         )
+        await self._sync_search_documents(updated, payload)
         return self._admin_response(updated)
 
     async def delete(self, article_id: uuid.UUID) -> None:
@@ -130,6 +153,24 @@ class SupportArticleService:
     async def _default_locale(self) -> str:
         settings = await self._settings.get()
         return normalize_locale(getattr(settings, "content_default_locale", DEFAULT_LOCALE))
+
+    async def _sync_search_documents(
+        self,
+        article: SupportArticle,
+        payload: SupportArticleInput,
+    ) -> None:
+        await self._articles.replace_search_documents(
+            article.id,
+            {
+                locale: {
+                    "title": content.title,
+                    "summary": content.summary,
+                    "body": content.body,
+                    "search_aliases": "\n".join(content.search_aliases),
+                }
+                for locale, content in payload.content_locales.items()
+            },
+        )
 
     async def _validate_publication(self, payload: SupportArticleInput) -> None:
         if payload.status != "published":

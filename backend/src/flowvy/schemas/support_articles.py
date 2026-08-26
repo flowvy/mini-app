@@ -26,11 +26,30 @@ class SupportArticleLocale(CamelModel):
     title: str = Field(default="", max_length=120)
     summary: str = Field(default="", max_length=240)
     body: str = Field(default="", max_length=40_000)
+    search_aliases: list[str] = Field(default_factory=list, max_length=20)
 
     @field_validator("title", "summary")
     @classmethod
     def normalize_plain_text(cls, value: str) -> str:
         return " ".join(value.strip().split())
+
+    @field_validator("search_aliases")
+    @classmethod
+    def normalize_search_aliases(cls, value: list[str]) -> list[str]:
+        normalized: list[str] = []
+        seen: set[str] = set()
+        for raw_alias in value:
+            alias = " ".join(raw_alias.strip().split())
+            if not alias:
+                continue
+            if len(alias) > 120:
+                raise ValueError("Search aliases must not exceed 120 characters")
+            key = alias.casefold()
+            if key in seen:
+                continue
+            seen.add(key)
+            normalized.append(alias)
+        return normalized
 
     @field_validator("body")
     @classmethod

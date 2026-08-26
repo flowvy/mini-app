@@ -2,6 +2,7 @@ import { useNavigate } from "@tanstack/react-router";
 import {
 	BookOpenText,
 	Cable,
+	ChevronDown,
 	ChevronRight,
 	CircleAlert,
 	CircleCheck,
@@ -31,6 +32,8 @@ import type {
 } from "../types/support.ts";
 import styles from "./support.module.css";
 import { formatUpdatedAt, StatusPill } from "./support-shared.tsx";
+
+const ANSWER_PAGE_SIZE = 4;
 
 function RequestStatusIcon({ status, admin }: { status: SupportRequestStatus; admin: boolean }) {
 	const Icon = {
@@ -167,12 +170,19 @@ function UserOverview({
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const [search, setSearch] = useState("");
+	const [visibleAnswerCount, setVisibleAnswerCount] = useState(ANSWER_PAGE_SIZE);
 	const normalizedSearch = search.trim().toLocaleLowerCase();
 	const answers = articles.filter((article) =>
 		`${article.title} ${article.summary} ${article.body}`
 			.toLocaleLowerCase()
 			.includes(normalizedSearch),
 	);
+	const visibleAnswers = answers.slice(0, visibleAnswerCount);
+	const hasMoreAnswers = visibleAnswerCount < answers.length;
+	const updateSearch = (value: string) => {
+		setSearch(value);
+		setVisibleAnswerCount(ANSWER_PAGE_SIZE);
+	};
 	const active = requests.filter((request) => request.status !== "resolved");
 	const resolved = requests.filter((request) => request.status === "resolved");
 	const requestState = (emptyCopy: string) => {
@@ -196,11 +206,11 @@ function UserOverview({
 				<FormSectionCard>
 					<SupportSearch
 						value={search}
-						onChange={setSearch}
+						onChange={updateSearch}
 						label={t("support.quickAnswers.search")}
 					/>
 					<div className={styles.answerList}>
-						{answers.map((answer) => (
+						{visibleAnswers.map((answer) => (
 							<button
 								key={answer.id}
 								type="button"
@@ -222,6 +232,22 @@ function UserOverview({
 								<ChevronRight size={17} aria-hidden="true" />
 							</button>
 						))}
+						{!articlesPending && !articlesError && hasMoreAnswers && (
+							<div className={styles.answerMore}>
+								<ActionBtn
+									variant="ghost"
+									size="sm"
+									onClick={() =>
+										setVisibleAnswerCount((count) =>
+											Math.min(count + ANSWER_PAGE_SIZE, answers.length),
+										)
+									}
+								>
+									{t("support.quickAnswers.showMore")}
+									<ChevronDown size={15} aria-hidden="true" />
+								</ActionBtn>
+							</div>
+						)}
 						{articlesPending && <EmptySection>{t("support.quickAnswers.loading")}</EmptySection>}
 						{articlesError && (
 							<div className={styles.requestLoadState}>

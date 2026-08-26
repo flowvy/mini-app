@@ -76,6 +76,21 @@ test("Russian user routes keep accepted copy and fit compact navigation", async 
 	mockApi,
 }, testInfo) => {
 	await page.addInitScript(() => localStorage.setItem("flowvy:mock-role", "user"));
+	mockApi.mock("GET", "/api/support/articles", {
+		body: {
+			articles: Array.from({ length: 5 }, (_, index) => ({
+				id: `61000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+				topic: "connection",
+				title: index === 0 ? "Как подключить подписку" : `Статья FAQ ${index + 1}`,
+				summary:
+					index === 0
+						? "Персональная инструкция для подключения"
+						: `Краткое описание статьи ${index + 1}`,
+				body: index === 0 ? "Открой инструкцию на Главной." : `Ответ ${index + 1}`,
+				updatedAt: "2026-08-26T12:00:00Z",
+			})),
+		},
+	});
 	mockApi.mock("GET", "/api/me/subscription", {
 		body: { ...mockData.subscription, updatedAt: Math.floor(Date.now() / 1000) - 4 * 60 },
 	});
@@ -113,10 +128,18 @@ test("Russian user routes keep accepted copy and fit compact navigation", async 
 
 		await gotoInTheme(page, "/support", theme);
 		await expect(page.getByRole("heading", { name: "FAQ" })).toBeVisible();
+		await expect(page.getByRole("button", { name: "Показать ещё" })).toBeVisible();
 		await expect(page.getByRole("heading", { name: "Открытые" })).toBeVisible();
 		await expect(page.getByRole("button", { name: "Новый тикет" })).toBeVisible();
 		await expectRussianSurface(page);
 		await attachScreenshot(page, testInfo, `support-ru-${theme}`);
+
+		await gotoInTheme(page, "/support/new", theme);
+		await page.getByLabel("Заголовок").fill("подключение подписки");
+		await expect(page.getByRole("heading", { name: "Возможно, ответ уже есть" })).toBeVisible();
+		await expect(page.getByRole("status")).toHaveText("Подходящих статей: 1");
+		await expectRussianSurface(page);
+		await attachScreenshot(page, testInfo, `support-new-suggestions-ru-${theme}`);
 	}
 });
 
@@ -172,5 +195,56 @@ test("Russian admin routes keep short labels and complete translated settings", 
 		if (testInfo.project.name === "desktop-chromium") {
 			await attachScreenshot(page, testInfo, `extended-access-settings-ru-${theme}`);
 		}
+	}
+});
+
+test("Russian FAQ management uses localized article titles with English fallback", async ({
+	page,
+	mockApi,
+}, testInfo) => {
+	await page.addInitScript(() => localStorage.setItem("flowvy:mock-role", "admin"));
+	mockApi.seedSupportArticles([
+		{
+			...mockData.supportArticles[0],
+			contentLocales: {
+				en: {
+					title: "How to connect your subscription",
+					summary: "English summary",
+					body: "English answer",
+				},
+				ru: {
+					title: "Как подключить подписку",
+					summary: "Описание на русском",
+					body: "Ответ на русском",
+				},
+			},
+		},
+		{
+			...mockData.supportArticles[1],
+			contentLocales: {
+				en: {
+					title: "English-only fallback",
+					summary: "English summary",
+					body: "English answer",
+				},
+			},
+		},
+	]);
+
+	await page.goto("/support/manage/answers");
+	await expect(page.getByText("Как подключить подписку", { exact: true })).toBeVisible();
+	await expect(page.getByText("English-only fallback", { exact: true })).toBeVisible();
+	await expect(page.getByText("How to connect your subscription", { exact: true })).toHaveCount(0);
+	await expect(
+		page.getByRole("button", { name: "Изменить Как подключить подписку" }),
+	).toBeVisible();
+	await expectRussianSurface(page);
+
+	for (const theme of ["light", "dark"] as const) {
+		await page.evaluate(
+			(value) => document.documentElement.setAttribute("data-theme", value),
+			theme,
+		);
+		await attachScreenshot(page, testInfo, `support-manage-titles-ru-${theme}`);
 	}
 });

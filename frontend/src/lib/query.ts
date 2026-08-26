@@ -34,6 +34,8 @@ export const queryKeys = {
 	supportCapabilities: ["support", "capabilities"] as const,
 	supportRequest: (id: string) => ["support", "requests", id] as const,
 	supportArticles: ["support", "articles", "published"] as const,
+	supportArticleSuggestions: (query: string, topic: string) =>
+		["support", "articles", "suggestions", query, topic] as const,
 	supportArticle: (id: string) => ["support", "articles", "published", id] as const,
 	adminSupportArticles: ["admin", "support", "articles"] as const,
 	adminSupportArticle: (id: string) => ["admin", "support", "articles", id] as const,

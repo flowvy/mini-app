@@ -11,9 +11,15 @@ import {
 	FormSurfaceBody,
 } from "../components/ui/form-section.tsx";
 import { InlineFeedback } from "../components/ui/inline-feedback.tsx";
-import { useCreateSupportRequest, useSupportCapabilities } from "../hooks/use-support.ts";
+import { useDebouncedValue } from "../hooks/use-debounced-value.ts";
+import {
+	useCreateSupportRequest,
+	useSupportArticleSuggestions,
+	useSupportCapabilities,
+} from "../hooks/use-support.ts";
 import type { SupportArticleTopic } from "../types/support.ts";
 import styles from "./support.module.css";
+import { SupportArticleSuggestions } from "./support-article-suggestions.tsx";
 import { FilePicker, topicLabel } from "./support-shared.tsx";
 
 export function SupportNewRequest() {
@@ -28,6 +34,8 @@ export function SupportNewRequest() {
 	const [files, setFiles] = useState<File[]>([]);
 	const [fileError, setFileError] = useState<string | null>(null);
 	const messageTooLong = message.length > 4000;
+	const debouncedSubject = useDebouncedValue(subject, 250);
+	const articleSuggestions = useSupportArticleSuggestions(debouncedSubject, topic);
 	const topicOptions = ["connection", "subscription", "devices", "payment", "other"].map(
 		(value) => ({ value, label: topicLabel(t, value) }),
 	);
@@ -72,6 +80,7 @@ export function SupportNewRequest() {
 							maxLength={120}
 						/>
 					</FormField>
+					<SupportArticleSuggestions articles={articleSuggestions.data?.articles ?? []} />
 					<FormField label={t("support.new.message")} hint={t("support.new.safetyHint")}>
 						<FormattedTextEditor
 							id="support-message"

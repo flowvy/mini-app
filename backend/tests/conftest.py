@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator
 
 import pytest
 from redis.asyncio import Redis
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -67,6 +68,7 @@ async def engine() -> AsyncIterator[AsyncEngine]:
     """Create engine, set up tables, tear down after each test."""
     eng = create_async_engine(TEST_DATABASE_URL)
     async with eng.begin() as conn:
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
         await conn.run_sync(Base.metadata.create_all)
     yield eng
     async with eng.begin() as conn:

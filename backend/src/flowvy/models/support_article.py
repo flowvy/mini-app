@@ -3,18 +3,21 @@
 from __future__ import annotations
 
 import datetime
+import uuid
 
 from sqlalchemy import (
     BigInteger,
     CheckConstraint,
+    Computed,
     DateTime,
     ForeignKey,
     Index,
     Integer,
     String,
+    Text,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column
 
 from flowvy.models.base import Base, created_at, updated_at, uuid_pk
@@ -70,4 +73,67 @@ class SupportArticle(Base):
     updated_at: Mapped[updated_at]
 
 
-__all__ = ["SupportArticle"]
+_SEARCH_CONFIG_SQL = """
+CASE split_part(locale, '-', 1)
+    WHEN 'ru' THEN 'pg_catalog.russian'::regconfig
+    WHEN 'en' THEN 'pg_catalog.english'::regconfig
+    ELSE 'pg_catalog.simple'::regconfig
+END
+"""
+_SEARCH_VECTOR_SQL = f"""
+setweight(to_tsvector({_SEARCH_CONFIG_SQL}, coalesce(title, '')), 'A') ||
+setweight(to_tsvector({_SEARCH_CONFIG_SQL}, coalesce(search_aliases, '')), 'B') ||
+setweight(to_tsvector({_SEARCH_CONFIG_SQL}, coalesce(summary, '')), 'C') ||
+setweight(to_tsvector({_SEARCH_CONFIG_SQL}, coalesce(body, '')), 'D')
+"""
+_FUZZY_TEXT_SQL = """
+lower(
+    coalesce(title, '') || ' ' ||
+    coalesce(search_aliases, '') || ' ' ||
+    coalesce(summary, '')
+)
+"""
+
+
+class SupportArticleSearchDocument(Base):
+    """Indexed locale projection used only for FAQ suggestion ranking."""
+
+    __tablename__ = "support_article_search_documents"
+    __table_args__ = (
+        CheckConstraint(
+            "char_length(locale) BETWEEN 2 AND 35",
+            name="ck_support_search_locale_length",
+        ),
+        Index(
+            "ix_support_search_vector_gin",
+            "search_vector",
+            postgresql_using="gin",
+        ),
+        Index(
+            "ix_support_search_fuzzy_gin",
+            "fuzzy_text",
+            postgresql_using="gin",
+            postgresql_ops={"fuzzy_text": "gin_trgm_ops"},
+        ),
+    )
+
+    article_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("support_articles.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    locale: Mapped[str] = mapped_column(String(35), primary_key=True)
+    title: Mapped[str] = mapped_column(Text)
+    summary: Mapped[str] = mapped_column(Text)
+    body: Mapped[str] = mapped_column(Text)
+    search_aliases: Mapped[str] = mapped_column(Text, default="", server_default="")
+    search_vector: Mapped[str] = mapped_column(
+        TSVECTOR,
+        Computed(_SEARCH_VECTOR_SQL, persisted=True),
+    )
+    fuzzy_text: Mapped[str] = mapped_column(
+        Text,
+        Computed(_FUZZY_TEXT_SQL, persisted=True),
+    )
+
+
+__all__ = ["SupportArticle", "SupportArticleSearchDocument"]

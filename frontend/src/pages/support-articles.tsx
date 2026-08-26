@@ -36,10 +36,54 @@ import type {
 } from "../types/support.ts";
 import styles from "./support.module.css";
 
-const EMPTY_CONTENT: SupportArticleLocale = { title: "", summary: "", body: "" };
+type SupportArticleLocaleDraft = Omit<SupportArticleLocale, "searchAliases"> & {
+	searchAliases: string;
+};
 
-function articleTitle(article: SupportArticleAdmin): string {
-	return Object.values(article.contentLocales).find((content) => content.title)?.title ?? "";
+const EMPTY_CONTENT: SupportArticleLocaleDraft = {
+	title: "",
+	summary: "",
+	body: "",
+	searchAliases: "",
+};
+
+function normalizedLocales(
+	locales: Record<string, SupportArticleLocale>,
+): Record<string, SupportArticleLocaleDraft> {
+	return Object.fromEntries(
+		Object.entries(locales).map(([locale, content]) => [
+			locale,
+			{ ...content, searchAliases: (content.searchAliases ?? []).join(", ") },
+		]),
+	);
+}
+
+function serializedLocales(
+	locales: Record<string, SupportArticleLocaleDraft>,
+): Record<string, SupportArticleLocale> {
+	return Object.fromEntries(
+		Object.entries(locales).map(([locale, content]) => [
+			locale,
+			{
+				...content,
+				searchAliases: content.searchAliases
+					.split(",")
+					.map((alias) => alias.trim())
+					.filter(Boolean),
+			},
+		]),
+	);
+}
+
+function articleTitle(article: SupportArticleAdmin, requestedLocale: string): string {
+	const normalizedLocale = requestedLocale.trim().replaceAll("_", "-").toLowerCase();
+	const baseLocale = normalizedLocale.split("-")[0];
+	const localizedEntries = Object.entries(article.contentLocales);
+	for (const candidate of [normalizedLocale, baseLocale, "en"]) {
+		const content = localizedEntries.find(([locale]) => locale.toLowerCase() === candidate)?.[1];
+		if (content?.title) return content.title;
+	}
+	return localizedEntries.find(([, content]) => content.title)?.[1].title ?? "";
 }
 
 function ArticleStatus({ status }: { status: SupportArticleStatus }) {
@@ -75,7 +119,7 @@ export function SupportArticlesAdmin() {
 }
 
 function SupportArticlesAdminContent() {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const navigate = useNavigate();
 	const articles = useAdminSupportArticles();
 	const reorder = useReorderSupportArticles();
@@ -84,6 +128,7 @@ function SupportArticlesAdminContent() {
 		return <ErrorState onAction={() => void articles.refetch()} />;
 	}
 	const list = articles.data.articles;
+	const displayLocale = i18n.resolvedLanguage || i18n.language;
 	const move = (index: number, offset: -1 | 1) => {
 		const target = index + offset;
 		if (target < 0 || target >= list.length) return;
@@ -107,53 +152,56 @@ function SupportArticlesAdminContent() {
 				}
 			>
 				<FormSectionCard>
-					{list.map((article, index) => (
-						<div key={article.id} className={styles.managementRow}>
-							<span className={styles.answerIcon} aria-hidden="true">
-								<BookOpenText size={18} />
-							</span>
-							<span className={styles.managementCopy}>
-								<strong>{articleTitle(article) || t("support.manage.untitled")}</strong>
-								<ArticleStatus status={article.status} />
-							</span>
-							<span className={styles.managementActions}>
-								<button
-									type="button"
-									disabled={index === 0 || reorder.isPending}
-									onClick={() => move(index, -1)}
-									aria-label={t("support.manage.moveUp", {
-										title: articleTitle(article) || t("support.manage.untitled"),
-									})}
-								>
-									<ArrowUp size={15} aria-hidden="true" />
-								</button>
-								<button
-									type="button"
-									disabled={index === list.length - 1 || reorder.isPending}
-									onClick={() => move(index, 1)}
-									aria-label={t("support.manage.moveDown", {
-										title: articleTitle(article) || t("support.manage.untitled"),
-									})}
-								>
-									<ArrowDown size={15} aria-hidden="true" />
-								</button>
-								<button
-									type="button"
-									onClick={() =>
-										void navigate({
-											to: "/support/manage/answers/$articleId",
-											params: { articleId: article.id },
-										})
-									}
-									aria-label={t("support.manage.edit", {
-										title: articleTitle(article) || t("support.manage.untitled"),
-									})}
-								>
-									<Pencil size={15} aria-hidden="true" />
-								</button>
-							</span>
-						</div>
-					))}
+					{list.map((article, index) => {
+						const title = articleTitle(article, displayLocale);
+						return (
+							<div key={article.id} className={styles.managementRow}>
+								<span className={styles.answerIcon} aria-hidden="true">
+									<BookOpenText size={18} />
+								</span>
+								<span className={styles.managementCopy}>
+									<strong>{title || t("support.manage.untitled")}</strong>
+									<ArticleStatus status={article.status} />
+								</span>
+								<span className={styles.managementActions}>
+									<button
+										type="button"
+										disabled={index === 0 || reorder.isPending}
+										onClick={() => move(index, -1)}
+										aria-label={t("support.manage.moveUp", {
+											title: title || t("support.manage.untitled"),
+										})}
+									>
+										<ArrowUp size={15} aria-hidden="true" />
+									</button>
+									<button
+										type="button"
+										disabled={index === list.length - 1 || reorder.isPending}
+										onClick={() => move(index, 1)}
+										aria-label={t("support.manage.moveDown", {
+											title: title || t("support.manage.untitled"),
+										})}
+									>
+										<ArrowDown size={15} aria-hidden="true" />
+									</button>
+									<button
+										type="button"
+										onClick={() =>
+											void navigate({
+												to: "/support/manage/answers/$articleId",
+												params: { articleId: article.id },
+											})
+										}
+										aria-label={t("support.manage.edit", {
+											title: title || t("support.manage.untitled"),
+										})}
+									>
+										<Pencil size={15} aria-hidden="true" />
+									</button>
+								</span>
+							</div>
+						);
+					})}
 					{list.length === 0 && (
 						<div className={styles.managementEmpty}>
 							<BookOpenText size={24} aria-hidden="true" />
@@ -197,7 +245,7 @@ function ArticleEditorLoader({ articleId }: { articleId: string }) {
 interface EditorDraft {
 	topic: SupportArticleTopic;
 	status: SupportArticleStatus;
-	contentLocales: Record<string, SupportArticleLocale>;
+	contentLocales: Record<string, SupportArticleLocaleDraft>;
 }
 
 function draftFromArticle(article?: SupportArticleAdmin): EditorDraft {
@@ -206,7 +254,7 @@ function draftFromArticle(article?: SupportArticleAdmin): EditorDraft {
 		? {
 				topic: article.topic,
 				status: article.status,
-				contentLocales: structuredClone(article.contentLocales),
+				contentLocales: normalizedLocales(structuredClone(article.contentLocales)),
 			}
 		: {
 				topic: "connection",
@@ -255,7 +303,7 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 		allowNavigationRef.current = false;
 		setDraft(next);
 	};
-	const updateContent = (field: keyof SupportArticleLocale, value: string) => {
+	const updateContent = (field: keyof SupportArticleLocaleDraft, value: string) => {
 		updateDraft({
 			...draft,
 			contentLocales: {
@@ -268,7 +316,7 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 		const input: SupportArticleInput = {
 			topic: draft.topic,
 			status,
-			contentLocales: draft.contentLocales,
+			contentLocales: serializedLocales(draft.contentLocales),
 		};
 		try {
 			const saved = article
@@ -372,6 +420,19 @@ function ArticleEditor({ article }: { article?: SupportArticleAdmin }) {
 								value={current.summary}
 								maxLength={240}
 								onChange={(event) => updateContent("summary", event.target.value)}
+							/>
+						</FormField>
+						<FormField
+							label={t("support.manage.editor.searchAliases")}
+							htmlFor="support-article-search-aliases"
+							hint={t("support.manage.editor.searchAliasesHint")}
+						>
+							<FormFieldInput
+								id="support-article-search-aliases"
+								value={current.searchAliases}
+								enterKeyHint="next"
+								maxLength={2_419}
+								onChange={(event) => updateContent("searchAliases", event.target.value)}
 							/>
 						</FormField>
 						<FormField label={t("support.manage.editor.body")}>

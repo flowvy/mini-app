@@ -910,6 +910,33 @@ async function handleApi(
 		await reply(route, { body: state.devices });
 		return;
 	}
+	if (method === "GET" && path === "/api/support/articles/suggestions") {
+		const query = (url.searchParams.get("query") ?? "").toLocaleLowerCase();
+		const topic = url.searchParams.get("topic");
+		const queryTokens = query.match(/[\p{L}\p{N}]+/gu) ?? [];
+		const articles = state.supportArticles
+			.filter((article) => article.status === "published")
+			.map((article, position) => {
+				const publicArticle = supportPublicArticle(article);
+				const locales = article.contentLocales as Record<string, Record<string, unknown>>;
+				const content = locales.en ?? Object.values(locales)[0] ?? {};
+				const aliases = Array.isArray(content.searchAliases) ? content.searchAliases.join(" ") : "";
+				const searchable =
+					`${publicArticle.title} ${publicArticle.summary} ${aliases}`.toLowerCase();
+				const matches = queryTokens.filter((token) => searchable.includes(token)).length;
+				return {
+					article: publicArticle,
+					position,
+					score: matches + (article.topic === topic ? 0.25 : 0),
+				};
+			})
+			.filter((candidate) => candidate.score > 0)
+			.sort((left, right) => right.score - left.score || left.position - right.position)
+			.slice(0, 3)
+			.map((candidate) => candidate.article);
+		await reply(route, { body: { articles } });
+		return;
+	}
 	if (method === "GET" && path === "/api/support/articles") {
 		await reply(route, {
 			body: {

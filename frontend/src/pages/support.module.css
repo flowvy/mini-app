@@ -118,6 +118,12 @@
 .answerRow > svg {
 	color: var(--v2-icon-tertiary);
 }
+.answerMore {
+	display: flex;
+	justify-content: center;
+	padding: 8px 12px;
+	border-top: 1px solid var(--v2-border-tertiary);
+}
 .answerIcon {
 	display: grid;
 	width: 36px;

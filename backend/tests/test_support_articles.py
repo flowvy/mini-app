@@ -73,11 +73,87 @@ def test_article_locale_normalizes_commonmark_and_rejects_unsafe_source() -> Non
     assert content.summary == "Check this first"
     assert content.body == "**Refresh**\n\n- Reconnect"
 
+    aliases = SupportArticleLocale(
+        search_aliases=["  VPN   is down ", "vpn is down", "", "No internet"],
+    )
+    assert aliases.search_aliases == ["VPN is down", "No internet"]
+
     for raw_html in ("<script>alert(1)</script>", "<!-- hidden -->"):
         with pytest.raises(ValidationError, match="raw HTML"):
             SupportArticleLocale(body=raw_html)
     with pytest.raises(ValidationError, match="HTTP or HTTPS"):
         SupportArticleLocale(body="[Open](javascript:alert)")
+
+
+@pytest.mark.asyncio
+async def test_article_suggestions_use_morphology_aliases_typos_and_topic_boost(
+    session: AsyncSession,
+) -> None:
+    service = SupportArticleService(
+        SupportArticleRepository(session),
+        ProviderSettingsRepository(session),
+    )
+
+    async def create_article(
+        *,
+        title: str,
+        summary: str,
+        aliases: list[str],
+        topic: str = "connection",
+    ) -> uuid.UUID:
+        article = await service.create(
+            SupportArticleInput.model_validate(
+                {
+                    "topic": topic,
+                    "status": "published",
+                    "contentLocales": {
+                        "ru": {
+                            "title": title,
+                            "summary": summary,
+                            "body": f"Подробный ответ: {summary}",
+                            "searchAliases": aliases,
+                        },
+                        "en": {
+                            "title": "English fallback",
+                            "summary": "English summary",
+                            "body": "English answer",
+                            "searchAliases": [],
+                        },
+                    },
+                }
+            ),
+            admin_id=None,
+        )
+        return article.id
+
+    connection_id = await create_article(
+        title="Как подключить подписку",
+        summary="Инструкция для первого подключения",
+        aliases=["впн не работает", "как настроить vpn"],
+    )
+    subscription_id = await create_article(
+        title="Подписка не открывается",
+        summary="Что проверить, если ссылка не работает",
+        aliases=[],
+        topic="subscription",
+    )
+    await create_article(
+        title="Оплата подписки",
+        summary="Как оплатить подписку",
+        aliases=[],
+        topic="payment",
+    )
+
+    morphology = await service.suggest_public("подключения", None, "ru-RU")
+    alias = await service.suggest_public("впн не работает", None, "ru")
+    typo = await service.suggest_public("подпска", None, "ru")
+    boosted = await service.suggest_public("подписка", "subscription", "ru")
+
+    assert morphology[0].id == connection_id
+    assert alias[0].id == connection_id
+    assert typo[0].id == subscription_id
+    assert boosted[0].id == subscription_id
+    assert len(boosted) <= 3
 
 
 @pytest.mark.asyncio
@@ -202,6 +278,20 @@ async def test_support_article_routes_require_roles_and_hide_non_published_artic
             f"/api/support/articles/{article_id}",
             headers=user_headers,
         )
+        suggestions = await client.get(
+            "/api/support/articles/suggestions",
+            headers=user_headers,
+            params={"query": "connections", "topic": "connection"},
+        )
+        suggestions_denied = await client.get(
+            "/api/support/articles/suggestions",
+            params={"query": "connections"},
+        )
+        suggestions_invalid = await client.get(
+            "/api/support/articles/suggestions",
+            headers=user_headers,
+            params={"query": "co"},
+        )
         reordered = await client.put(
             "/api/admin/support/articles/order/all",
             headers=admin_headers,
@@ -241,6 +331,10 @@ async def test_support_article_routes_require_roles_and_hide_non_published_artic
     assert public_detail.status_code == 200
     assert public_detail.json()["title"] == "Connection does not work"
     assert "contentLocales" not in public_detail.json()
+    assert suggestions.status_code == 200
+    assert [article["id"] for article in suggestions.json()["articles"]] == [article_id]
+    assert suggestions_denied.status_code == 401
+    assert suggestions_invalid.status_code == 422
     assert reordered.status_code == 200
     assert [article["id"] for article in reordered.json()["articles"]] == [article_id]
     assert archived.status_code == 200
