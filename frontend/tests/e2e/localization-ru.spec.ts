@@ -119,6 +119,16 @@ test("Russian user routes keep accepted copy and fit compact navigation", async 
 
 		await gotoInTheme(page, "/devices", theme);
 		await expect(page.getByRole("heading", { name: "Подключённые устройства" })).toBeVisible();
+		await page.getByRole("button", { name: "Удалить устройство" }).click();
+		const deviceDialog = page.getByRole("alertdialog", { name: "Удалить устройство?" });
+		await expect(deviceDialog).toContainText(
+			"Устройство Pixel 8 будет удалено из списка. При следующем обновлении подписки оно может появиться снова",
+		);
+		await page.screenshot({
+			path: testInfo.outputPath(`devices-remove-confirm-${theme}.png`),
+			fullPage: true,
+		});
+		await deviceDialog.getByRole("button", { name: "Отмена" }).click();
 		await expectRussianSurface(page);
 		await attachScreenshot(page, testInfo, `devices-ru-${theme}`);
 
@@ -161,7 +171,7 @@ test("Russian admin routes keep short labels and complete translated settings", 
 		}
 
 		await gotoInTheme(page, "/admin/dashboard", theme);
-		await page.getByRole("tab", { name: "Flowvy Mini-App" }).click();
+		await page.getByRole("tab", { name: "Flowvy Mini App" }).click();
 		await expect(page.getByText("API-запросы", { exact: true })).toHaveCount(2);
 		await attachScreenshot(page, testInfo, `dashboard-api-requests-${theme}`);
 		await gotoInTheme(page, "/admin/users", theme);
@@ -184,6 +194,16 @@ test("Russian admin routes keep short labels and complete translated settings", 
 		await expect(page.getByText("API-ключ", { exact: true })).toBeVisible();
 		await gotoInTheme(page, "/admin/settings/access", theme);
 		await expect(page.getByRole("radio", { name: "Открытый" })).toBeChecked();
+		await page.getByRole("button", { name: "Отключить профиль" }).click();
+		const profileDialog = page.getByRole("dialog", { name: "Отключить профиль доступа?" });
+		await expect(profileDialog).toContainText(
+			"Free 30 days больше не будет доступен для новых регистраций",
+		);
+		await page.screenshot({
+			path: testInfo.outputPath(`access-deactivate-confirm-${theme}.png`),
+			fullPage: true,
+		});
+		await profileDialog.getByRole("button", { name: "Отмена" }).click();
 		await page.getByRole("button", { name: "Создать профиль" }).click();
 		await expect(page.getByRole("radio", { name: "Авто" })).toBeVisible();
 		await page.getByRole("button", { name: "Закрыть редактор" }).click();

@@ -1,6 +1,6 @@
 {
 	"common": {
-		"retry": "Ещё раз",
+		"retry": "Повторить",
 		"cancel": "Отмена",
 		"loading": "Загрузка…",
 		"formattedText": {
@@ -68,12 +68,12 @@
 			"load": {
 				"title": "Данные не загрузились",
 				"description": "Что-то пошло не так. Попробуй ещё раз",
-				"action": "Ещё раз"
+				"action": "Повторить"
 			},
 			"auth": {
 				"title": "Не удалось войти",
 				"description": "Перезапусти Mini App и попробуй снова",
-				"action": "Ещё раз"
+				"action": "Повторить"
 			},
 			"forbidden": {
 				"title": "Доступ закрыт",
@@ -128,15 +128,15 @@
 		"status": {
 			"subscription": {
 				"active": "Активна",
-				"limited": "Лимит",
-				"disabled": "Выкл.",
+				"limited": "Ограничена",
+				"disabled": "Отключена",
 				"expired": "Истекла",
 				"unknown": "Неизвестно"
 			},
 			"user": {
 				"active": "Активен",
-				"limited": "Лимит",
-				"disabled": "Выкл.",
+				"limited": "Ограничен",
+				"disabled": "Отключён",
 				"expired": "Истёк",
 				"unknown": "Неизвестно"
 			}
@@ -146,7 +146,7 @@
 		"noSubscription": "Нет активной подписки",
 		"sponsor": {
 			"loadingLabel": "Загрузка доступа",
-			"unavailableTitle": "Статус недоступен",
+			"unavailableTitle": "Не удалось обновить доступ",
 			"unavailableDescription": "Текущий доступ не изменился. Обнови статус перед оплатой или управлением",
 			"sponsorAccess": "Расширенный доступ",
 			"sponsorAccessUntil": "Расширенный доступ до",
@@ -154,14 +154,14 @@
 			"baseAccessUntil": "Базовый доступ до",
 			"checkStatus": "Проверить оплату",
 			"cancelAttempt": {
-				"action": "Отменить попытку"
+				"action": "Больше не ждать оплату"
 			},
 			"paymentFeedback": {
-				"checkError": "Не удалось проверить оплату. Ожидающий checkout не изменился",
+				"checkError": "Проверить оплату не удалось. Она всё ещё ожидает подтверждения",
 				"refreshError": "Не удалось обновить статус. Текущий доступ не изменился",
-				"cancelError": "Не удалось закрыть попытку оплаты. Подтверждение всё ещё ожидается"
+				"cancelError": "Отменить ожидание оплаты не удалось. Подтверждение всё ещё может прийти"
 			},
-			"checkoutNotice": "Оплата проходит в Tribute. Затем вернись в {{appName}} — доступ изменится, когда {{appName}} получит и применит подтверждение от Tribute",
+			"checkoutNotice": "Оплати в Tribute и вернись в {{appName}}. Доступ обновится, когда {{appName}} получит подтверждение платежа от Tribute",
 			"benefits": {
 				"label": "Что входит",
 				"traffic": "Трафик",
@@ -171,8 +171,8 @@
 			"subscriptionPeriodHint": "Цены и периоды задаёт Tribute. Выбери вариант оплаты там",
 			"welcomeDiscountTitle": "−{{percent}}% на первый платёж",
 			"welcomeDiscountDescription": "Скидка по инвайту уже учтена в ценах ниже",
-			"welcomeDiscountFinal": "Расчёт по настроенному промо. Финальную цену подтвердит Tribute при оплате",
-			"welcomeDiscountAction": "Получить −{{percent}}%",
+			"welcomeDiscountFinal": "Скидка уже применена. Итоговую цену покажет Tribute перед оплатой",
+			"welcomeDiscountAction": "Оплатить со скидкой −{{percent}}%",
 			"donationOnce": "Разовая поддержка",
 			"offerAction": {
 				"donation": "Поддержать в Tribute",
@@ -180,35 +180,35 @@
 			},
 			"nonAnonymousWarning": "Используй тот же Telegram-аккаунт и не скрывай имя в Tribute. Анонимный донат потребует ручной проверки",
 			"donationInstruction": {
-				"oneTime": "В Tribute: {{amount}} · разовый донат · тот же Telegram-аккаунт · имя видно. Другие настройки потребуют ручной проверки",
-				"recurring": "В Tribute: {{amount}} · автодонат раз в {{period}} · тот же Telegram-аккаунт · имя видно. Другие настройки потребуют ручной проверки"
+				"oneTime": "В Tribute выбери разовый донат на {{amount}}. Используй тот же Telegram-аккаунт и не скрывай имя, иначе платёж придётся проверить вручную",
+				"recurring": "В Tribute выбери автодонат на {{amount}} раз в {{period}}. Используй тот же Telegram-аккаунт и не скрывай имя, иначе платёж придётся проверить вручную"
 			},
 			"recurringDonationCancellationTiming": "Если отключишь автодонат, {{appName}} отразит это после окончания оплаченного периода",
 			"subscriptionStatusTiming": "Если отменишь подписку в Tribute, {{appName}} обновит карточку после окончания оплаченного периода и уведомления от Tribute",
 			"otherSubscriptionsTitle": "Другие варианты",
-			"otherSubscriptionsWarning": "Другую подписку можно выбрать после {{date}} — даты окончания текущего периода",
-			"checkoutError": "Оплата не началась. Платёж не создан — попробуй снова из {{appName}}",
+			"otherSubscriptionsWarning": "Другой вариант подписки станет доступен {{date}}",
+			"checkoutError": "{{appName}} не удалось создать платёж. Попробуй начать оплату ещё раз",
 			"action": {
-				"choose": "Выбрать доступ",
-				"continue": "Продолжить",
-				"refresh": "Обновить",
-				"renew": "Продлить",
-				"manage": "Управлять",
-				"manageAutoDonation": "Автодонат",
-				"resume": "Возобновить"
+				"choose": "Выбрать расширенный доступ",
+				"continue": "Продолжить в Tribute",
+				"refresh": "Обновить статус",
+				"renew": "Продлить доступ",
+				"manage": "Управлять в Tribute",
+				"manageAutoDonation": "Управлять автодонатом",
+				"resume": "Возобновить доступ"
 			},
 			"state": {
 				"noAccess": {
 					"title": "Получить расширенный доступ",
-					"description": "Выбери вариант поддержки и получи настроенный доступ"
+					"description": "Выбери подходящий вариант расширенного доступа"
 				},
 				"baseAccess": {
 					"title": "Расширить доступ",
-					"description": "Базовый доступ останется. Расширенный доступ добавит настроенные преимущества"
+					"description": "Базовый доступ продолжит работать. Выбери вариант с подходящими лимитами"
 				},
 				"checkoutPending": {
 					"title": "Оплата не подтверждена",
-					"description": "Заверши оплату в Tribute или выбери другой вариант. При смене {{appName}} всё равно примет позднее валидное подтверждение прежней оплаты"
+					"description": "Заверши оплату в Tribute или выбери другой вариант. Если прежняя оплата подтвердится позже, {{appName}} всё равно применит её"
 				},
 				"provisioning": {
 					"title": "Оплата получена",
@@ -216,7 +216,7 @@
 				},
 				"attention": {
 					"title": "Нужна проверка",
-					"description": "{{appName}} получил платёж, но не может безопасно обработать его автоматически. Не плати повторно — его должен проверить админ"
+					"description": "Платёж получен, но доступ в {{appName}} нужно проверить вручную. Не плати повторно"
 				},
 				"oneTimeActive": {
 					"title": "Расширенный доступ активен",
@@ -240,15 +240,15 @@
 				},
 				"recurringCancelled": {
 					"title": "Без автопродления",
-					"description": "Доступ действует до указанной даты. Выбери оффер, чтобы возобновить регулярную поддержку"
+					"description": "Доступ действует до указанной даты. Выбери вариант оплаты, чтобы возобновить регулярную поддержку"
 				},
 				"recurringExpired": {
 					"title": "Подписка закончилась",
-					"description": "Выбери доступный оффер, чтобы снова получить расширенный доступ"
+					"description": "Выбери доступный вариант, чтобы снова получить расширенный доступ"
 				},
 				"refunded": {
 					"title": "Платёж возвращён",
-					"description": "Расширенный доступ по этому платежу больше не действует. Выбирай другой оффер, только если хочешь заплатить снова"
+					"description": "Расширенный доступ по этому платежу больше не действует. Выбери другой вариант, только если хочешь заплатить снова"
 				}
 			}
 		},
@@ -259,12 +259,12 @@
 			"invitedCountLabel": "По твоему инвайту: {{count}}",
 			"copy": "Копировать",
 			"copied": "Готово",
-			"copyFailed": "Ещё раз",
+			"copyFailed": "Повторить",
 			"share": "Поделиться",
 			"sharing": "Готовим…",
 			"shareFailed": "Telegram не подготовил инвайт. Попробуй снова",
 			"shareText": "Присоединяйся ко мне в {{appName}}. Если Telegram попросит, введи инвайт-код {{code}}:",
-			"shareUnavailable": "Ссылка ещё не настроена, но код можно скопировать и отправить вручную",
+			"shareUnavailable": "Поделиться ссылкой пока не получится, но код можно отправить вручную",
 			"loadError": "Инвайт временно недоступен"
 		},
 		"heroCard": {
@@ -272,8 +272,8 @@
 			"devicesLabel": "Устройства",
 			"trafficUnlimited": "Безлимит",
 			"usedPercent": "Использовано {{pct}}%",
-			"trafficResetLabel": "Сброс",
-			"nextResetLabel": "Сброс",
+			"trafficResetLabel": "Сброс трафика",
+			"nextResetLabel": "Следующий сброс",
 			"allTimeLabel": "Всё время",
 			"lastUpdatedLabel": "Обновлено",
 			"openLink": "Инструкция по установке",
@@ -288,9 +288,9 @@
 			"expires": "Действует до",
 			"expiresHint": "Дата окончания подписки",
 			"email": "Email",
-			"emailHint": "Контактный Email",
+			"emailHint": "Контактный email",
 			"telegramId": "Telegram ID",
-			"telegramIdHint": "Привязанный Telegram",
+			"telegramIdHint": "Привязанный аккаунт Telegram",
 			"devices": "Лимит устройств",
 			"devicesUnlimited": "Безлимит",
 			"devicesCount": "{{n}} шт.",
@@ -312,8 +312,8 @@
 		"openDescription": "Регистрация открыта. Flowvy автоматически подготовит доступ",
 		"codeLabel": "Инвайт-код",
 		"codePlaceholder": "FVY-XXXX-XXXX-XXXX",
-		"redeem": "Продолжить",
-		"register": "Создать",
+		"redeem": "Зарегистрироваться",
+		"register": "Создать аккаунт",
 		"error": {
 			"inviteRequired": "Введи инвайт-код",
 			"invalidInvite": "Код неверный или уже не действует",
@@ -331,14 +331,14 @@
 		"section": "Подключённые устройства",
 		"empty": {
 			"ariaLabel": "Нет устройств",
-			"title": "Пока пусто",
-			"desc": "Подключи устройство по подписке — оно появится здесь"
+			"title": "Устройств пока нет",
+			"desc": "Подключи подписку на устройстве — оно появится здесь"
 		},
 		"removeAll": "Удалить все",
 		"confirmAll": "Удалить все ({{n}})?",
-		"confirmAllBody": "Все устройства будут отключены от подписки",
+		"confirmAllBody": "Все устройства будут удалены из списка. При следующем обновлении подписки они могут появиться снова",
 		"confirmDeviceTitle": "Удалить устройство?",
-		"confirmDeviceBody": "{{name}} будет отключён от подписки",
+		"confirmDeviceBody": "Устройство {{name}} будет удалено из списка. При следующем обновлении подписки оно может появиться снова",
 		"cancel": "Отмена",
 		"removeAllConfirm": "Удалить все",
 		"removeError": "Не удалось удалить устройство. Попробуй снова",
@@ -376,7 +376,7 @@
 			"loadError": "FAQ временно недоступен",
 			"showMore": "Показать ещё",
 			"notFoundTitle": "Материал не найден",
-			"notFoundDescription": "Возможно, материал сняли с публикации или архивировали",
+			"notFoundDescription": "Возможно, материал больше недоступен",
 			"notFoundAction": "В Помощь"
 		},
 		"active": {
@@ -399,8 +399,8 @@
 		},
 		"status": {
 			"replyReceived": "Есть ответ",
-			"withSupport": "В Помощи",
-			"needsReply": "Ответь",
+			"withSupport": "На рассмотрении",
+			"needsReply": "Нужен ответ",
 			"waitingUser": "Ждём юзера",
 			"resolved": "Закрыт"
 		},
@@ -433,8 +433,8 @@
 			"messagePlaceholder": "Что ожидалось и что произошло на самом деле?",
 			"safetyHint": "Без паролей, ключей и платёжных данных",
 			"send": "Отправить",
-			"contextTitle": "Контекст приложим сами",
-			"contextDescription": "Добавим аккаунт, версию Flowvy и тип устройства. Переписку и платёжные данные не передаём"
+			"contextTitle": "Контекст добавится автоматически",
+			"contextDescription": "Добавим данные аккаунта, версию Flowvy и тип устройства. Историю других тикетов и платёжные данные не добавляем"
 		},
 		"attachments": {
 			"title": "Файлы",
@@ -468,9 +468,9 @@
 		},
 		"reply": {
 			"label": "Ответ",
-			"adminLabel": "Ответ от Flowvy Support",
+			"adminLabel": "Ответить от имени поддержки Flowvy",
 			"placeholder": "Напиши ответ…",
-			"adminPlaceholder": "Ответ от Flowvy Support…",
+			"adminPlaceholder": "Напиши ответ от имени поддержки…",
 			"send": "Отправить",
 			"reopenHint": "После ответа тикет снова откроется"
 		},
@@ -494,7 +494,7 @@
 			"articles": "Статьи",
 			"create": "Новая статья",
 			"empty": "Статей пока нет",
-			"emptyDescription": "Создай первый ответ, проверь и опубликуй его",
+			"emptyDescription": "Создай первую статью, проверь и опубликуй её",
 			"untitled": "Без названия",
 			"moveUp": "Поднять {{title}}",
 			"moveDown": "Опустить {{title}}",
@@ -522,7 +522,7 @@
 				"statusDescription": {
 					"draft": "До публикации видна только админам",
 					"published": "Видна юзерам в FAQ",
-					"archived": "Скрыта от юзеров, пока её не вернут в черновики"
+					"archived": "Скрыта от юзеров, пока не вернёшь её в черновики"
 				},
 				"bodyPlaceholder": "Напиши ответ…",
 				"publishRequirements": "Перед публикацией добавь название, краткое описание и текст",
@@ -534,10 +534,10 @@
 				"deleteArticle": "Удалить статью",
 				"deleteTitle": "Удалить статью?",
 				"deleteDescription": "Статья будет удалена навсегда. Отменить это нельзя",
-				"deleteError": "Статья не удалилась. Попробуй снова",
-				"discardTitle": "Сбросить изменения?",
+				"deleteError": "Не удалось удалить статью. Попробуй снова",
+				"discardTitle": "Отменить изменения?",
 				"discardDescription": "Несохранённые изменения статьи пропадут",
-				"discard": "Сбросить"
+				"discard": "Не сохранять"
 			}
 		}
 	},
@@ -634,7 +634,7 @@
 		"inviteOnly": "По инвайтам",
 		"defaultAccess": "Доступ по умолчанию",
 		"defaultAccessHint": "Применяется ко всем новым аккаунтам. Профили, срок которых задаёт автоматизация, здесь недоступны",
-		"localOnly": "Без proxy-доступа",
+		"localOnly": "Без доступа к прокси",
 		"profiles": "Профили доступа",
 		"profile": "Профиль доступа",
 		"profileDetails": "Параметры профиля",
@@ -687,15 +687,15 @@
 		"internalSquads": "Внутренние сквады",
 		"externalSquad": "Внешний сквад",
 		"none": "Нет",
-		"providerOptionsUnavailable": "Настройки Remnawave временно недоступны. Неизменённые поля provider всё ещё можно сохранить",
+		"providerOptionsUnavailable": "Настройки Remnawave временно недоступны. Неизменённые поля провайдера всё ещё можно сохранить",
 		"noProfiles": "Профилей доступа пока нет",
 		"noProfilesHint": "Создай шаблон доступа для новых регистраций",
 		"settingsSaveError": "Не удалось сохранить настройки регистрации. Попробуй снова",
 		"settingsLoadError": "Настройки регистрации временно недоступны",
 		"profileSaveError": "Не удалось сохранить профиль доступа. Проверь значения и попробуй снова",
-		"deactivateError": "Не удалось удалить профиль доступа. Попробуй снова",
-		"deactivate": "Удалить профиль",
-		"deactivateTitle": "Удалить профиль доступа?",
+		"deactivateError": "Не удалось отключить профиль доступа. Попробуй снова",
+		"deactivate": "Отключить профиль",
+		"deactivateTitle": "Отключить профиль доступа?",
 		"deactivateBody": "{{name}} больше не будет доступен для новых регистраций",
 		"cancel": "Отмена"
 	},
@@ -711,7 +711,7 @@
 			"viewLabel": "Режим обзора",
 			"tab": {
 				"remnawave": "Remnawave",
-				"flowvy": "Flowvy Mini-App"
+				"flowvy": "Flowvy Mini App"
 			},
 			"kpi": {
 				"users": "Юзеры",
@@ -822,8 +822,8 @@
 			"enable": "Включить",
 			"disableTitle": "Отключить юзера?",
 			"enableTitle": "Включить юзера?",
-			"disableDesc": "{{username}} потеряет proxy-доступ",
-			"enableDesc": "{{username}} снова получит proxy-доступ",
+			"disableDesc": "{{username}} потеряет доступ к прокси",
+			"enableDesc": "{{username}} снова получит доступ к прокси",
 			"resetTraffic": "Сбросить трафик",
 			"resetTrafficTitle": "Сбросить трафик?",
 			"resetTrafficDesc": "Счётчик трафика {{username}} обнулится",
@@ -865,10 +865,10 @@
 			"notConfigured": "Не настроено",
 			"connectionSection": "Хранилище вложений",
 			"status": "Cloudflare R2",
-			"privateDescription": "Приватный bucket; юзеры получают краткосрочные URL для загрузки и скачивания",
+			"privateDescription": "Приватный бакет; юзеры получают краткосрочные URL для загрузки и скачивания",
 			"missingDescription": "Вложения отключены. Текстовые тикеты и ответы продолжат работать",
-			"bucket": "Bucket",
-			"access": "Доступ к bucket",
+			"bucket": "Бакет",
+			"access": "Доступ к бакету",
 			"notTested": "Не проверено",
 			"accessReady": "Доступно",
 			"accessUnavailable": "Недоступно",
@@ -881,15 +881,15 @@
 			"uploadLimit": "На сообщение",
 			"messageLimit": "Общий размер",
 			"retention": "Хранение файлов / тикетов",
-			"retentionValue": "{{attachments}}д / {{requests}}д"
+			"retentionValue": "{{attachments}} дн. / {{requests}} дн."
 		},
 		"system": "Система",
 		"remnawave": "Remnawave",
-		"flowvyVersion": "Flowvy Mini-App",
+		"flowvyVersion": "Flowvy Mini App",
 		"kuma": {
 			"configureDesc": "Публичная страница статуса",
 			"connectionSection": "Подключение",
-			"connectionHint": "URL публичной страницы статуса и её slug",
+			"connectionHint": "URL публичной страницы статуса и её идентификатор — slug",
 			"urlLabel": "URL",
 			"urlPlaceholder": "https://status.example.com",
 			"slugLabel": "Slug",
@@ -906,9 +906,9 @@
 		},
 		"beszel": {
 			"title": "Beszel",
-			"configureDesc": "Hub и read-only доступ",
+			"configureDesc": "Hub и доступ только для чтения",
 			"connectionSection": "Подключение",
-			"connectionHint": "Здесь сохраняется URL Hub. Отдельный read-only юзер задаётся на сервере через BESZEL_EMAIL и BESZEL_PASSWORD",
+			"connectionHint": "Здесь сохраняется URL Hub. Отдельный пользователь только для чтения задаётся на сервере через BESZEL_EMAIL и BESZEL_PASSWORD",
 			"urlLabel": "URL Hub",
 			"urlPlaceholder": "https://monitor.example.com",
 			"credentialsLabel": "Учётные данные",
@@ -928,7 +928,7 @@
 		"brandingRowDesc": "Название и логотип приложения",
 		"branding": {
 			"identitySection": "Айдентика",
-			"identityHint": "Название отображается в header. Логотип поддерживает SVG для обеих тем",
+			"identityHint": "Название отображается в верхней панели. Логотип поддерживает SVG для обеих тем",
 			"appNameLabel": "Название приложения",
 			"appNamePlaceholder": "Flowvy",
 			"logoUrlLabel": "URL логотипа",
@@ -939,8 +939,8 @@
 			"discardBody": "Несохранённые изменения будут потеряны"
 		},
 		"miniApp": {
-			"section": "Flowvy Mini-App",
-			"welcomeRow": "Welcome-сообщение"
+			"section": "Flowvy Mini App",
+			"welcomeRow": "Приветствие"
 		},
 		"communication": {
 			"title": "Коммуникация",
@@ -954,14 +954,14 @@
 		"welcome": {
 			"contentSection": "Контент",
 			"messageLabel": "Текст приветствия",
-			"premiumWarning": "Для кастомных emoji нужен Telegram Premium на аккаунте владельца бота",
+			"premiumWarning": "Для кастомных эмодзи нужен Telegram Premium на аккаунте владельца бота",
 			"messagePlaceholder": "Напиши приветствие для Telegram",
 			"mediaSection": "Медиа",
 			"mediaHint": "Анимация (MP4/GIF) или фото, отправляемые по команде /start",
 			"mediaChange": "Изменить",
 			"mediaAdd": "Добавить",
-			"mediaReset": "Сбросить",
-			"mediaUploadError": "Ошибка загрузки",
+			"mediaReset": "Вернуть по умолчанию",
+			"mediaUploadError": "Не удалось загрузить медиа. Попробуй снова",
 			"mediaCustomName": "Своё медиа",
 			"mediaDefaultName": "Медиа по умолчанию",
 			"mediaType": {
@@ -1011,7 +1011,7 @@
 				"cardTitle": "Заголовок карточки инвайта",
 				"cardDescription": "Описание карточки инвайта",
 				"shareText": "Сообщение для Telegram",
-				"shareButtonText": "Текст referral-кнопки",
+				"shareButtonText": "Текст кнопки приглашения",
 				"noAccessTitle": "Заголовок без доступа",
 				"noAccessDescription": "Описание без доступа",
 				"baseAccessTitle": "Заголовок базового доступа",
@@ -1030,8 +1030,8 @@
 					"animation": "GIF-анимация",
 					"video": "Видео"
 				},
-				"previewLabel": "Превью referral-ссылки",
-				"previewHint": "Telegram использует созданную referral-ссылку, не показывая сам URL в сообщении",
+				"previewLabel": "Превью ссылки приглашения",
+				"previewHint": "Telegram использует созданную ссылку приглашения, не показывая сам URL в сообщении",
 				"previewMediaHint": "Отдельное превью ссылки недоступно, если сообщение уже содержит медиа",
 				"preview": {
 					"auto": "Авто",
@@ -1064,7 +1064,7 @@
 				"setup": "Настройка",
 				"management": "Управление",
 				"operations": "Операции",
-				"connectionDescription": "Доступ к API и защищённые webhooks",
+				"connectionDescription": "Доступ к API и защищённые вебхуки",
 				"paymentLinksDescription": "Одна ссылка для каждой подписки Tribute",
 				"referralsDescription": "Награда пригласившему и скидка новичку",
 				"rulesDescription": "Выдача доступа по подтверждённым платежам",
@@ -1080,7 +1080,7 @@
 			"apiKeyHint": "Создаётся в Tribute Creator Dashboard → Settings → API Keys",
 			"credentialsNotice": "Задай TRIBUTE_API_KEY в окружении сервера и перезапусти Flowvy. Ключ никогда не возвращается в приложение",
 			"apiAccessLabel": "Доступ к API",
-			"apiAccessHint": "Проверяет подписки Tribute read-only запросом и никогда не создаёт платежи",
+			"apiAccessHint": "Проверяет подписки Tribute запросом только на чтение и никогда не создаёт платежи",
 			"keyRequired": "Нужен ключ",
 			"notTested": "Не проверено",
 			"connected": "Подключено",
@@ -1155,7 +1155,7 @@
 				"editorEyebrow": "Платёжное правило",
 				"createTitle": "Новое правило автоматизации",
 				"editTitle": "Изменить правило",
-				"editorSubtitle": "Сопоставь платёж, рассчитай доступ и выбери внутренний entitlement",
+				"editorSubtitle": "Сопоставь платёж, рассчитай доступ и выбери внутренний профиль доступа",
 				"closeEditor": "Закрыть редактор правил",
 				"createAction": "Создать правило",
 				"matchSection": "Сопоставление платежа",
@@ -1193,9 +1193,9 @@
 				"accessSection": "Результат доступа",
 				"noActiveProfiles": "Создай или активируй профиль доступа перед сохранением правила",
 				"accessProfile": "Профиль доступа",
-				"accessProfileHint": "Рассчитанные дни заменяют стандартный срок профиля. Трафик, лимит устройств, сквады, tags и параметры провайдера используются повторно",
+				"accessProfileHint": "Рассчитанные дни заменяют стандартный срок профиля. Трафик, лимит устройств, сквады, теги и параметры провайдера используются повторно",
 				"subscriptionProfile": "Профиль расширенного доступа",
-				"subscriptionProfileHint": "Один профиль действует для всех периодов этой подписки Tribute. Трафик, лимит устройств, сквады, tags и параметры провайдера берутся из него; стандартный срок игнорируется",
+				"subscriptionProfileHint": "Один профиль действует для всех периодов этой подписки Tribute. Трафик, лимит устройств, сквады, теги и параметры провайдера берутся из него; стандартный срок игнорируется",
 				"selectProfile": "Выбрать профиль",
 				"grantMode": "Политика активации",
 				"extend": "Продлить доступ",
@@ -1216,7 +1216,7 @@
 				"daysUnit": "дней",
 				"addBand": "Добавить диапазон",
 				"previewSection": "Предпросмотр правила",
-				"previewHint": "Запускает только backend-калькулятор. Черновик не сохраняется, доступ юзеров не меняется",
+				"previewHint": "Запускает только серверный расчёт. Черновик не сохраняется, доступ юзеров не меняется",
 				"previewAmount": "Сумма платежа ({{currency}})",
 				"previewAction": "Рассчитать",
 				"previewMatched": "Доступ: {{count}} дн.",
@@ -1225,7 +1225,7 @@
 				"previewError": "Не удалось рассчитать правило. Проверь значения и повтори попытку",
 				"previewSessionExpired": "Сессия Telegram истекла. Закрой и снова открой Mini App, затем повтори попытку",
 				"previewForbidden": "Не удалось подтвердить права админа. Переоткрой Mini App или проверь настройки администратора",
-				"previewInvalid": "Backend отклонил черновик. Проверь значения правила и повтори попытку",
+				"previewInvalid": "Сервер не принял черновик. Проверь значения правила и повтори попытку",
 				"previewUnavailable": "Предпросмотр временно недоступен. Повтори попытку",
 				"fixedSummary": "{{count}} дн. за совпадение",
 				"volumeSummary": "От {{amount}} · диапазонов: {{count}}",
@@ -1325,7 +1325,7 @@
 				"loadError": "Не удалось загрузить платёжную активность. Повтори попытку",
 				"recent": "Последние события",
 				"empty": "Событий пока нет",
-				"emptyHint": "Защищённые события Tribute и реферальные награды появятся здесь без сырых webhook payloads",
+				"emptyHint": "Защищённые события Tribute и реферальные награды появятся здесь без исходных данных вебхуков",
 				"more": "Показаны 20 последних операций",
 				"received": "Получено {{date}}",
 				"telegramUser": "Telegram ID {{id}}",
@@ -1360,8 +1360,8 @@
 					"anonymous_donation": "Донат анонимный, автоматически сопоставить его нельзя",
 					"donation_identity_missing": "В донате нет пригодных данных плательщика",
 					"donation_offer_mismatch": "Подписанный донат не совпал с суммой или графиком оплаты, выбранными в Flowvy. Доступ автоматически не выдан",
-					"telegram_identity_missing": "Нет Telegram identity для автоматического сопоставления",
-					"user_not_found": "Юзер Flowvy с таким Telegram identity не найден",
+					"telegram_identity_missing": "Нет Telegram ID для автоматического сопоставления",
+					"user_not_found": "Юзер Flowvy с таким Telegram ID не найден",
 					"user_inactive": "Найденный юзер Flowvy неактивен",
 					"subscription_not_found": "У юзера нет связанного аккаунта Remnawave",
 					"subscription_ambiguous": "Юзеру соответствуют несколько связанных аккаунтов",
@@ -1372,15 +1372,15 @@
 					"refunded_before_apply": "Платёж возвращён до выдачи доступа",
 					"grant_cancelled_before_apply": "Выдача в очереди отменена без изменения доступа провайдера",
 					"no_grant_to_compensate": "Исходный платёж не выдал доступ",
-					"provider_identity_missing": "Нет связанного provider identity",
-					"provider_identity_mismatch": "Аккаунт провайдера не совпадает с оплатившим Telegram identity",
+					"provider_identity_missing": "Нет связанного идентификатора аккаунта провайдера",
+					"provider_identity_mismatch": "Аккаунт провайдера не совпадает с оплатившим Telegram ID",
 					"grant_plan_incomplete": "Сохранённый план выдачи неполный",
-					"profile_snapshot_invalid": "Сохранённый snapshot профиля доступа некорректен",
+					"profile_snapshot_invalid": "Сохранённый снимок профиля доступа некорректен",
 					"provider_state_conflict": "Доступ провайдера изменился вне этой операции; автоматическая перезапись остановлена",
 					"provider_state_ahead": "Доступ провайдера уже заканчивается позже этой подписки; автоматическое сокращение остановлено",
 					"paid_state_ahead": "Более новый оплаченный период уже заканчивается позже; старое состояние отправлено на проверку",
-					"provider_state_not_restorable": "Текущее состояние провайдера нельзя точно сохранить и восстановить, поэтому платный overlay остановлен",
-					"baseline_missing": "Исходный snapshot доступа недоступен; автоматическое восстановление остановлено",
+					"provider_state_not_restorable": "Текущее состояние провайдера нельзя точно сохранить и восстановить, поэтому автоматическое расширение доступа остановлено",
+					"baseline_missing": "Исходный снимок доступа недоступен; автоматическое восстановление остановлено",
 					"superseded_by_effective_access": "Новое решение по платному доступу заменило это запланированное восстановление",
 					"provider_entitlement_expired": "Срок подписки от Tribute уже истёк",
 					"provider_state_mismatch": "Провайдер не вернул запрошенный абсолютный срок",
@@ -1398,13 +1398,13 @@
 					"retry": "Повторить",
 					"resolve": "Закрыть",
 					"retryTitle": "Добавить попытку провайдера?",
-					"retryBody": "Flowvy выполнит ещё одну идемпотентную попытку через провайдера, используя сохранённый план и актуальные проверки identity",
+					"retryBody": "Flowvy ещё раз безопасно применит сохранённый план после проверки аккаунта",
 					"retryConfirm": "Повторить",
 					"resolveTitle": "Закрыть без изменения доступа?",
 					"resolveBody": "Закрывает только проверку. Flowvy не выдаст, не продлит, не заменит и не отзовёт доступ провайдера",
 					"resolveConfirm": "Закрыть",
 					"noteLabel": "Комментарий к решению",
-					"noteHint": "Обязателен для audit trail · максимум 500 символов",
+					"noteHint": "Обязателен для журнала аудита · максимум 500 символов",
 					"error": "Не удалось сохранить решение. Проверь актуальное состояние и повтори попытку",
 					"retryAudit": "Админ добавил ещё одну попытку",
 					"resolvedNote": "Решение: {{note}}"

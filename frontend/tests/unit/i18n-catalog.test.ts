@@ -169,7 +169,7 @@ describe("Russian UI copy catalog", () => {
 		});
 		expect(russianLocale.home.heroCard.openLink).toBe("Инструкция по установке");
 		expect(russianLocale.home.heroCard.expiresLabel).toBe("Истекает");
-		expect(russianLocale.home.heroCard.nextResetLabel).toBe("Сброс");
+		expect(russianLocale.home.heroCard.nextResetLabel).toBe("Следующий сброс");
 		expect(russianLocale.home.detail.devices).toBe("Лимит устройств");
 		expect(russianLocale.home.detail.autoUpdateHint).toBe(
 			"Автоматическое обновление подписки в прокси-клиенте",
@@ -178,7 +178,7 @@ describe("Russian UI copy catalog", () => {
 			"Интервал автоматического обновления",
 		);
 		expect(russianLocale.access.open).toBe("Открытый");
-		expect(russianLocale.access.deactivate).toBe("Удалить профиль");
+		expect(russianLocale.access.deactivate).toBe("Отключить профиль");
 		expect(russianLocale.access.internalSquads).toBe("Внутренние сквады");
 		expect(russianLocale.format.relative).toMatchObject({
 			minutesAgo: "{{n}} мин.",
@@ -188,7 +188,7 @@ describe("Russian UI copy catalog", () => {
 		expect(russianLocale.format.expiryCompact.ago).toBe("{{n}} дн. назад");
 		expect(russianLocale.admin.dashboard.kpi.requests).toBe("API-запросы");
 		expect(russianLocale.admin.dashboard.flowvy.requests).toBe("API-запросы");
-		expect(russianLocale.support.status.withSupport).toBe("В Помощи");
+		expect(russianLocale.support.status.withSupport).toBe("На рассмотрении");
 		expect(locale.home.sponsor.sponsorAccess).toBe("Extended access");
 		expect(locale.home.heroCard.nextResetLabel).toBe("Reset");
 		expect(locale.home.detail.autoUpdateHint).toBe(

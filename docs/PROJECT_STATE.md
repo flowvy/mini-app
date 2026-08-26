@@ -1,9 +1,9 @@
 # Текущее состояние Flowvy
 
 Последняя полная проверка: **2026-08-26**. После repository cleanup и latest-stable upgrade прошли
-exact-toolchain, lock и PostgreSQL 18 migration gates, Ruff, `570` backend tests, `56` pinned
-integration contracts, frontend lint/typecheck, `111` unit tests, production build и `245/245`
-mobile Chromium Playwright tests. Отдельная полная browser matrix прошла `735/735` на трёх Chromium
+exact-toolchain, lock и PostgreSQL 18 migration gates, Ruff, `571` backend tests, `56` pinned
+integration contracts, frontend lint/typecheck, `113` unit tests, production build и `254/254`
+mobile Chromium Playwright tests. Предыдущая полная browser matrix прошла `735/735` на трёх Chromium
 viewports и `245/245` на iOS WebKit; Axe, overflow, console/network guards и visual evidence зелёные
 без retries, suppression, allow-list или completion exception. GitHub Actions на `dev` commit
 `48942a8` также прошёл 2026-08-26: Backend и Frontend зелёные, включая focused `7/7`
