@@ -51,6 +51,9 @@ Source-of-truth order:
   evidence and tests.
 - Research unstable external contracts from primary documentation and the installed/pinned version.
   Record the source, version, and access date in the relevant document or plan.
+- When prose names an exact tool or dependency version, derive it from the checked-in version file,
+  manifest, lockfile, Compose image, or workflow. Keep `scripts/verify-docs.ps1` coverage aligned with
+  every durable exact-version claim so dependency upgrades cannot leave contradictory instructions.
 - Use read-heavy agents in parallel when useful. Keep overlapping code writes sequential and let one
   owner integrate and verify the final diff.
 - Treat line count as a responsibility-review trigger, not an automatic failure: review production
@@ -73,22 +76,27 @@ Source-of-truth order:
 - Treat `main` as the release branch. A release moves the approved `dev` state to `main` only after
   fresh full verification and the required build, then creates and pushes the agreed version tag.
 - Do not invent a release version or tag. Obtain it from the user or the active release plan.
+- Release tags use bare SemVer without a `v` prefix. Keep `CHANGELOG.md` and `CHANGELOG.ru.md`
+  synchronized by version, date, category order, and item count; GitHub release notes come from the
+  exact English version section.
+- Pushing a matching tag triggers `.github/workflows/release.yml` and is the external publication
+  boundary. Obtain explicit action-time approval immediately before creating or pushing it. The
+  workflow publishes a GitHub Release in this repository; it does not deploy the application.
 
 ## Commands
 
-From the repository root, prefer the checked-in PowerShell 7 workflows. They support Windows and
-macOS; use the shown `.\scripts\...` prefix on Windows and `./scripts/...` on macOS:
+From the repository root on Apple Silicon macOS, prefer the checked-in PowerShell 7 workflows:
 
 ```powershell
-.\scripts\bootstrap.ps1                 # locked backend/frontend dependencies
-.\scripts\bootstrap.ps1 -InstallBrowsers
-.\scripts\verify.ps1 -Scope Changed     # diff-aware local gate
-.\scripts\verify.ps1 -Scope Full        # services, migrations, contracts, and UI
-.\scripts\dev-reset-data.ps1 -ConfirmDevDataReset # local Flowvy DB + Redis DB 0 only
-.\scripts\dev-up.ps1                    # localhost-only: Telegram and public tunnel disabled
-.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+./scripts/bootstrap.ps1                 # locked backend/frontend dependencies
+./scripts/bootstrap.ps1 -InstallBrowsers
+./scripts/verify.ps1 -Scope Changed     # diff-aware local gate
+./scripts/verify.ps1 -Scope Full        # services, migrations, contracts, and UI
+./scripts/dev-reset-data.ps1 -ConfirmDevDataReset # local Flowvy DB + Redis DB 0 only
+./scripts/dev-up.ps1                    # localhost-only: Telegram and public tunnel disabled
+./scripts/dev-up.ps1 -SkipInstall -EnableTelegram `
     -NamedTunnelUrl 'https://dev-app.flowvy.io' # canonical full Flowvy dev on the owner's machine
-.\scripts\dev-down.ps1                  # stops only tracked processes; preserves volumes
+./scripts/dev-down.ps1                  # stops only tracked processes; preserves volumes
 ```
 
 In this repository, a request to start the **full** or **standard** Flowvy dev environment means the
@@ -97,9 +105,8 @@ the safe public preview, and the existing `dev-app.flowvy.io` route. Use plain `
 the user explicitly asks for localhost-only or integration-free development. The full command assumes
 Docker Desktop and the system `cloudflared` connector are running and must not start a second polling
 process for the same test bot. It never authorizes printing credentials or Telegram init data.
-The named preview origin is `http://localhost:80` on Windows and the unprivileged
-`http://localhost:4173` on macOS. Repository scripts never modify the external Cloudflare route;
-the owner must switch its Service URL during machine cutover without running both bot pollers.
+The named preview origin is the unprivileged `http://localhost:4173`. Repository scripts never
+modify the external Cloudflare route or authorize running a second bot poller.
 
 When Codex launches `dev-up.ps1` on macOS through the command runner, keep that runner session alive
 after the script returns (for example, append `tail -f /dev/null` and retain the session id). The
@@ -141,8 +148,9 @@ pnpm dev
 
 The full backend suite requires PostgreSQL at `localhost:5432/test`; the Compose initialization
 script creates it only when the PostgreSQL volume is first initialized. Never delete an existing
-volume without explicit approval. The checked-in Vitest and mocked Playwright suites are a small
-baseline, not complete behavior coverage; see `docs/PROJECT_STATE.md` and expand them with each flow.
+volume without explicit approval. The checked-in Vitest suite and mocked Playwright state matrix are
+broad deterministic baselines, not complete behavior coverage; see `docs/PROJECT_STATE.md` and
+expand them with each changed flow.
 
 ## Review invariants
 

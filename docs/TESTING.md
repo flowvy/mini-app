@@ -9,16 +9,17 @@ Kuma, Beszel и пользовательских данных. Последни�
 Из корня репозитория:
 
 ```powershell
-.\scripts\verify.ps1 -Scope Changed
-.\scripts\verify.ps1 -Scope Backend
-.\scripts\verify.ps1 -Scope Frontend
-.\scripts\verify.ps1 -Scope Docs
-.\scripts\verify.ps1 -Scope Full
+./scripts/verify.ps1 -Scope Changed
+./scripts/verify.ps1 -Scope Backend
+./scripts/verify.ps1 -Scope Frontend
+./scripts/verify.ps1 -Scope Docs
+./scripts/verify.ps1 -Scope Full
 ```
 
-Команды требуют PowerShell 7. На macOS замените префикс `.\scripts\` на `./scripts/`; scopes и
-результаты одинаковы. Tooling/full gate дополнительно парсит все `.ps1` и проверяет Windows/macOS
-port selection через `scripts/verify-tooling.ps1`.
+Команды требуют PowerShell 7 и macOS. Tooling/full gate дополнительно парсит все `.ps1` и проверяет
+macOS lifecycle contract через `scripts/verify-tooling.ps1`. Он также прогоняет release fixture: exact
+manifest/lock versions, synchronized bilingual notes, extraction и fail-closed invalid tag/item
+count. Изменения `CHANGELOG.md`/`CHANGELOG.ru.md` относятся к tooling scope.
 
 `Changed` выбирает области по tracked/untracked diff. `Full` добавляет Compose services, Alembic,
 полный pytest, Remnawave snapshot/client check и Playwright smoke. `-SkipE2E` допустим только когда
@@ -39,7 +40,7 @@ uv run --frozen pytest -q
 Узкий сквозной smoke Tribute запускается из корня и не использует реальные provider credentials:
 
 ```powershell
-.\scripts\verify-tribute-entitlements.ps1
+./scripts/verify-tribute-entitlements.ps1
 ```
 
 Команда поднимает только disposable PostgreSQL test service и запускает production-boundary
@@ -131,10 +132,11 @@ pnpm test
 pnpm build
 ```
 
-Vitest настроен на `tests/unit/**/*.test.{ts,tsx}` в Node environment. Текущий seed проверяет
-decisions в `src/lib/format.ts`, same-origin API path, `204 No Content` и безопасное отображение
-JSON/HTML ошибок. Formatted-text cases проверяют нормализацию допустимых http/https ссылок,
-CommonMark semantic render и отказ от raw HTML/опасных URL через React server render.
+Vitest настроен на `tests/unit/**/*.test.{ts,tsx}` в Node environment. Текущий suite проверяет
+format/API decisions, i18n parity, navigation/runtime contracts, Telegram adapters, semantic colors
+и surfaces, payment/user-state helpers и rich-text serialization. Formatted-text cases
+дополнительно проверяют нормализацию допустимых http/https ссылок, CommonMark semantic render и
+отказ от raw HTML/опасных URL через React server render.
 Полноценные component DOM tests пока отсутствуют. Для новой логики
 добавляйте success/boundary/error case и фиксируйте clock/locale, если они влияют на результат.
 
@@ -219,7 +221,7 @@ Playwright projects.
 Публичная граница Tunnel проверяется без реальных secrets/providers:
 
 ```powershell
-.\scripts\verify-tunnel.ps1
+./scripts/verify-tunnel.ps1
 ```
 
 Verifier запускает синтетический backend с `DEBUG=false`, production preview и отдельный Quick
@@ -235,7 +237,15 @@ Tunnel; затем через внешний DNS edge проверяет `health
 - failure artifacts: Playwright traces/screenshots/video/report.
 
 Workflow пока не заменяет локальную focused проверку и не подтверждает production deployment. Его
-первый успешный удалённый run должен быть зафиксирован в `PROJECT_STATE.md`.
+последний подтверждённый удалённый run фиксируется в `PROJECT_STATE.md`.
+
+`.github/workflows/release.yml` не заменяет release gate. На tag push он требует successful `main`
+CI для exact tagged SHA и запускает `scripts/release.ps1`, но не повторяет full local browser/live
+Telegram acceptance. Локальная dry-проверка согласованной версии не создаёт tag или release:
+
+```powershell
+./scripts/release.ps1 -Version '<agreed-version>'
+```
 
 ## Доказательство готовности
 

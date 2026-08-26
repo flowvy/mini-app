@@ -50,7 +50,9 @@ if ($Scope -eq "Changed") {
     $changedFiles | ForEach-Object { Write-Host "  $_" }
 }
 
-$toolingChanged = $changedFiles | Where-Object { $_ -match '^(scripts/|\.github/|\.agents/|\.codex/|AGENTS\.md|PLANS\.md)' }
+$toolingChanged = $changedFiles | Where-Object {
+    $_ -match '^(scripts/|\.github/|\.agents/|\.codex/|AGENTS\.md|PLANS\.md|CHANGELOG(?:\.ru)?\.md)'
+}
 $backendChanged = $Scope -in @("Backend", "Full") -or
     ($Scope -eq "Changed" -and ($toolingChanged -or ($changedFiles | Where-Object { $_ -like "backend/*" })))
 $frontendChanged = $Scope -in @("Frontend", "Full") -or

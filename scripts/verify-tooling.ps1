@@ -22,22 +22,9 @@ if ($parseErrors.Count -gt 0) {
     throw "PowerShell parse errors:`n$($parseErrors -join "`n")"
 }
 
-if ((Get-FlowvyNamedPreviewPort -Platform "windows") -ne 80) {
-    throw "Windows named Tunnel preview port changed unexpectedly."
+if ((Get-FlowvyNamedPreviewPort) -ne 4173) {
+    throw "The macOS named Tunnel preview must use the unprivileged port 4173."
 }
-foreach ($platform in "macos", "linux") {
-    if ((Get-FlowvyNamedPreviewPort -Platform $platform) -ne 4173) {
-        throw "$platform named Tunnel preview must use the unprivileged port 4173."
-    }
-}
-$unsupportedFailed = $false
-try {
-    Get-FlowvyNamedPreviewPort -Platform "unsupported" | Out-Null
-}
-catch {
-    $unsupportedFailed = $true
-}
-if (-not $unsupportedFailed) { throw "Unknown platforms must fail closed." }
 
 $listener = [System.Net.Sockets.TcpListener]::new(
     [System.Net.IPAddress]::Loopback,
@@ -47,14 +34,14 @@ $listener.Start()
 $testPort = ([System.Net.IPEndPoint]$listener.LocalEndpoint).Port
 try {
     if (-not (Test-FlowvyTcpPort -Port $testPort)) {
-        throw "Cross-platform TCP probe did not detect its owned listener."
+        throw "The macOS TCP probe did not detect its owned listener."
     }
 }
 finally {
     $listener.Stop()
 }
 if (Test-FlowvyTcpPort -Port $testPort) {
-    throw "Cross-platform TCP probe reported a stopped listener."
+    throw "The macOS TCP probe reported a stopped listener."
 }
 if ("esbuild" -notin $script:FlowvyAllowedChildProcessNames) {
     throw "Vite's esbuild child must remain in the owned-process allowlist."
@@ -96,6 +83,25 @@ if ($ciWorkflow -notmatch [regex]::Escape("run: pnpm test:e2e:ci")) {
 if ($ciWorkflow -notmatch "PLAYWRIGHT_ARTIFACT_DIR") {
     throw "CI must write Playwright failure artifacts to the uploaded workspace paths."
 }
+$releaseWorkflow = Get-Content -Raw -LiteralPath (
+    Join-Path (Join-Path (Join-Path $repoRoot ".github") "workflows") "release.yml"
+)
+foreach ($requiredText in @(
+    'tags:',
+    'actions: read',
+    'checks: read',
+    'contents: write',
+    'git merge-base --is-ancestor',
+    '--workflow ci.yml',
+    './scripts/release.ps1',
+    '--verify-tag'
+)) {
+    if ($releaseWorkflow -notmatch [regex]::Escape($requiredText)) {
+        throw "Release workflow is missing its fail-closed contract: $requiredText"
+    }
+}
+
+& (Join-Path $PSScriptRoot "verify-release.ps1")
 
 $actualUvVersion = (& uv --version).Trim()
 if ($actualUvVersion -notmatch '^uv 0\.12\.6(?:\s|$)') {
@@ -137,7 +143,8 @@ if (Get-Process -Id $ownedProcess.Id -ErrorAction SilentlyContinue) {
 
 $requiredScripts = @(
     "bootstrap.ps1", "dev-up.ps1", "dev-down.ps1", "tunnel-up.ps1", "tunnel-down.ps1",
-    "verify.ps1", "verify-migrations.ps1", "verify-contracts.ps1", "verify-docs.ps1"
+    "verify.ps1", "verify-migrations.ps1", "verify-contracts.ps1", "verify-docs.ps1",
+    "release.ps1", "verify-release.ps1"
 )
 foreach ($name in $requiredScripts) {
     if (-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot $name))) {
@@ -151,6 +158,51 @@ $macDocs = Get-Content -Raw -LiteralPath (
 foreach ($requiredText in "PowerShell 7", "http://localhost:4173", "dev-app.flowvy.io") {
     if ($macDocs -notmatch [regex]::Escape($requiredText)) {
         throw "DEV_ENVIRONMENT.md is missing the macOS contract: $requiredText"
+    }
+}
+
+$developmentDocs = @(
+    "AGENTS.md",
+    "README.md",
+    "PLANS.md",
+    "docs/DEV_ENVIRONMENT.md",
+    "docs/OPERATIONS.md",
+    "docs/PROJECT_STATE.md",
+    "docs/TESTING.md"
+)
+$removedHostName = "Windows"
+foreach ($path in $developmentDocs) {
+    $content = Get-Content -Raw -LiteralPath (Join-Path $repoRoot $path)
+    if ($content -match [regex]::Escape($removedHostName)) {
+        throw "$path must not document the removed development host."
+    }
+}
+
+$localLifecycleScripts = @(
+    "common.ps1",
+    "dev-up.ps1",
+    "dev-down.ps1",
+    "tunnel-up.ps1",
+    "tunnel-down.ps1",
+    "verify-tunnel.ps1"
+)
+$removedHostPatterns = @(
+    [regex]::Escape("IsWindows"),
+    [regex]::Escape("Win32_Process"),
+    [regex]::Escape("Get-CimInstance"),
+    '(?m)"(?:cmd|conhost)"',
+    '(?<![A-Za-z])NUL(?![A-Za-z])',
+    [regex]::Escape(".cmd"),
+    ([regex]::Escape("localhost:" + "80") + "(?!\d)"),
+    ([regex]::Escape("127.0.0.1:" + "80") + "(?!\d)"),
+    [regex]::Escape(".\" + "scripts\")
+)
+foreach ($name in $localLifecycleScripts) {
+    $content = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot $name)
+    foreach ($pattern in $removedHostPatterns) {
+        if ($content -match $pattern) {
+            throw "$name contains a removed development-host marker."
+        }
     }
 }
 

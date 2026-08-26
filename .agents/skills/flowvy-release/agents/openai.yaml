@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flowvy Release"
+  short_description: "Prepare and validate Flowvy releases"
+  default_prompt: "Use $flowvy-release to prepare and validate the next Flowvy Mini App release."

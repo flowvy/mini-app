@@ -51,8 +51,9 @@ pnpm build
 pnpm test:e2e
 ```
 
-Start with the smallest relevant unit/component test, then the full commands. The current Vitest file
-and mocked critical-route Playwright smoke are only a seed; add focused states for the changed flow.
+Start with the smallest relevant unit/component test, then the full commands. The current Vitest
+suite and mocked Playwright state matrix are broad deterministic baselines; add focused states for
+the changed flow instead of treating existing coverage as exhaustive.
 For locale changes, run `tests/unit/i18n-catalog.test.ts` and inspect normal, long/interpolated,
 empty, error, accessible-name, and mobile-overflow states as applicable.
 For UI changes, also manually inspect affected states at mobile and admin desktop viewports. Fail on

@@ -88,8 +88,8 @@ Updated: YYYY-MM-DD
 
 ## Verification
 
-- `E:\mini-app\backend`: `uv run ...` → ожидаемый результат.
-- `E:\mini-app\frontend`: `pnpm ...` → ожидаемый результат.
+- `backend/`: `uv run ...` → ожидаемый результат.
+- `frontend/`: `pnpm ...` → ожидаемый результат.
 - Ручная/UI-проверка: маршрут, роль, состояние, viewport и ожидаемое поведение.
 
 ## Recovery and rollback

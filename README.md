@@ -6,11 +6,10 @@ Flowvy — Telegram Mini App и бот для управления подпис�
 
 ## Статус
 
-Проект находится в состоянии незавершённого MVP и пока не готов к production. Основные экраны и
-backend-потоки реализованы; добавлены единые проверки, CI и первый mock UI smoke. Однако остаются
-важные пробелы в production-защите и покрытии интерфейса. Критичный auth/debug/device/webhook
-контур закрыт кодом и тестами 2026-08-01. Проверенные факты, известные проблемы
-и ближайшее действие хранятся в
+Проект находится в состоянии незавершённого MVP и пока не готов к production. Основные экраны,
+backend-потоки, локальные/CI gates и deterministic browser matrix реализованы, но production
+deployment, recovery и независимая security readiness не доказаны. Проверенные факты, известные
+проблемы и ближайшее действие хранятся в
 [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md).
 
 ## Состав проекта
@@ -18,17 +17,15 @@ backend-потоки реализованы; добавлены единые п�
 - `backend/` — Python 3.14, FastAPI, aiogram, Dishka, SQLAlchemy/Alembic, PostgreSQL, Redis.
 - `frontend/` — React 19, TypeScript 7, Vite 8, TanStack Router/Query, TMA.js SDK.
 - `docker-compose.dev.yml` — только локальные PostgreSQL и Redis.
-- `scripts/` и `.github/workflows/ci.yml` — одинаковые локальные и CI-проверки.
+- `scripts/` и `.github/workflows/` — локальные/CI-проверки и tag-driven GitHub Releases.
 - `.agents/skills/` и `.codex/` — процедуры, узкие агенты и project guardrails Codex.
 - `docs/` — архитектура, запуск и текущее состояние.
 - `plans/` — Git-ignored локальные планы только для выполняющихся крупных задач.
 
 ## Быстрый локальный запуск
 
-Нужны Python 3.14.7, [uv 0.12.6](https://docs.astral.sh/uv/), Node.js 24.19.0 LTS с pnpm 11.24.0,
-Docker Desktop/Engine и
-PowerShell 7. Одни и те же checked-in `.ps1` workflows работают на Windows и macOS. Команды ниже
-запускаются из корня; на macOS используйте `./scripts/...` вместо `.\scripts\...`.
+Нужны Apple Silicon Mac, Python 3.14.7, [uv 0.12.6](https://docs.astral.sh/uv/), Node.js 24.19.0 LTS
+с pnpm 11.24.0, Docker Desktop и PowerShell 7. Команды ниже запускаются из корня репозитория.
 
 ```powershell
 docker compose -f docker-compose.dev.yml up -d postgres redis
@@ -69,23 +66,22 @@ Frontend доступен на `http://localhost:5173`, API — на `http://loc
 публичного Tunnel можно выполнить одной командой:
 
 ```powershell
-.\scripts\dev-up.ps1
+./scripts/dev-up.ps1
 # по окончании
-.\scripts\dev-down.ps1
+./scripts/dev-down.ps1
 ```
 
 На машине владельца **полноценный/штатный Flowvy dev-контур** означает Telegram-enabled запуск через
 уже созданный named Tunnel `dev-app.flowvy.io`:
 
 ```powershell
-.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+./scripts/dev-up.ps1 -SkipInstall -EnableTelegram `
     -NamedTunnelUrl 'https://dev-app.flowvy.io'
 ```
 
 Команда предполагает, что `backend/.env` содержит локальные test credentials, BotFather Main App
 указывает на тот же URL, а Cloudflare published application route уже направляет hostname на
-platform origin: `http://localhost:80` на Windows или `http://localhost:4173` на macOS. Полный
-контракт, Mac cutover и безопасная очистка dev-данных описаны в
+`http://localhost:4173`. Полный контракт и безопасная очистка dev-данных описаны в
 [`docs/DEV_ENVIRONMENT.md`](docs/DEV_ENVIRONMENT.md#штатный-flowvy-dev-контур).
 
 Первичная установка отдельно доступна через `scripts/bootstrap.ps1`; ключ `-InstallBrowsers`
@@ -95,9 +91,9 @@ platform origin: `http://localhost:80` на Windows или `http://localhost:417
 проверки, что backend работает с `DEBUG=false`:
 
 ```powershell
-.\scripts\tunnel-up.ps1 -ConfirmPublic
+./scripts/tunnel-up.ps1 -ConfirmPublic
 # по окончании
-.\scripts\tunnel-down.ps1
+./scripts/tunnel-down.ps1
 ```
 
 `scripts/verify-tunnel.ps1` выполняет тот же flow на синтетической конфигурации, проверяет публичные
@@ -108,10 +104,10 @@ Tunnel со стабильным URL, а не временный Quick Tunnel.
 
 ```powershell
 # из корня: выбрать проверки по текущему diff
-.\scripts\verify.ps1 -Scope Changed
+./scripts/verify.ps1 -Scope Changed
 
 # полный gate с Docker, migrations, contracts и UI smoke
-.\scripts\verify.ps1 -Scope Full
+./scripts/verify.ps1 -Scope Full
 ```
 
 Backend-тесты с репозиториями требуют отдельную PostgreSQL БД `test`, которую создаёт
@@ -132,6 +128,7 @@ console/network cleanliness, accessibility, keyboard focus и четыре brows
   готовности и обязательные trust-инварианты.
 - [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md) и [`docs/OPERATIONS.md`](docs/OPERATIONS.md) — внешние
   контракты и честные границы локальной/production эксплуатации.
+- [`CHANGELOG.md`](CHANGELOG.md) и [`CHANGELOG.ru.md`](CHANGELOG.ru.md) — синхронные release notes.
 - [`PLANS.md`](PLANS.md) — правила ведения больших задач.
 - [`AGENTS.md`](AGENTS.md) — постоянные инструкции Codex; в backend, frontend, tests, migrations и
   docs действуют более точные вложенные инструкции.

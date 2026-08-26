@@ -50,7 +50,7 @@ flow доступен только уже существующему active Flow
 13. Operator-authored offer description использует ограниченный CommonMark content contract и общий
     safe renderer. HTML и Telegram MarkdownV2 не являются storage format; будущий Broadcast
     переиспользует editor/renderer и получает отдельную server-side Telegram serialization boundary.
-14. Authoring использует pinned Tiptap 3.30.1 inline WYSIWYG и один официальный fixed-menu pattern:
+14. Authoring использует pinned Tiptap 3.30.3 inline WYSIWYG и один официальный fixed-menu pattern:
     toolbar постоянно расположен над editor surface во всех input modes. Приложение не пытается
     расширить или заменить системный selection popup и не использует pointer-dependent contextual
     menus. Toolbar следует WAI-ARIA semantics и keyboard navigation. Beta Markdown bridge не определяет storage schema: он обслуживает

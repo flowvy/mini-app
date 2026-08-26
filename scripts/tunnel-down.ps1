@@ -28,7 +28,7 @@ $previewNames = if ($null -ne $processes.previewProcessName) {
     @([string]$processes.previewProcessName)
 }
 else {
-    @("cmd", "pnpm", "node")
+    @("pnpm", "node")
 }
 Stop-FlowvyOwnedProcessTree `
     -TargetProcessId ([int]$processes.preview) `

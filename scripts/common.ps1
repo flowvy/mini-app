@@ -2,41 +2,21 @@ $ErrorActionPreference = "Stop"
 if ($PSVersionTable.PSVersion.Major -lt 7) {
     throw "Flowvy lifecycle scripts require PowerShell 7 or newer."
 }
-
-function Get-FlowvyPlatform {
-    if ($IsWindows) { return "windows" }
-    if ($IsMacOS) { return "macos" }
-    if ($IsLinux) { return "linux" }
-    throw "Flowvy scripts support Windows, macOS, and Linux only."
+if (-not $IsMacOS) {
+    throw "Flowvy local development scripts require macOS."
 }
 
 function Get-FlowvyNamedPreviewPort {
-    param([string]$Platform = (Get-FlowvyPlatform))
-
-    if ($Platform -eq "windows") { return 80 }
-    if ($Platform -in @("macos", "linux")) { return 4173 }
-    throw "Unsupported Flowvy platform: $Platform"
+    return 4173
 }
 
 function Resolve-FlowvyExecutable {
     param([Parameter(Mandatory)][string]$Name)
 
-    $candidates = if ($IsWindows -and $Name -eq "pnpm") {
-        @("pnpm.cmd", "pnpm")
-    }
-    elseif ($IsWindows -and $Name -eq "curl") {
-        @("curl.exe", "curl")
-    }
-    else {
-        @($Name)
-    }
-
-    foreach ($candidate in $candidates) {
-        $command = Get-Command $candidate -ErrorAction SilentlyContinue
-        if ($command -and $command.CommandType -eq "Application") {
-            if ($command.Source) { return $command.Source }
-            return $command.Path
-        }
+    $command = Get-Command $Name -ErrorAction SilentlyContinue
+    if ($command -and $command.CommandType -eq "Application") {
+        if ($command.Source) { return $command.Source }
+        return $command.Path
     }
     throw "Required tool '$Name' was not found on PATH."
 }
@@ -79,35 +59,23 @@ function Start-FlowvyBackgroundProcess {
         RedirectStandardError = $StandardErrorPath
         PassThru = $true
     }
-    if ($IsWindows) {
-        $startParameters.WindowStyle = "Hidden"
-    }
     Start-Process @startParameters
 }
 
 function Get-FlowvyChildProcessIds {
     param([Parameter(Mandatory)][int]$TargetProcessId)
 
-    if ($IsWindows) {
-        return @(
-            Get-CimInstance Win32_Process `
-                -Filter "ParentProcessId = $TargetProcessId" `
-                -ErrorAction SilentlyContinue |
-                ForEach-Object { [int]$_.ProcessId }
-        )
-    }
-
     $pgrep = Get-Command "pgrep" -ErrorAction SilentlyContinue
     if (-not $pgrep) {
-        throw "pgrep is required to stop Flowvy-owned process trees on macOS/Linux."
+        throw "pgrep is required to stop Flowvy-owned process trees on macOS."
     }
     $childIds = & $pgrep.Source -P $TargetProcessId 2>$null
     return @($childIds | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ })
 }
 
 $script:FlowvyAllowedChildProcessNames = @(
-	"uv", "python", "python3", "python3.12", "python3.14", "flowvy",
-    "pnpm", "node", "esbuild", "cmd", "conhost", "sh", "bash", "zsh", "cloudflared"
+    "uv", "python", "python3", "python3.14", "flowvy",
+    "pnpm", "node", "esbuild", "sh", "bash", "zsh", "cloudflared"
 )
 
 function Stop-FlowvyOwnedProcessTree {
@@ -166,6 +134,5 @@ function Stop-FlowvyOwnedProcessTree {
 }
 
 function Get-FlowvyNullDevice {
-    if ($IsWindows) { return "NUL" }
     return "/dev/null"
 }

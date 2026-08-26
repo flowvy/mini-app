@@ -9,9 +9,9 @@ production deployment/operations контура. Этот документ не 
 После создания безопасного `backend/.env`:
 
 ```powershell
-.\scripts\bootstrap.ps1 -InstallBrowsers
-.\scripts\dev-up.ps1
-.\scripts\dev-down.ps1
+./scripts/bootstrap.ps1 -InstallBrowsers
+./scripts/dev-up.ps1
+./scripts/dev-down.ps1
 ```
 
 `dev-up` проверяет ports `8001`/`5173`, поднимает PostgreSQL/Redis, принудительно использует Compose
@@ -21,9 +21,8 @@ URL вместо случайных process-level `DATABASE_URL`/`REDIS_URL`, п
 long polling при пустом `WEBHOOK_URL`; одновременно должен работать только один polling-процесс
 test bot. PID и stdout/stderr находятся в `.artifacts/dev`. `dev-down` останавливает только
 записанные process trees и Compose services, не удаляя `pgdata18`.
-Lifecycle работает в PowerShell 7 на Windows и macOS. Windows использует native process/CIM branch,
-macOS — `pgrep` и тот же PID/start-time ownership contract; неизвестный или переиспользованный PID
-останавливать запрещено.
+Lifecycle работает в PowerShell 7 на macOS и использует `pgrep` вместе с PID/start-time ownership
+contract; неизвестный или переиспользованный PID останавливать запрещено.
 
 Это намеренно непубличный режим без Telegram. На машине владельца запрос **полноценного** или
 **штатного** Flowvy dev означает named-Tunnel lifecycle из раздела
@@ -33,7 +32,7 @@ macOS — `pgrep` и тот же PID/start-time ownership contract; неизве
 обычное исправление: volume содержит локальные данные и удаляется необратимо.
 
 Для явно запрошенного чистого dev-сценария используйте только
-`scripts/dev-reset-data.ps1 -ConfirmDevDataReset` после `dev-down`. Script очищает application schema
+`./scripts/dev-reset-data.ps1 -ConfirmDevDataReset` после `dev-down`. Script очищает application schema
 в database `flowvy` и Redis DB 0, повторно применяет migrations, сбрасывает singleton settings к
 defaults и сохраняет test database, Docker volume и все внешние provider data. Ручной
 `DROP DATABASE`, `docker compose down -v` и очистка provider не являются частью dev lifecycle.
@@ -67,7 +66,7 @@ Identified donation планируется после полного checkout/ru
 неоднозначные или несовпавшие payment facts всегда остаются review-only.
 
 Для безопасной локальной проверки donation semantics из корня используется
-`.\scripts\verify-tribute-entitlements.ps1`. Команда работает только с disposable test PostgreSQL
+`./scripts/verify-tribute-entitlements.ps1`. Команда работает только с disposable test PostgreSQL
 и fake credentials, не читает runtime key и не выполняет внешние provider requests. Fixture
 проверяет signed HTTP intake, dedupe, planner decisions, bands и review paths.
 
@@ -195,12 +194,11 @@ resolved-at worker, потому что считает возраст object.
 проверки публичного edge.
 
 Для заранее созданного named Tunnel published application route должен указывать exact test
-hostname на platform-local service: `http://localhost:80` на Windows или
-`http://localhost:4173` на macOS. Repository поднимает только безопасную production-сборку и не
+hostname на `http://localhost:4173`. Repository поднимает только безопасную production-сборку и не
 управляет connector/DNS/route:
 
 ```powershell
-.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+./scripts/dev-up.ps1 -SkipInstall -EnableTelegram `
     -NamedTunnelUrl 'https://<test-host>'
 ```
 
@@ -208,7 +206,7 @@ hostname на platform-local service: `http://localhost:80` на Windows или
 полноценный запуск здесь использует exact URL, а не placeholder:
 
 ```powershell
-.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+./scripts/dev-up.ps1 -SkipInstall -EnableTelegram `
     -NamedTunnelUrl 'https://dev-app.flowvy.io'
 ```
 
@@ -217,9 +215,8 @@ hostname на platform-local service: `http://localhost:80` на Windows или
 
 Команда передаёт тот же origin backend как `WEBAPP_URL`, разрешает Vite только этот hostname,
 проверяет public root и `/api/health`. `dev-down` останавливает repo-owned preview, но не системный
-`cloudflared`. При Windows → Mac cutover public hostname/BotFather URL остаются прежними; владелец
-останавливает старые connector/polling, меняет только Cloudflare Service URL на `4173`, затем
-запускает Mac origin. Контракт повторно сверён 2026-08-21 с
+`cloudflared`. Public hostname/BotFather URL и Cloudflare Service URL `http://localhost:4173`
+остаются внешней явной конфигурацией. Контракт повторно сверён 2026-08-21 с
 [Cloudflare published application routes](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/routing-to-tunnel/)
 и [Vite `server.allowedHosts`](https://vite.dev/config/server-options#server-allowedhosts); глобальный
 `allowedHosts: true` запрещён.
@@ -235,8 +232,8 @@ Flowvy использует Main Mini App, а не bot deep link и не Direct 
 После изменения BotFather-конфигурации перезапустите Telegram-enabled backend:
 
 ```powershell
-.\scripts\dev-down.ps1
-.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+./scripts/dev-down.ps1
+./scripts/dev-up.ps1 -SkipInstall -EnableTelegram `
     -NamedTunnelUrl 'https://<test-host>'
 ```
 
@@ -266,12 +263,66 @@ coverage и `.artifacts` игнорируются Git. CI не собирает 
   `main` создаётся и публикуется согласованный version tag; имя/версия тега не придумываются
   автоматически.
 
-Автоматизация release image/deployment пока отсутствует. Текущий CI проверяет push в `dev`/`main`, но не
-заменяет отдельный release-план, сборку артефакта и публикацию тега.
+Release version использует bare SemVer без префикса `v`: stable `X.Y.Z`, prerelease
+`X.Y.Z-(alpha|beta|rc|pre).N`. До подготовки exact version должен назвать владелец или активный
+release plan. Английский [`CHANGELOG.md`](../CHANGELOG.md) и русский
+[`CHANGELOG.ru.md`](../CHANGELOG.ru.md) содержат одинаковые version/date/categories/item counts;
+GitHub Release получает exact English section. Changelog описывает user-visible net delta от
+предыдущего stable release, не внутренний журнал commit.
+
+Подготовка выполняется на `dev` без tag и внешней публикации:
+
+```powershell
+$releaseVersion = '<agreed-version>'
+
+# Сначала заполнить обе секции: ## X.Y.Z — YYYY-MM-DD
+uv version $releaseVersion --project backend --no-sync
+Push-Location frontend
+pnpm version $releaseVersion --no-git-tag-version
+Pop-Location
+
+./scripts/release.ps1 -Version $releaseVersion
+./scripts/verify.ps1 -Scope Full
+```
+
+`uv` синхронно обновляет `backend/pyproject.toml` и `backend/uv.lock`; PEP 440 нормализует
+prerelease (`X.Y.Z-beta.N` становится `X.Y.ZbN`). `frontend/package.json` хранит исходный SemVer.
+`scripts/release.ps1` учитывает это различие, проверяет оба manifests, lockfile, exact changelog
+sections, реальные даты, допустимый порядок категорий и отсутствие рассинхронизированных пунктов.
+
+После review/commit/push `dev`, зелёного CI и отдельного разрешения состояние переносится в `main`.
+Нужно дождаться зелёного CI на exact `main` SHA. Создание и push согласованного annotated tag —
+необратимая граница автоматической публикации и требует action-time подтверждения:
+
+```powershell
+git tag -a $releaseVersion -m "Flowvy $releaseVersion"
+git push origin $releaseVersion
+```
+
+`.github/workflows/release.yml` с `contents: write` только у release job повторно fail-closed
+проверяет metadata, принадлежность tagged commit ветке `main` и successful `main` CI для того же SHA,
+после чего выполняет `gh release create --verify-tag`. Prerelease не становится `Latest`. Workflow
+публикует release в этом же repository; отдельный public repository, binary/image assets и token с
+доступом к другому repo не нужны. GitHub автоматически предоставляет source archives, а видимость
+release следует текущей видимости repository.
+
+Механизм не deploy-ит приложение, не создаёт container/image, не запускает production migrations и
+не обращается к Telegram/provider. После workflow нужно вручную сверить tag/SHA, title,
+prerelease/latest state, notes и source archives, затем записать run/release evidence в
+[`PROJECT_STATE.md`](PROJECT_STATE.md). Failed tag/release нельзя перемещать, удалять или
+переиспользовать без нового решения владельца.
+
+GitHub contract повторно сверён 2026-08-26 с официальными
+[workflow tag filters](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushbranchestagsbranches-ignoretags-ignore),
+[`GITHUB_TOKEN` permissions](https://docs.github.com/en/actions/tutorials/authenticate-with-github_token),
+[`gh release create`](https://cli.github.com/manual/gh_release_create) и
+[immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases).
+Repository-level release immutability является отдельной GitHub setting и этим workflow не
+включается.
 
 ## Что отсутствует для production
 
-- container/image и immutable release process;
+- container/image publication и включённая repository-level release immutability;
 - reverse proxy, TLS, allowed hosts/CORS и secret store/rotation;
 - production platform wiring для liveness/readiness и monitoring/alerting;
 - structured log redaction, tracing и retention;

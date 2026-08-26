@@ -16,10 +16,10 @@ if (Test-Path $processFile) {
         $processNameProperty = "${name}ProcessName"
         $startedAtProperty = "${name}StartedAt"
         $allowedNames = if ($name -eq "frontend") {
-            @("pnpm", "cmd", "node")
+            @("pnpm", "node")
         }
         else {
-            @("uv", "python", "python3", "python3.12", "python3.14", "flowvy")
+            @("uv", "python", "python3", "python3.14", "flowvy")
         }
         if ($null -ne $processes.$processNameProperty) {
             $allowedNames = @([string]$processes.$processNameProperty)

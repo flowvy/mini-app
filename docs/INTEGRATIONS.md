@@ -25,10 +25,9 @@ frontend не угадывает username, `short_name` или тип Telegram-�
 
 В локальном named-Tunnel режиме `scripts/dev-up.ps1 -EnableTelegram -NamedTunnelUrl
 'https://<test-host>'` задаёт этот exact origin только запускаемому backend как `WEBAPP_URL` и
-поднимает repo-owned safe preview на `127.0.0.1:80` в Windows или `127.0.0.1:4173` на macOS.
+поднимает repo-owned safe preview на `127.0.0.1:4173`.
 Cloudflare route и BotFather state остаются внешней явной конфигурацией; script их не создаёт и не
-изменяет. При смене машины public hostname остаётся тем же, меняется только Cloudflare Service URL;
-старый connector и Telegram polling останавливаются до запуска Mac origin.
+изменяет. Не запускайте второй connector или Telegram polling для того же dev-контура.
 
 Нативную ширину, позицию и drag-area окна Mini App контролирует клиент Telegram, не frontend.
 Адаптер Flowvy распознаёт официальный platform value `tdesktop` и не отправляет этому клиенту
@@ -95,9 +94,9 @@ Primary evidence, проверено 2026-08-04, 2026-08-08, 2026-08-21 и 2026-
   raw `initData` проверяется на backend; `initDataUnsafe` и client launch params нельзя использовать
   как доказательство identity или invite attribution.
 - [Telegram Bot API `User`](https://core.telegram.org/bots/api#user): `has_main_web_app` возвращается
-  методом `getMe` и является проверяемой capability. Locked aiogram 3.26.0 содержит это поле, а
-  `WebAppInitData.start_param`; locked Telegram Apps SDK 3.11.8 остаётся только transport raw
-  `initData`, не источником решения.
+  методом `getMe` и является проверяемой capability. Locked aiogram 3.31.0 содержит это поле и
+  `WebAppInitData.start_param`; locked `@tma.js/sdk-react 3.0.23` с `@tma.js/sdk 3.3.0`
+  остаётся только transport raw `initData`, не источником решения.
 - [Telegram bot deep linking](https://core.telegram.org/api/links#bot-links): `?start=` открывает
   bot chat и после Start вызывает `/start <parameter>`; Flowvy намеренно использует этот шаг, чтобы
   чат появился в списке до отдельного запуска Main Mini App кнопкой сообщения.
@@ -111,7 +110,7 @@ Primary evidence, проверено 2026-08-04, 2026-08-08, 2026-08-21 и 2026-
   Telegram. Flowvy fullscreen editors и выделенные Kuma/Beszel/Identity/Welcome settings task routes
   используют только `MainButton` для primary create/save action; section-scoped Tribute payment-link
   save остаётся DOM action внутри общего route. `SecondaryButton` не создаётся, потому что закрытие
-  editor уже доступно через header close и `Escape`. Locked Telegram Apps SDK 3.11.8 проверяет
+  editor уже доступно через header close и `Escape`. Locked `@tma.js/sdk-react 3.0.23` проверяет
   capability `MainButton`; Flowvy намеренно не рисует DOM replacement для этих native primary
   actions. Если client bridge отсутствует или отвергает mount/update, fullscreen editor либо
   выделенный settings task остаётся без create/save action. Это fail-closed поведение позволяет
@@ -149,7 +148,7 @@ Primary evidence, проверено 2026-08-04, 2026-08-08, 2026-08-21 и 2026-
   является командой приложению вручную снимать focus.
 - [Telegram Bot API — setWebhook](https://core.telegram.org/bots/api#setwebhook): `secret_token`
   имеет длину 1–256 и алфавит `A-Z a-z 0-9 _ -`; Telegram присылает его в одноимённом secret header.
-- [aiogram 3.26 — setWebhook](https://docs.aiogram.dev/en/v3.26.0/api/methods/set_webhook.html):
+- [aiogram 3.x — setWebhook](https://docs.aiogram.dev/en/dev-3.x/api/methods/set_webhook.html):
   установленная locked версия поддерживает аргумент `secret_token`.
 - [Telegram Bot API — Sending files](https://core.telegram.org/bots/api#sending-files),
   [sendPhoto](https://core.telegram.org/bots/api#sendphoto) и
@@ -166,7 +165,7 @@ Primary evidence, проверено 2026-08-04, 2026-08-08, 2026-08-21 и 2026-
 
 ### Support notifications в private bot chat
 
-Locked aiogram 3.26.0 отправляет fixed product-owned Support copy через существующий
+Locked aiogram 3.31.0 отправляет fixed product-owned Support copy через существующий
 `MessageSender`: новый request и user reply — каждому текущему active admin, support reply —
 request owner. Notification запускается только после явного успешного PostgreSQL commit и остаётся
 best effort: timeout или Bot API failure не меняет HTTP response и не откатывает Support mutation.

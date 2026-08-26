@@ -6,8 +6,8 @@ integration contracts, frontend lint/typecheck, `111` unit tests, production bui
 mobile Chromium Playwright tests. Отдельная полная browser matrix прошла `735/735` на трёх Chromium
 viewports и `245/245` на iOS WebKit; Axe, overflow, console/network guards и visual evidence зелёные
 без retries, suppression, allow-list или completion exception. GitHub Actions на `dev` commit
-`75dfaab` также прошёл 2026-08-26: Backend и Frontend зелёные, включая focused `7/7`
-deterministic Playwright smoke ([run 32960070049](https://github.com/flowvy/mini-app/actions/runs/32960070049)).
+`48942a8` также прошёл 2026-08-26: Backend и Frontend зелёные, включая focused `7/7`
+deterministic Playwright smoke ([run 32960427276](https://github.com/flowvy/mini-app/actions/runs/32960427276)).
 
 Стадия: **незавершённый MVP; production readiness не подтверждена**.
 
@@ -50,8 +50,11 @@ lockfiles и executable configuration имеют приоритет. Истор�
   отдельный worker с frozen rule/profile state, reconciliation и base-access restoration;
   ambiguous/anonymous cases остаются review-only.
 - Support реализует durable requests, conversations, reply-driven lifecycle, Quick Answers,
-  role-aware admin queue, Telegram notifications и optional private R2 attachments. Без R2 система
-  остаётся явной text-only установкой; credentials и signed object operations server-only.
+  role-aware admin queue, Telegram notifications и optional private R2 attachments. При вводе
+  заголовка нового тикета отдельный authenticated endpoint предлагает до трёх локализованных FAQ:
+  PostgreSQL FTS учитывает словоформы и веса полей, locale-owned поисковые фразы — формулировки
+  юзеров, а `pg_trgm` — типичные однословные опечатки. Без R2 система остаётся явной text-only
+  установкой; credentials и signed object operations server-only.
 - Broadcast явно исключён владельцем из MVP scope 2026-08-26 и остаётся product-owned `Coming Soon`
   маршрутом для post-MVP разработки; отсутствие отправки рассылок не блокирует этот MVP release.
 
@@ -68,21 +71,32 @@ lockfiles и executable configuration имеют приоритет. Истор�
 - Shared Desktop/Mini App semantic palette, responsive content contract, light/dark themes и
   accessibility matrix зелёные. ADR 0004 хранит прежний contrast ledger только как historical
   evidence и не разрешает исключений.
+- Standalone controls и rich-text/Telegram HTML editor shells используют один muted secondary
+  border contract; глобальный `text-size-adjust: 100%` сохраняет authored type scale при iOS WebKit
+  text autosizing после изменений viewport, не добавляя JS keyboard/geometry behavior.
 - CommonMark и Telegram HTML editors используют allow-listed serialization; raw HTML и unsafe links
   не проходят в user-visible render.
 
 ### Repository и verification
 
-- Checked-in PowerShell 7 workflows поддерживают Windows и macOS: locked bootstrap, safe dev
-  lifecycle, migrations, changed/full verification, local data reset и Tunnel checks.
+- Checked-in PowerShell 7 workflows поддерживают Apple Silicon macOS: locked bootstrap, safe dev
+  lifecycle, migrations, changed/full verification, local data reset и Tunnel checks. GitHub Actions
+  остаётся Linux-based CI runtime и не использует local lifecycle scripts.
 - GitHub Actions выполняет backend gates и focused `@ci-smoke` browser subset на каждом push в
   `dev`/`main` и в pull requests. Полный Playwright suite и live Telegram/Swiftgram acceptance
   остаются отдельными local release gates.
-- Repository pins latest compatible stable stack: Python 3.14.7/uv 0.12.6, Node 24.19.0 LTS/pnpm
-  11.24.0, PostgreSQL 18.6 и Redis 8.10.1. Frontend и backend lockfiles являются executable source
+- Repository pins latest compatible stable stack: Python 3.14.7/uv 0.12.6,
+  Node 24.19.0 LTS/pnpm 11.24.0, PostgreSQL 18.6 и Redis 8.10.1. Frontend и backend lockfiles
+  являются executable source
   of truth для exact framework/library versions; preview/RC releases не используются.
-- Root и scoped `AGENTS.md`, четыре Flowvy skills, custom read-only agents, Codex config и command
+- Documentation verification derives toolchain, infrastructure, and named library versions from
+  version files, manifests, lockfiles, Compose, and CI; contradictory exact-version prose fails the
+  docs gate instead of remaining a manual review concern.
+- Root и scoped `AGENTS.md`, пять Flowvy skills, custom read-only agents, Codex config и command
   rules имеют отдельные responsibilities. Опасные Git/data commands остаются prompt/forbidden.
+- Bare-SemVer tag release mechanism хранит synchronized English/Russian changelogs, проверяет
+  frontend/Python versions и exact `main` CI, затем создаёт GitHub Release в этом repository. Он не
+  deploy-ит приложение и не публикует image.
 - Большие task plans являются только локальной Git-ignored памятью в `/plans`; после handoff их
   устойчивые результаты переносятся в canonical docs/instructions/ADR, а сами plans удаляются.
 - Full responsibility review не подтвердил механические split для cohesive `support.module.css`,
@@ -114,8 +128,13 @@ lockfiles и executable configuration имеют приоритет. Истор�
 - Не завершены независимый security review и production recovery test. Локальные `pip-audit`,
   `pnpm audit --prod`, Bandit и dependency/dead-code scans зелёные, но не заменяют внешний review.
 - Локальный named Tunnel и dev R2 acceptance не являются доказательством production deployment.
+- GitHub API 2026-08-26 сообщает repository visibility `PRIVATE`. Владелец планирует
+  сделать repository public к release; до фактического изменения setting release visibility следует
+  текущей visibility repository. Repository-level immutable releases механизмом не включаются и
+  отдельно не подтверждены.
 
 ## Следующее действие
 
-Согласовать release-перенос `dev -> main` и версию/tag. Broadcast уже исключён из MVP scope и
-остаётся post-MVP работой.
+Согласовать version/tag, подготовить bilingual MVP changelog, прогнать свежий full release gate и
+выполнить release-перенос `dev -> main`. Broadcast уже исключён из MVP scope и остаётся post-MVP
+работой.

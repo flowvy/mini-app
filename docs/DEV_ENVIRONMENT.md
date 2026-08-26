@@ -35,39 +35,50 @@ brew install uv node@24 cloudflared
 brew install --cask powershell
 corepack enable
 corepack prepare pnpm@11.24.0 --activate
-uv python install 3.14.7
+uv python install 3.14.7 --default
 ```
 
 Homebrew устанавливает `node@24` как keg-only formula. Если другая Node уже linked, добавьте exact
 runtime в `PATH` текущего shell перед bootstrap и проверками:
 
 ```bash
-export PATH="$(brew --prefix node@24)/bin:$PATH"
+export PATH="$HOME/.local/bin:$(brew --prefix node@24)/bin:$PATH"
 node --version
+python --version
 ```
+
+Node 24 выбран осознанно как актуальная LTS-линия, а не как самая новая Current-линия.
+`frontend/package.json` намеренно ограничивает runtime диапазоном `>=24.19.0 <25`, а
+`frontend/.node-version` и CI фиксируют exact patch `24.19.0`. Более старый global Node 22 и
+более новый Current Node 26 не являются repository toolchain; наличие их в `PATH`
+не меняет checked-in requirement. После `brew install` всегда проверяйте exact
+`node --version`; если formula перешла на другой patch, используйте version manager либо
+подписанный exact build из [Node.js 24.19.0 archive](https://nodejs.org/download/release/v24.19.0/).
+`uv python install --default` создаёт user-local `python`/`python3` shims в `$HOME/.local/bin`;
+repository backend дополнительно фиксирует ту же версию через `backend/.python-version`.
 
 После установки один раз откройте Docker Desktop и дождитесь `docker info`. `uv` официально
 поддерживает Apple Silicon, `frontend/.node-version` фиксирует Node 24.19.0 LTS,
-`frontend/package.json` фиксирует `pnpm@11.24.0`, и те же версии использует CI. Не переносите с
-Windows `.venv`, `node_modules`, `dist`, `.artifacts` или Docker volume:
-их создают заново из lockfiles/Compose. Локальные `.env` переносятся только отдельным защищённым
-каналом и никогда не попадают в Git.
+`frontend/package.json` фиксирует `pnpm@11.24.0`, и те же версии использует CI. `.venv`,
+`node_modules`, `dist`, `.artifacts` и Docker volumes создаются локально из lockfiles/Compose и не
+переносятся между машинами. Локальные `.env` переносятся только отдельным защищённым каналом и
+никогда не попадают в Git.
 
-Контракт сверён 2026-08-26 с официальными инструкциями
+Контракт сверён 2026-08-26 с официальными инструкциями и release data:
+[Node.js release archive](https://nodejs.org/download/release/v24.19.0/),
 [Docker Desktop for Mac](https://docs.docker.com/desktop/setup/install/mac-install/),
 [`uv` installation/platform support](https://docs.astral.sh/uv/getting-started/installation/),
 [PowerShell platform variables](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_automatic_variables?view=powershell-7.6)
 и [`cloudflared` downloads](https://developers.cloudflare.com/tunnel/downloads/).
 
-Все repository workflows выполняются в PowerShell 7. В примерах ниже Windows использует
-`.\scripts\name.ps1`, а macOS — эквивалентный `./scripts/name.ps1`; параметры одинаковы.
+Все local repository workflows выполняются в PowerShell 7 на macOS.
 
 Для первичной установки locked dependencies из корня используйте:
 
 ```powershell
-.\scripts\bootstrap.ps1
+./scripts/bootstrap.ps1
 # либо сразу установить Chromium и WebKit
-.\scripts\bootstrap.ps1 -InstallBrowsers
+./scripts/bootstrap.ps1 -InstallBrowsers
 ```
 
 ## Инфраструктура
@@ -193,12 +204,12 @@ dev-контура. Menu Button или inline `web_app` button не заменя
 и публичного Tunnel:
 
 ```powershell
-.\scripts\dev-up.ps1
+./scripts/dev-up.ps1
 ```
 
 Script устанавливает dependencies, поднимает PostgreSQL/Redis, явно привязывает backend и Alembic к
 Compose URL (даже если в системном окружении уже есть другой `DATABASE_URL`), применяет migrations,
-запускает backend/frontend скрытыми процессами и ждёт `http://127.0.0.1:8001/api/ready` и Vite. PID и
+запускает backend/frontend фоновыми процессами и ждёт `http://127.0.0.1:8001/api/ready` и Vite. PID и
 logs хранятся в `.artifacts/dev`; повторный запуск блокируется, а занятые `8001`/`5173` не
 перехватываются. После уже выполненного bootstrap можно добавить `-SkipInstall`.
 
@@ -209,22 +220,21 @@ long polling, а при полном HTTPS webhook-конфиге зарегис
 обоих случаях нужен публичный HTTPS `WEBAPP_URL`; для Main Mini App он должен совпадать с
 постоянным URL, сохранённым в BotFather. Не запускайте второй polling-процесс этого бота.
 
-Если named Tunnel уже создан и его published application route направлен на platform origin —
-`http://localhost:80` на Windows либо `http://localhost:4173` на macOS — весь Telegram dev-контур
-запускается одной командой:
+Если named Tunnel уже создан и его published application route направлен на
+`http://localhost:4173`, весь Telegram dev-контур запускается одной командой:
 
 ```powershell
-.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+./scripts/dev-up.ps1 -SkipInstall -EnableTelegram `
     -NamedTunnelUrl 'https://<test-host>'
 ```
 
 `NamedTunnelUrl` принимает только чистый HTTPS origin, передаёт его backend как process-level
 `WEBAPP_URL`, собирает frontend без mock/debug flags и поднимает отдельный preview на
-`127.0.0.1:80` на Windows или `127.0.0.1:4173` на macOS. Значение не записывается в `.env`. Script
+`127.0.0.1:4173`. Значение не записывается в `.env`. Script
 проверяет local debug route, public root и
 `/api/health`, но не создаёт DNS/route, не запускает и не перенастраивает системный `cloudflared`.
 
-Остановка выполняется через `.\scripts\dev-down.ps1`: script завершает только записанные им process
+Остановка выполняется через `./scripts/dev-down.ps1`: script завершает только записанные им process
 trees, включая repo-owned public preview, останавливает Compose services и сохраняет volumes.
 
 ## Штатный Flowvy dev-контур
@@ -237,44 +247,27 @@ trees, включая repo-owned public preview, останавливает Comp
 запуск после перезагрузки выполняется из корня:
 
 ```powershell
-.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+./scripts/dev-up.ps1 -SkipInstall -EnableTelegram `
     -NamedTunnelUrl 'https://dev-app.flowvy.io'
 ```
 
 Перед запуском должны одновременно выполняться условия:
 
 - Docker Desktop и системный `cloudflared` connector запущены;
-- Cloudflare route `dev-app.flowvy.io` направлен на platform origin: `http://localhost:80` на
-  Windows или `http://localhost:4173` на macOS;
+- Cloudflare route `dev-app.flowvy.io` направлен на `http://localhost:4173`;
 - BotFather Main App test bot указывает на `https://dev-app.flowvy.io`;
 - `backend/.env` содержит только локальные test credentials, `DEBUG=false`, а `WEBHOOK_URL` пуст
   для long polling;
 - другой polling-процесс того же bot не работает.
 
-### Переключение named Tunnel с Windows на Mac
+### Named Tunnel на macOS
 
-Public hostname и BotFather Main Mini App URL остаются `https://dev-app.flowvy.io`; меняется только
-локальный Cloudflare Service URL. Repository не читает tunnel token и не выполняет этот внешний шаг.
-
-1. На Mac установите `cloudflared`, подключите существующий tunnel connector, но пока не запускайте
-   его одновременно со старым connector.
-2. Поднимите localhost-only Flowvy на Mac и подтвердите local health/ready.
-3. На Windows выполните `dev-down.ps1` и остановите старый системный `cloudflared`; убедитесь, что
-   старый Telegram polling завершён.
-4. В Cloudflare Dashboard измените только Service URL route `dev-app.flowvy.io` с
-   `http://localhost:80` на `http://localhost:4173`.
-5. Запустите Mac connector и Flowvy:
-
-   ```powershell
-   ./scripts/dev-up.ps1 -SkipInstall -EnableTelegram `
-       -NamedTunnelUrl 'https://dev-app.flowvy.io'
-   ```
-6. Подтвердите local/public root, `/api/health`, `/api/ready` = `200`, public debug = `404` и только
-   затем откройте test Mini App.
-
-Не держите Windows и Mac connector/polling как две параллельные dev replicas: один tunnel может
-распределять запросы между connectors, а один Telegram bot не должен иметь два polling-процесса.
-Public hostname → local Service URL mapping и macOS launch-agent lifecycle сверены 2026-08-21 с
+Public hostname и BotFather Main Mini App URL остаются `https://dev-app.flowvy.io`, а Cloudflare
+Service URL — `http://localhost:4173`. Repository не читает tunnel token и не изменяет эту внешнюю
+конфигурацию. Не запускайте параллельные tunnel connectors или polling-процессы одного Telegram bot.
+После запуска подтвердите local/public root, `/api/health`, `/api/ready` = `200`, public debug =
+`404` и только затем открывайте test Mini App. Public hostname → local Service URL mapping и macOS
+launch-agent lifecycle сверены 2026-08-21 с
 [Cloudflare routing](https://developers.cloudflare.com/tunnel/routing/) и
 [Cloudflare macOS service](https://developers.cloudflare.com/tunnel/advanced/local-management/as-a-service/macos/).
 
@@ -283,16 +276,16 @@ debug route отвечает `404`, а backend log содержит `telegram_ma
 выполняется одной командой:
 
 ```powershell
-.\scripts\dev-down.ps1
+./scripts/dev-down.ps1
 ```
 
 Если нужен полностью чистый локальный сценарий, сначала остановите dev, затем используйте отдельную
 команду с явным подтверждением:
 
 ```powershell
-.\scripts\dev-down.ps1
-.\scripts\dev-reset-data.ps1 -ConfirmDevDataReset
-.\scripts\dev-up.ps1 -SkipInstall -EnableTelegram `
+./scripts/dev-down.ps1
+./scripts/dev-reset-data.ps1 -ConfirmDevDataReset
+./scripts/dev-up.ps1 -SkipInstall -EnableTelegram `
     -NamedTunnelUrl 'https://dev-app.flowvy.io'
 ```
 
@@ -340,12 +333,12 @@ light/dark, role/loading/error/malformed/mutation, keyboard, axe, overflow и vi
 Change-aware gate из корня:
 
 ```powershell
-.\scripts\verify.ps1 -Scope Changed
-.\scripts\verify.ps1 -Scope Full   # требует Docker и установленных browser binaries
+./scripts/verify.ps1 -Scope Changed
+./scripts/verify.ps1 -Scope Full   # требует Docker и установленных browser binaries
 ```
 
-На macOS те же команды запускаются как `./scripts/verify.ps1 ...`. Full gate включает
-`verify-tooling.ps1`, который парсит все PowerShell scripts и проверяет platform port contract.
+Full gate включает `verify-tooling.ps1`, который парсит все PowerShell scripts и проверяет macOS
+lifecycle contract.
 
 `Full` добавляет migrations, полный pytest, Remnawave snapshot/client check и UI smoke. GitHub
 Actions выполняет тот же минимальный backend/frontend контур на pull request и push в `dev`/`main`.
@@ -356,10 +349,10 @@ Actions выполняет тот же минимальный backend/frontend �
 `DEBUG=false`:
 
 ```powershell
-.\scripts\tunnel-up.ps1 -ConfirmPublic
+./scripts/tunnel-up.ps1 -ConfirmPublic
 # если локальный WARP не позволяет открыть собственный trycloudflare URL:
-.\scripts\tunnel-up.ps1 -ConfirmPublic -SkipLocalReachability
-.\scripts\tunnel-down.ps1
+./scripts/tunnel-up.ps1 -ConfirmPublic -SkipLocalReachability
+./scripts/tunnel-down.ps1
 ```
 
 Script создаёт отдельную production-сборку с `VITE_API_URL=/api`, `VITE_MOCK_AUTH=false`, preview на
@@ -367,20 +360,19 @@ Script создаёт отдельную production-сборку с `VITE_API_UR
 динамический URL и подходит только для короткого smoke. Полная синтетическая проверка одной командой:
 
 ```powershell
-.\scripts\verify-tunnel.ps1
+./scripts/verify-tunnel.ps1
 ```
 
-Для уже настроенного named Tunnel безопасный origin можно поднять отдельно на platform port (`80`
-в Windows, `4173` в macOS):
+Для уже настроенного named Tunnel безопасный origin можно поднять отдельно на port `4173`:
 
 ```powershell
-.\scripts\tunnel-up.ps1 -ConfirmPublic `
+./scripts/tunnel-up.ps1 -ConfirmPublic `
     -NamedTunnelUrl 'https://<test-host>'
-.\scripts\tunnel-down.ps1
+./scripts/tunnel-down.ps1
 ```
 
 В Cloudflare published application route должен заранее существовать exact hostname с matching
-platform service. В named mode script задаёт Vite только exact разрешённый hostname, проверяет public
+service `http://localhost:4173`. В named mode script задаёт Vite только exact разрешённый hostname, проверяет public
 root и `/api/health` и не создаёт второй connector. Для обычного рабочего цикла предпочтите единый
 `dev-up -EnableTelegram -NamedTunnelUrl ...`, чтобы backend получил тот же `WEBAPP_URL`.
 
