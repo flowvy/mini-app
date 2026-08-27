@@ -97,6 +97,10 @@ lockfiles и executable configuration имеют приоритет. Истор�
 - Bare-SemVer tag release mechanism хранит synchronized English/Russian changelogs, проверяет
   frontend/Python versions и exact `main` CI, затем создаёт GitHub Release в этом repository. Он не
   deploy-ит приложение и не публикует image.
+- Собственный код подготовлен к публикации под `AGPL-3.0-only`: root license, package metadata,
+  отдельные Flowvy trademark rules и third-party notices зафиксированы ADR 0005. Коммерческий
+  self-hosting разрешён, но изменённая сетевая версия должна предоставлять соответствующий source;
+  AGPL не передаёт права на название, логотип и фирменные промоизображения Flowvy.
 - Большие task plans являются только локальной Git-ignored памятью в `/plans`; после handoff их
   устойчивые результаты переносятся в canonical docs/instructions/ADR, а сами plans удаляются.
 - Full responsibility review не подтвердил механические split для cohesive `support.module.css`,

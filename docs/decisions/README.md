@@ -14,7 +14,9 @@
   accepted Creator sponsor offers/intents/billing state и восстановление базового доступа;
   недоступный Shop остаётся deferred upgrade;
 - [`0004-desktop-color-parity.md`](0004-desktop-color-parity.md) — desktop-authoritative color
-  values/roles, ограниченное Header/TabBar glass exception и честная фиксация contrast debt.
+  values/roles, ограниченное Header/TabBar glass exception и честная фиксация contrast debt;
+- [`0005-open-source-license-and-brand.md`](0005-open-source-license-and-brand.md) — AGPL-3.0-only для
+  кода, отдельная защита бренда Flowvy и централизованная third-party attribution.
 
 ## Когда нужен ADR
 

@@ -1,143 +1,127 @@
-# Flowvy
+<div align="center">
 
-Flowvy — Telegram Mini App и бот для управления подпиской на Xray-прокси через Remnawave.
-Пользователь видит подписку, устройства и состояние сервиса; администратор — сводку, пользователей
-и настройки интеграций/оформления. FastAPI выступает BFF, React-клиент работает только с его API.
+<img src="assets/header.png" alt="Flowvy Mini App" width="720">
+
+### Open-source Telegram Mini App и бот для управления Xray-подписками через Remnawave
+
+Telegram · Remnawave · Tribute · Uptime Kuma · Beszel
+
+[![CI](https://github.com/flowvy/mini-app/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/flowvy/mini-app/actions/workflows/ci.yml?query=branch%3Adev)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-663399?style=flat-square)](LICENSE)
+[![Status: MVP](https://img.shields.io/badge/status-MVP-f59e0b?style=flat-square)](#статус)
+
+[**Возможности**](#почему-flowvy) · [**Локальный запуск**](#локальный-запуск) · [**Документация**](#документация)
+
+<br>
+
+<img src="assets/mini-app.png" alt="Интерфейс Flowvy Mini App" width="960">
+
+</div>
+
+## Почему Flowvy
+
+- **Подписка внутри Telegram** — трафик, срок действия, ссылка подключения и устройства доступны в
+  привычном Mini App без отдельного кабинета
+- **Один интерфейс для пользователя и оператора** — пользователь управляет своим доступом, а
+  администратор видит сводку, юзеров, профили доступа и настройки сервиса
+- **Безопасная Telegram-идентификация** — backend проверяет подпись и срок действия `initData`, а
+  роли и активность подтверждает перед чувствительными действиями
+- **Гибкая регистрация** — открытый или invite-only вход, многоразовые инвайты, referral attribution
+  и управляемые профили доступа Remnawave
+- **Состояние инфраструктуры** — встроенный Pulse показывает данные Uptime Kuma или Beszel без
+  передачи credentials во frontend
+- **Поддержка и база знаний** — обращения, переписка, Quick Answers и Telegram-уведомления собраны в
+  одном потоке
+- **Sponsor-доступ через Tribute** — подписки и донаты обрабатываются по подписанным provider events;
+  возврат из checkout сам по себе не считается оплатой
+- **Готов к настройке под оператора** — название, логотип и локализованный контент меняются без форка
+  продуктового интерфейса
+
+## Как устроен Flowvy
+
+Flowvy не является прокси-сервером и не заменяет Remnawave. React Mini App обращается только к
+FastAPI BFF. Backend проверяет Telegram authentication, хранит локальные данные в PostgreSQL и Redis
+и взаимодействует с Remnawave, Telegram Bot API, выбранным Pulse provider, Tribute и optional
+Cloudflare R2.
+
+- `frontend/` — React 19, TypeScript, Vite, TanStack Router/Query и TMA.js SDK
+- `backend/` — FastAPI, aiogram, Dishka, SQLAlchemy/Alembic, PostgreSQL и Redis
+- `scripts/` — locked bootstrap, локальный lifecycle и verification workflows на PowerShell 7
+- `docs/` — архитектура, integrations, security boundaries, testing и operations
+
+Подробная схема компонентов и trust boundaries находится в
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Статус
 
-Проект находится в состоянии незавершённого MVP и пока не готов к production. Основные экраны,
-backend-потоки, локальные/CI gates и deterministic browser matrix реализованы, но production
-deployment, recovery и независимая security readiness не доказаны. Проверенные факты, известные
-проблемы и ближайшее действие хранятся в
+> [!WARNING]
+> Flowvy находится в состоянии незавершённого MVP. Локальные и CI-проверки реализованы, но
+> production deployment, backup/recovery, observability и независимая security readiness пока не
+> подтверждены. Не разворачивайте текущую версию как production-сервис без собственного review.
+
+Проверенные возможности, известные ограничения и ближайшее действие перечислены в
 [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md).
 
-## Состав проекта
+## Локальный запуск
 
-- `backend/` — Python 3.14, FastAPI, aiogram, Dishka, SQLAlchemy/Alembic, PostgreSQL, Redis.
-- `frontend/` — React 19, TypeScript 7, Vite 8, TanStack Router/Query, TMA.js SDK.
-- `docker-compose.dev.yml` — только локальные PostgreSQL и Redis.
-- `scripts/` и `.github/workflows/` — локальные/CI-проверки и tag-driven GitHub Releases.
-- `.agents/skills/` и `.codex/` — процедуры, узкие агенты и project guardrails Codex.
-- `docs/` — архитектура, запуск и текущее состояние.
-- `plans/` — Git-ignored локальные планы только для выполняющихся крупных задач.
+Текущий repository workflow проверен на Apple Silicon macOS. Нужны Python 3.14.7, uv 0.12.6,
+Node.js 24.19.0 LTS, pnpm 11.24.0, Docker Desktop и PowerShell 7.
 
-## Быстрый локальный запуск
-
-Нужны Apple Silicon Mac, Python 3.14.7, [uv 0.12.6](https://docs.astral.sh/uv/), Node.js 24.19.0 LTS
-с pnpm 11.24.0, Docker Desktop и PowerShell 7. Команды ниже запускаются из корня репозитория.
+Сначала создайте локальные `backend/.env` и `frontend/.env` из соответствующих `.env.example` и
+проверьте, что в них нет production credentials. Затем из корня репозитория:
 
 ```powershell
-docker compose -f docker-compose.dev.yml up -d postgres redis
-
-Set-Location backend
-Copy-Item .env.example .env
-uv sync --locked
-uv run alembic upgrade head
-uv run python -m flowvy
-```
-
-Перед запуском проверьте `backend/.env`. Для изолированного localhost без реальных интеграций задайте
-очевидно фиктивный `BOT_TOKEN=000000:TEST`, оставьте пустыми `WEBHOOK_URL`, `REMNAWAVE_URL`,
-`REMNAWAVE_API_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `BESZEL_EMAIL`, `BESZEL_PASSWORD` и оставьте
-`DEBUG=false`. Пустой token допустим
-только для health/UI-каркаса без Telegram-auth; защищённые запросы при нём возвращают отказ.
-Debug включайте лишь на изолированном localhost и никогда не совмещайте с Tunnel.
-
-Во втором терминале:
-
-```powershell
-Set-Location frontend
-Copy-Item .env.example .env
-pnpm install --frozen-lockfile
-pnpm dev
-```
-
-Frontend доступен на `http://localhost:5173`, API — на `http://localhost:8001`; liveness —
-`http://localhost:8001/api/health`, readiness PostgreSQL/Redis — `http://localhost:8001/api/ready`.
-Для локального каркаса интерфейса установите
-`VITE_MOCK_AUTH=true`. Экраны с реальными данными всё равно требуют настроенного backend либо
-детерминированных mock-ответов; mock auth сам по себе не имитирует Remnawave, Kuma и Beszel.
-
-Полная инструкция, включая Telegram tunnel и ограничения debug-режима:
-[`docs/DEV_ENVIRONMENT.md`](docs/DEV_ENVIRONMENT.md).
-
-После создания и проверки локальных `.env` безопасный localhost-only запуск без Telegram и
-публичного Tunnel можно выполнить одной командой:
-
-```powershell
+./scripts/bootstrap.ps1
 ./scripts/dev-up.ps1
-# по окончании
+```
+
+`dev-up.ps1` запускает безопасный localhost-only контур без Telegram и публичного Tunnel. Остановить
+его можно командой:
+
+```powershell
 ./scripts/dev-down.ps1
 ```
 
-На машине владельца **полноценный/штатный Flowvy dev-контур** означает Telegram-enabled запуск через
-уже созданный named Tunnel `dev-app.flowvy.io`:
-
-```powershell
-./scripts/dev-up.ps1 -SkipInstall -EnableTelegram `
-    -NamedTunnelUrl 'https://dev-app.flowvy.io'
-```
-
-Команда предполагает, что `backend/.env` содержит локальные test credentials, BotFather Main App
-указывает на тот же URL, а Cloudflare published application route уже направляет hostname на
-`http://localhost:4173`. Полный контракт и безопасная очистка dev-данных описаны в
-[`docs/DEV_ENVIRONMENT.md`](docs/DEV_ENVIRONMENT.md#штатный-flowvy-dev-контур).
-
-Первичная установка отдельно доступна через `scripts/bootstrap.ps1`; ключ `-InstallBrowsers`
-добавляет Chromium и WebKit для Playwright.
-
-Временный Cloudflare Quick Tunnel открывается только через безопасную production-сборку и после
-проверки, что backend работает с `DEBUG=false`:
-
-```powershell
-./scripts/tunnel-up.ps1 -ConfirmPublic
-# по окончании
-./scripts/tunnel-down.ps1
-```
-
-`scripts/verify-tunnel.ps1` выполняет тот же flow на синтетической конфигурации, проверяет публичные
-auth/debug границы и сам всё останавливает. Для постоянного Telegram test bot нужен именованный
-Tunnel со стабильным URL, а не временный Quick Tunnel.
+Полная настройка, mock auth, Telegram test bot и Tunnel описаны в
+[`docs/DEV_ENVIRONMENT.md`](docs/DEV_ENVIRONMENT.md). Никогда не публикуйте `DEBUG=true` и не
+добавляйте `.env` в Git.
 
 ## Проверки
 
 ```powershell
-# из корня: выбрать проверки по текущему diff
+# проверки по текущему diff
 ./scripts/verify.ps1 -Scope Changed
 
-# полный gate с Docker, migrations, contracts и UI smoke
+# полный gate: services, migrations, contracts и UI
 ./scripts/verify.ps1 -Scope Full
 ```
 
-Backend-тесты с репозиториями требуют отдельную PostgreSQL БД `test`, которую создаёт
-`backend/scripts/init-test-db.sql` при первом создании Compose volume. Frontend имеет Vitest-набор и
-детерминированную Playwright state matrix на mock API: критические маршруты, роли, ошибки, mutations,
-console/network cleanliness, accessibility, keyboard focus и четыре browser/viewport проекта.
+Состав и границы автоматических проверок описаны в [`docs/TESTING.md`](docs/TESTING.md).
 
-## Карта документации
+## Документация
 
-- [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md) — что реально сделано, что сломано и что делать
-  следующим.
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — границы компонентов, данные и доверенные зоны.
-- [`docs/DEV_ENVIRONMENT.md`](docs/DEV_ENVIRONMENT.md) — установка, запуск и безопасная локальная
-  разработка.
-- [`docs/PRODUCT.md`](docs/PRODUCT.md) и [`docs/ROADMAP.md`](docs/ROADMAP.md) — текущие продуктовые
-  потоки и порядок будущей работы.
-- [`docs/TESTING.md`](docs/TESTING.md) и [`docs/SECURITY.md`](docs/SECURITY.md) — доказательство
-  готовности и обязательные trust-инварианты.
-- [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md) и [`docs/OPERATIONS.md`](docs/OPERATIONS.md) — внешние
-  контракты и честные границы локальной/production эксплуатации.
-- [`CHANGELOG.md`](CHANGELOG.md) и [`CHANGELOG.ru.md`](CHANGELOG.ru.md) — синхронные release notes.
-- [`PLANS.md`](PLANS.md) — правила ведения больших задач.
-- [`AGENTS.md`](AGENTS.md) — постоянные инструкции Codex; в backend, frontend, tests, migrations и
-  docs действуют более точные вложенные инструкции.
-- [`.agents/skills/`](.agents/skills/) — аудит, исследование интеграций, проверка изменений и UI.
+- [`docs/PRODUCT.md`](docs/PRODUCT.md) — роли, пользовательские потоки и продуктовые границы
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — компоненты, данные и trust boundaries
+- [`docs/DEV_ENVIRONMENT.md`](docs/DEV_ENVIRONMENT.md) — установка и локальная разработка
+- [`docs/INTEGRATIONS.md`](docs/INTEGRATIONS.md) — Telegram, Remnawave, Pulse, Tribute и R2
+- [`docs/SECURITY.md`](docs/SECURITY.md) — security invariants и модель угроз
+- [`docs/OPERATIONS.md`](docs/OPERATIONS.md) — runtime-процедуры и production gaps
+- [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md) — последнее подтверждённое состояние проекта
+- [`CHANGELOG.md`](CHANGELOG.md) и [`CHANGELOG.ru.md`](CHANGELOG.ru.md) — release notes
 
-## Работа с Codex
+## Лицензия и бренд
 
-Перед задачей Codex должен прочитать корневой и ближайший вложенный `AGENTS.md`, проверить dirty
-worktree и открыть `PROJECT_STATE.md`. Для большой или прерываемой работы создаётся план в
-`plans/`; до финального handoff его устойчивые выводы переносятся в canonical docs/instructions, а
-сам план удаляется. Завершённые планы не хранятся. Готовность подтверждается только свежими командами
-и, для UI, реальной проверкой поведения и отображения.
+Исходный код Flowvy распространяется по лицензии
+[`GNU Affero General Public License v3.0 only`](LICENSE). Если изменённая версия работает по сети для
+других пользователей, её соответствующий исходный код также должен быть доступен по условиям AGPL.
+
+Название Flowvy, логотип и фирменные изображения не передаются по AGPL. Форки и изменённые
+дистрибутивы должны использовать собственное название и визуальную айдентику; подробные правила — в
+[`TRADEMARKS.md`](TRADEMARKS.md). Лицензии и атрибуция сторонних компонентов перечислены в
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+---
+
+<div align="center">
+<sub>Flowvy Mini App — открытый self-hosted кабинет для операторов Remnawave и их пользователей.</sub>
+</div>

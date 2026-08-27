@@ -16,7 +16,9 @@ $docFiles = @(
     Get-Item `
         (Join-Path $repoRoot "README.md"), `
         (Join-Path $repoRoot "AGENTS.md"), `
-        (Join-Path $repoRoot "PLANS.md") `
+        (Join-Path $repoRoot "PLANS.md"), `
+        (Join-Path $repoRoot "THIRD_PARTY_NOTICES.md"), `
+        (Join-Path $repoRoot "TRADEMARKS.md") `
         -ErrorAction SilentlyContinue
     Get-ChildItem $docsDir, $plansDir, $agentsDir -Recurse -File -Filter "*.md" -ErrorAction SilentlyContinue
     Get-ChildItem $backendDir, $frontendDir -Recurse -File -Filter "AGENTS.md" -ErrorAction SilentlyContinue
