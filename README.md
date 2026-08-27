@@ -65,118 +65,61 @@ FastAPI BFF. Сервер проверяет Telegram-аутентификаци
 
 ## Установка на сервер
 
-Нужны Linux-сервер с Docker Engine и Docker Compose v2, домен и внешний обратный прокси-сервер с
-HTTPS. Приложение принимает соединения только через `127.0.0.1:8001`, поэтому публиковать этот порт
-напрямую в интернет не нужно.
+### 1. Установить Docker
 
-### 1. Скачать конфигурацию и создать секреты
+```bash
+sudo curl -fsSL https://get.docker.com | sh
+```
+
+### 2. Скачать файлы
 
 ```bash
 sudo -i
 mkdir -p /opt/mini-app && cd /opt/mini-app
 
-curl -fsSLo docker-compose.yml \
-  https://raw.githubusercontent.com/flowvy/mini-app/main/docker-compose.yml
-curl -fsSLo .env \
-  https://raw.githubusercontent.com/flowvy/mini-app/main/.env.example
+curl -o docker-compose.yml https://raw.githubusercontent.com/flowvy/mini-app/main/docker-compose.yml && \
+curl -o .env https://raw.githubusercontent.com/flowvy/mini-app/main/.env.example
 chmod 600 .env
-
-POSTGRES_PASSWORD="$(openssl rand -hex 24)"
-TELEGRAM_WEBHOOK_SECRET="$(openssl rand -hex 32)"
-sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=${POSTGRES_PASSWORD}|" .env
-sed -i "s|^TELEGRAM_WEBHOOK_SECRET=.*|TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET}|" .env
-unset POSTGRES_PASSWORD TELEGRAM_WEBHOOK_SECRET
 ```
 
-У Mini-App нет отдельного `APP_SECRET`. `REMNAWAVE_WEBHOOK_SECRET` генерировать заново нельзя: он
-должен совпадать с `WEBHOOK_SECRET_HEADER` в Remnawave. Если панель установлена на этом же сервере в
-`/opt/remnawave`, перенесите значение без вывода в терминал:
+### 3. Заполнить `.env`
+
+Сгенерируйте пароль PostgreSQL и секрет Telegram webhook:
 
 ```bash
-REMNAWAVE_WEBHOOK_SECRET="$(awk -F= '/^WEBHOOK_SECRET_HEADER=/{sub(/^[^=]*=/, ""); gsub(/\r/, ""); print; exit}' /opt/remnawave/.env)"
-if [[ ! "$REMNAWAVE_WEBHOOK_SECRET" =~ ^[A-Za-z0-9]{32,}$ ]]; then
-  echo "WEBHOOK_SECRET_HEADER не найден или имеет неверный формат" >&2
-  unset REMNAWAVE_WEBHOOK_SECRET
-  exit 1
-fi
-
-sed -i "s|^REMNAWAVE_WEBHOOK_SECRET=.*|REMNAWAVE_WEBHOOK_SECRET=${REMNAWAVE_WEBHOOK_SECRET}|" .env
-unset REMNAWAVE_WEBHOOK_SECRET
+sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 24)/" .env && \
+sed -i "s/^TELEGRAM_WEBHOOK_SECRET=.*/TELEGRAM_WEBHOOK_SECRET=$(openssl rand -hex 32)/" .env
 ```
 
-Если Remnawave находится на другом сервере, перенесите `WEBHOOK_SECRET_HEADER` вручную через
-защищённый канал.
-
-### 2. Заполнить `.env`
+Откройте `.env`:
 
 ```bash
-nano /opt/mini-app/.env
+nano .env
 ```
 
-Обязательные значения:
+Заполните:
 
-- `APP_DOMAIN` — домен без `https://` и пути;
-- `BOT_TOKEN` — токен Telegram-бота от BotFather;
-- `ADMIN_TELEGRAM_IDS` — Telegram ID администраторов через запятую;
-- `REMNAWAVE_URL` — HTTPS-адрес панели;
-- `REMNAWAVE_API_TOKEN` — API-токен Remnawave;
-- `REMNAWAVE_WEBHOOK_SECRET` — существующий `WEBHOOK_SECRET_HEADER` Remnawave.
+- `APP_DOMAIN`
+- `BOT_TOKEN`
+- `ADMIN_TELEGRAM_IDS`
+- `REMNAWAVE_URL`
+- `REMNAWAVE_API_TOKEN`
+- `REMNAWAVE_WEBHOOK_SECRET`
 
-Поля Kuma, Beszel, Tribute и R2 необязательны. `.env` содержит секреты: не публикуйте его и не
-добавляйте в Git.
-
-### 3. Настроить HTTPS и интеграции
-
-Направьте обратный прокси-сервер на `127.0.0.1:8001`. Например, для Caddy:
-
-```caddyfile
-app.example.com {
-    reverse_proxy 127.0.0.1:8001
-}
-```
-
-В BotFather укажите `https://APP_DOMAIN` как URL основной Mini App. В Remnawave добавьте получателя
-webhook:
-
-```text
-https://APP_DOMAIN/api/webhooks/remnawave
-```
-
-### 4. Запустить
+### 4. Запустить Mini-App
 
 ```bash
 cd /opt/mini-app
-docker compose config --quiet
 docker compose up -d && docker compose logs -f -t
 ```
 
-Выйти из просмотра журналов можно сочетанием `Ctrl+C`: контейнеры продолжат работать. Проверка
-состояния:
-
-```bash
-docker compose ps -a
-curl -fsS https://app.example.com/api/health
-curl -fsS https://app.example.com/api/ready
-```
-
-`app`, `postgres` и `redis` должны быть healthy, а `migrate` — завершиться с кодом `0`.
+`Ctrl+C` закроет просмотр журналов, но не остановит контейнеры.
 
 ### Обновление
-
-Перед обновлением сделайте резервную копию PostgreSQL и прочитайте заметки о выпуске. Затем:
 
 ```bash
 cd /opt/mini-app && docker compose pull && docker compose down && docker compose up -d && docker compose logs -f
 ```
-
-Новые миграции применятся до запуска приложения. Команда создаёт короткий простой; бесшовное
-обновление несколькими репликами пока не поддерживается.
-
-Образ `ghcr.io/flowvy/mini-app:latest` появится после первого стабильного релиза. Репозиторий и пакет
-GHCR должны быть публичными, иначе Docker не сможет скачать их без авторизации.
-
-Подробности про резервные копии, закрепление конкретной версии, откат и хранение данных находятся в
-[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Проверки
 

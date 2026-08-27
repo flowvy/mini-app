@@ -248,8 +248,9 @@ Tunnel; затем через внешний DNS edge проверяет `health
 - container: production Dockerfile build и disposable Compose runtime smoke после backend/frontend;
 - failure artifacts: Playwright traces/screenshots/video/report.
 
-Workflow пока не заменяет локальную focused проверку и не подтверждает production deployment. Его
-последний подтверждённый удалённый run фиксируется в `PROJECT_STATE.md`.
+Container job использует `push: false`: образ существует только во временном CI runner и не
+публикуется в GHCR. Workflow пока не заменяет локальную focused проверку и не подтверждает реальное
+развёртывание. Его последний подтверждённый удалённый run фиксируется в `PROJECT_STATE.md`.
 
 `.github/workflows/release.yml` не заменяет release gate. На tag push он требует successful `main`
 CI для exact tagged SHA, запускает `scripts/release.ps1`, публикует multi-platform GHCR image и

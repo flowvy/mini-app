@@ -82,6 +82,9 @@ Source-of-truth order:
 - Pushing a matching tag triggers `.github/workflows/release.yml` and is the external publication
   boundary. Obtain explicit action-time approval immediately before creating or pushing it. The
   workflow publishes a GitHub Release in this repository; it does not deploy the application.
+- CI on `dev`/`main` and pull requests builds a temporary release image with `push: false` and runs
+  the disposable Compose smoke test. It never publishes that image; only the approved SemVer tag
+  workflow writes to GHCR.
 
 ## Commands
 

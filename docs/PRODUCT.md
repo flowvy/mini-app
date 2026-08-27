@@ -50,9 +50,9 @@ Broadcast явно исключён владельцем из MVP scope. Product
 - обрабатывать durable Tribute activity и Support queue, отвечать пользователю, менять lifecycle
   request и управлять Quick Answers.
 
-Broadcast остаётся post-MVP заглушкой. Production-grade общий operator audit, deployment и
-наблюдаемость всё ещё требуют отдельной готовности; текущий append-only activity contract покрывает
-Tribute operator actions, но не является универсальным аудитом всего admin UI.
+Broadcast остаётся post-MVP заглушкой. Общий аудит действий провайдера, подтверждённое развёртывание
+на реальном сервере и наблюдаемость всё ещё требуют отдельной готовности; текущий append-only
+activity contract покрывает действия с Tribute, но не является универсальным аудитом всего admin UI.
 
 ## Продуктовые правила
 
@@ -74,7 +74,8 @@ Tribute operator actions, но не является универсальным 
 ## Что не следует считать готовым
 
 Наличие маршрута или компонента не означает завершённый продуктовый поток. До production отдельно
-нужны безопасность, оставшиеся live/интеграционные проверки, эксплуатационный контур, deployment,
-backup/recovery и integrated fake-backend UI suite. Broadcast относится к post-MVP roadmap и не
-входит в этот readiness criterion.
+нужны безопасность, оставшиеся проверки с настоящими интеграциями, подтверждение реального
+развёртывания и отката, резервное копирование и восстановление, наблюдаемость и интегрированный набор
+UI-тестов с fake backend. Broadcast относится к post-MVP roadmap и не входит в этот критерий
+готовности.
 Эти пробелы нельзя маскировать mock mode или зелёным build.

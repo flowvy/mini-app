@@ -7,10 +7,11 @@ lint/typecheck, `114` unit tests, production build и `254/254` mobile Chromium 
 Compose, подтвердил healthy PostgreSQL/Redis/app, same-origin frontend/API и public debug `404` без
 внешних credentials. Предыдущая полная browser matrix прошла `735/735` на трёх Chromium viewports и
 `245/245` на iOS WebKit; Axe, overflow, console/network guards и visual evidence зелёные без retries,
-suppression, allow-list или completion exception. GitHub Actions на `dev` commit `f016a7e` также
-прошёл 2026-08-27: Backend и Frontend зелёные, включая focused deterministic Playwright smoke
-([run 33028267385](https://github.com/flowvy/mini-app/actions/runs/33028267385)). Новый container job
-ещё не выполнялся удалённо, потому что текущие изменения не опубликованы.
+suppression, allow-list или completion exception. GitHub Actions на `dev` commit `e4dfd26` полностью
+прошёл 2026-08-27: Backend, Frontend и проверка контейнера зелёные
+([run 33031388529](https://github.com/flowvy/mini-app/actions/runs/33031388529)). Container job собрал
+временный образ с `push: false` и проверил изолированный Compose-контур; образ в GHCR не
+публиковался.
 
 Стадия: **незавершённый MVP; production readiness не подтверждена**.
 
@@ -91,8 +92,8 @@ lockfiles и executable configuration имеют приоритет. Истор�
 - Production `Dockerfile` собирает один non-root image с frozen FastAPI backend и React frontend.
   Root Compose запускает PostgreSQL, непостоянный Redis, health-gated Alembic migration и один app на
   host loopback; `scripts/verify-container.ps1` подтверждает этот контур без внешних credentials.
-  Серверная установка, secrets, reverse proxy и update sequence описаны в
-  [`DEPLOYMENT.md`](DEPLOYMENT.md), устойчивое решение — в ADR 0006.
+  Короткая серверная установка и команда обновления описаны в [`DEPLOYMENT.md`](DEPLOYMENT.md),
+  архитектура и эксплуатационные границы — в ADR 0006 и [`OPERATIONS.md`](OPERATIONS.md).
 - Repository pins latest compatible stable stack: Python 3.14.7/uv 0.12.6,
   Node 24.19.0 LTS/pnpm 11.24.0, PostgreSQL 18.6 и Redis 8.10.1. Frontend и backend lockfiles
   являются executable source
