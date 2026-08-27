@@ -50,6 +50,9 @@ Frontend никогда не обращается к providers, PostgreSQL ил�
 
 `python -m flowvy` запускает Uvicorn с application factory. Factory создаёт FastAPI, Dishka
 container, middleware и routers. Debug routers регистрируются только при explicit `DEBUG=true`.
+Production image дополнительно раздаёт собранный React frontend: `/assets` обслуживает immutable
+сборочные файлы, а неизвестный client route получает SPA shell. Неизвестные `/api` и `/webhook`
+routes никогда не подменяются HTML.
 
 Application lifespan:
 
@@ -171,8 +174,18 @@ Development topology состоит из PostgreSQL/Redis Compose services, Fast
 optional production preview/Tunnel. Checked-in PowerShell workflows владеют startup markers, PID
 ownership, migrations, verification и safe shutdown. Debug нельзя публиковать.
 
-Production topology, secrets/TLS, observability, backup/restore и incident response пока не приняты;
-локальный named Tunnel не является deployment architecture. Release и operations boundaries описаны
+Production topology определена ADR [`0006`](decisions/0006-production-container-and-delivery.md):
+один non-root image содержит frozen FastAPI backend и собранный React frontend; Compose запускает
+PostgreSQL, непостоянный Redis, одноразовую Alembic migration и один application process. App
+публикуется только на host loopback, проверяет allow-listed `Host`, а внешний reverse proxy владеет
+доменом и TLS. PostgreSQL volume — единственное встроенное durable storage; рабочие secrets живут
+только в server `.env`.
+
+Bare SemVer release tag после зелёного CI публикует `linux/amd64` и `linux/arm64` image в GHCR, затем
+создаёт GitHub Release. Workflow не подключается к серверу и не выполняет production migration:
+installation Compose применяет её перед каждым app start. Observability, проверенный backup/restore,
+capacity limits и incident response остаются отдельными незавершёнными operations boundaries.
+Инструкция установки находится в [`DEPLOYMENT.md`](DEPLOYMENT.md), release и operations procedures —
 в [`OPERATIONS.md`](OPERATIONS.md).
 
 ## Architectural decisions
@@ -183,6 +196,7 @@ Durable решения хранятся в [`decisions/`](decisions/README.md):
 - product/operator/provider content ownership;
 - Tribute-managed checkout и durable entitlements;
 - Desktop color parity без accessibility exception.
+- production container, GHCR delivery и external TLS boundary.
 
 Временная реализация остаётся в коде и Git-ignored task plan; завершённый plan удаляется после
 переноса устойчивых результатов в canonical owner.

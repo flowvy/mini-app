@@ -25,6 +25,17 @@ count. Изменения `CHANGELOG.md`/`CHANGELOG.ru.md` относятся к
 полный pytest, Remnawave snapshot/client check и Playwright smoke. `-SkipE2E` допустим только когда
 UI не менялся либо browser binary объективно недоступен; пропуск нужно указать в handoff.
 
+Production container проверяется отдельной безопасной командой:
+
+```powershell
+./scripts/verify-container.ps1
+```
+
+Она собирает image, запускает временный Compose project со случайным host port и одноразовым
+PostgreSQL volume, отключает Telegram/Remnawave network calls, ждёт migrations и health checks,
+проверяет frontend shell/client route, `/api/health`, `/api/ready` и public debug `404`, затем удаляет
+только созданный project. `-SkipBuild` разрешён CI после сборки того же image в предыдущем step.
+
 ## Backend
 
 Из `backend/`:
@@ -234,14 +245,16 @@ Tunnel; затем через внешний DNS edge проверяет `health
 
 - backend: locked Python 3.14.7/uv 0.12.6, PostgreSQL 18.6, Redis 8.10.1, Ruff, Alembic и pytest;
 - frontend: Node 24.19.0 LTS/pnpm 11.24.0, Biome 2, TypeScript 7, Vitest 4, Vite 8 build и Chromium smoke;
+- container: production Dockerfile build и disposable Compose runtime smoke после backend/frontend;
 - failure artifacts: Playwright traces/screenshots/video/report.
 
 Workflow пока не заменяет локальную focused проверку и не подтверждает production deployment. Его
 последний подтверждённый удалённый run фиксируется в `PROJECT_STATE.md`.
 
 `.github/workflows/release.yml` не заменяет release gate. На tag push он требует successful `main`
-CI для exact tagged SHA и запускает `scripts/release.ps1`, но не повторяет full local browser/live
-Telegram acceptance. Локальная dry-проверка согласованной версии не создаёт tag или release:
+CI для exact tagged SHA, запускает `scripts/release.ps1`, публикует multi-platform GHCR image и
+создаёт GitHub Release, но не повторяет full local browser/live Telegram acceptance. Локальная
+dry-проверка согласованной версии не создаёт tag, image или release:
 
 ```powershell
 ./scripts/release.ps1 -Version '<agreed-version>'

@@ -12,8 +12,8 @@ def main() -> None:
     settings = Settings()
     uvicorn.run(
         "flowvy.api.factory:create_app",
-        host="127.0.0.1",
-        port=8001,
+        host=settings.host,
+        port=settings.port,
         reload=settings.debug,
         factory=True,
     )

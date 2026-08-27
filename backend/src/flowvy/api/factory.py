@@ -12,8 +12,11 @@ from aiogram import Bot
 from dishka import make_async_container
 from dishka.integrations.aiogram import setup_dishka as setup_dishka_aiogram
 from dishka.integrations.fastapi import setup_dishka
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -181,6 +184,12 @@ def create_app() -> FastAPI:
             allow_headers=["*"],
         )
 
+    if settings.allowed_hosts:
+        app.add_middleware(
+            TrustedHostMiddleware,
+            allowed_hosts=settings.allowed_hosts,
+        )
+
     container = make_async_container(
         ConfigProvider(),
         DatabaseProvider(),
@@ -245,6 +254,23 @@ def create_app() -> FastAPI:
                     media_type="application/json",
                 )
             return Response(status_code=200)
+
+    if settings.static_dir is not None:
+        static_dir = settings.static_dir.resolve()
+        index_file = static_dir / "index.html"
+        assets_dir = static_dir / "assets"
+        if not index_file.is_file() or not assets_dir.is_dir():
+            msg = f"STATIC_DIR must contain index.html and assets/: {static_dir}"
+            raise RuntimeError(msg)
+
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="frontend-assets")
+
+        @app.get("/{full_path:path}", include_in_schema=False, response_model=None)
+        async def frontend_route(full_path: str) -> FileResponse:
+            """Serve the SPA shell without masking missing backend or webhook routes."""
+            if full_path == "api" or full_path.startswith(("api/", "webhook")):
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            return FileResponse(index_file)
 
     setup_dishka(container=container, app=app)
     app.add_middleware(MetricsMiddleware)

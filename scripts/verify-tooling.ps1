@@ -91,9 +91,13 @@ foreach ($requiredText in @(
     'actions: read',
     'checks: read',
     'contents: write',
+    'packages: write',
     'git merge-base --is-ancestor',
     '--workflow ci.yml',
     './scripts/release.ps1',
+    'ghcr.io/${{ github.repository }}',
+    'platforms: linux/amd64,linux/arm64',
+    'type=raw,value=latest,enable=${{ !contains(github.ref_name, ''-'') }}',
     '--verify-tag'
 )) {
     if ($releaseWorkflow -notmatch [regex]::Escape($requiredText)) {
@@ -144,7 +148,7 @@ if (Get-Process -Id $ownedProcess.Id -ErrorAction SilentlyContinue) {
 $requiredScripts = @(
     "bootstrap.ps1", "dev-up.ps1", "dev-down.ps1", "tunnel-up.ps1", "tunnel-down.ps1",
     "verify.ps1", "verify-migrations.ps1", "verify-contracts.ps1", "verify-docs.ps1",
-    "release.ps1", "verify-release.ps1"
+    "release.ps1", "verify-release.ps1", "verify-container.ps1"
 )
 foreach ($name in $requiredScripts) {
     if (-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot $name))) {

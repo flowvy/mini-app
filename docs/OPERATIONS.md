@@ -1,8 +1,10 @@
 # Эксплуатация Flowvy
 
-В репозитории есть воспроизводимая **локальная разработка и validation CI**, но нет готового
-production deployment/operations контура. Этот документ не является разрешением запускать MVP на
-публичном сервере. Требования безопасности: [`SECURITY.md`](SECURITY.md).
+В репозитории есть воспроизводимая локальная разработка, validation CI и production container/Compose
+для самостоятельной установки. Пошаговая серверная инструкция находится в
+[`DEPLOYMENT.md`](DEPLOYMENT.md). Контейнерный путь не доказывает готовность MVP к публичной нагрузке:
+требования безопасности находятся в [`SECURITY.md`](SECURITY.md), а незавершённые операции — в конце
+этого документа.
 
 ## Localhost-only lifecycle
 
@@ -252,7 +254,10 @@ Downgrade, очистка volume и production migration требуют отде
 
 GitHub Actions выполняет backend/frontend validation на pull request и push в `dev`/`main`. Browser failure
 artifacts сохраняются как `playwright-artifacts`; локальные `test-results`, `playwright-report`,
-coverage и `.artifacts` игнорируются Git. CI не собирает image и ничего не deploy.
+coverage и `.artifacts` игнорируются Git. После этих gates job `Production container` собирает image
+без публикации и запускает disposable Compose smoke: migration, PostgreSQL/Redis readiness,
+same-origin frontend/API и отсутствие debug routes. CI ничего не deploy-ит и не использует реальные
+Telegram/provider credentials.
 
 ## Ветки и релизы
 
@@ -299,18 +304,19 @@ git tag -a $releaseVersion -m "Flowvy $releaseVersion"
 git push origin $releaseVersion
 ```
 
-`.github/workflows/release.yml` с `contents: write` только у release job повторно fail-closed
-проверяет metadata, принадлежность tagged commit ветке `main` и successful `main` CI для того же SHA,
-после чего выполняет `gh release create --verify-tag`. Prerelease не становится `Latest`. Workflow
-публикует release в этом же repository; отдельный public repository, binary/image assets и token с
-доступом к другому repo не нужны. GitHub автоматически предоставляет source archives, а видимость
-release следует текущей видимости repository.
+`.github/workflows/release.yml` повторно fail-closed проверяет metadata, принадлежность tagged commit
+ветке `main` и successful `main` CI для того же SHA. Затем job с `packages: write` публикует
+`ghcr.io/flowvy/mini-app` для `linux/amd64` и `linux/arm64`: exact SemVer и `major.minor` tags создаются
+для каждого выпуска, а `latest` — только для stable. После успешной публикации image workflow
+выполняет `gh release create --verify-tag`; prerelease не становится `Latest`.
 
-Механизм не deploy-ит приложение, не создаёт container/image, не запускает production migrations и
-не обращается к Telegram/provider. После workflow нужно вручную сверить tag/SHA, title,
-prerelease/latest state, notes и source archives, затем записать run/release evidence в
-[`PROJECT_STATE.md`](PROJECT_STATE.md). Failed tag/release нельзя перемещать, удалять или
-переиспользовать без нового решения владельца.
+Механизм не deploy-ит приложение, не подключается к серверу, не запускает production migrations и не
+обращается к Telegram/provider. После workflow нужно вручную сверить tag/SHA, image tags/digest,
+package visibility, title, prerelease/latest state, notes и source archives, затем записать
+run/release evidence в [`PROJECT_STATE.md`](PROJECT_STATE.md). Failed tag/release нельзя перемещать,
+удалять или переиспользовать без нового решения владельца. Публикация container до создания GitHub
+Release не является транзакцией: если финальный шаг упал, неизменяемый tag image остаётся evidence
+того же Git tag и workflow нужно расследовать, а не перезаписывать версию.
 
 GitHub contract повторно сверён 2026-08-26 с официальными
 [workflow tag filters](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushbranchestagsbranches-ignoretags-ignore),
@@ -320,17 +326,24 @@ GitHub contract повторно сверён 2026-08-26 с официальны
 Repository-level release immutability является отдельной GitHub setting и этим workflow не
 включается.
 
-## Что отсутствует для production
+Container publication contract повторно сверён 2026-08-27 с официальными
+[GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry),
+[publishing Docker images](https://docs.github.com/en/actions/tutorials/publish-packages/publish-docker-images)
+и [Docker multi-platform build](https://docs.docker.com/build/ci/github-actions/multi-platform/).
+Visibility GHCR package проверяется отдельно от repository visibility.
 
-- container/image publication и включённая repository-level release immutability;
-- reverse proxy, TLS, allowed hosts/CORS и secret store/rotation;
+## Что остаётся незавершённым для production
+
+- реальный reverse proxy/TLS rollout, secret store/rotation и проверка anonymous GHCR pull;
+- включённая repository-level release immutability;
 - production platform wiring для liveness/readiness и monitoring/alerting;
 - structured log redaction, tracing и retention;
 - PostgreSQL/Redis backup, проверенный restore, disaster recovery и rollback;
 - migration rollout/compatibility strategy;
 - capacity/rate/timeout budgets и Remnawave/Kuma/Beszel outage policy;
-- реальные incident runbooks и ownership/on-call.
+- реальные incident runbooks и ownership/on-call;
+- controlled acceptance с настоящими Telegram, Remnawave и выбранными optional integrations.
 
-До появления этих элементов production start/deploy должен считаться заблокированным. Будущие
-операционные процедуры хранятся в [`runbooks/`](runbooks/README.md), решения — в
-[`decisions/`](decisions/README.md).
+Compose installation теперь воспроизводима, но публичный rollout всё ещё требует осознанного принятия
+этих рисков, backup и внешней проверки. Архитектурное решение хранится в
+[`decisions/0006-production-container-and-delivery.md`](decisions/0006-production-container-and-delivery.md).

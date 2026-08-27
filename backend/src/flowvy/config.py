@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import Annotated
 
 from pydantic import Field, SecretStr, field_validator, model_validator
@@ -21,6 +22,10 @@ class Settings(BaseSettings):
     )
 
     version: str = "0.1.0"
+    host: str = "127.0.0.1"
+    port: int = Field(default=8001, ge=1, le=65_535)
+    static_dir: Path | None = None
+    allowed_hosts: Annotated[list[str], NoDecode] = []
     bot_token: str = ""
     database_url: str = "postgresql+asyncpg://flowvy:flowvy_dev@localhost:5432/flowvy"
     redis_url: str = "redis://localhost:6379/0"
@@ -108,6 +113,30 @@ class Settings(BaseSettings):
     support_retention_cleanup_batch_size: int = Field(default=100, ge=1, le=1000)
     debug: bool = False
     admin_telegram_ids: Annotated[list[int], NoDecode] = []
+
+    @field_validator("allowed_hosts", mode="before")
+    @classmethod
+    def parse_allowed_hosts(cls, value: object) -> list[str]:
+        """Parse a comma-separated host allowlist for TrustedHostMiddleware."""
+        if isinstance(value, str):
+            if not value.strip():
+                return []
+            return [part.strip() for part in value.split(",")]
+        return value  # type: ignore[return-value]
+
+    @field_validator("allowed_hosts")
+    @classmethod
+    def validate_allowed_hosts(cls, values: list[str]) -> list[str]:
+        """Reject malformed or URL-shaped host entries before startup."""
+        normalized: list[str] = []
+        for value in values:
+            host = value.strip().lower()
+            if not host or "://" in host or "/" in host or ":" in host:
+                raise ValueError(
+                    "ALLOWED_HOSTS entries must be hostnames without scheme, path, or port"
+                )
+            normalized.append(host)
+        return list(dict.fromkeys(normalized))
 
     @field_validator("admin_telegram_ids", mode="before")
     @classmethod

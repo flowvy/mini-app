@@ -16,7 +16,9 @@
 - [`0004-desktop-color-parity.md`](0004-desktop-color-parity.md) — desktop-authoritative color
   values/roles, ограниченное Header/TabBar glass exception и честная фиксация contrast debt;
 - [`0005-open-source-license-and-brand.md`](0005-open-source-license-and-brand.md) — AGPL-3.0-only для
-  кода, отдельная защита бренда Flowvy и централизованная third-party attribution.
+  кода, отдельная защита бренда Flowvy и централизованная third-party attribution;
+- [`0006-production-container-and-delivery.md`](0006-production-container-and-delivery.md) — единый
+  production image, health-gated Compose, GHCR release и внешний HTTPS reverse proxy.
 
 ## Когда нужен ADR
 

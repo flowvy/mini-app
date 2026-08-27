@@ -45,6 +45,10 @@ def _env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("R2_BUCKET_NAME", "")
     monkeypatch.setenv("R2_ACCESS_KEY_ID", "")
     monkeypatch.setenv("R2_SECRET_ACCESS_KEY", "")
+    monkeypatch.delenv("ALLOWED_HOSTS", raising=False)
+    monkeypatch.delenv("STATIC_DIR", raising=False)
+    monkeypatch.delenv("HOST", raising=False)
+    monkeypatch.delenv("PORT", raising=False)
 
 
 @pytest.fixture(autouse=True)

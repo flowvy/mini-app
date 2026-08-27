@@ -1,13 +1,16 @@
 # Текущее состояние Flowvy
 
-Последняя полная проверка: **2026-08-26**. После repository cleanup и latest-stable upgrade прошли
-exact-toolchain, lock и PostgreSQL 18 migration gates, Ruff, `571` backend tests, `56` pinned
-integration contracts, frontend lint/typecheck, `113` unit tests, production build и `254/254`
-mobile Chromium Playwright tests. Предыдущая полная browser matrix прошла `735/735` на трёх Chromium
-viewports и `245/245` на iOS WebKit; Axe, overflow, console/network guards и visual evidence зелёные
-без retries, suppression, allow-list или completion exception. GitHub Actions на `dev` commit
-`48942a8` также прошёл 2026-08-26: Backend и Frontend зелёные, включая focused `7/7`
-deterministic Playwright smoke ([run 32960427276](https://github.com/flowvy/mini-app/actions/runs/32960427276)).
+Последняя полная проверка: **2026-08-27**. Прошли exact-toolchain, lock и полный PostgreSQL 18
+migration cycle, Ruff, `575` backend tests, `56` pinned integration contracts, frontend
+lint/typecheck, `114` unit tests, production build и `254/254` mobile Chromium Playwright tests.
+Отдельный production container smoke собрал non-root image, применил migrations в disposable
+Compose, подтвердил healthy PostgreSQL/Redis/app, same-origin frontend/API и public debug `404` без
+внешних credentials. Предыдущая полная browser matrix прошла `735/735` на трёх Chromium viewports и
+`245/245` на iOS WebKit; Axe, overflow, console/network guards и visual evidence зелёные без retries,
+suppression, allow-list или completion exception. GitHub Actions на `dev` commit `f016a7e` также
+прошёл 2026-08-27: Backend и Frontend зелёные, включая focused deterministic Playwright smoke
+([run 33028267385](https://github.com/flowvy/mini-app/actions/runs/33028267385)). Новый container job
+ещё не выполнялся удалённо, потому что текущие изменения не опубликованы.
 
 Стадия: **незавершённый MVP; production readiness не подтверждена**.
 
@@ -85,6 +88,11 @@ lockfiles и executable configuration имеют приоритет. Истор�
 - GitHub Actions выполняет backend gates и focused `@ci-smoke` browser subset на каждом push в
   `dev`/`main` и в pull requests. Полный Playwright suite и live Telegram/Swiftgram acceptance
   остаются отдельными local release gates.
+- Production `Dockerfile` собирает один non-root image с frozen FastAPI backend и React frontend.
+  Root Compose запускает PostgreSQL, непостоянный Redis, health-gated Alembic migration и один app на
+  host loopback; `scripts/verify-container.ps1` подтверждает этот контур без внешних credentials.
+  Серверная установка, secrets, reverse proxy и update sequence описаны в
+  [`DEPLOYMENT.md`](DEPLOYMENT.md), устойчивое решение — в ADR 0006.
 - Repository pins latest compatible stable stack: Python 3.14.7/uv 0.12.6,
   Node 24.19.0 LTS/pnpm 11.24.0, PostgreSQL 18.6 и Redis 8.10.1. Frontend и backend lockfiles
   являются executable source
@@ -95,8 +103,9 @@ lockfiles и executable configuration имеют приоритет. Истор�
 - Root и scoped `AGENTS.md`, пять Flowvy skills, custom read-only agents, Codex config и command
   rules имеют отдельные responsibilities. Опасные Git/data commands остаются prompt/forbidden.
 - Bare-SemVer tag release mechanism хранит synchronized English/Russian changelogs, проверяет
-  frontend/Python versions и exact `main` CI, затем создаёт GitHub Release в этом repository. Он не
-  deploy-ит приложение и не публикует image.
+  frontend/Python versions и exact `main` CI, публикует multi-platform
+  `ghcr.io/flowvy/mini-app` и затем создаёт GitHub Release. Stable release обновляет `latest`,
+  prerelease — нет; workflow не подключается к серверу и не выполняет production migrations.
 - Собственный код подготовлен к публикации под `AGPL-3.0-only`: root license, package metadata,
   отдельные Flowvy trademark rules и third-party notices зафиксированы ADR 0005. Коммерческий
   self-hosting разрешён, но изменённая сетевая версия должна предоставлять соответствующий source;
@@ -127,8 +136,10 @@ lockfiles и executable configuration имеют приоритет. Истор�
 
 ### Production readiness
 
-- Не утверждены deployment topology, secrets/TLS/host policy, production migrations, observability,
-  alerting, backup/restore, retention jobs, capacity/load limits, on-call и incident runbooks.
+- Container/Compose topology, loopback ingress, host allowlist, migration-before-app и GHCR delivery
+  реализованы и проверены локально. Не подтверждены реальный reverse proxy/TLS rollout, secret
+  rotation, anonymous package pull после изменения visibility, production observability/alerting,
+  backup/restore rehearsal, capacity/load limits, on-call и incident runbooks.
 - Не завершены независимый security review и production recovery test. Локальные `pip-audit`,
   `pnpm audit --prod`, Bandit и dependency/dead-code scans зелёные, но не заменяют внешний review.
 - Локальный named Tunnel и dev R2 acceptance не являются доказательством production deployment.
