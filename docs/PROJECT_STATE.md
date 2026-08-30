@@ -1,7 +1,7 @@
 # Текущее состояние Flowvy
 
-Последняя полная проверка: **2026-08-27**. Прошли exact-toolchain, lock и полный PostgreSQL 18
-migration cycle, Ruff, `575` backend tests, `56` pinned integration contracts, frontend
+Последняя полная проверка: **2026-08-30**. Прошли exact-toolchain, lock и полный PostgreSQL 18
+migration cycle, Ruff, `580` backend tests, `56` pinned integration contracts, frontend
 lint/typecheck, `114` unit tests, production build и `254/254` mobile Chromium Playwright tests.
 Отдельный production container smoke собрал non-root image, применил migrations в disposable
 Compose, подтвердил healthy PostgreSQL/Redis/app, same-origin frontend/API и public debug `404` без
@@ -50,6 +50,15 @@ lockfiles и executable configuration имеют приоритет. Истор�
 - Tribute sponsor offers поддерживают donation/subscription rules, multiple billing periods,
   immutable checkout snapshots, exact tag exclusions, referral reward/discount benefits и local
   pending/provisioning/review/paid/base states. Redirect или browser return не доказывают оплату.
+- Owner-controlled legacy import безопасно сопоставляет old-bot и Remnawave snapshots, регистрирует
+  exact Telegram identities без provider mutation и для legacy BELIEVER создаёт explicit Flowvy
+  access provenance, frozen FREE baseline и idempotent scheduled restore на provider expiry. Импорт
+  dry-run-first, fail-closed при конфликте и не создаёт Tribute payment facts.
+- Private production seed локально восстановлен и проверен: он сохраняет 47 exact legacy
+  users/subscriptions, 9 BELIEVER restore chains, singleton settings, 3 access profiles, configured
+  commerce rule/offer и 6 FAQ articles, но не содержит test checkouts, webhook/payment
+  events, support activity, invites и dev metrics. Dump содержит PII и не является repository
+  или GitHub Release artifact.
 - Signed Tribute events проходят durable inbox/ledger/outbox pipeline. Provider mutation выполняет
   отдельный worker с frozen rule/profile state, reconciliation и base-access restoration;
   ambiguous/anonymous cases остаются review-only.
@@ -151,6 +160,6 @@ lockfiles и executable configuration имеют приоритет. Истор�
 
 ## Следующее действие
 
-Согласовать version/tag, подготовить bilingual MVP changelog, прогнать свежий full release gate и
-выполнить release-перенос `dev -> main`. Broadcast уже исключён из MVP scope и остаётся post-MVP
-работой.
+Release `0.1.0` и bilingual notes подготовлены; fresh Full и production container smoke зелёны.
+Перед publication нужны reviewed commit/push `dev -> main`, exact-main CI и отдельное action-time
+подтверждение bare tag `0.1.0`. Broadcast остаётся post-MVP работой.
