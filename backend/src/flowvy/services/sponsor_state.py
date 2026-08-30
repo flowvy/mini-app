@@ -35,6 +35,14 @@ if TYPE_CHECKING:
     from flowvy.services.sponsor import SponsorOfferService
 
 TRIBUTE_MANAGEMENT_URL = "https://t.me/tribute"
+_LEGACY_ACCESS_EVENT = "legacy_access_import"
+
+
+def _is_paid_access_grant(operation: EntitlementOperation) -> bool:
+    """Include explicit legacy access without fabricating a Tribute payment."""
+    return operation.provider == "tribute" or (
+        operation.provider == "flowvy" and operation.event_name == _LEGACY_ACCESS_EVENT
+    )
 
 
 def _rule_commerce_type(operation: EntitlementOperation) -> str | None:
@@ -108,7 +116,7 @@ def _inactive_state(
         (
             operation
             for operation in reversed(operations)
-            if operation.provider == "tribute" and operation.operation_kind == "grant"
+            if _is_paid_access_grant(operation) and operation.operation_kind == "grant"
         ),
         None,
     )
@@ -200,7 +208,7 @@ class SponsorStateService:
         active_grants = [
             operation
             for operation in await self._operations.uncompensated_applied_grants(user_id)
-            if operation.provider == "tribute"
+            if _is_paid_access_grant(operation)
             and operation.target_expiry is not None
             and operation.target_expiry > now
         ]

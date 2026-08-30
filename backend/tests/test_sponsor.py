@@ -1049,6 +1049,33 @@ async def test_state_hides_offer_from_matching_remnawave_tag(
 
 
 @pytest.mark.asyncio
+async def test_state_treats_imported_legacy_access_as_paid_without_tribute_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expiry = NOW + datetime.timedelta(days=7)
+    grant = _operation(status="applied", target=expiry, commerce_type="")
+    grant.provider = "flowvy"
+    grant.event_name = "legacy_access_import"
+    grant.rule_snapshot = None
+    grant.rule_id = None
+    service = _state_service(
+        monkeypatch,
+        operations=[grant],
+        active=[grant],
+        excluded_tags=["BELIEVER"],
+        user_tag="BELIEVER",
+    )
+
+    result = await service.get_state(123)
+
+    assert result.status == "one_time_active"
+    assert result.access_level == "paid"
+    assert result.paid_expires_at == expiry
+    assert result.offers == []
+    assert result.primary_action == "none"
+
+
+@pytest.mark.asyncio
 async def test_state_keeps_restricted_offer_for_user_without_a_tag(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

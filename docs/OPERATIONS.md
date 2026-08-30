@@ -130,6 +130,37 @@ worker на production-like target требует отдельной прове�
 backup/rollback, одного контролируемого donation/subscription сценария и наблюдения журнала;
 текущий MVP не имеет готового production rollout runbook.
 
+### Однократный import legacy users
+
+`backend/scripts/import-legacy-users.py` — узкий owner-controlled переход со старого Flowvy bot и
+совпадающего Remnawave snapshot. Он не вызывает Telegram, Remnawave или Tribute и не синтезирует
+Tribute payment events. Source PostgreSQL открываются только read-only query path; target сначала
+полностью проверяется и изменяется одной transaction только с explicit `--apply`.
+
+Importer требует exact Telegram ID + Remnawave UUID mapping, active/unexpired provider state,
+единственные active `FREE` и `BELIEVER` profiles и approved aggregate counts. Existing local users
+сохраняются при exact provider identity; disabled/ambiguous/conflicting rows останавливают весь run.
+Для BELIEVER создаются `flowvy/legacy_access_import`, frozen lifetime FREE baseline и pending
+`legacy_access_restore` на уже существующий provider expiry. FAMILY, INTERNAL и FREE получают только
+local user/subscription link. При первом Mini App launch Telegram profile fields синхронизируются из
+signed `initData`.
+
+Из `backend/`, с source backups, восстановленными в изолированные local PostgreSQL:
+
+```powershell
+$env:LEGACY_BOT_DATABASE_URL = 'postgresql://<user>:<password>@127.0.0.1:<port>/<database>'
+$env:LEGACY_REMNAWAVE_DATABASE_URL = 'postgresql://<user>:<password>@127.0.0.1:<port>/<database>'
+$env:DATABASE_URL = 'postgresql+asyncpg://<user>:<password>@127.0.0.1:<port>/<database>'
+$env:PYTHONPATH = 'src'
+
+uv run python scripts/import-legacy-users.py --snapshot-at '<UTC ISO timestamp>'
+# Только после clean dry-run и отдельного target pg_dump:
+uv run python scripts/import-legacy-users.py --snapshot-at '<UTC ISO timestamp>' --apply
+```
+
+Успешный повторный `--apply` обязан вернуть нули во всех `*_to_create`/`*_to_update`. Source dumps,
+connection strings и generated target backup не являются repository artifacts и не коммитятся.
+
 ## Cloudflare R2 для Support attachments
 
 R2 optional: без него Support сохраняет text requests/replies, а attachment picker показывает
