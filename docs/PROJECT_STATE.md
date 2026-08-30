@@ -13,6 +13,15 @@ suppression, allow-list или completion exception. GitHub Actions на `dev` c
 временный образ с `push: false` и проверил изолированный Compose-контур; образ в GHCR не
 публиковался.
 
+Public release `0.1.0` опубликован 2026-08-30 из exact `main` commit
+`dc99e5bdae0d0625953e85a3c07f1733d37c2ad2`. Exact-main CI зелёный
+([run 33285710447](https://github.com/flowvy/mini-app/actions/runs/33285710447)), release workflow
+успешно опубликовал GitHub Release и GHCR image
+([run 33287435197](https://github.com/flowvy/mini-app/actions/runs/33287435197)). Repository и package
+public; anonymous registry inspection подтверждает один digest
+`sha256:04b2710dcba6d5d6809e7e7c6816f55c9bd7266fa8e5d3dffed6d6a0e0315d35` для тегов `0.1.0`,
+`0.1` и `latest`, с runnable `linux/amd64` и `linux/arm64` manifests и provenance attestations.
+
 Стадия: **незавершённый MVP; production readiness не подтверждена**.
 
 Этот файл — короткий handoff текущих проверенных фактов и известных пробелов. Код, migrations,
@@ -147,19 +156,18 @@ lockfiles и executable configuration имеют приоритет. Истор�
 ### Production readiness
 
 - Container/Compose topology, loopback ingress, host allowlist, migration-before-app и GHCR delivery
-  реализованы и проверены локально. Не подтверждены реальный reverse proxy/TLS rollout, secret
-  rotation, anonymous package pull после изменения visibility, production observability/alerting,
-  backup/restore rehearsal, capacity/load limits, on-call и incident runbooks.
+  реализованы и проверены локально; anonymous package inspection после public release подтверждён.
+  Не подтверждены реальный reverse proxy/TLS rollout, secret rotation, production
+  observability/alerting, backup/restore rehearsal, capacity/load limits, on-call и incident
+  runbooks.
 - Не завершены независимый security review и production recovery test. Локальные `pip-audit`,
   `pnpm audit --prod`, Bandit и dependency/dead-code scans зелёные, но не заменяют внешний review.
 - Локальный named Tunnel и dev R2 acceptance не являются доказательством production deployment.
-- GitHub API 2026-08-26 сообщает repository visibility `PRIVATE`. Владелец планирует
-  сделать repository public к release; до фактического изменения setting release visibility следует
-  текущей visibility repository. Repository-level immutable releases механизмом не включаются и
-  отдельно не подтверждены.
+- Repository и GHCR package публичны с 2026-08-30. Repository-level immutable releases механизмом
+  не включаются и отдельно не подтверждены.
 
 ## Следующее действие
 
-Release `0.1.0` и bilingual notes подготовлены; fresh Full и production container smoke зелёны.
-Перед publication нужны reviewed commit/push `dev -> main`, exact-main CI и отдельное action-time
-подтверждение bare tag `0.1.0`. Broadcast остаётся post-MVP работой.
+Развернуть exact release `0.1.0` на production host по [`DEPLOYMENT.md`](DEPLOYMENT.md), восстановить
+проверенный private production seed до запуска пользовательского трафика и выполнить deployment
+acceptance для reverse proxy/TLS, health и Telegram entrypoint. Broadcast остаётся post-MVP работой.
