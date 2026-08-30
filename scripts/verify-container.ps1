@@ -17,8 +17,7 @@ $appPort = ([System.Net.IPEndPoint]$listener.LocalEndpoint).Port
 $listener.Stop()
 
 $environment = @{
-    MINI_APP_IMAGE = $Image.Split(":")[0]
-    MINI_APP_VERSION = $Image.Substring($Image.IndexOf(":") + 1)
+    MINI_APP_IMAGE = $Image
     APP_DOMAIN = "localhost"
     APP_PORT = "$appPort"
     BOT_TOKEN = "000000:CONTAINER_SMOKE_DISABLED"
