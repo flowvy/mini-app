@@ -17,6 +17,7 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
+from flowvy import __version__
 from flowvy.beszel_target import normalize_beszel_base_url
 from flowvy.kuma_target import normalize_kuma_base_url, normalize_kuma_slug
 from flowvy.localization import DEFAULT_LOCALE, normalize_locale, normalize_locale_map
@@ -106,7 +107,7 @@ class ProviderSettingsResponse(BaseModel):
     welcome_discount_url: PaymentDestinationUrl | None = None
     welcome_discount_percent: int | None = Field(default=None, ge=1, le=99)
     remnawave_version: str | None = None
-    flowvy_version: str = "0.1.0"
+    flowvy_version: str = __version__
     updated_at: int
 
     @field_validator("content_default_locale", mode="before")

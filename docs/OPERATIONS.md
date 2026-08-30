@@ -48,6 +48,9 @@ defaults и сохраняет test database, Docker volume и все внешн
 - `docker compose -f docker-compose.dev.yml ps` показывает dev infrastructure.
 - `.artifacts/dev/backend.stderr.log` и соседние logs — первая локальная диагностика, но в них не
   должны попадать secrets/payloads.
+- Production `docker compose logs -f` объединяет application, Uvicorn и library events в формат
+  `process / UTC time / level / component / message`. Успешные Docker probes на `/api/ready`
+  подавляются, но readiness failures остаются в журнале.
 - `scripts/verify.ps1 -Scope Full` проверяет validation-контур; он не является runtime monitor.
 
 ## Миграции

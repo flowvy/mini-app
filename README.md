@@ -110,7 +110,7 @@ nano .env
 
 ```bash
 cd /opt/mini-app
-docker compose up -d && docker compose logs -f -t
+docker compose up -d && docker compose logs -f
 ```
 
 `Ctrl+C` закроет просмотр журналов, но не остановит контейнеры.

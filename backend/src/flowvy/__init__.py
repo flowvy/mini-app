@@ -1,3 +1,5 @@
 """Flowvy — Telegram Mini App + Bot for Xray proxy subscription management."""
 
-__version__ = "0.1.0"
+from importlib.metadata import version
+
+__version__ = version("flowvy")

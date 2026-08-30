@@ -1,7 +1,7 @@
 # Текущее состояние Flowvy
 
 Последняя полная проверка: **2026-08-30**. Прошли exact-toolchain, lock и полный PostgreSQL 18
-migration cycle, Ruff, `580` backend tests, `56` pinned integration contracts, frontend
+migration cycle, Ruff, `584` backend tests, `56` pinned integration contracts, frontend
 lint/typecheck, `114` unit tests, production build и `254/254` mobile Chromium Playwright tests.
 Отдельный production container smoke собрал non-root image, применил migrations в disposable
 Compose, подтвердил healthy PostgreSQL/Redis/app, same-origin frontend/API и public debug `404` без
@@ -21,6 +21,11 @@ Public release `0.1.0` опубликован 2026-08-30 из exact `main` commi
 public; anonymous registry inspection подтверждает один digest
 `sha256:04b2710dcba6d5d6809e7e7c6816f55c9bd7266fa8e5d3dffed6d6a0e0315d35` для тегов `0.1.0`,
 `0.1` и `latest`, с runnable `linux/amd64` и `linux/arm64` manifests и provenance attestations.
+
+Release `0.1.1` подготовлен и полностью проверен локально: synchronized changelogs и package
+versions, production logging, migrations, backend/frontend suites, browser matrix и disposable
+production container smoke зелёные. До публикации exact `main` CI, GitHub Release и GHCR digest для
+`0.1.1` ещё не подтверждены.
 
 Стадия: **незавершённый MVP; production readiness не подтверждена**.
 
@@ -112,6 +117,9 @@ lockfiles и executable configuration имеют приоритет. Истор�
   host loopback; `scripts/verify-container.ps1` подтверждает этот контур без внешних credentials.
   Короткая серверная установка и команда обновления описаны в [`DEPLOYMENT.md`](DEPLOYMENT.md),
   архитектура и эксплуатационные границы — в ADR 0006 и [`OPERATIONS.md`](OPERATIONS.md).
+- Production stdout использует единый operator-facing формат для Flowvy, Uvicorn и standard-library
+  событий с process, UTC timestamp, level и component; успешные `/api/ready` probes не засоряют
+  журнал, а failed probes сохраняются.
 - Repository pins latest compatible stable stack: Python 3.14.7/uv 0.12.6,
   Node 24.19.0 LTS/pnpm 11.24.0, PostgreSQL 18.6 и Redis 8.10.1. Frontend и backend lockfiles
   являются executable source
@@ -168,6 +176,6 @@ lockfiles и executable configuration имеют приоритет. Истор�
 
 ## Следующее действие
 
-Развернуть exact release `0.1.0` на production host по [`DEPLOYMENT.md`](DEPLOYMENT.md), восстановить
-проверенный private production seed до запуска пользовательского трафика и выполнить deployment
-acceptance для reverse proxy/TLS, health и Telegram entrypoint. Broadcast остаётся post-MVP работой.
+Опубликовать exact release `0.1.1`, обновить уже подготовленный production host по
+[`DEPLOYMENT.md`](DEPLOYMENT.md) и выполнить deployment acceptance для reverse proxy/TLS, health,
+startup logs и Telegram entrypoint. Broadcast остаётся post-MVP работой.

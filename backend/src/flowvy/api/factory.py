@@ -66,7 +66,10 @@ from flowvy.services.support_retention import SupportRetentionWorker, run_suppor
 from flowvy.services.webhook_retention import run_webhook_retention
 from flowvy.telegram_main_app import TelegramMainApp, discover_main_app
 
-logger = structlog.get_logger()
+application_logger = structlog.get_logger("Application")
+telegram_logger = structlog.get_logger("Telegram")
+remnawave_logger = structlog.get_logger("Remnawave")
+workers_logger = structlog.get_logger("Workers")
 
 
 @asynccontextmanager
@@ -76,16 +79,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     container = app.state.dishka_container
     polling_task: asyncio.Task[None] | None = None
     app.state.telegram_main_app = TelegramMainApp.unavailable()
+    application_logger.info(
+        "Initializing application services",
+        version=settings.version,
+    )
 
     if settings.bot_token:
         bot = await container.get(Bot)
         app.state.telegram_main_app = await discover_main_app(bot)
         if app.state.telegram_main_app.status == "ready":
-            logger.info("telegram_main_app_ready")
+            telegram_logger.info("Main Mini App configuration is ready")
         elif app.state.telegram_main_app.status == "main_app_not_configured":
-            logger.warning("telegram_main_app_not_configured")
+            telegram_logger.warning("Main Mini App is not configured in BotFather")
         else:
-            logger.warning("telegram_main_app_capability_unavailable")
+            telegram_logger.warning("Could not inspect Main Mini App configuration")
         dp = create_dispatcher()
         app.state.bot = bot
         app.state.dp = dp
@@ -96,6 +103,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 secret_token=settings.telegram_webhook_secret,
             )
             await dp.emit_startup(bot=bot)
+            telegram_logger.info("Webhook delivery is ready")
         else:
             # Local development has no stable callback URL. Remove a stale
             # production webhook before polling so Telegram delivers updates here.
@@ -107,11 +115,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                     close_bot_session=False,
                 ),
             )
+            telegram_logger.info("Local polling is ready")
     if settings.remnawave_url:
         remnawave = await container.get(RemnawaveClient)
         if not await remnawave.ping():
+            remnawave_logger.error("Connection check failed")
             msg = f"Remnawave unreachable at {settings.remnawave_url}"
             raise RuntimeError(msg)
+        remnawave_logger.info("Connection is ready")
 
     redis = await container.get(Redis)
     app.state.metrics_redis = redis
@@ -142,10 +153,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             settings.support_retention_cleanup_interval_seconds,
         ),
     )
+    workers_logger.info(
+        "Background workers are ready",
+        workers=["entitlements", "metrics", "support-retention", "webhook-retention"],
+    )
 
     try:
         yield
     finally:
+        application_logger.info("Stopping application services")
         background_tasks = [
             metrics_task,
             webhook_retention_task,
@@ -167,12 +183,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         if hasattr(app.state, "bot"):
             await app.state.bot.session.close()
         await container.close()
+        application_logger.info("Application services stopped")
 
 
 def create_app() -> FastAPI:
     """Build and configure the FastAPI application."""
     settings = Settings()
-    app = FastAPI(title="Flowvy", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Flowvy", version=settings.version, lifespan=lifespan)
     app.state.settings = settings
     app.state.telegram_main_app = TelegramMainApp.unavailable()
 

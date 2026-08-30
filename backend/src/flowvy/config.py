@@ -9,6 +9,7 @@ from typing import Annotated
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+from flowvy import __version__
 from flowvy.beszel_target import normalize_beszel_base_url
 from flowvy.kuma_target import normalize_kuma_base_url
 
@@ -21,7 +22,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
     )
 
-    version: str = "0.1.0"
+    version: str = __version__
     host: str = "127.0.0.1"
     port: int = Field(default=8001, ge=1, le=65_535)
     static_dir: Path | None = None

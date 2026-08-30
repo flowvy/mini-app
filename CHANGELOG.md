@@ -8,6 +8,13 @@ Keep this file synchronized with `CHANGELOG.ru.md` by version, date, category or
 Move reviewed entries into `## X.Y.Z — YYYY-MM-DD` only after the release version is agreed. Use
 only the categories `New`, `Improved`, `Fixed`, and `Security`, in that order, and omit empty ones.
 
+## 0.1.1 — 2026-08-30
+
+### Improved
+
+- Made production logs easier to read with consistent timestamps, levels and components, explicit startup status, and quiet successful readiness probes.
+- Gave Docker containers stable names and simplified image selection for clearer server operations and updates.
+
 ## 0.1.0 — 2026-08-30
 
 ### New
