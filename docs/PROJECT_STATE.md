@@ -22,10 +22,23 @@ public; anonymous registry inspection подтверждает один digest
 `sha256:04b2710dcba6d5d6809e7e7c6816f55c9bd7266fa8e5d3dffed6d6a0e0315d35` для тегов `0.1.0`,
 `0.1` и `latest`, с runnable `linux/amd64` и `linux/arm64` manifests и provenance attestations.
 
-Release `0.1.1` подготовлен и полностью проверен локально: synchronized changelogs и package
-versions, production logging, migrations, backend/frontend suites, browser matrix и disposable
-production container smoke зелёные. До публикации exact `main` CI, GitHub Release и GHCR digest для
-`0.1.1` ещё не подтверждены.
+Public release `0.1.1` опубликован 2026-08-30 из exact `main` commit
+`7104ce73aab9667edc49c277e252bc507a59caa7`. Exact-main CI зелёный
+([run 33297189756](https://github.com/flowvy/mini-app/actions/runs/33297189756)), release workflow
+успешно опубликовал [GitHub Release](https://github.com/flowvy/mini-app/releases/tag/0.1.1) и GHCR
+image ([run 33297373808](https://github.com/flowvy/mini-app/actions/runs/33297373808)). Теги `0.1.1`,
+`0.1` и `latest` разрешаются в один multi-platform index digest
+`sha256:9437971168d6475ed1b73d0fc7acbfb93ed5f7432544756b28c6a49277118fea` с runnable
+`linux/amd64` и `linux/arm64` manifests и provenance attestations.
+
+Этот exact image развёрнут на production host и принят по runtime evidence: приложение сообщает
+version `0.1.1`, healthy `/api/ready` подтверждает PostgreSQL и Redis, порт `8001` опубликован только
+на NetBird-адресе, а восстановленные 47 users/subscriptions и остальные seed-owned настройки,
+профили и FAQ сохранены. Публичный `https://mini-app.flowvy.io` проходит Caddy/TLS до same-origin
+frontend и readiness API; Telegram Main Mini App, Telegram webhook delivery, Remnawave connection и
+background workers готовы. Контролируемые Remnawave webhook events приняты с HTTP `200`, а повторный
+запуск Telegram Mini App после обновления WebView context подтвердил русский интерфейс из
+`language_code`.
 
 Стадия: **незавершённый MVP; production readiness не подтверждена**.
 
@@ -163,19 +176,22 @@ lockfiles и executable configuration имеют приоритет. Истор�
 
 ### Production readiness
 
-- Container/Compose topology, loopback ingress, host allowlist, migration-before-app и GHCR delivery
-  реализованы и проверены локально; anonymous package inspection после public release подтверждён.
-  Не подтверждены реальный reverse proxy/TLS rollout, secret rotation, production
-  observability/alerting, backup/restore rehearsal, capacity/load limits, on-call и incident
-  runbooks.
+- Container/Compose topology, host allowlist, migration-before-app и GHCR delivery реализованы и
+  проверены локально; anonymous package inspection и deployment exact `0.1.1` image подтверждены.
+  Реальный Caddy/TLS rollout, NetBird-only application ingress, health/startup logs, Telegram
+  entrypoint и Remnawave webhook delivery приняты на текущем production host. Не подтверждены secret
+  rotation, production observability/alerting, backup/restore rehearsal, capacity/load limits,
+  on-call и incident runbooks.
 - Не завершены независимый security review и production recovery test. Локальные `pip-audit`,
   `pnpm audit --prod`, Bandit и dependency/dead-code scans зелёные, но не заменяют внешний review.
-- Локальный named Tunnel и dev R2 acceptance не являются доказательством production deployment.
+- Текущий production rollout подтверждает один фактический deployment, но локальный named Tunnel и
+  dev R2 acceptance по-прежнему не доказывают production R2/support attachment behavior.
 - Repository и GHCR package публичны с 2026-08-30. Repository-level immutable releases механизмом
   не включаются и отдельно не подтверждены.
 
 ## Следующее действие
 
-Опубликовать exact release `0.1.1`, обновить уже подготовленный production host по
-[`DEPLOYMENT.md`](DEPLOYMENT.md) и выполнить deployment acceptance для reverse proxy/TLS, health,
-startup logs и Telegram entrypoint. Broadcast остаётся post-MVP работой.
+Завершить production hardening: выполнить pending secret rotation, включить рекомендуемый Redis
+host setting `vm.overcommit_memory=1`, провести независимый backup/restore rehearsal и настроить
+observability/alerting. После отдельного action-time разрешения проверить один controlled payment и
+Support notification/attachment flow; Broadcast остаётся post-MVP работой.
