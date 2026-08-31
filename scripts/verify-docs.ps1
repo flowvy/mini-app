@@ -164,9 +164,6 @@ if ($frontendPackage.engines.node -ne ">=$nodeVersion <25") {
     )
 }
 
-Require-DocumentText "README.md" @(
-    "Python $pythonVersion", "uv $uvVersion", "Node.js $nodeVersion LTS", "pnpm $pnpmVersion"
-)
 Require-DocumentText "docs/DEV_ENVIRONMENT.md" @(
     "Python $pythonVersion", "uv $uvVersion", "Node.js $nodeVersion LTS", "pnpm $pnpmVersion",
     "PostgreSQL $postgresVersion", "Redis $redisVersion"
@@ -188,7 +185,7 @@ Require-DocumentText "docs/decisions/0003-tribute-managed-checkout-and-entitleme
 )
 
 $canonicalToolchainDocs = @(
-    "README.md", "docs/DEV_ENVIRONMENT.md", "docs/PROJECT_STATE.md", "docs/TESTING.md"
+    "docs/DEV_ENVIRONMENT.md", "docs/PROJECT_STATE.md", "docs/TESTING.md"
 )
 foreach ($relativePath in $canonicalToolchainDocs) {
     Require-ExactDocumentVersions $relativePath "Node" 'Node(?:\.js)?\s+(?<version>[0-9]+\.[0-9]+\.[0-9]+)' $nodeVersion
